@@ -61,7 +61,10 @@ Long-horizon milestones for `vcad-math` beyond the current proof-lemma TODO.
 ## P4: Higher-dimensional math + rotations
 - [x] Create dedicated planning checklist for higher-dimensional expansion:
   - `docs/vcad-math-higher-dim-todo.md`
-- [ ] Implement `Vec3` / `Point3` theorem surface and runtime/refinement pairing.
+- [x] Land first-pass model + runtime/refinement scaffolding:
+  - model modules: `Vec3/Point3/orientation3`, `Vec4/Point4`, `Quaternion`
+  - runtime modules + refinement wrappers: 3D/4D/quaternion families
+- [x] Implement `Vec3` / `Point3` theorem surface and runtime/refinement pairing.
 - [ ] Implement `orientation3d` theorem surface (signed-volume/coplanarity classification + invariance laws).
 - [ ] Implement `Vec4` / `Point4` theorem surface and runtime/refinement pairing.
 - [ ] Implement quaternion theorem surface:

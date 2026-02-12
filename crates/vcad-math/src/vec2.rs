@@ -315,7 +315,12 @@ impl Vec2 {
             Scalar::lemma_eqv_mul_congruence(v.y, z, v.y, z);
             assert(v.x.mul_spec(v.x).eqv_spec(z.mul_spec(z)));
             assert(v.y.mul_spec(v.y).eqv_spec(z.mul_spec(z)));
-            assert(z.mul_spec(z) == z);
+            assert(z.num == 0);
+            Scalar::lemma_mul_right_zero_num(z, z);
+            assert(z.mul_spec(z).num == 0);
+            Scalar::lemma_eqv_zero_iff_num_zero(z.mul_spec(z));
+            assert(z.mul_spec(z).eqv_spec(z) == (z.mul_spec(z).num == 0));
+            assert(z.mul_spec(z).eqv_spec(z));
             Scalar::lemma_eqv_reflexive(z);
             assert(v.x.mul_spec(v.x).eqv_spec(z));
             assert(v.y.mul_spec(v.y).eqv_spec(z));

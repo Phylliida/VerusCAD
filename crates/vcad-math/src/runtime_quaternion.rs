@@ -1,0 +1,129 @@
+use crate::runtime_scalar::RuntimeScalar;
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RuntimeQuaternion {
+    w: RuntimeScalar,
+    x: RuntimeScalar,
+    y: RuntimeScalar,
+    z: RuntimeScalar,
+}
+
+impl RuntimeQuaternion {
+    pub fn new(w: RuntimeScalar, x: RuntimeScalar, y: RuntimeScalar, z: RuntimeScalar) -> Self {
+        Self { w, x, y, z }
+    }
+
+    pub fn from_ints(w: i64, x: i64, y: i64, z: i64) -> Self {
+        Self {
+            w: RuntimeScalar::from_int(w),
+            x: RuntimeScalar::from_int(x),
+            y: RuntimeScalar::from_int(y),
+            z: RuntimeScalar::from_int(z),
+        }
+    }
+
+    pub fn zero() -> Self {
+        Self::from_ints(0, 0, 0, 0)
+    }
+
+    pub fn one() -> Self {
+        Self::from_ints(1, 0, 0, 0)
+    }
+
+    pub fn w(&self) -> &RuntimeScalar {
+        &self.w
+    }
+
+    pub fn x(&self) -> &RuntimeScalar {
+        &self.x
+    }
+
+    pub fn y(&self) -> &RuntimeScalar {
+        &self.y
+    }
+
+    pub fn z(&self) -> &RuntimeScalar {
+        &self.z
+    }
+
+    pub fn add(&self, rhs: &Self) -> Self {
+        Self {
+            w: self.w.add(&rhs.w),
+            x: self.x.add(&rhs.x),
+            y: self.y.add(&rhs.y),
+            z: self.z.add(&rhs.z),
+        }
+    }
+
+    pub fn sub(&self, rhs: &Self) -> Self {
+        Self {
+            w: self.w.sub(&rhs.w),
+            x: self.x.sub(&rhs.x),
+            y: self.y.sub(&rhs.y),
+            z: self.z.sub(&rhs.z),
+        }
+    }
+
+    pub fn neg(&self) -> Self {
+        Self {
+            w: self.w.neg(),
+            x: self.x.neg(),
+            y: self.y.neg(),
+            z: self.z.neg(),
+        }
+    }
+
+    pub fn scale(&self, k: &RuntimeScalar) -> Self {
+        Self {
+            w: self.w.mul(k),
+            x: self.x.mul(k),
+            y: self.y.mul(k),
+            z: self.z.mul(k),
+        }
+    }
+
+    pub fn mul(&self, rhs: &Self) -> Self {
+        let ww = self.w.mul(&rhs.w);
+        let xx = self.x.mul(&rhs.x);
+        let yy = self.y.mul(&rhs.y);
+        let zz = self.z.mul(&rhs.z);
+        let w = ww.sub(&xx).sub(&yy).sub(&zz);
+
+        let x0 = self.w.mul(&rhs.x);
+        let x1 = self.x.mul(&rhs.w);
+        let x2 = self.y.mul(&rhs.z);
+        let x3 = self.z.mul(&rhs.y);
+        let x = x0.add(&x1).add(&x2).sub(&x3);
+
+        let y0 = self.w.mul(&rhs.y);
+        let y1 = self.x.mul(&rhs.z);
+        let y2 = self.y.mul(&rhs.w);
+        let y3 = self.z.mul(&rhs.x);
+        let y = y0.sub(&y1).add(&y2).add(&y3);
+
+        let z0 = self.w.mul(&rhs.z);
+        let z1 = self.x.mul(&rhs.y);
+        let z2 = self.y.mul(&rhs.x);
+        let z3 = self.z.mul(&rhs.w);
+        let z = z0.add(&z1).sub(&z2).add(&z3);
+
+        Self { w, x, y, z }
+    }
+
+    pub fn conjugate(&self) -> Self {
+        Self {
+            w: self.w.clone(),
+            x: self.x.neg(),
+            y: self.y.neg(),
+            z: self.z.neg(),
+        }
+    }
+
+    pub fn norm2(&self) -> RuntimeScalar {
+        let ww = self.w.mul(&self.w);
+        let xx = self.x.mul(&self.x);
+        let yy = self.y.mul(&self.y);
+        let zz = self.z.mul(&self.z);
+        ww.add(&xx).add(&yy).add(&zz)
+    }
+}
