@@ -3,6 +3,27 @@ Focused list of proof work still needed in `vcad-math`.
 
 This list assumes the current baseline (orientation classification, scale, norm2, dist2, signum) is already verified.
 
+## 2026-02-12 Rational Migration Pause
+- [x] Choose active baseline for next edits:
+  - `crates/vcad-math/backups/2026-02-12-rational-migration-pause/pre-rational-head/src/` (full integer-proof baseline),
+  - or `crates/vcad-math/backups/2026-02-12-rational-migration-pause/current-in-progress/src/` (partial rational rewrite, selected).
+- [ ] Keep both snapshots immutable; only copy out of backup directories when restoring files.
+- [x] Bring the active rational branch back to green verification (`./scripts/verify-vcad-math.sh`).
+- [ ] Reintroduce the full theorem surface on top of the rational branch.
+- [ ] Rebuild `Scalar` law surface for rational arithmetic with explicit semantic-equality contracts (`as_real`/`eqv_spec`) where structural equality is no longer canonical.
+  - [x] Rational scalar core is re-established (`num/den` model, `add/sub/mul/neg`, signum cases, denominator-product lemmas).
+  - [x] Added first semantic-equivalence seed lemmas (`eqv_spec` reflexive/symmetric).
+  - [ ] Reintroduce strong arithmetic semantic lemmas (add/mul/sub over semantic equality, cancellation/order laws).
+- [ ] Re-add vector/point/orientation theorem layers that were temporarily dropped during migration:
+  - `Vec2`: bilinearity, symmetry/antisymmetry, scaling laws, norm laws,
+  - `Point2`: cancellation/translation/dist2 laws,
+  - `orientation`: permutation, translation, and scale behavior theorems.
+  - [x] First recovered vector theorem: `Vec2::lemma_cross_self_zero_signum`.
+- [ ] Decide normalization strategy for rational representation:
+  - temporary non-normalized representation + semantic equality,
+  - then canonical normalization proofs (gcd/sign placement/uniqueness).
+- [ ] Update crate docs to state exact migration status and which theorem set is currently guaranteed.
+
 ## P0: Core algebra and order
 - [x] Prove additive cancellation:
   - `a + c == b + c ==> a == b`

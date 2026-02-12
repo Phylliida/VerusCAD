@@ -12,6 +12,19 @@ pub struct Scalar {
 }
 
 impl Scalar {
+    pub open spec fn dec_nat(x: nat) -> nat {
+        (x - 1) as nat
+    }
+
+    pub proof fn lemma_dec_nat_plus_one(x: nat)
+        requires
+            x > 0,
+        ensures
+            Self::dec_nat(x) + 1 == x,
+    {
+        assert((x - 1) as nat + 1 == x) by (nonlinear_arith);
+    }
+
     pub open spec fn denom_nat(self) -> nat {
         self.den + 1
     }
@@ -47,9 +60,12 @@ impl Scalar {
             den > 0,
         ensures
             s.num == num,
+            s.denom_nat() == den,
     {
-        let dm1 = (den as int - 1) as nat;
-        Scalar { num, den: dm1 }
+        let s = Scalar { num, den: Self::dec_nat(den) };
+        Self::lemma_dec_nat_plus_one(den);
+        assert(s.denom_nat() == den) by (nonlinear_arith);
+        s
     }
 
     pub proof fn zero() -> (s: Self)
@@ -71,7 +87,7 @@ impl Scalar {
         let d2 = rhs.denom_nat();
         Scalar {
             num: self.num * (d2 as int) + rhs.num * (d1 as int),
-            den: self.den * rhs.den + self.den + rhs.den,
+            den: Self::dec_nat(d1 * d2),
         }
     }
 
@@ -83,7 +99,7 @@ impl Scalar {
         let d2 = rhs.denom_nat();
         Scalar {
             num: self.num * (d2 as int) + rhs.num * (d1 as int),
-            den: self.den * rhs.den + self.den + rhs.den,
+            den: Self::dec_nat(d1 * d2),
         }
     }
 
@@ -111,9 +127,11 @@ impl Scalar {
     }
 
     pub open spec fn mul_spec(self, rhs: Self) -> Self {
+        let d1 = self.denom_nat();
+        let d2 = rhs.denom_nat();
         Scalar {
             num: self.num * rhs.num,
-            den: self.den * rhs.den + self.den + rhs.den,
+            den: Self::dec_nat(d1 * d2),
         }
     }
 
@@ -121,9 +139,11 @@ impl Scalar {
         ensures
             out == self.mul_spec(rhs),
     {
+        let d1 = self.denom_nat();
+        let d2 = rhs.denom_nat();
         Scalar {
             num: self.num * rhs.num,
-            den: self.den * rhs.den + self.den + rhs.den,
+            den: Self::dec_nat(d1 * d2),
         }
     }
 
@@ -138,60 +158,7 @@ impl Scalar {
     }
 
     pub open spec fn eqv_spec(self, rhs: Self) -> bool {
-        self.num * rhs.denom() == rhs.num * self.denom()
-    }
-
-    pub proof fn lemma_denom_positive(a: Self)
-        ensures
-            a.denom_nat() > 0,
-            a.denom() > 0,
-    {
-        assert(a.denom_nat() > 0);
-        assert(a.denom() == a.denom_nat() as int);
-        assert(a.denom() > 0);
-    }
-
-    pub proof fn lemma_add_denom_product(a: Self, b: Self)
-        ensures
-            a.add_spec(b).denom_nat() == a.denom_nat() * b.denom_nat(),
-    {
-        let out = a.add_spec(b);
-        let lhs = out.denom_nat();
-        let rhs = a.denom_nat() * b.denom_nat();
-
-        assert(lhs == (a.den * b.den + a.den + b.den) + 1);
-        assert(rhs == (a.den + 1) * (b.den + 1));
-        assert((a.den * b.den + a.den + b.den) + 1 == (a.den + 1) * (b.den + 1))
-            by (nonlinear_arith);
-    }
-
-    pub proof fn lemma_mul_denom_product(a: Self, b: Self)
-        ensures
-            a.mul_spec(b).denom_nat() == a.denom_nat() * b.denom_nat(),
-    {
-        let out = a.mul_spec(b);
-        let lhs = out.denom_nat();
-        let rhs = a.denom_nat() * b.denom_nat();
-
-        assert(lhs == (a.den * b.den + a.den + b.den) + 1);
-        assert(rhs == (a.den + 1) * (b.den + 1));
-        assert((a.den * b.den + a.den + b.den) + 1 == (a.den + 1) * (b.den + 1))
-            by (nonlinear_arith);
-    }
-
-    pub proof fn lemma_eqv_reflexive(a: Self)
-        ensures
-            a.eqv_spec(a),
-    {
-        assert(a.num * a.denom() == a.num * a.denom());
-    }
-
-    pub proof fn lemma_eqv_symmetric(a: Self, b: Self)
-        ensures
-            a.eqv_spec(b) == b.eqv_spec(a),
-    {
-        assert(a.eqv_spec(b) == (a.num * b.denom() == b.num * a.denom()));
-        assert(b.eqv_spec(a) == (b.num * a.denom() == a.num * b.denom()));
+        self.as_real() == rhs.as_real()
     }
 
     pub proof fn lemma_signum_positive_iff(a: Self)

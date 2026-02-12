@@ -8,40 +8,29 @@ Planned contents:
 
 This crate should have no dependency on higher CAD concepts.
 
-## Prototype status
-First prototype now exists in modular form with:
+## Current Status (2026-02-12)
+`vcad-math` is in an active migration from integer-backed `Scalar` to rational-backed `Scalar`.
+
+Current code is modular:
 1. `src/scalar.rs`
 2. `src/vec2.rs`
 3. `src/point2.rs`
 4. `src/orientation.rs`
-5. `src/lib.rs` as the module/exports entrypoint.
-and provides:
-1. `Scalar` backed by exact integers (temporary stand-in for rationals),
-2. verified `Vec2` dot/cross operations,
-3. verified `Point2` subtraction/addition with vectors,
-4. verified `orient2d`.
-5. proof/spec-oriented APIs (not exec runtime APIs yet).
-6. proved law sets:
-   - `Scalar`: commutativity, associativity, distributivity, identities, inverse/sub relation, cancellation, zero-product, order monotonicity, and signum interaction (`signum(-a)`, `signum(a*b)`)
-   - `Vec2`: add identities/associativity/commutativity, left/right dot/cross linearity, scale extraction for dot/cross, additive inverse, negation/scale compatibility, `v x v = 0`
-   - `Point2`: add/sub cancellation, translation identity/associativity, uniqueness of translation vectors
-   - `orient2d`: swap antisymmetry, cyclic invariance, translation invariance, full 6-permutation table, uniform-scaling behavior, degeneracy with repeated points
-7. orientation classification helpers:
-   - `is_ccw`, `is_cw`, `is_collinear`
-   - plus proofs of equivalence to orientation sign, exhaustive/disjoint classification, and swap behavior
-8. first-class orientation classifier:
-   - `Orientation` enum (`Cw | Collinear | Ccw`)
-   - `orientation_spec` and proved `orientation` constructor with classification bridge lemmas
-9. scalar sign helper:
-   - `Scalar::signum` with proved equivalence lemmas to positive/negative/zero tests
-   - orientation predicates now use signum-based classification
-10. vector-space and metric seed layer:
-   - `Vec2::scale_spec` with distributivity/associativity/identity lemmas
-   - `Vec2::norm2_spec` and non-negativity proof
-   - `dist2_spec(p, q)` with symmetry, translation invariance, and non-negativity proofs
+5. `src/lib.rs` module/export entrypoint.
 
-Next step is upgrading `Scalar` internals from integer to normalized rational
-while preserving the same geometry-facing APIs.
+What is currently verified:
+1. Rational `Scalar` representation (`num: int`, `den: nat` storing denominator-minus-one).
+2. Core `Scalar` operations (`add/sub/mul/neg`) and sign classification (`signum`).
+3. `Vec2`, `Point2`, and `orient2d` executable/spec constructors.
+4. Orientation classification helpers and predicate/enum bridge lemmas.
+5. End-to-end crate verification via `./scripts/verify-vcad-math.sh`.
 
-Current proof-lemma TODO status: complete (`docs/vcad-math-todo.md`).
-Longer-horizon architecture milestones are tracked in `docs/vcad-math-roadmap.md`.
+What is intentionally in-progress:
+1. Re-adding the full pre-migration theorem surface (vector-space, metric, determinant permutation/scaling suites).
+2. Strengthening rational semantic-equivalence laws (`eqv_spec` and `as_real` bridges).
+3. Deciding and proving normalization/canonical-form invariants.
+
+Backups and migration checkpoints:
+1. `crates/vcad-math/backups/2026-02-12-rational-migration-pause/`
+2. `docs/vcad-math-todo.md`
+3. `docs/vcad-math-roadmap.md`

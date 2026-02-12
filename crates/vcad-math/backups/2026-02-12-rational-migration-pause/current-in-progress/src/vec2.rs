@@ -107,56 +107,6 @@ impl Vec2 {
     pub open spec fn norm2_spec(self) -> Scalar {
         self.dot_spec(self)
     }
-
-    pub proof fn lemma_cross_self_zero_num(v: Self)
-        ensures
-            v.cross_spec(v).num == 0,
-    {
-        let xy = v.x.mul_spec(v.y);
-        let yx = v.y.mul_spec(v.x);
-        let n = v.x.num * v.y.num;
-        let d = v.x.den * v.y.den + v.x.den + v.y.den;
-        let dp1 = (d + 1) as int;
-
-        assert(xy.num == v.x.num * v.y.num);
-        assert(yx.num == v.y.num * v.x.num);
-        assert(n == v.x.num * v.y.num);
-        assert(v.y.num * v.x.num == v.x.num * v.y.num) by (nonlinear_arith);
-        assert(v.y.num * v.x.num == n);
-        assert(xy.num == n);
-        assert(yx.num == n);
-
-        assert(xy.den == v.x.den * v.y.den + v.x.den + v.y.den);
-        assert(yx.den == v.y.den * v.x.den + v.y.den + v.x.den);
-        assert(d == v.x.den * v.y.den + v.x.den + v.y.den);
-        assert(v.y.den * v.x.den + v.y.den + v.x.den
-            == v.x.den * v.y.den + v.x.den + v.y.den) by (nonlinear_arith);
-        assert(v.y.den * v.x.den + v.y.den + v.x.den == d);
-        assert(xy.den == d);
-        assert(yx.den == d);
-        assert(xy.denom() == dp1);
-        assert(yx.denom() == dp1);
-        assert(xy.denom() == yx.denom());
-
-        let c = v.cross_spec(v);
-        assert(c == xy.sub_spec(yx));
-        assert(c.num == xy.num * yx.denom() + (-yx.num) * xy.denom());
-        assert(c.num == n * dp1 + (-n) * dp1);
-        assert(n * dp1 + (-n) * dp1 == 0) by (nonlinear_arith);
-        assert(c.num == 0);
-    }
-
-    pub proof fn lemma_cross_self_zero_signum(v: Self)
-        ensures
-            v.cross_spec(v).signum() == 0,
-    {
-        let c = v.cross_spec(v);
-        Self::lemma_cross_self_zero_num(v);
-        assert(c.num == 0);
-        Scalar::lemma_signum_zero_iff(c);
-        assert((c.signum() == 0) == (c.num == 0));
-        assert(c.signum() == 0);
-    }
 }
 
 } // verus!
