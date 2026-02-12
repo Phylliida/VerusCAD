@@ -1541,6 +1541,73 @@ impl Scalar {
         &&& (self.num == 0 ==> self.denom_nat() == 1)
     }
 
+    pub open spec fn common_divisor_spec(self, d: nat) -> bool {
+        &&& d > 0
+        &&& exists|kn: int, kd: nat|
+            (#[trigger] (d * kd)) == self.denom_nat()
+                && (#[trigger] ((d as int) * kn)) == self.num
+    }
+
+    pub open spec fn gcd_one_spec(self) -> bool {
+        forall|d: nat| #![auto] self.common_divisor_spec(d) ==> d == 1
+    }
+
+    pub proof fn lemma_normalized_implies_gcd_one(a: Self)
+        requires
+            a.normalized_spec(),
+        ensures
+            a.gcd_one_spec(),
+    {
+        assert forall|d: nat| #![auto] a.common_divisor_spec(d) implies d == 1 by {
+            assert(d > 0);
+            let (kn, kd) = choose|kn: int, kd: nat|
+                (#[trigger] ((d as int) * kn)) == a.num && (#[trigger] (d * kd)) == a.denom_nat();
+            assert((d as int) * kn == a.num);
+            assert(d * kd == a.denom_nat());
+
+            if d == 1 {
+                assert(d == 1);
+            } else {
+                assert(d != 1);
+                assert((d > 0 && d != 1) ==> 1 < d) by (nonlinear_arith);
+                assert(1 < d);
+                Self::lemma_denom_positive(a);
+                assert(a.denom_nat() > 0);
+                assert((d > 0 && d * kd == a.denom_nat() && a.denom_nat() > 0) ==> kd > 0)
+                    by (nonlinear_arith);
+                assert(kd > 0);
+
+                let b = Scalar { num: kn, den: (kd as int - 1) as nat };
+                assert(b.denom_nat() == kd);
+                assert(b.denom() == b.denom_nat() as int);
+                assert(a.denom() == a.denom_nat() as int);
+                Self::lemma_nat_mul_cast(d, kd);
+                assert((d * kd) as int == (d as int) * (kd as int));
+                assert((d as int) * (kd as int) == a.denom());
+                assert(b.denom_nat() == kd);
+                assert(b.denom() == kd as int);
+
+                assert(a.eqv_spec(b) == (a.num * b.denom() == b.num * a.denom()));
+                assert(a.num == (d as int) * kn);
+                assert(b.num == kn);
+                assert(a.num * b.denom() == ((d as int) * kn) * (kd as int));
+                assert(b.num * a.denom() == kn * ((d as int) * (kd as int)));
+                assert(((d as int) * kn) * (kd as int) == kn * ((d as int) * (kd as int)))
+                    by (nonlinear_arith);
+                assert(a.eqv_spec(b));
+
+                assert(a.denom_nat() <= b.denom_nat());
+                assert(a.denom_nat() == d * kd);
+                assert((d > 1 && kd > 0) ==> kd < d * kd) by (nonlinear_arith);
+                assert(b.denom_nat() == kd);
+                assert(b.denom_nat() < a.denom_nat());
+                assert((a.denom_nat() <= b.denom_nat() && b.denom_nat() < a.denom_nat()) ==> false)
+                    by (nonlinear_arith);
+                assert(false);
+            }
+        };
+    }
+
     pub proof fn lemma_normalized_implies_canonical_sign(a: Self)
         requires
             a.normalized_spec(),

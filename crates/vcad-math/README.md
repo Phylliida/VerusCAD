@@ -30,7 +30,8 @@ Verified theorem surface:
    - normalization/sign bridge lemmas:
      - `normalized_spec`, normalized uniqueness, normalized `eqv` -> structural equality,
      - canonical sign placement for normalized rationals,
-     - constructive normalization proofs (`normalize_bounded`, `normalize_constructive`).
+     - constructive normalization proofs (`normalize_bounded`, `normalize_constructive`),
+     - direct gcd-style normalization theorem (`gcd_one_spec`, `lemma_normalized_implies_gcd_one`).
 2. `Vec2` vector-space and bilinear laws:
    - add/neg/sub/scale laws,
    - dot/cross symmetry, antisymmetry, bilinearity, scale extraction,
@@ -56,11 +57,11 @@ Verified theorem surface:
    - refinement contracts are trusted specs at the external backend boundary (`rug` implementation).
    - verified regression wrappers validate contract composition for commutativity (`add`, `mul`), `sub == add(neg)`, and normalization identity.
 Verification status:
-1. End-to-end crate verification via `./scripts/verify-vcad-math.sh` is green (`286 verified, 0 errors` in the latest run).
+1. End-to-end crate verification via `./scripts/verify-vcad-math.sh` is green (`292 verified, 0 errors` in the latest run).
 
 Intentionally deferred (roadmap):
-1. Canonical rational normalization proofs (gcd/sign canonical form and uniqueness).
-2. Optional exec/spec dual-mode API hardening and proof regression harness.
+1. Eliminate trusted `assume_specification` wrappers at the `rug` boundary by introducing a verified arithmetic boundary strategy.
+2. Optional additional exec/spec dual-mode API hardening and broader proof regression harness.
 
 Backups and migration checkpoints:
 1. `crates/vcad-math/backups/2026-02-12-rational-migration-pause/`

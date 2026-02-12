@@ -278,3 +278,6 @@ Long-horizon milestones (canonical rational normalization, exec/spec dual-mode A
 - [x] Complete model-side constructive normalization algorithm/proof for arbitrary rationals (equivalent fully verified construction):
   - `Scalar::normalize_bounded`
   - `Scalar::normalize_constructive`
+- [x] Add direct gcd-oriented normalization theorem surface:
+  - `Scalar::gcd_one_spec`
+  - `Scalar::lemma_normalized_implies_gcd_one`

@@ -18,9 +18,9 @@ Long-horizon milestones for `vcad-math` beyond the current proof-lemma TODO.
   - `Scalar::lemma_normalized_eqv_implies_equal_denom`.
 - [x] Add normalized-structural bridge theorem(s):
   - `Scalar::lemma_normalized_eqv_implies_equal`.
-
-Optional future refinement:
-- [ ] Add a direct gcd-oriented normalization proof strategy (equivalent guarantees, potentially cleaner arithmetic decomposition).
+- [x] Add a direct gcd-oriented normalization proof strategy:
+  - `Scalar::gcd_one_spec`
+  - `Scalar::lemma_normalized_implies_gcd_one`
 
 ## P2: API mode hardening
 - [x] Establish scalar unification execution plan (`docs/scalar-unification-todo.md`) and explicit proof-model naming (`ScalarModel` alias).
