@@ -1553,6 +1553,148 @@ impl Scalar {
         }
     }
 
+    pub proof fn lemma_nat_not_le_prev_implies_ge_bound(x: nat, bound: nat)
+        requires
+            bound > 0,
+            !(x <= bound - 1),
+        ensures
+            bound <= x,
+    {
+        assert((bound > 0 && !(x <= bound - 1)) ==> bound <= x) by (nonlinear_arith);
+        assert(bound <= x);
+    }
+
+    pub proof fn lemma_nat_le_and_not_le_prev_implies_eq(x: nat, bound: nat)
+        requires
+            bound > 0,
+            x <= bound,
+            !(x <= bound - 1),
+        ensures
+            x == bound,
+    {
+        Self::lemma_nat_not_le_prev_implies_ge_bound(x, bound);
+        assert(bound <= x);
+        assert((bound <= x && x <= bound) ==> x == bound) by (nonlinear_arith);
+        assert(x == bound);
+    }
+
+    /// Constructively picks an equivalent scalar whose denominator is minimal
+    /// among all equivalent forms with denominator at most `bound`.
+    pub proof fn normalize_bounded(a: Self, bound: nat) -> (m: Self)
+        requires
+            exists|s: Self| s.eqv_spec(a) && s.denom_nat() <= bound,
+        ensures
+            m.eqv_spec(a),
+            m.denom_nat() <= bound,
+            forall|t: Self| #![auto]
+                t.eqv_spec(a) && t.denom_nat() <= bound ==> m.denom_nat() <= t.denom_nat(),
+        decreases bound,
+    {
+        if bound == 0 {
+            let s = choose|s: Self| s.eqv_spec(a) && s.denom_nat() <= bound;
+            Self::lemma_denom_positive(s);
+            assert(s.denom_nat() > 0);
+            assert(s.denom_nat() <= 0);
+            assert(false);
+            s
+        } else {
+            let prev = (bound as int - 1) as nat;
+            if exists|s: Self| s.eqv_spec(a) && s.denom_nat() <= prev {
+                let mprev = Self::normalize_bounded(a, prev);
+                assert(mprev.eqv_spec(a));
+                assert(mprev.denom_nat() <= prev);
+                assert((mprev.denom_nat() <= prev && prev <= bound) ==> mprev.denom_nat() <= bound)
+                    by (nonlinear_arith);
+                assert(mprev.denom_nat() <= bound);
+
+                assert forall|t: Self| #![auto]
+                    t.eqv_spec(a) && t.denom_nat() <= bound implies mprev.denom_nat() <= t.denom_nat() by {
+                    if t.denom_nat() <= prev {
+                        assert(t.eqv_spec(a) && t.denom_nat() <= prev);
+                        assert(mprev.denom_nat() <= t.denom_nat());
+                    } else {
+                        Self::lemma_nat_not_le_prev_implies_ge_bound(t.denom_nat(), bound);
+                        assert(bound <= t.denom_nat());
+                        assert((mprev.denom_nat() <= bound && bound <= t.denom_nat())
+                            ==> mprev.denom_nat() <= t.denom_nat()) by (nonlinear_arith);
+                        assert(mprev.denom_nat() <= t.denom_nat());
+                    }
+                };
+                mprev
+            } else {
+                let s0 = choose|s: Self| s.eqv_spec(a) && s.denom_nat() <= bound;
+                assert(s0.eqv_spec(a));
+                assert(s0.denom_nat() <= bound);
+                if s0.denom_nat() <= prev {
+                    assert(exists|s: Self| s.eqv_spec(a) && s.denom_nat() <= prev) by {
+                        assert(s0.eqv_spec(a));
+                        assert(s0.denom_nat() <= prev);
+                    };
+                    assert(false);
+                }
+                Self::lemma_nat_le_and_not_le_prev_implies_eq(s0.denom_nat(), bound);
+                assert(s0.denom_nat() == bound);
+
+                assert forall|t: Self| #![auto]
+                    t.eqv_spec(a) && t.denom_nat() <= bound implies s0.denom_nat() <= t.denom_nat() by {
+                    if t.denom_nat() <= prev {
+                        assert(exists|s: Self| s.eqv_spec(a) && s.denom_nat() <= prev) by {
+                            assert(t.eqv_spec(a));
+                            assert(t.denom_nat() <= prev);
+                        };
+                        assert(false);
+                    } else {
+                        Self::lemma_nat_not_le_prev_implies_ge_bound(t.denom_nat(), bound);
+                        assert(bound <= t.denom_nat());
+                        assert(s0.denom_nat() == bound);
+                        assert(s0.denom_nat() <= t.denom_nat());
+                    }
+                };
+                s0
+            }
+        }
+    }
+
+    /// Fully verified constructive normalization:
+    /// returns an equivalent scalar with globally minimal denominator.
+    pub proof fn normalize_constructive(a: Self) -> (m: Self)
+        ensures
+            m.eqv_spec(a),
+            m.normalized_spec(),
+            m.canonical_sign_spec(),
+    {
+        Self::lemma_eqv_reflexive(a);
+        assert(exists|s: Self| s.eqv_spec(a) && s.denom_nat() <= a.denom_nat()) by {
+            assert(a.eqv_spec(a));
+            assert(a.denom_nat() <= a.denom_nat());
+        };
+        let m0 = Self::normalize_bounded(a, a.denom_nat());
+        assert(m0.eqv_spec(a));
+        assert(m0.denom_nat() <= a.denom_nat());
+
+        assert forall|t: Self| #![auto] m0.eqv_spec(t) implies m0.denom_nat() <= t.denom_nat() by {
+            Self::lemma_eqv_symmetric(m0, t);
+            assert(m0.eqv_spec(t) == t.eqv_spec(m0));
+            assert(t.eqv_spec(m0));
+            Self::lemma_eqv_transitive(t, m0, a);
+            assert(t.eqv_spec(a));
+            if t.denom_nat() <= a.denom_nat() {
+                assert(m0.denom_nat() <= t.denom_nat());
+            } else {
+                assert((!(t.denom_nat() <= a.denom_nat())) ==> a.denom_nat() <= t.denom_nat())
+                    by (nonlinear_arith);
+                assert(a.denom_nat() <= t.denom_nat());
+                assert((m0.denom_nat() <= a.denom_nat() && a.denom_nat() <= t.denom_nat())
+                    ==> m0.denom_nat() <= t.denom_nat()) by (nonlinear_arith);
+                assert(m0.denom_nat() <= t.denom_nat());
+            }
+        };
+        assert(m0.normalized_spec());
+        Self::lemma_normalized_implies_canonical_sign(m0);
+        assert(m0.canonical_sign_spec());
+        m0
+    }
+
     pub proof fn lemma_eqv_neg_congruence(a: Self, b: Self)
         requires
             a.eqv_spec(b),

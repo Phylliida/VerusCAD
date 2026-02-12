@@ -27,7 +27,10 @@ Verified theorem surface:
    - semantic equality (`eqv_spec`) reflexive/symmetric/transitive + congruence,
    - cancellation and monotonicity lemmas (`requires`-style strong forms plus implication wrappers),
    - signum laws including multiplication behavior,
-   - normalization/sign bridge lemmas (`normalized_spec`, normalized uniqueness, normalized `eqv` -> structural equality, canonical sign placement for normalized rationals).
+   - normalization/sign bridge lemmas:
+     - `normalized_spec`, normalized uniqueness, normalized `eqv` -> structural equality,
+     - canonical sign placement for normalized rationals,
+     - constructive normalization proofs (`normalize_bounded`, `normalize_constructive`).
 2. `Vec2` vector-space and bilinear laws:
    - add/neg/sub/scale laws,
    - dot/cross symmetry, antisymmetry, bilinearity, scale extraction,
@@ -53,7 +56,7 @@ Verified theorem surface:
    - refinement contracts are trusted specs at the external backend boundary (`rug` implementation).
    - verified regression wrappers validate contract composition for commutativity (`add`, `mul`), `sub == add(neg)`, and normalization identity.
 Verification status:
-1. End-to-end crate verification via `./scripts/verify-vcad-math.sh` is green (`276 verified, 0 errors` in the latest run).
+1. End-to-end crate verification via `./scripts/verify-vcad-math.sh` is green (`286 verified, 0 errors` in the latest run).
 
 Intentionally deferred (roadmap):
 1. Canonical rational normalization proofs (gcd/sign canonical form and uniqueness).

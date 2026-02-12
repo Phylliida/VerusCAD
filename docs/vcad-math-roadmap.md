@@ -4,10 +4,12 @@ Long-horizon milestones for `vcad-math` beyond the current proof-lemma TODO.
 ## P2: Rational scalar hardening
 - [x] Replace integer-backed `Scalar` with rational representation and keep theorem surface green.
 - [x] Reprove `Vec2/Point2/orientation` law surface on rational semantics (`eqv_spec`).
-- [ ] Add canonical normalization model and proofs:
+- [x] Add canonical normalization model and proofs:
   - [x] model-level normalization predicate (`Scalar::normalized_spec`) as minimal denominator in each semantic-equivalence class.
   - [x] seed existence theorem (`Scalar::lemma_from_int_is_normalized`).
-  - [ ] gcd normalization construction for arbitrary rationals.
+  - [x] constructive normalization algorithm/proof for arbitrary rationals:
+    - `Scalar::normalize_bounded`
+    - `Scalar::normalize_constructive`
   - [x] canonical sign placement theorem surface:
     - `Scalar::canonical_sign_spec`
     - `Scalar::lemma_normalized_zero_has_unit_denom`
@@ -16,6 +18,9 @@ Long-horizon milestones for `vcad-math` beyond the current proof-lemma TODO.
   - `Scalar::lemma_normalized_eqv_implies_equal_denom`.
 - [x] Add normalized-structural bridge theorem(s):
   - `Scalar::lemma_normalized_eqv_implies_equal`.
+
+Optional future refinement:
+- [ ] Add a direct gcd-oriented normalization proof strategy (equivalent guarantees, potentially cleaner arithmetic decomposition).
 
 ## P2: API mode hardening
 - [x] Establish scalar unification execution plan (`docs/scalar-unification-todo.md`) and explicit proof-model naming (`ScalarModel` alias).
