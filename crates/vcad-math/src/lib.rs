@@ -21,6 +21,15 @@ impl Scalar {
         self.value
     }
 
+    pub proof fn lemma_eq_from_as_int(a: Self, b: Self)
+        requires
+            a.as_int() == b.as_int(),
+        ensures
+            a == b,
+    {
+        assert(a.value == b.value);
+    }
+
     pub proof fn new(value: int) -> (s: Self)
         ensures
             s.as_int() == value,
@@ -98,71 +107,134 @@ impl Scalar {
 
     pub proof fn lemma_add_commutative(a: Self, b: Self)
         ensures
-            a.add_spec(b).as_int() == b.add_spec(a).as_int(),
+            a.add_spec(b) == b.add_spec(a),
     {
-        assert(a.value + b.value == b.value + a.value) by (nonlinear_arith);
+        let lhs = a.add_spec(b);
+        let rhs = b.add_spec(a);
+        assert(lhs.as_int() == a.as_int() + b.as_int());
+        assert(rhs.as_int() == b.as_int() + a.as_int());
+        assert(a.as_int() + b.as_int() == b.as_int() + a.as_int()) by (nonlinear_arith);
+        assert(lhs.as_int() == rhs.as_int());
+        Self::lemma_eq_from_as_int(lhs, rhs);
     }
 
     pub proof fn lemma_mul_commutative(a: Self, b: Self)
         ensures
-            a.mul_spec(b).as_int() == b.mul_spec(a).as_int(),
+            a.mul_spec(b) == b.mul_spec(a),
     {
-        assert(a.value * b.value == b.value * a.value) by (nonlinear_arith);
+        let lhs = a.mul_spec(b);
+        let rhs = b.mul_spec(a);
+        assert(lhs.as_int() == a.as_int() * b.as_int());
+        assert(rhs.as_int() == b.as_int() * a.as_int());
+        assert(a.as_int() * b.as_int() == b.as_int() * a.as_int()) by (nonlinear_arith);
+        assert(lhs.as_int() == rhs.as_int());
+        Self::lemma_eq_from_as_int(lhs, rhs);
     }
 
     pub proof fn lemma_add_associative(a: Self, b: Self, c: Self)
         ensures
-            a.add_spec(b).add_spec(c).as_int() == a.add_spec(b.add_spec(c)).as_int(),
+            a.add_spec(b).add_spec(c) == a.add_spec(b.add_spec(c)),
     {
-        assert((a.value + b.value) + c.value == a.value + (b.value + c.value)) by (nonlinear_arith);
+        let lhs = a.add_spec(b).add_spec(c);
+        let rhs = a.add_spec(b.add_spec(c));
+        assert(lhs.as_int() == (a.as_int() + b.as_int()) + c.as_int());
+        assert(rhs.as_int() == a.as_int() + (b.as_int() + c.as_int()));
+        assert((a.as_int() + b.as_int()) + c.as_int() == a.as_int() + (b.as_int() + c.as_int())) by (nonlinear_arith);
+        assert(lhs.as_int() == rhs.as_int());
+        Self::lemma_eq_from_as_int(lhs, rhs);
     }
 
     pub proof fn lemma_mul_associative(a: Self, b: Self, c: Self)
         ensures
-            a.mul_spec(b).mul_spec(c).as_int() == a.mul_spec(b.mul_spec(c)).as_int(),
+            a.mul_spec(b).mul_spec(c) == a.mul_spec(b.mul_spec(c)),
     {
-        assert((a.value * b.value) * c.value == a.value * (b.value * c.value)) by (nonlinear_arith);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+        assert(lhs.as_int() == (a.as_int() * b.as_int()) * c.as_int());
+        assert(rhs.as_int() == a.as_int() * (b.as_int() * c.as_int()));
+        assert((a.as_int() * b.as_int()) * c.as_int() == a.as_int() * (b.as_int() * c.as_int())) by (nonlinear_arith);
+        assert(lhs.as_int() == rhs.as_int());
+        Self::lemma_eq_from_as_int(lhs, rhs);
     }
 
     pub proof fn lemma_mul_distributes_over_add(a: Self, b: Self, c: Self)
         ensures
-            a.mul_spec(b.add_spec(c)).as_int() == a.mul_spec(b).add_spec(a.mul_spec(c)).as_int(),
+            a.mul_spec(b.add_spec(c)) == a.mul_spec(b).add_spec(a.mul_spec(c)),
     {
-        assert(a.value * (b.value + c.value) == (a.value * b.value) + (a.value * c.value)) by (nonlinear_arith);
+        let lhs = a.mul_spec(b.add_spec(c));
+        let rhs = a.mul_spec(b).add_spec(a.mul_spec(c));
+        assert(lhs.as_int() == a.as_int() * (b.as_int() + c.as_int()));
+        assert(rhs.as_int() == (a.as_int() * b.as_int()) + (a.as_int() * c.as_int()));
+        assert(a.as_int() * (b.as_int() + c.as_int()) == (a.as_int() * b.as_int()) + (a.as_int() * c.as_int())) by (nonlinear_arith);
+        assert(lhs.as_int() == rhs.as_int());
+        Self::lemma_eq_from_as_int(lhs, rhs);
     }
 
     pub proof fn lemma_add_zero_identity(a: Self)
         ensures
-            a.add_spec(Scalar { value: 0 }).as_int() == a.as_int(),
-            (Scalar { value: 0 }).add_spec(a).as_int() == a.as_int(),
+            a.add_spec(Scalar { value: 0 }) == a,
+            (Scalar { value: 0 }).add_spec(a) == a,
     {
-        assert(a.value + 0 == a.value) by (nonlinear_arith);
-        assert(0 + a.value == a.value) by (nonlinear_arith);
+        let z = Scalar { value: 0 };
+        let lhs = a.add_spec(z);
+        let rhs = z.add_spec(a);
+        assert(lhs.as_int() == a.as_int() + 0);
+        assert(rhs.as_int() == 0 + a.as_int());
+        assert(a.as_int() + 0 == a.as_int()) by (nonlinear_arith);
+        assert(0 + a.as_int() == a.as_int()) by (nonlinear_arith);
+        assert(lhs.as_int() == a.as_int());
+        assert(rhs.as_int() == a.as_int());
+        Self::lemma_eq_from_as_int(lhs, a);
+        Self::lemma_eq_from_as_int(rhs, a);
     }
 
     pub proof fn lemma_mul_one_identity(a: Self)
         ensures
-            a.mul_spec(Scalar { value: 1 }).as_int() == a.as_int(),
-            (Scalar { value: 1 }).mul_spec(a).as_int() == a.as_int(),
+            a.mul_spec(Scalar { value: 1 }) == a,
+            (Scalar { value: 1 }).mul_spec(a) == a,
     {
-        assert(a.value * 1 == a.value) by (nonlinear_arith);
-        assert(1 * a.value == a.value) by (nonlinear_arith);
+        let o = Scalar { value: 1 };
+        let lhs = a.mul_spec(o);
+        let rhs = o.mul_spec(a);
+        assert(lhs.as_int() == a.as_int() * 1);
+        assert(rhs.as_int() == 1 * a.as_int());
+        assert(a.as_int() * 1 == a.as_int()) by (nonlinear_arith);
+        assert(1 * a.as_int() == a.as_int()) by (nonlinear_arith);
+        assert(lhs.as_int() == a.as_int());
+        assert(rhs.as_int() == a.as_int());
+        Self::lemma_eq_from_as_int(lhs, a);
+        Self::lemma_eq_from_as_int(rhs, a);
     }
 
     pub proof fn lemma_add_inverse(a: Self)
         ensures
-            a.add_spec(a.neg_spec()).as_int() == 0,
-            a.neg_spec().add_spec(a).as_int() == 0,
+            a.add_spec(a.neg_spec()) == (Scalar { value: 0 }),
+            a.neg_spec().add_spec(a) == (Scalar { value: 0 }),
     {
-        assert(a.value + (-a.value) == 0) by (nonlinear_arith);
-        assert((-a.value) + a.value == 0) by (nonlinear_arith);
+        let z = Scalar { value: 0 };
+        let lhs = a.add_spec(a.neg_spec());
+        let rhs = a.neg_spec().add_spec(a);
+        assert(lhs.as_int() == a.as_int() + (-a.as_int()));
+        assert(rhs.as_int() == (-a.as_int()) + a.as_int());
+        assert(a.as_int() + (-a.as_int()) == 0) by (nonlinear_arith);
+        assert((-a.as_int()) + a.as_int() == 0) by (nonlinear_arith);
+        assert(lhs.as_int() == 0);
+        assert(rhs.as_int() == 0);
+        Self::lemma_eq_from_as_int(lhs, z);
+        Self::lemma_eq_from_as_int(rhs, z);
     }
 
     pub proof fn lemma_sub_is_add_neg(a: Self, b: Self)
         ensures
-            a.sub_spec(b).as_int() == a.add_spec(b.neg_spec()).as_int(),
+            a.sub_spec(b) == a.add_spec(b.neg_spec()),
     {
-        assert(a.value - b.value == a.value + (-b.value)) by (nonlinear_arith);
+        let lhs = a.sub_spec(b);
+        let rhs = a.add_spec(b.neg_spec());
+        assert(lhs.as_int() == a.as_int() - b.as_int());
+        assert(rhs.as_int() == a.as_int() + (-b.as_int()));
+        assert(a.as_int() - b.as_int() == a.as_int() + (-b.as_int())) by (nonlinear_arith);
+        assert(lhs.as_int() == rhs.as_int());
+        Self::lemma_eq_from_as_int(lhs, rhs);
     }
 
     pub proof fn lemma_signum_positive_iff(a: Self)
@@ -296,16 +368,46 @@ impl Scalar {
 
     pub proof fn lemma_add_right_cancel(a: Self, b: Self, c: Self)
         ensures
-            a.add_spec(c).as_int() == b.add_spec(c).as_int() ==> a.as_int() == b.as_int(),
+            a.add_spec(c) == b.add_spec(c) ==> a == b,
     {
-        assert((a.value + c.value == b.value + c.value) ==> a.value == b.value) by (nonlinear_arith);
+        if a.add_spec(c) == b.add_spec(c) {
+            Self::lemma_add_right_cancel_strong(a, b, c);
+        }
+    }
+
+    pub proof fn lemma_add_right_cancel_strong(a: Self, b: Self, c: Self)
+        requires
+            a.add_spec(c) == b.add_spec(c),
+        ensures
+            a == b,
+    {
+        assert(a.add_spec(c).as_int() == b.add_spec(c).as_int());
+        assert(a.as_int() + c.as_int() == b.as_int() + c.as_int());
+        assert((a.as_int() + c.as_int() == b.as_int() + c.as_int()) ==> a.as_int() == b.as_int()) by (nonlinear_arith);
+        assert(a.as_int() == b.as_int());
+        Self::lemma_eq_from_as_int(a, b);
     }
 
     pub proof fn lemma_add_left_cancel(a: Self, b: Self, c: Self)
         ensures
-            c.add_spec(a).as_int() == c.add_spec(b).as_int() ==> a.as_int() == b.as_int(),
+            c.add_spec(a) == c.add_spec(b) ==> a == b,
     {
-        assert((c.value + a.value == c.value + b.value) ==> a.value == b.value) by (nonlinear_arith);
+        if c.add_spec(a) == c.add_spec(b) {
+            Self::lemma_add_left_cancel_strong(a, b, c);
+        }
+    }
+
+    pub proof fn lemma_add_left_cancel_strong(a: Self, b: Self, c: Self)
+        requires
+            c.add_spec(a) == c.add_spec(b),
+        ensures
+            a == b,
+    {
+        assert(c.add_spec(a).as_int() == c.add_spec(b).as_int());
+        assert(c.as_int() + a.as_int() == c.as_int() + b.as_int());
+        assert((c.as_int() + a.as_int() == c.as_int() + b.as_int()) ==> a.as_int() == b.as_int()) by (nonlinear_arith);
+        assert(a.as_int() == b.as_int());
+        Self::lemma_eq_from_as_int(a, b);
     }
 
     pub proof fn lemma_mul_zero(a: Self)
@@ -328,14 +430,48 @@ impl Scalar {
         ensures
             a.as_int() <= b.as_int() ==> a.add_spec(c).as_int() <= b.add_spec(c).as_int(),
     {
+        if a.as_int() <= b.as_int() {
+            Self::lemma_le_add_monotone_strong(a, b, c);
+        }
+    }
+
+    pub proof fn lemma_le_add_monotone_strong(a: Self, b: Self, c: Self)
+        requires
+            a.as_int() <= b.as_int(),
+        ensures
+            a.add_spec(c).as_int() <= b.add_spec(c).as_int(),
+    {
+        assert(a.value <= b.value);
+        assert(a.add_spec(c).as_int() == a.value + c.value);
+        assert(b.add_spec(c).as_int() == b.value + c.value);
         assert((a.value <= b.value) ==> (a.value + c.value <= b.value + c.value)) by (nonlinear_arith);
+        assert(a.value + c.value <= b.value + c.value);
+        assert(a.add_spec(c).as_int() <= b.add_spec(c).as_int());
     }
 
     pub proof fn lemma_le_mul_monotone_nonnegative(a: Self, b: Self, c: Self)
         ensures
             0 <= c.as_int() && a.as_int() <= b.as_int() ==> a.mul_spec(c).as_int() <= b.mul_spec(c).as_int(),
     {
+        if 0 <= c.as_int() && a.as_int() <= b.as_int() {
+            Self::lemma_le_mul_monotone_nonnegative_strong(a, b, c);
+        }
+    }
+
+    pub proof fn lemma_le_mul_monotone_nonnegative_strong(a: Self, b: Self, c: Self)
+        requires
+            0 <= c.as_int(),
+            a.as_int() <= b.as_int(),
+        ensures
+            a.mul_spec(c).as_int() <= b.mul_spec(c).as_int(),
+    {
+        assert(0 <= c.value);
+        assert(a.value <= b.value);
+        assert(a.mul_spec(c).as_int() == a.value * c.value);
+        assert(b.mul_spec(c).as_int() == b.value * c.value);
         assert((0 <= c.value && a.value <= b.value) ==> (a.value * c.value <= b.value * c.value)) by (nonlinear_arith);
+        assert(a.value * c.value <= b.value * c.value);
+        assert(a.mul_spec(c).as_int() <= b.mul_spec(c).as_int());
     }
 }
 
@@ -355,6 +491,19 @@ impl Vec2 {
 
     pub open spec fn neg_spec(self) -> Self {
         Vec2 { x: self.x.neg_spec(), y: self.y.neg_spec() }
+    }
+
+    pub proof fn lemma_eq_from_component_ints(a: Self, b: Self)
+        requires
+            a.x.as_int() == b.x.as_int(),
+            a.y.as_int() == b.y.as_int(),
+        ensures
+            a == b,
+    {
+        Scalar::lemma_eq_from_as_int(a.x, b.x);
+        Scalar::lemma_eq_from_as_int(a.y, b.y);
+        assert(a.x == b.x);
+        assert(a.y == b.y);
     }
 
     pub proof fn from_ints(x: int, y: int) -> (v: Self)
@@ -593,42 +742,76 @@ impl Vec2 {
 
     pub proof fn lemma_neg_involution(v: Self)
         ensures
-            v.neg_spec().neg_spec().x.as_int() == v.x.as_int(),
-            v.neg_spec().neg_spec().y.as_int() == v.y.as_int(),
+            v.neg_spec().neg_spec() == v,
     {
+        let lhs = v.neg_spec().neg_spec();
+        assert(lhs.x.as_int() == -(-v.x.as_int()));
+        assert(lhs.y.as_int() == -(-v.y.as_int()));
         assert(-(-v.x.as_int()) == v.x.as_int()) by (nonlinear_arith);
         assert(-(-v.y.as_int()) == v.y.as_int()) by (nonlinear_arith);
+        assert(lhs.x.as_int() == v.x.as_int());
+        assert(lhs.y.as_int() == v.y.as_int());
+        Self::lemma_eq_from_component_ints(lhs, v);
     }
 
     pub proof fn lemma_add_inverse(v: Self)
         ensures
-            v.add_spec(v.neg_spec()).x.as_int() == 0,
-            v.add_spec(v.neg_spec()).y.as_int() == 0,
-            v.neg_spec().add_spec(v).x.as_int() == 0,
-            v.neg_spec().add_spec(v).y.as_int() == 0,
+            v.add_spec(v.neg_spec()) == Self::zero_spec(),
+            v.neg_spec().add_spec(v) == Self::zero_spec(),
     {
+        let lhs = v.add_spec(v.neg_spec());
+        let rhs = v.neg_spec().add_spec(v);
+        let z = Self::zero_spec();
+        assert(lhs.x.as_int() == v.x.as_int() + (-v.x.as_int()));
+        assert(lhs.y.as_int() == v.y.as_int() + (-v.y.as_int()));
+        assert(rhs.x.as_int() == (-v.x.as_int()) + v.x.as_int());
+        assert(rhs.y.as_int() == (-v.y.as_int()) + v.y.as_int());
         assert(v.x.as_int() + (-v.x.as_int()) == 0) by (nonlinear_arith);
         assert(v.y.as_int() + (-v.y.as_int()) == 0) by (nonlinear_arith);
         assert((-v.x.as_int()) + v.x.as_int() == 0) by (nonlinear_arith);
         assert((-v.y.as_int()) + v.y.as_int() == 0) by (nonlinear_arith);
+        assert(lhs.x.as_int() == 0);
+        assert(lhs.y.as_int() == 0);
+        assert(rhs.x.as_int() == 0);
+        assert(rhs.y.as_int() == 0);
+        assert(z.x.as_int() == 0);
+        assert(z.y.as_int() == 0);
+        Self::lemma_eq_from_component_ints(lhs, z);
+        Self::lemma_eq_from_component_ints(rhs, z);
     }
 
     pub proof fn lemma_scale_neg_vector(v: Self, k: Scalar)
         ensures
-            v.neg_spec().scale_spec(k).x.as_int() == v.scale_spec(k).neg_spec().x.as_int(),
-            v.neg_spec().scale_spec(k).y.as_int() == v.scale_spec(k).neg_spec().y.as_int(),
+            v.neg_spec().scale_spec(k) == v.scale_spec(k).neg_spec(),
     {
+        let lhs = v.neg_spec().scale_spec(k);
+        let rhs = v.scale_spec(k).neg_spec();
+        assert(lhs.x.as_int() == (-v.x.as_int()) * k.as_int());
+        assert(lhs.y.as_int() == (-v.y.as_int()) * k.as_int());
+        assert(rhs.x.as_int() == -(v.x.as_int() * k.as_int()));
+        assert(rhs.y.as_int() == -(v.y.as_int() * k.as_int()));
         assert((-v.x.as_int()) * k.as_int() == -(v.x.as_int() * k.as_int())) by (nonlinear_arith);
         assert((-v.y.as_int()) * k.as_int() == -(v.y.as_int() * k.as_int())) by (nonlinear_arith);
+        assert(lhs.x.as_int() == rhs.x.as_int());
+        assert(lhs.y.as_int() == rhs.y.as_int());
+        Self::lemma_eq_from_component_ints(lhs, rhs);
     }
 
     pub proof fn lemma_scale_neg_scalar(v: Self, k: Scalar)
         ensures
-            v.scale_spec(k.neg_spec()).x.as_int() == v.scale_spec(k).neg_spec().x.as_int(),
-            v.scale_spec(k.neg_spec()).y.as_int() == v.scale_spec(k).neg_spec().y.as_int(),
+            v.scale_spec(k.neg_spec()) == v.scale_spec(k).neg_spec(),
     {
+        let lhs = v.scale_spec(k.neg_spec());
+        let rhs = v.scale_spec(k).neg_spec();
+        assert(lhs.x.as_int() == v.x.as_int() * (-k.as_int()));
+        assert(lhs.y.as_int() == v.y.as_int() * (-k.as_int()));
+        assert(rhs.x.as_int() == -(v.x.as_int() * k.as_int()));
+        assert(rhs.y.as_int() == -(v.y.as_int() * k.as_int()));
         assert(v.x.as_int() * (-k.as_int()) == -(v.x.as_int() * k.as_int())) by (nonlinear_arith);
         assert(v.y.as_int() * (-k.as_int()) == -(v.y.as_int() * k.as_int())) by (nonlinear_arith);
+        assert(lhs.x.as_int() == rhs.x.as_int());
+        assert(lhs.y.as_int() == rhs.y.as_int());
+        Self::lemma_eq_from_component_ints(lhs, rhs);
     }
 
     pub proof fn lemma_dot_linear_right(u: Self, v: Self, w: Self)
@@ -748,11 +931,9 @@ impl Vec2 {
             assert((v.y.as_int() * v.y.as_int() == 0) ==> v.y.as_int() == 0) by (nonlinear_arith);
             assert(v.x.as_int() == 0);
             assert(v.y.as_int() == 0);
-            assert(v.x.value == 0);
-            assert(v.y.value == 0);
-            assert(v.x == Scalar { value: 0 });
-            assert(v.y == Scalar { value: 0 });
-            assert(v == Self::zero_spec());
+            assert(Self::zero_spec().x.as_int() == 0);
+            assert(Self::zero_spec().y.as_int() == 0);
+            Self::lemma_eq_from_component_ints(v, Self::zero_spec());
         }
 
         if v == Self::zero_spec() {
@@ -770,6 +951,19 @@ pub struct Point2 {
 impl Point2 {
     pub open spec fn from_ints_spec(x: int, y: int) -> Self {
         Point2 { x: Scalar { value: x }, y: Scalar { value: y } }
+    }
+
+    pub proof fn lemma_eq_from_component_ints(a: Self, b: Self)
+        requires
+            a.x.as_int() == b.x.as_int(),
+            a.y.as_int() == b.y.as_int(),
+        ensures
+            a == b,
+    {
+        Scalar::lemma_eq_from_as_int(a.x, b.x);
+        Scalar::lemma_eq_from_as_int(a.y, b.y);
+        assert(a.x == b.x);
+        assert(a.y == b.y);
     }
 
     pub proof fn from_ints(x: int, y: int) -> (p: Self)
@@ -859,13 +1053,11 @@ impl Point2 {
         if p.add_vec_spec(u) == p.add_vec_spec(v) {
             assert(p.x.add_spec(u.x).as_int() == p.x.add_spec(v.x).as_int());
             assert(p.y.add_spec(u.y).as_int() == p.y.add_spec(v.y).as_int());
-            Scalar::lemma_add_left_cancel(u.x, v.x, p.x);
-            Scalar::lemma_add_left_cancel(u.y, v.y, p.y);
+            Scalar::lemma_add_left_cancel_strong(u.x, v.x, p.x);
+            Scalar::lemma_add_left_cancel_strong(u.y, v.y, p.y);
             assert(u.x.as_int() == v.x.as_int());
             assert(u.y.as_int() == v.y.as_int());
-            assert(u.x.value == v.x.value);
-            assert(u.y.value == v.y.value);
-            assert(u == v);
+            Vec2::lemma_eq_from_component_ints(u, v);
         }
     }
 }
@@ -966,9 +1158,7 @@ pub proof fn lemma_dist2_zero_iff_equal_points(p: Point2, q: Point2)
         assert(p.y.as_int() - q.y.as_int() == 0);
         assert(p.x.as_int() == q.x.as_int());
         assert(p.y.as_int() == q.y.as_int());
-        assert(p.x.value == q.x.value);
-        assert(p.y.value == q.y.value);
-        assert(p == q);
+        Point2::lemma_eq_from_component_ints(p, q);
     }
 
     if p == q {
@@ -1322,8 +1512,7 @@ pub proof fn lemma_orientation_spec_translation_invariant(a: Point2, b: Point2, 
     let d0 = orient2d_spec(a, b, c);
     let d1 = orient2d_spec(a.add_vec_spec(t), b.add_vec_spec(t), c.add_vec_spec(t));
     assert(d1.as_int() == d0.as_int());
-    assert(d1.value == d0.value);
-    assert(d1 == d0);
+    Scalar::lemma_eq_from_as_int(d1, d0);
     assert(d1.signum() == d0.signum());
 }
 
@@ -1363,12 +1552,8 @@ pub proof fn lemma_orient2d_scale_from_origin(a: Point2, b: Point2, c: Point2, k
     assert(sba.y.as_int() == ba.scale_spec(k).y.as_int());
     assert(sca.x.as_int() == ca.scale_spec(k).x.as_int());
     assert(sca.y.as_int() == ca.scale_spec(k).y.as_int());
-    assert(sba.x.value == ba.scale_spec(k).x.value);
-    assert(sba.y.value == ba.scale_spec(k).y.value);
-    assert(sca.x.value == ca.scale_spec(k).x.value);
-    assert(sca.y.value == ca.scale_spec(k).y.value);
-    assert(sba == ba.scale_spec(k));
-    assert(sca == ca.scale_spec(k));
+    Vec2::lemma_eq_from_component_ints(sba, ba.scale_spec(k));
+    Vec2::lemma_eq_from_component_ints(sca, ca.scale_spec(k));
 
     Vec2::lemma_cross_scale_extract_left(ba, ca.scale_spec(k), k);
     Vec2::lemma_cross_scale_extract_right(ba, ca, k);

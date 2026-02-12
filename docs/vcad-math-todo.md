@@ -59,7 +59,26 @@ This list assumes the current baseline (orientation classification, scale, norm2
 - [x] Prove subtraction/addition uniqueness:
   - `p + u == p + v ==> u == v`.
 
+## P1: Contract-strengthening pass (anti-cheating hardening)
+- [x] Strengthen vector algebra lemma contracts from component equalities to full structural equalities:
+  - `lemma_neg_involution`: `v.neg_spec().neg_spec() == v`
+  - `lemma_add_inverse`: `v + (-v) == 0` and `(-v) + v == 0` as `Vec2` equality
+  - `lemma_scale_neg_vector`: `(-v) * k == -(v*k)` as `Vec2` equality
+  - `lemma_scale_neg_scalar`: `v * (-k) == -(v*k)` as `Vec2` equality
+- [x] Strengthen scalar algebra contracts to abstract `Scalar` equality where practical (not only `.as_int()` projections):
+  - commutativity / associativity / distributivity / identities
+  - cancellation lemmas
+- [x] Add strengthened (non-implication) variants for cancellation/monotonicity lemmas using `requires`:
+  - keep implication-style helpers if needed for proof ergonomics, but expose strongest canonical statements
+- [x] Reduce representation leakage in proof bodies:
+  - avoid proving via `.value` unless unavoidable
+  - prefer proofs over abstract API (`add_spec`, `mul_spec`, `neg_spec`, etc.)
+- [x] Add an audit checkpoint for rational migration:
+  - no public law lemma depends on integer backing details
+  - all public contracts remain valid after swapping `Scalar` internals
+  - checkpoint: strengthened public law contracts now target structural equality (not projection equality), and representation-specific reasoning is confined to implementation/proof-bridge internals
+
 ## Status
-All currently scoped proof lemmas in this TODO are complete.
+Core first-wave proof lemmas and contract-strengthening pass are complete.
 
 Long-horizon architecture milestones (rational migration, exec/spec dual-mode APIs, proof regression harness) now live in `docs/vcad-math-roadmap.md`.
