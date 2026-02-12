@@ -1,4 +1,12 @@
 use vstd::prelude::*;
+use vstd::calc;
+use vstd::arithmetic::mul::{
+    lemma_mul_basics,
+    lemma_mul_by_zero_is_zero,
+    lemma_mul_is_associative,
+    lemma_mul_is_commutative,
+    lemma_mul_strict_inequality,
+};
 
 verus! {
 
@@ -12,6 +20,13 @@ pub struct Scalar {
 }
 
 impl Scalar {
+    pub proof fn lemma_nat_mul_cast(a: nat, b: nat)
+        ensures
+            (a * b) as int == (a as int) * (b as int),
+    {
+        assert((a * b) as int == (a as int) * (b as int)) by (nonlinear_arith);
+    }
+
     pub open spec fn denom_nat(self) -> nat {
         self.den + 1
     }
@@ -165,6 +180,24 @@ impl Scalar {
             by (nonlinear_arith);
     }
 
+    pub proof fn lemma_add_denom_product_int(a: Self, b: Self)
+        ensures
+            a.add_spec(b).denom() == a.denom() * b.denom(),
+    {
+        let out = a.add_spec(b);
+        let da = a.denom_nat();
+        let db = b.denom_nat();
+        Self::lemma_add_denom_product(a, b);
+        Self::lemma_nat_mul_cast(da, db);
+        assert(out.denom_nat() == da * db);
+        assert(out.denom() == out.denom_nat() as int);
+        assert(a.denom() == da as int);
+        assert(b.denom() == db as int);
+        assert(out.denom() == (da * db) as int);
+        assert((da * db) as int == (da as int) * (db as int));
+        assert(out.denom() == a.denom() * b.denom());
+    }
+
     pub proof fn lemma_mul_denom_product(a: Self, b: Self)
         ensures
             a.mul_spec(b).denom_nat() == a.denom_nat() * b.denom_nat(),
@@ -177,6 +210,884 @@ impl Scalar {
         assert(rhs == (a.den + 1) * (b.den + 1));
         assert((a.den * b.den + a.den + b.den) + 1 == (a.den + 1) * (b.den + 1))
             by (nonlinear_arith);
+    }
+
+    pub proof fn lemma_mul_denom_product_int(a: Self, b: Self)
+        ensures
+            a.mul_spec(b).denom() == a.denom() * b.denom(),
+    {
+        let out = a.mul_spec(b);
+        let da = a.denom_nat();
+        let db = b.denom_nat();
+        Self::lemma_mul_denom_product(a, b);
+        Self::lemma_nat_mul_cast(da, db);
+        assert(out.denom_nat() == da * db);
+        assert(out.denom() == out.denom_nat() as int);
+        assert(a.denom() == da as int);
+        assert(b.denom() == db as int);
+        assert(out.denom() == (da * db) as int);
+        assert((da * db) as int == (da as int) * (db as int));
+        assert(out.denom() == a.denom() * b.denom());
+    }
+
+    pub proof fn lemma_sub_denom_product(a: Self, b: Self)
+        ensures
+            a.sub_spec(b).denom_nat() == a.denom_nat() * b.denom_nat(),
+    {
+        let s = a.sub_spec(b);
+        assert(s == a.add_spec(b.neg_spec()));
+        Self::lemma_add_denom_product(a, b.neg_spec());
+        assert(a.add_spec(b.neg_spec()).denom_nat() == a.denom_nat() * b.neg_spec().denom_nat());
+        assert(b.neg_spec().denom_nat() == b.denom_nat());
+        assert(s.denom_nat() == a.denom_nat() * b.denom_nat());
+    }
+
+    pub proof fn lemma_sub_denom_product_int(a: Self, b: Self)
+        ensures
+            a.sub_spec(b).denom() == a.denom() * b.denom(),
+    {
+        let out = a.sub_spec(b);
+        let da = a.denom_nat();
+        let db = b.denom_nat();
+        Self::lemma_sub_denom_product(a, b);
+        Self::lemma_nat_mul_cast(da, db);
+        assert(out.denom_nat() == da * db);
+        assert(out.denom() == out.denom_nat() as int);
+        assert(a.denom() == da as int);
+        assert(b.denom() == db as int);
+        assert(out.denom() == (da * db) as int);
+        assert((da * db) as int == (da as int) * (db as int));
+        assert(out.denom() == a.denom() * b.denom());
+    }
+
+    pub proof fn lemma_mul_commutative(a: Self, b: Self)
+        ensures
+            a.mul_spec(b) == b.mul_spec(a),
+    {
+        let lhs = a.mul_spec(b);
+        let rhs = b.mul_spec(a);
+        assert(lhs.num == a.num * b.num);
+        assert(rhs.num == b.num * a.num);
+        assert(a.num * b.num == b.num * a.num) by (nonlinear_arith);
+        assert(lhs.num == rhs.num);
+
+        assert(lhs.den == a.den * b.den + a.den + b.den);
+        assert(rhs.den == b.den * a.den + b.den + a.den);
+        assert(a.den * b.den + a.den + b.den == b.den * a.den + b.den + a.den) by (nonlinear_arith);
+        assert(lhs.den == rhs.den);
+    }
+
+    pub proof fn lemma_sub_is_add_neg(a: Self, b: Self)
+        ensures
+            a.sub_spec(b) == a.add_spec(b.neg_spec()),
+    {
+        assert(a.sub_spec(b) == a.add_spec(b.neg_spec()));
+    }
+
+    pub proof fn lemma_add_commutative(a: Self, b: Self)
+        ensures
+            a.add_spec(b).eqv_spec(b.add_spec(a)),
+    {
+        let l = a.add_spec(b);
+        let r = b.add_spec(a);
+        let da = a.denom();
+        let db = b.denom();
+        Self::lemma_add_denom_product_int(a, b);
+        Self::lemma_add_denom_product_int(b, a);
+        assert(l.num == a.num * db + b.num * da);
+        assert(r.num == b.num * da + a.num * db);
+        assert(l.denom() == da * db);
+        assert(r.denom() == db * da);
+        assert(l.eqv_spec(r) == (l.num * r.denom() == r.num * l.denom()));
+        calc! {
+            (==)
+            l.num * r.denom();
+            {
+                assert(l.num == a.num * db + b.num * da);
+                assert(r.denom() == db * da);
+            }
+            (a.num * db + b.num * da) * (db * da);
+            {
+                assert((a.num * db + b.num * da) * (db * da)
+                    == (b.num * da + a.num * db) * (da * db)) by (nonlinear_arith);
+            }
+            (b.num * da + a.num * db) * (da * db);
+            {
+                assert(r.num == b.num * da + a.num * db);
+                assert(l.denom() == da * db);
+            }
+            r.num * l.denom();
+        }
+        assert(l.num * r.denom() == r.num * l.denom());
+        assert(l.eqv_spec(r));
+    }
+
+    pub proof fn lemma_add_associative(a: Self, b: Self, c: Self)
+        ensures
+            a.add_spec(b).add_spec(c).eqv_spec(a.add_spec(b.add_spec(c))),
+    {
+        let da = a.denom();
+        let db = b.denom();
+        let dc = c.denom();
+        let ab = a.add_spec(b);
+        let bc = b.add_spec(c);
+        let lhs = ab.add_spec(c);
+        let rhs = a.add_spec(bc);
+
+        Self::lemma_add_denom_product_int(a, b);
+        Self::lemma_add_denom_product_int(b, c);
+        Self::lemma_add_denom_product_int(ab, c);
+        Self::lemma_add_denom_product_int(a, bc);
+
+        assert(ab.num == a.num * db + b.num * da);
+        assert(bc.num == b.num * dc + c.num * db);
+        assert(ab.denom() == da * db);
+        assert(bc.denom() == db * dc);
+
+        assert(lhs.num == ab.num * dc + c.num * ab.denom());
+        assert(rhs.num == a.num * bc.denom() + bc.num * da);
+        assert(lhs.denom() == ab.denom() * dc);
+        assert(rhs.denom() == da * bc.denom());
+        assert(lhs.denom() == (da * db) * dc);
+        assert(rhs.denom() == da * (db * dc));
+        assert(lhs.num == (a.num * db + b.num * da) * dc + c.num * (da * db));
+        assert(rhs.num == a.num * (db * dc) + (b.num * dc + c.num * db) * da);
+        assert((a.num * db + b.num * da) * dc == (a.num * db) * dc + (b.num * da) * dc)
+            by (nonlinear_arith);
+        lemma_mul_is_associative(a.num, db, dc);
+        assert((a.num * db) * dc == a.num * (db * dc));
+        lemma_mul_is_associative(b.num, da, dc);
+        assert((b.num * da) * dc == b.num * (da * dc));
+        assert(c.num * (da * db) == c.num * (db * da));
+        assert(b.num * (da * dc) == (b.num * dc) * da) by (nonlinear_arith);
+        assert(c.num * (db * da) == (c.num * db) * da) by (nonlinear_arith);
+        assert(lhs.num == a.num * (db * dc) + (b.num * dc) * da + (c.num * db) * da);
+        assert((b.num * dc + c.num * db) * da == (b.num * dc) * da + (c.num * db) * da)
+            by (nonlinear_arith);
+        assert(rhs.num == a.num * (db * dc) + (b.num * dc) * da + (c.num * db) * da);
+        assert(lhs.num == rhs.num);
+        lemma_mul_is_associative(da, db, dc);
+        assert((da * db) * dc == da * (db * dc));
+        assert(lhs.denom() == rhs.denom());
+
+        assert(lhs.eqv_spec(rhs) == (lhs.num * rhs.denom() == rhs.num * lhs.denom()));
+        assert(lhs.num * rhs.denom() == lhs.num * lhs.denom());
+        assert(rhs.num * lhs.denom() == lhs.num * lhs.denom());
+        assert(lhs.num * rhs.denom() == rhs.num * lhs.denom());
+        assert(lhs.eqv_spec(rhs));
+    }
+
+    pub proof fn lemma_add_rearrange_2x2(a: Self, b: Self, c: Self, d: Self)
+        ensures
+            a.add_spec(b).add_spec(c.add_spec(d)).eqv_spec(a.add_spec(c).add_spec(b.add_spec(d))),
+    {
+        let e0 = a.add_spec(b).add_spec(c.add_spec(d));
+        let e1 = a.add_spec(b.add_spec(c.add_spec(d)));
+        let e2 = a.add_spec(c.add_spec(d).add_spec(b));
+        let e3 = a.add_spec(c.add_spec(d.add_spec(b)));
+        let e4 = a.add_spec(c.add_spec(b.add_spec(d)));
+        let e5 = a.add_spec(c.add_spec(b).add_spec(d));
+        let e6 = a.add_spec(c.add_spec(b)).add_spec(d);
+        let e7 = a.add_spec(c).add_spec(b).add_spec(d);
+        let e8 = a.add_spec(c).add_spec(b.add_spec(d));
+
+        Self::lemma_add_associative(a, b, c.add_spec(d));
+        assert(e0.eqv_spec(e1));
+
+        Self::lemma_add_commutative(b, c.add_spec(d));
+        Self::lemma_eqv_reflexive(a);
+        Self::lemma_eqv_add_congruence(a, a, b.add_spec(c.add_spec(d)), c.add_spec(d).add_spec(b));
+        assert(e1.eqv_spec(e2));
+
+        Self::lemma_add_associative(c, d, b);
+        Self::lemma_eqv_reflexive(a);
+        Self::lemma_eqv_add_congruence(a, a, c.add_spec(d).add_spec(b), c.add_spec(d.add_spec(b)));
+        assert(e2.eqv_spec(e3));
+
+        Self::lemma_add_commutative(d, b);
+        Self::lemma_eqv_reflexive(c);
+        Self::lemma_eqv_add_congruence(c, c, d.add_spec(b), b.add_spec(d));
+        assert(c.add_spec(d.add_spec(b)).eqv_spec(c.add_spec(b.add_spec(d))));
+        Self::lemma_eqv_reflexive(a);
+        Self::lemma_eqv_add_congruence(a, a, c.add_spec(d.add_spec(b)), c.add_spec(b.add_spec(d)));
+        assert(e3.eqv_spec(e4));
+
+        Self::lemma_add_associative(c, b, d);
+        Self::lemma_eqv_symmetric(c.add_spec(b).add_spec(d), c.add_spec(b.add_spec(d)));
+        assert(c.add_spec(b.add_spec(d)).eqv_spec(c.add_spec(b).add_spec(d)));
+        Self::lemma_eqv_reflexive(a);
+        Self::lemma_eqv_add_congruence(a, a, c.add_spec(b.add_spec(d)), c.add_spec(b).add_spec(d));
+        assert(e4.eqv_spec(e5));
+
+        Self::lemma_add_associative(a, c.add_spec(b), d);
+        Self::lemma_eqv_symmetric(a.add_spec(c.add_spec(b)).add_spec(d), a.add_spec(c.add_spec(b).add_spec(d)));
+        assert(a.add_spec(c.add_spec(b).add_spec(d)).eqv_spec(a.add_spec(c.add_spec(b)).add_spec(d)));
+        assert(e5.eqv_spec(e6));
+
+        Self::lemma_add_associative(a, c, b);
+        Self::lemma_eqv_symmetric(a.add_spec(c).add_spec(b), a.add_spec(c.add_spec(b)));
+        assert(a.add_spec(c.add_spec(b)).eqv_spec(a.add_spec(c).add_spec(b)));
+        Self::lemma_eqv_reflexive(d);
+        Self::lemma_eqv_add_congruence(a.add_spec(c.add_spec(b)), a.add_spec(c).add_spec(b), d, d);
+        assert(e6.eqv_spec(e7));
+
+        Self::lemma_add_associative(a.add_spec(c), b, d);
+        assert(e7.eqv_spec(e8));
+
+        Self::lemma_eqv_transitive(e0, e1, e2);
+        Self::lemma_eqv_transitive(e0, e2, e3);
+        Self::lemma_eqv_transitive(e0, e3, e4);
+        Self::lemma_eqv_transitive(e0, e4, e5);
+        Self::lemma_eqv_transitive(e0, e5, e6);
+        Self::lemma_eqv_transitive(e0, e6, e7);
+        Self::lemma_eqv_transitive(e0, e7, e8);
+        assert(e0.eqv_spec(e8));
+    }
+
+    pub proof fn lemma_add_zero_identity(a: Self)
+        ensures
+            a.add_spec(Self::from_int_spec(0)) == a,
+            Self::from_int_spec(0).add_spec(a) == a,
+    {
+        let z = Self::from_int_spec(0);
+        let l = a.add_spec(z);
+        let r = z.add_spec(a);
+        let da = a.denom();
+        assert(z.num == 0);
+        assert(z.den == 0);
+        assert(z.denom() == 1);
+        assert(a.denom() == da);
+
+        assert(l.num == a.num * z.denom() + z.num * da);
+        assert(l.num == a.num * 1 + 0 * da);
+        assert(a.num * 1 == a.num) by (nonlinear_arith);
+        assert(0 * da == 0) by (nonlinear_arith);
+        assert(l.num == a.num);
+        assert(l.den == a.den * z.den + a.den + z.den);
+        assert(l.den == a.den * 0 + a.den + 0);
+        assert(a.den * 0 == 0);
+        assert(l.den == 0 + a.den + 0);
+        assert(l.den == a.den);
+        assert(l == a);
+
+        assert(r.num == z.num * da + a.num * z.denom());
+        assert(r.num == 0 * da + a.num * 1);
+        assert(0 * da == 0) by (nonlinear_arith);
+        assert(a.num * 1 == a.num) by (nonlinear_arith);
+        assert(r.num == a.num);
+        assert(r.den == z.den * a.den + z.den + a.den);
+        assert(r.den == 0 * a.den + 0 + a.den);
+        assert(0 * a.den == 0);
+        assert(r.den == 0 + 0 + a.den);
+        assert(r.den == a.den);
+        assert(r == a);
+    }
+
+    pub proof fn lemma_add_inverse(a: Self)
+        ensures
+            a.add_spec(a.neg_spec()).eqv_spec(Self::from_int_spec(0)),
+            a.neg_spec().add_spec(a).eqv_spec(Self::from_int_spec(0)),
+    {
+        let z = Self::from_int_spec(0);
+        let l = a.add_spec(a.neg_spec());
+        let r = a.neg_spec().add_spec(a);
+        let d = a.denom();
+        assert(z.num == 0);
+        assert(z.denom() == 1);
+        assert(a.neg_spec().denom() == d);
+        assert(a.denom() == d);
+        assert(a.neg_spec().num == -a.num);
+        assert(l.num == a.num * a.neg_spec().denom() + a.neg_spec().num * a.denom());
+        assert(r.num == a.neg_spec().num * a.denom() + a.num * a.neg_spec().denom());
+        assert(l.num == a.num * d + (-a.num) * d);
+        assert(r.num == (-a.num) * d + a.num * d);
+        calc! {
+            (==)
+            l.num;
+            { }
+            a.num * d + (-a.num) * d;
+            {
+                assert(a.num * d + (-a.num) * d == 0) by (nonlinear_arith);
+            }
+            0;
+        }
+        calc! {
+            (==)
+            r.num;
+            { }
+            (-a.num) * d + a.num * d;
+            {
+                assert((-a.num) * d + a.num * d == 0) by (nonlinear_arith);
+            }
+            0;
+        }
+        assert(l.eqv_spec(z) == (l.num * z.denom() == z.num * l.denom()));
+        assert(r.eqv_spec(z) == (r.num * z.denom() == z.num * r.denom()));
+        calc! {
+            (==)
+            l.num * z.denom();
+            { assert(l.num == 0); assert(z.denom() == 1); }
+            0int * 1int;
+            { }
+            0int;
+        }
+        calc! {
+            (==)
+            z.num * l.denom();
+            { assert(z.num == 0); }
+            0 * l.denom();
+            {
+                lemma_mul_by_zero_is_zero(l.denom());
+                assert(0 * l.denom() == 0);
+            }
+            0;
+        }
+        assert(l.num * z.denom() == z.num * l.denom());
+        calc! {
+            (==)
+            r.num * z.denom();
+            { assert(r.num == 0); assert(z.denom() == 1); }
+            0int * 1int;
+            { }
+            0int;
+        }
+        calc! {
+            (==)
+            z.num * r.denom();
+            { assert(z.num == 0); }
+            0 * r.denom();
+            {
+                lemma_mul_by_zero_is_zero(r.denom());
+                assert(0 * r.denom() == 0);
+            }
+            0;
+        }
+        assert(r.num * z.denom() == z.num * r.denom());
+        assert(l.eqv_spec(z));
+        assert(r.eqv_spec(z));
+    }
+
+    pub proof fn lemma_mul_one_identity(a: Self)
+        ensures
+            a.mul_spec(Self::from_int_spec(1)) == a,
+            Self::from_int_spec(1).mul_spec(a) == a,
+    {
+        let o = Self::from_int_spec(1);
+        let l = a.mul_spec(o);
+        let r = o.mul_spec(a);
+        let da = a.denom();
+        assert(o.num == 1);
+        assert(o.den == 0);
+        assert(o.denom() == 1);
+
+        assert(l.num == a.num * o.num);
+        assert(a.num * 1 == a.num) by (nonlinear_arith);
+        assert(l.num == a.num);
+        assert(l.den == a.den * o.den + a.den + o.den);
+        assert(l.den == a.den * 0 + a.den + 0);
+        assert(a.den * 0 == 0);
+        assert(l.den == 0 + a.den + 0);
+        assert(l.den == a.den);
+        assert(l == a);
+
+        assert(r.num == o.num * a.num);
+        assert(1 * a.num == a.num) by (nonlinear_arith);
+        assert(r.num == a.num);
+        assert(r.den == o.den * a.den + o.den + a.den);
+        assert(r.den == 0 * a.den + 0 + a.den);
+        assert(0 * a.den == 0);
+        assert(r.den == 0 + 0 + a.den);
+        assert(r.den == a.den);
+        assert(a.denom() == da);
+        assert(r == a);
+    }
+
+    pub proof fn lemma_mul_associative(a: Self, b: Self, c: Self)
+        ensures
+            a.mul_spec(b).mul_spec(c).eqv_spec(a.mul_spec(b.mul_spec(c))),
+    {
+        let da = a.denom();
+        let db = b.denom();
+        let dc = c.denom();
+        let ab = a.mul_spec(b);
+        let bc = b.mul_spec(c);
+        let lhs = ab.mul_spec(c);
+        let rhs = a.mul_spec(bc);
+
+        Self::lemma_mul_denom_product_int(a, b);
+        Self::lemma_mul_denom_product_int(b, c);
+        Self::lemma_mul_denom_product_int(ab, c);
+        Self::lemma_mul_denom_product_int(a, bc);
+
+        assert(ab.num == a.num * b.num);
+        assert(bc.num == b.num * c.num);
+        assert(lhs.num == ab.num * c.num);
+        assert(rhs.num == a.num * bc.num);
+        assert(lhs.num == (a.num * b.num) * c.num);
+        assert(rhs.num == a.num * (b.num * c.num));
+
+        assert(ab.denom() == da * db);
+        assert(bc.denom() == db * dc);
+        assert(lhs.denom() == ab.denom() * dc);
+        assert(rhs.denom() == da * bc.denom());
+        assert(lhs.denom() == (da * db) * dc);
+        assert(rhs.denom() == da * (db * dc));
+
+        assert(lhs.eqv_spec(rhs) == (lhs.num * rhs.denom() == rhs.num * lhs.denom()));
+        lemma_mul_is_associative(a.num, b.num, c.num);
+        assert((a.num * b.num) * c.num == a.num * (b.num * c.num));
+        assert(lhs.num == rhs.num);
+        lemma_mul_is_associative(da, db, dc);
+        assert((da * db) * dc == da * (db * dc));
+        assert(lhs.denom() == rhs.denom());
+        assert(lhs.num * rhs.denom() == lhs.num * lhs.denom());
+        assert(rhs.num * lhs.denom() == lhs.num * lhs.denom());
+        assert(lhs.num * rhs.denom() == rhs.num * lhs.denom());
+        assert(lhs.eqv_spec(rhs));
+    }
+
+    pub proof fn lemma_mul_zero(a: Self)
+        ensures
+            a.mul_spec(Self::from_int_spec(0)).eqv_spec(Self::from_int_spec(0)),
+            Self::from_int_spec(0).mul_spec(a).eqv_spec(Self::from_int_spec(0)),
+    {
+        let z = Self::zero();
+        let l = a.mul_spec(z);
+        let r = z.mul_spec(a);
+        assert(z.num == 0);
+        Self::lemma_mul_right_zero_num(a, z);
+        Self::lemma_mul_left_zero_num(z, a);
+        assert(l.num == 0);
+        assert(r.num == 0);
+        assert(l.eqv_spec(z) == (l.num * z.denom() == z.num * l.denom()));
+        assert(r.eqv_spec(z) == (r.num * z.denom() == z.num * r.denom()));
+        assert(l.eqv_spec(z));
+        assert(r.eqv_spec(z));
+    }
+
+    pub proof fn lemma_mul_distributes_over_add(a: Self, b: Self, c: Self)
+        ensures
+            a.mul_spec(b.add_spec(c)).eqv_spec(a.mul_spec(b).add_spec(a.mul_spec(c))),
+    {
+        Self::lemma_eqv_mul_distributive_left(a, b, c);
+        assert(a.mul_spec(b.add_spec(c)).eqv_spec(a.mul_spec(b).add_spec(a.mul_spec(c))));
+    }
+
+    pub proof fn lemma_mul_zero_implies_factor_zero(a: Self, b: Self)
+        requires
+            a.mul_spec(b).num == 0,
+        ensures
+            a.num == 0 || b.num == 0,
+    {
+        assert(a.mul_spec(b).num == a.num * b.num);
+        assert(a.num * b.num == 0);
+        assert((a.num * b.num == 0) ==> (a.num == 0 || b.num == 0)) by (nonlinear_arith);
+        assert(a.num == 0 || b.num == 0);
+    }
+
+    pub proof fn lemma_add_right_cancel_strong(a: Self, b: Self, k: Self)
+        requires
+            a.add_spec(k).eqv_spec(b.add_spec(k)),
+        ensures
+            a.eqv_spec(b),
+    {
+        let ak = a.add_spec(k);
+        let bk = b.add_spec(k);
+        let lhs = ak.sub_spec(bk);
+        let s = a.sub_spec(b);
+        let z = Self::from_int_spec(0);
+
+        Self::lemma_eqv_reflexive(bk);
+        Self::lemma_eqv_sub_congruence(ak, bk, bk, bk);
+        assert(lhs.eqv_spec(bk.sub_spec(bk)));
+
+        Self::lemma_sub_self_zero_num(bk);
+        assert(bk.sub_spec(bk).num == 0);
+        assert(z.num == 0);
+        assert(bk.sub_spec(bk).eqv_spec(z)
+            == (bk.sub_spec(bk).num * z.denom() == z.num * bk.sub_spec(bk).denom()));
+        assert(bk.sub_spec(bk).num * z.denom() == 0 * z.denom());
+        assert(z.num * bk.sub_spec(bk).denom() == 0 * bk.sub_spec(bk).denom());
+        lemma_mul_by_zero_is_zero(z.denom());
+        lemma_mul_by_zero_is_zero(bk.sub_spec(bk).denom());
+        assert(0 * z.denom() == 0);
+        assert(0 * bk.sub_spec(bk).denom() == 0);
+        assert(bk.sub_spec(bk).num * z.denom() == z.num * bk.sub_spec(bk).denom());
+        assert(bk.sub_spec(bk).eqv_spec(z));
+        Self::lemma_eqv_transitive(lhs, bk.sub_spec(bk), z);
+        assert(lhs.eqv_spec(z));
+
+        Self::lemma_eqv_sub_cancel_right(a, b, k);
+        assert(lhs.eqv_spec(s));
+        Self::lemma_eqv_symmetric(lhs, s);
+        assert(s.eqv_spec(lhs));
+        Self::lemma_eqv_transitive(s, lhs, z);
+        assert(s.eqv_spec(z));
+
+        assert(s.eqv_spec(z) == (s.num * z.denom() == z.num * s.denom()));
+        assert(z.num == 0);
+        assert(z.denom() == 1);
+        assert(s.num * z.denom() == z.num * s.denom());
+        assert(s.num * 1 == 0 * s.denom());
+        lemma_mul_by_zero_is_zero(s.denom());
+        assert(0 * s.denom() == 0);
+        assert(s.num == 0);
+        assert(s.num == a.num * b.denom() + (-b.num) * a.denom());
+        assert(a.num * b.denom() + (-b.num) * a.denom() == a.num * b.denom() - b.num * a.denom())
+            by (nonlinear_arith);
+        assert(a.num * b.denom() - b.num * a.denom() == 0);
+        assert((a.num * b.denom() - b.num * a.denom() == 0) ==> (a.num * b.denom() == b.num * a.denom()))
+            by (nonlinear_arith);
+        assert(a.num * b.denom() == b.num * a.denom());
+        assert(a.eqv_spec(b));
+    }
+
+    pub proof fn lemma_add_right_cancel(a: Self, b: Self, k: Self)
+        ensures
+            a.add_spec(k).eqv_spec(b.add_spec(k)) ==> a.eqv_spec(b),
+    {
+        if a.add_spec(k).eqv_spec(b.add_spec(k)) {
+            Self::lemma_add_right_cancel_strong(a, b, k);
+            assert(a.eqv_spec(b));
+        }
+    }
+
+    pub proof fn lemma_add_left_cancel_strong(a: Self, b: Self, k: Self)
+        requires
+            k.add_spec(a).eqv_spec(k.add_spec(b)),
+        ensures
+            a.eqv_spec(b),
+    {
+        let ka = k.add_spec(a);
+        let kb = k.add_spec(b);
+        let ak = a.add_spec(k);
+        let bk = b.add_spec(k);
+
+        Self::lemma_add_commutative(k, a);
+        Self::lemma_add_commutative(k, b);
+        assert(ka.eqv_spec(ak));
+        assert(kb.eqv_spec(bk));
+        Self::lemma_eqv_symmetric(ka, ak);
+        assert(ak.eqv_spec(ka));
+        Self::lemma_eqv_transitive(ak, ka, kb);
+        assert(ak.eqv_spec(kb));
+        Self::lemma_eqv_transitive(ak, kb, bk);
+        assert(ak.eqv_spec(bk));
+
+        Self::lemma_add_right_cancel_strong(a, b, k);
+        assert(a.eqv_spec(b));
+    }
+
+    pub proof fn lemma_add_left_cancel(a: Self, b: Self, k: Self)
+        ensures
+            k.add_spec(a).eqv_spec(k.add_spec(b)) ==> a.eqv_spec(b),
+    {
+        if k.add_spec(a).eqv_spec(k.add_spec(b)) {
+            Self::lemma_add_left_cancel_strong(a, b, k);
+            assert(a.eqv_spec(b));
+        }
+    }
+
+    pub proof fn lemma_add_then_sub_cancel(a: Self, b: Self)
+        ensures
+            a.add_spec(b).sub_spec(a).eqv_spec(b),
+    {
+        let lhs = a.add_spec(b).sub_spec(a);
+        let z = Self::from_int_spec(0);
+        let mid1 = b.add_spec(a).sub_spec(z.add_spec(a));
+        let mid2 = b.sub_spec(z);
+
+        Self::lemma_add_zero_identity(a);
+        Self::lemma_add_zero_identity(b);
+        Self::lemma_add_commutative(a, b);
+        assert(z.add_spec(a) == a);
+
+        Self::lemma_eqv_reflexive(a);
+        assert(a.eqv_spec(z.add_spec(a)));
+        Self::lemma_eqv_sub_congruence(a.add_spec(b), b.add_spec(a), a, z.add_spec(a));
+        assert(lhs.eqv_spec(mid1));
+
+        Self::lemma_eqv_sub_cancel_right(b, z, a);
+        assert(mid1.eqv_spec(mid2));
+
+        assert(mid2 == b.sub_spec(z));
+        assert(b.sub_spec(z) == b.add_spec(z.neg_spec()));
+        assert(z.num == 0);
+        assert(z.neg_spec().num == -z.num);
+        assert(z.neg_spec().num == 0);
+        assert(z.neg_spec().den == z.den);
+        assert(z.neg_spec() == z);
+        assert(b.add_spec(z.neg_spec()) == b.add_spec(z));
+        assert(b.add_spec(z) == b);
+        Self::lemma_eqv_reflexive(b);
+        assert(mid2.eqv_spec(b));
+
+        Self::lemma_eqv_transitive(lhs, mid1, mid2);
+        Self::lemma_eqv_transitive(lhs, mid2, b);
+        assert(lhs.eqv_spec(b));
+    }
+
+    pub proof fn lemma_sub_then_add_cancel(a: Self, b: Self)
+        ensures
+            b.add_spec(a.sub_spec(b)).eqv_spec(a),
+    {
+        let lhs = b.add_spec(a.sub_spec(b));
+        let rhs = a;
+        let k = b.neg_spec();
+        let z = Self::from_int_spec(0);
+
+        let lhs_swap = a.sub_spec(b).add_spec(b);
+        Self::lemma_add_commutative(b, a.sub_spec(b));
+        assert(lhs.eqv_spec(lhs_swap));
+
+        let lhsk = lhs.add_spec(k);
+        let s1 = lhs_swap.add_spec(k);
+        Self::lemma_eqv_reflexive(k);
+        Self::lemma_eqv_add_congruence(lhs, lhs_swap, k, k);
+        assert(lhsk.eqv_spec(s1));
+
+        let s2 = a.sub_spec(b).add_spec(b.add_spec(k));
+        Self::lemma_add_associative(a.sub_spec(b), b, k);
+        assert(s1.eqv_spec(s2));
+
+        Self::lemma_add_inverse(b);
+        assert(k == b.neg_spec());
+        assert(b.add_spec(k).eqv_spec(z));
+        Self::lemma_eqv_reflexive(a.sub_spec(b));
+        Self::lemma_eqv_add_congruence(a.sub_spec(b), a.sub_spec(b), b.add_spec(k), z);
+        assert(s2.eqv_spec(a.sub_spec(b).add_spec(z)));
+
+        Self::lemma_add_zero_identity(a.sub_spec(b));
+        assert(a.sub_spec(b).add_spec(z) == a.sub_spec(b));
+        Self::lemma_eqv_reflexive(a.sub_spec(b));
+        assert(a.sub_spec(b).add_spec(z).eqv_spec(a.sub_spec(b)));
+
+        Self::lemma_eqv_transitive(s1, s2, a.sub_spec(b).add_spec(z));
+        Self::lemma_eqv_transitive(s1, a.sub_spec(b).add_spec(z), a.sub_spec(b));
+        assert(s1.eqv_spec(a.sub_spec(b)));
+
+        let rhsk = rhs.add_spec(k);
+        Self::lemma_sub_is_add_neg(a, b);
+        assert(rhsk == a.add_spec(b.neg_spec()));
+        assert(a.sub_spec(b) == a.add_spec(b.neg_spec()));
+        assert(rhsk == a.sub_spec(b));
+        Self::lemma_eqv_reflexive(a.sub_spec(b));
+        assert(rhsk.eqv_spec(a.sub_spec(b)));
+
+        Self::lemma_eqv_transitive(lhsk, s1, a.sub_spec(b));
+        assert(lhsk.eqv_spec(a.sub_spec(b)));
+        Self::lemma_eqv_symmetric(rhsk, a.sub_spec(b));
+        assert(a.sub_spec(b).eqv_spec(rhsk));
+        Self::lemma_eqv_transitive(lhsk, a.sub_spec(b), rhsk);
+        assert(lhsk.eqv_spec(rhsk));
+
+        Self::lemma_add_right_cancel_strong(lhs, rhs, k);
+        assert(lhs.eqv_spec(rhs));
+    }
+
+    pub proof fn lemma_sub_antisymmetric(a: Self, b: Self)
+        ensures
+            a.sub_spec(b) == b.sub_spec(a).neg_spec(),
+    {
+        let lhs = a.sub_spec(b);
+        let rhs = b.sub_spec(a).neg_spec();
+        assert(lhs == a.add_spec(b.neg_spec()));
+        assert(rhs == b.add_spec(a.neg_spec()).neg_spec());
+
+        assert(lhs.num == a.num * b.denom() + (-b.num) * a.denom());
+        assert(rhs.num == -(b.num * a.denom() + (-a.num) * b.denom()));
+        assert(a.num * b.denom() + (-b.num) * a.denom()
+            == -(b.num * a.denom() + (-a.num) * b.denom())) by (nonlinear_arith);
+        assert(lhs.num == rhs.num);
+
+        assert(lhs.den == a.den * b.den + a.den + b.den);
+        assert(rhs.den == b.den * a.den + b.den + a.den);
+        assert(a.den * b.den + a.den + b.den == b.den * a.den + b.den + a.den) by (nonlinear_arith);
+        assert(lhs.den == rhs.den);
+    }
+
+    pub proof fn lemma_mul_neg_right(a: Self, b: Self)
+        ensures
+            a.mul_spec(b.neg_spec()) == a.mul_spec(b).neg_spec(),
+    {
+        let lhs = a.mul_spec(b.neg_spec());
+        let rhs = a.mul_spec(b).neg_spec();
+
+        assert(lhs.num == a.num * (-b.num));
+        assert(rhs.num == -(a.num * b.num));
+        assert(a.num * (-b.num) == -(a.num * b.num)) by (nonlinear_arith);
+        assert(lhs.num == rhs.num);
+
+        assert(lhs.den == a.den * b.neg_spec().den + a.den + b.neg_spec().den);
+        assert(rhs.den == a.mul_spec(b).den);
+        assert(b.neg_spec().den == b.den);
+        assert(a.mul_spec(b).den == a.den * b.den + a.den + b.den);
+        assert(lhs.den == a.den * b.den + a.den + b.den);
+        assert(lhs.den == rhs.den);
+    }
+
+    pub proof fn lemma_sub_neg_both(a: Self, b: Self)
+        ensures
+            a.neg_spec().sub_spec(b.neg_spec()) == a.sub_spec(b).neg_spec(),
+    {
+        let lhs = a.neg_spec().sub_spec(b.neg_spec());
+        let rhs = a.sub_spec(b).neg_spec();
+
+        assert(lhs.num == (-a.num) * b.neg_spec().denom() + (-b.neg_spec().num) * a.neg_spec().denom());
+        assert(rhs.num == -(a.num * b.denom() + (-b.num) * a.denom()));
+        assert(b.neg_spec().denom() == b.denom());
+        assert(a.neg_spec().denom() == a.denom());
+        assert(b.neg_spec().num == -b.num);
+        assert(-b.neg_spec().num == b.num) by (nonlinear_arith);
+        calc! {
+            (==)
+            lhs.num;
+            { }
+            (-a.num) * b.neg_spec().denom() + (-b.neg_spec().num) * a.neg_spec().denom();
+            {
+                assert(b.neg_spec().denom() == b.denom());
+                assert(a.neg_spec().denom() == a.denom());
+                assert(-b.neg_spec().num == b.num);
+            }
+            (-a.num) * b.denom() + b.num * a.denom();
+        }
+        calc! {
+            (==)
+            rhs.num;
+            { }
+            -(a.num * b.denom() + (-b.num) * a.denom());
+            {
+                assert(-(a.num * b.denom() + (-b.num) * a.denom())
+                    == (-a.num) * b.denom() + b.num * a.denom()) by (nonlinear_arith);
+            }
+            (-a.num) * b.denom() + b.num * a.denom();
+        }
+        assert(lhs.num == rhs.num);
+
+        assert(lhs.den == a.neg_spec().den * b.neg_spec().den + a.neg_spec().den + b.neg_spec().den);
+        assert(rhs.den == a.sub_spec(b).den);
+        assert(a.neg_spec().den == a.den);
+        assert(b.neg_spec().den == b.den);
+        assert(a.sub_spec(b).den == a.den * b.den + a.den + b.den);
+        assert(lhs.den == a.den * b.den + a.den + b.den);
+        assert(lhs.den == rhs.den);
+    }
+
+    pub proof fn lemma_sub_self_zero_num(a: Self)
+        ensures
+            a.sub_spec(a).num == 0,
+    {
+        let d = a.denom();
+        let s = a.sub_spec(a);
+        assert(s == a.add_spec(a.neg_spec()));
+        assert(s.num == a.num * d + (-a.num) * d);
+        assert(a.num * d + (-a.num) * d == a.num * d - a.num * d) by (nonlinear_arith);
+        assert(a.num * d - a.num * d == 0) by (nonlinear_arith);
+        assert(s.num == 0);
+    }
+
+    pub proof fn lemma_sub_self_zero_signum(a: Self)
+        ensures
+            a.sub_spec(a).signum() == 0,
+    {
+        let s = a.sub_spec(a);
+        Self::lemma_sub_self_zero_num(a);
+        assert(s.num == 0);
+        Self::lemma_signum_zero_iff(s);
+        assert((s.signum() == 0) == (s.num == 0));
+        assert(s.signum() == 0);
+    }
+
+    pub proof fn lemma_mul_left_zero_num(a: Self, b: Self)
+        requires
+            a.num == 0,
+        ensures
+            a.mul_spec(b).num == 0,
+    {
+        let p = a.mul_spec(b);
+        assert(a.num == 0);
+        calc! {
+            (==)
+            a.num * b.num;
+            { assert(a.num == 0); }
+            0 * b.num;
+            {
+                lemma_mul_by_zero_is_zero(b.num);
+                assert(0 * b.num == 0);
+            }
+            0;
+        }
+        assert(p.num == a.num * b.num);
+        assert(p.num == 0);
+    }
+
+    pub proof fn lemma_mul_right_zero_num(a: Self, b: Self)
+        requires
+            b.num == 0,
+        ensures
+            a.mul_spec(b).num == 0,
+    {
+        let p = a.mul_spec(b);
+        assert(b.num == 0);
+        calc! {
+            (==)
+            a.num * b.num;
+            { assert(b.num == 0); }
+            a.num * 0;
+            {
+                lemma_mul_by_zero_is_zero(a.num);
+                assert(a.num * 0 == 0);
+            }
+            0;
+        }
+        assert(p.num == a.num * b.num);
+        assert(p.num == 0);
+    }
+
+    pub proof fn lemma_sub_both_zero_num(a: Self, b: Self)
+        requires
+            a.num == 0,
+            b.num == 0,
+        ensures
+            a.sub_spec(b).num == 0,
+    {
+        let s = a.sub_spec(b);
+        assert(a.num == 0);
+        assert(b.num == 0);
+        calc! {
+            (==)
+            -b.num;
+            { assert(b.num == 0); }
+            -0;
+            { }
+            0;
+        }
+        calc! {
+            (==)
+            a.num * b.neg_spec().denom();
+            { assert(a.num == 0); }
+            0 * b.neg_spec().denom();
+            {
+                lemma_mul_by_zero_is_zero(b.neg_spec().denom());
+                assert(0 * b.neg_spec().denom() == 0);
+            }
+            0;
+        }
+        calc! {
+            (==)
+            (-b.num) * a.denom();
+            { assert(-b.num == 0); }
+            0 * a.denom();
+            {
+                lemma_mul_by_zero_is_zero(a.denom());
+                assert(0 * a.denom() == 0);
+            }
+            0;
+        }
+        assert(s == a.add_spec(b.neg_spec()));
+        assert(s.num == a.num * b.neg_spec().denom() + (-b.num) * a.denom());
+        assert(s.num == 0 + 0);
+        assert(s.num == 0);
     }
 
     pub proof fn lemma_eqv_reflexive(a: Self)
@@ -194,6 +1105,540 @@ impl Scalar {
         assert(b.eqv_spec(a) == (b.num * a.denom() == a.num * b.denom()));
     }
 
+    pub proof fn lemma_eqv_transitive(a: Self, b: Self, c: Self)
+        requires
+            a.eqv_spec(b),
+            b.eqv_spec(c),
+        ensures
+            a.eqv_spec(c),
+    {
+        Self::lemma_denom_positive(b);
+        assert(b.denom() != 0);
+
+        assert(a.eqv_spec(b) == (a.num * b.denom() == b.num * a.denom()));
+        assert(b.eqv_spec(c) == (b.num * c.denom() == c.num * b.denom()));
+        assert(a.num * b.denom() == b.num * a.denom());
+        assert(b.num * c.denom() == c.num * b.denom());
+
+        calc! {
+            (==)
+            a.num * b.denom() * c.denom();
+            {
+                assert(a.num * b.denom() == b.num * a.denom());
+            }
+            b.num * a.denom() * c.denom();
+            {
+                assert(b.num * a.denom() * c.denom() == b.num * c.denom() * a.denom()) by (nonlinear_arith);
+            }
+            b.num * c.denom() * a.denom();
+            {
+                assert(b.num * c.denom() == c.num * b.denom());
+            }
+            c.num * b.denom() * a.denom();
+        }
+        assert((b.denom() != 0 && a.num * b.denom() * c.denom() == c.num * b.denom() * a.denom())
+            ==> (a.num * c.denom() == c.num * a.denom())) by (nonlinear_arith);
+        assert(a.num * c.denom() == c.num * a.denom());
+    }
+
+    pub proof fn lemma_eqv_neg_congruence(a: Self, b: Self)
+        requires
+            a.eqv_spec(b),
+        ensures
+            a.neg_spec().eqv_spec(b.neg_spec()),
+    {
+        assert(a.eqv_spec(b) == (a.num * b.denom() == b.num * a.denom()));
+        assert(a.neg_spec().eqv_spec(b.neg_spec())
+            == (a.neg_spec().num * b.neg_spec().denom() == b.neg_spec().num * a.neg_spec().denom()));
+        assert(a.neg_spec().num == -a.num);
+        assert(b.neg_spec().num == -b.num);
+        assert(a.neg_spec().denom() == a.denom());
+        assert(b.neg_spec().denom() == b.denom());
+        assert((a.num * b.denom() == b.num * a.denom())
+            ==> ((-a.num) * b.denom() == (-b.num) * a.denom())) by (nonlinear_arith);
+        assert(a.neg_spec().eqv_spec(b.neg_spec()));
+    }
+
+    pub proof fn lemma_eqv_add_congruence_left(a: Self, b: Self, c: Self)
+        requires
+            a.eqv_spec(b),
+        ensures
+            a.add_spec(c).eqv_spec(b.add_spec(c)),
+    {
+        let ac = a.add_spec(c);
+        let bc = b.add_spec(c);
+        Self::lemma_add_denom_product_int(a, c);
+        Self::lemma_add_denom_product_int(b, c);
+        assert(ac.num == a.num * c.denom() + c.num * a.denom());
+        assert(bc.num == b.num * c.denom() + c.num * b.denom());
+        assert(ac.denom() == a.denom() * c.denom());
+        assert(bc.denom() == b.denom() * c.denom());
+        assert(a.eqv_spec(b) == (a.num * b.denom() == b.num * a.denom()));
+        assert(a.num * b.denom() == b.num * a.denom());
+        assert(ac.eqv_spec(bc) == (ac.num * bc.denom() == bc.num * ac.denom()));
+        assert((a.num * b.denom() == b.num * a.denom())
+            ==> ((a.num * c.denom() + c.num * a.denom()) * (b.denom() * c.denom())
+                == (b.num * c.denom() + c.num * b.denom()) * (a.denom() * c.denom())))
+            by (nonlinear_arith);
+        assert((a.num * c.denom() + c.num * a.denom()) * (b.denom() * c.denom())
+            == (b.num * c.denom() + c.num * b.denom()) * (a.denom() * c.denom()));
+        calc! {
+            (==)
+            ac.num * bc.denom();
+            {
+                assert(ac.num == a.num * c.denom() + c.num * a.denom());
+                assert(bc.denom() == b.denom() * c.denom());
+            }
+            (a.num * c.denom() + c.num * a.denom()) * (b.denom() * c.denom());
+            { }
+            (b.num * c.denom() + c.num * b.denom()) * (a.denom() * c.denom());
+            {
+                assert(bc.num == b.num * c.denom() + c.num * b.denom());
+                assert(ac.denom() == a.denom() * c.denom());
+            }
+            bc.num * ac.denom();
+        }
+        assert(ac.eqv_spec(bc));
+    }
+
+    pub proof fn lemma_eqv_add_congruence_right(a: Self, b: Self, c: Self)
+        requires
+            b.eqv_spec(c),
+        ensures
+            a.add_spec(b).eqv_spec(a.add_spec(c)),
+    {
+        let ab = a.add_spec(b);
+        let ac = a.add_spec(c);
+        Self::lemma_add_denom_product_int(a, b);
+        Self::lemma_add_denom_product_int(a, c);
+        assert(ab.num == a.num * b.denom() + b.num * a.denom());
+        assert(ac.num == a.num * c.denom() + c.num * a.denom());
+        assert(ab.denom() == a.denom() * b.denom());
+        assert(ac.denom() == a.denom() * c.denom());
+        assert(b.eqv_spec(c) == (b.num * c.denom() == c.num * b.denom()));
+        assert(b.num * c.denom() == c.num * b.denom());
+        assert(ab.eqv_spec(ac) == (ab.num * ac.denom() == ac.num * ab.denom()));
+        assert((b.num * c.denom() == c.num * b.denom())
+            ==> ((a.num * b.denom() + b.num * a.denom()) * (a.denom() * c.denom())
+                == (a.num * c.denom() + c.num * a.denom()) * (a.denom() * b.denom())))
+            by (nonlinear_arith);
+        assert((a.num * b.denom() + b.num * a.denom()) * (a.denom() * c.denom())
+            == (a.num * c.denom() + c.num * a.denom()) * (a.denom() * b.denom()));
+        calc! {
+            (==)
+            ab.num * ac.denom();
+            {
+                assert(ab.num == a.num * b.denom() + b.num * a.denom());
+                assert(ac.denom() == a.denom() * c.denom());
+            }
+            (a.num * b.denom() + b.num * a.denom()) * (a.denom() * c.denom());
+            { }
+            (a.num * c.denom() + c.num * a.denom()) * (a.denom() * b.denom());
+            {
+                assert(ac.num == a.num * c.denom() + c.num * a.denom());
+                assert(ab.denom() == a.denom() * b.denom());
+            }
+            ac.num * ab.denom();
+        }
+        assert(ab.eqv_spec(ac));
+    }
+
+    pub proof fn lemma_eqv_add_congruence(a1: Self, a2: Self, b1: Self, b2: Self)
+        requires
+            a1.eqv_spec(a2),
+            b1.eqv_spec(b2),
+        ensures
+            a1.add_spec(b1).eqv_spec(a2.add_spec(b2)),
+    {
+        Self::lemma_eqv_add_congruence_left(a1, a2, b1);
+        Self::lemma_eqv_add_congruence_right(a2, b1, b2);
+        Self::lemma_eqv_transitive(a1.add_spec(b1), a2.add_spec(b1), a2.add_spec(b2));
+    }
+
+    pub proof fn lemma_eqv_mul_congruence_left(a: Self, b: Self, c: Self)
+        requires
+            a.eqv_spec(b),
+        ensures
+            a.mul_spec(c).eqv_spec(b.mul_spec(c)),
+    {
+        let ac = a.mul_spec(c);
+        let bc = b.mul_spec(c);
+        Self::lemma_mul_denom_product_int(a, c);
+        Self::lemma_mul_denom_product_int(b, c);
+        assert(ac.num == a.num * c.num);
+        assert(bc.num == b.num * c.num);
+        assert(ac.denom() == a.denom() * c.denom());
+        assert(bc.denom() == b.denom() * c.denom());
+        assert(a.eqv_spec(b) == (a.num * b.denom() == b.num * a.denom()));
+        assert(a.num * b.denom() == b.num * a.denom());
+        assert(ac.eqv_spec(bc) == (ac.num * bc.denom() == bc.num * ac.denom()));
+        assert((a.num * b.denom() == b.num * a.denom())
+            ==> ((a.num * c.num) * (b.denom() * c.denom())
+                == (b.num * c.num) * (a.denom() * c.denom())))
+            by (nonlinear_arith);
+        assert((a.num * c.num) * (b.denom() * c.denom())
+            == (b.num * c.num) * (a.denom() * c.denom()));
+        calc! {
+            (==)
+            ac.num * bc.denom();
+            {
+                assert(ac.num == a.num * c.num);
+                assert(bc.denom() == b.denom() * c.denom());
+            }
+            (a.num * c.num) * (b.denom() * c.denom());
+            { }
+            (b.num * c.num) * (a.denom() * c.denom());
+            {
+                assert(bc.num == b.num * c.num);
+                assert(ac.denom() == a.denom() * c.denom());
+            }
+            bc.num * ac.denom();
+        }
+        assert(ac.eqv_spec(bc));
+    }
+
+    pub proof fn lemma_eqv_mul_congruence_right(a: Self, b: Self, c: Self)
+        requires
+            b.eqv_spec(c),
+        ensures
+            a.mul_spec(b).eqv_spec(a.mul_spec(c)),
+    {
+        let ab = a.mul_spec(b);
+        let ac = a.mul_spec(c);
+        Self::lemma_mul_denom_product_int(a, b);
+        Self::lemma_mul_denom_product_int(a, c);
+        assert(ab.num == a.num * b.num);
+        assert(ac.num == a.num * c.num);
+        assert(ab.denom() == a.denom() * b.denom());
+        assert(ac.denom() == a.denom() * c.denom());
+        assert(b.eqv_spec(c) == (b.num * c.denom() == c.num * b.denom()));
+        assert(b.num * c.denom() == c.num * b.denom());
+        assert(ab.eqv_spec(ac) == (ab.num * ac.denom() == ac.num * ab.denom()));
+        assert((b.num * c.denom() == c.num * b.denom())
+            ==> ((a.num * b.num) * (a.denom() * c.denom())
+                == (a.num * c.num) * (a.denom() * b.denom())))
+            by (nonlinear_arith);
+        assert((a.num * b.num) * (a.denom() * c.denom())
+            == (a.num * c.num) * (a.denom() * b.denom()));
+        calc! {
+            (==)
+            ab.num * ac.denom();
+            {
+                assert(ab.num == a.num * b.num);
+                assert(ac.denom() == a.denom() * c.denom());
+            }
+            (a.num * b.num) * (a.denom() * c.denom());
+            { }
+            (a.num * c.num) * (a.denom() * b.denom());
+            {
+                assert(ac.num == a.num * c.num);
+                assert(ab.denom() == a.denom() * b.denom());
+            }
+            ac.num * ab.denom();
+        }
+        assert(ab.eqv_spec(ac));
+    }
+
+    pub proof fn lemma_eqv_mul_congruence(a1: Self, a2: Self, b1: Self, b2: Self)
+        requires
+            a1.eqv_spec(a2),
+            b1.eqv_spec(b2),
+        ensures
+            a1.mul_spec(b1).eqv_spec(a2.mul_spec(b2)),
+    {
+        Self::lemma_eqv_mul_congruence_left(a1, a2, b1);
+        Self::lemma_eqv_mul_congruence_right(a2, b1, b2);
+        Self::lemma_eqv_transitive(a1.mul_spec(b1), a2.mul_spec(b1), a2.mul_spec(b2));
+    }
+
+    pub proof fn lemma_eqv_sub_congruence(a1: Self, a2: Self, b1: Self, b2: Self)
+        requires
+            a1.eqv_spec(a2),
+            b1.eqv_spec(b2),
+        ensures
+            a1.sub_spec(b1).eqv_spec(a2.sub_spec(b2)),
+    {
+        Self::lemma_eqv_neg_congruence(b1, b2);
+        Self::lemma_eqv_add_congruence(a1, a2, b1.neg_spec(), b2.neg_spec());
+        assert(a1.sub_spec(b1) == a1.add_spec(b1.neg_spec()));
+        assert(a2.sub_spec(b2) == a2.add_spec(b2.neg_spec()));
+        assert(a1.add_spec(b1.neg_spec()).eqv_spec(a2.add_spec(b2.neg_spec())));
+        assert(a1.sub_spec(b1).eqv_spec(a2.sub_spec(b2)));
+    }
+
+    pub proof fn lemma_eqv_mul_distributive_left(a: Self, b: Self, c: Self)
+        ensures
+            a.mul_spec(b.add_spec(c)).eqv_spec(a.mul_spec(b).add_spec(a.mul_spec(c))),
+    {
+        let bc = b.add_spec(c);
+        let lhs = a.mul_spec(bc);
+        let ab = a.mul_spec(b);
+        let ac = a.mul_spec(c);
+        let rhs = ab.add_spec(ac);
+
+        Self::lemma_add_denom_product_int(b, c);
+        Self::lemma_mul_denom_product_int(a, bc);
+        Self::lemma_mul_denom_product_int(a, b);
+        Self::lemma_mul_denom_product_int(a, c);
+        Self::lemma_add_denom_product_int(ab, ac);
+
+        assert(bc.num == b.num * c.denom() + c.num * b.denom());
+        assert(lhs.num == a.num * bc.num);
+        assert(lhs.num == a.num * (b.num * c.denom() + c.num * b.denom()));
+        assert(lhs.denom() == a.denom() * bc.denom());
+        assert(bc.denom() == b.denom() * c.denom());
+        assert(lhs.denom() == a.denom() * (b.denom() * c.denom()));
+
+        assert(ab.num == a.num * b.num);
+        assert(ac.num == a.num * c.num);
+        assert(ab.denom() == a.denom() * b.denom());
+        assert(ac.denom() == a.denom() * c.denom());
+        assert(rhs.num == ab.num * ac.denom() + ac.num * ab.denom());
+        calc! {
+            (==)
+            rhs.num;
+            { }
+            ab.num * ac.denom() + ac.num * ab.denom();
+            {
+                assert(ab.num == a.num * b.num);
+                assert(ac.num == a.num * c.num);
+                assert(ab.denom() == a.denom() * b.denom());
+                assert(ac.denom() == a.denom() * c.denom());
+            }
+            (a.num * b.num) * (a.denom() * c.denom()) + (a.num * c.num) * (a.denom() * b.denom());
+            {
+                assert((a.num * b.num) * (a.denom() * c.denom())
+                    == (a.num * a.denom()) * (b.num * c.denom())) by (nonlinear_arith);
+                assert((a.num * c.num) * (a.denom() * b.denom())
+                    == (a.num * a.denom()) * (c.num * b.denom())) by (nonlinear_arith);
+                assert((a.num * a.denom()) * (b.num * c.denom()) + (a.num * a.denom()) * (c.num * b.denom())
+                    == a.num * a.denom() * (b.num * c.denom() + c.num * b.denom())) by (nonlinear_arith);
+            }
+            a.num * a.denom() * (b.num * c.denom() + c.num * b.denom());
+        }
+        assert(rhs.denom() == ab.denom() * ac.denom());
+        assert(rhs.denom() == (a.denom() * b.denom()) * (a.denom() * c.denom()));
+
+        assert(lhs.eqv_spec(rhs) == (lhs.num * rhs.denom() == rhs.num * lhs.denom()));
+        calc! {
+            (==)
+            lhs.num * rhs.denom();
+            {
+                assert(lhs.num == a.num * (b.num * c.denom() + c.num * b.denom()));
+                assert(rhs.denom() == (a.denom() * b.denom()) * (a.denom() * c.denom()));
+            }
+            (a.num * (b.num * c.denom() + c.num * b.denom()))
+                * ((a.denom() * b.denom()) * (a.denom() * c.denom()));
+        }
+        calc! {
+            (==)
+            rhs.num * lhs.denom();
+            {
+                assert(rhs.num == a.num * a.denom() * (b.num * c.denom() + c.num * b.denom()));
+                assert(lhs.denom() == a.denom() * (b.denom() * c.denom()));
+            }
+            (a.num * a.denom() * (b.num * c.denom() + c.num * b.denom()))
+                * (a.denom() * (b.denom() * c.denom()));
+        }
+        assert(
+            (a.num * (b.num * c.denom() + c.num * b.denom()))
+                * ((a.denom() * b.denom()) * (a.denom() * c.denom()))
+            ==
+            (a.num * a.denom() * (b.num * c.denom() + c.num * b.denom()))
+                * (a.denom() * (b.denom() * c.denom()))
+        ) by (nonlinear_arith);
+        assert(lhs.num * rhs.denom() == rhs.num * lhs.denom());
+        assert(lhs.eqv_spec(rhs));
+    }
+
+    pub proof fn lemma_eqv_sub_cancel_right(a: Self, b: Self, k: Self)
+        ensures
+            a.add_spec(k).sub_spec(b.add_spec(k)).eqv_spec(a.sub_spec(b)),
+    {
+        let ak = a.add_spec(k);
+        let bk = b.add_spec(k);
+        let lhs = ak.sub_spec(bk);
+        let rhs = a.sub_spec(b);
+
+        Self::lemma_add_denom_product_int(a, k);
+        Self::lemma_add_denom_product_int(b, k);
+        Self::lemma_sub_denom_product_int(ak, bk);
+        Self::lemma_sub_denom_product_int(a, b);
+
+        assert(ak.num == a.num * k.denom() + k.num * a.denom());
+        assert(bk.num == b.num * k.denom() + k.num * b.denom());
+        assert(lhs.num == ak.num * bk.denom() + (-bk.num) * ak.denom());
+        assert(rhs.num == a.num * b.denom() + (-b.num) * a.denom());
+
+        assert(ak.denom() == a.denom() * k.denom());
+        assert(bk.denom() == b.denom() * k.denom());
+        assert(lhs.denom() == ak.denom() * bk.denom());
+        assert(rhs.denom() == a.denom() * b.denom());
+
+        calc! {
+            (==)
+            lhs.num;
+            {
+                assert(lhs.num == ak.num * bk.denom() + (-bk.num) * ak.denom());
+            }
+            ak.num * bk.denom() + (-bk.num) * ak.denom();
+            {
+                assert(ak.num == a.num * k.denom() + k.num * a.denom());
+                assert(bk.num == b.num * k.denom() + k.num * b.denom());
+                assert(ak.denom() == a.denom() * k.denom());
+                assert(bk.denom() == b.denom() * k.denom());
+            }
+            (a.num * k.denom() + k.num * a.denom()) * (b.denom() * k.denom())
+                + (-(b.num * k.denom() + k.num * b.denom())) * (a.denom() * k.denom());
+            {
+                assert((a.num * k.denom() + k.num * a.denom()) * (b.denom() * k.denom())
+                    + (-(b.num * k.denom() + k.num * b.denom())) * (a.denom() * k.denom())
+                    == ((a.num * k.denom() + k.num * a.denom()) * b.denom()
+                        + (-(b.num * k.denom() + k.num * b.denom())) * a.denom()) * k.denom())
+                    by (nonlinear_arith);
+                assert(((a.num * k.denom() + k.num * a.denom()) * b.denom()
+                        + (-(b.num * k.denom() + k.num * b.denom())) * a.denom())
+                    == (a.num * b.denom() + (-b.num) * a.denom()) * k.denom())
+                    by (nonlinear_arith);
+            }
+            ((a.num * b.denom() + (-b.num) * a.denom()) * k.denom()) * k.denom();
+            {
+                assert(((a.num * b.denom() + (-b.num) * a.denom()) * k.denom()) * k.denom()
+                    == (a.num * b.denom() + (-b.num) * a.denom()) * (k.denom() * k.denom()))
+                    by (nonlinear_arith);
+            }
+            (a.num * b.denom() + (-b.num) * a.denom()) * (k.denom() * k.denom());
+        }
+
+        calc! {
+            (==)
+            lhs.denom();
+            {
+                assert(lhs.denom() == ak.denom() * bk.denom());
+                assert(ak.denom() == a.denom() * k.denom());
+                assert(bk.denom() == b.denom() * k.denom());
+            }
+            (a.denom() * k.denom()) * (b.denom() * k.denom());
+            {
+                assert((a.denom() * k.denom()) * (b.denom() * k.denom())
+                    == (a.denom() * b.denom()) * (k.denom() * k.denom()))
+                    by (nonlinear_arith);
+            }
+            (a.denom() * b.denom()) * (k.denom() * k.denom());
+        }
+
+        assert(lhs.eqv_spec(rhs) == (lhs.num * rhs.denom() == rhs.num * lhs.denom()));
+        assert(lhs.num == (a.num * b.denom() + (-b.num) * a.denom()) * (k.denom() * k.denom()));
+        assert(lhs.denom() == (a.denom() * b.denom()) * (k.denom() * k.denom()));
+        assert(rhs.num == a.num * b.denom() + (-b.num) * a.denom());
+        assert(rhs.denom() == a.denom() * b.denom());
+        assert(lhs.num * rhs.denom()
+            == ((a.num * b.denom() + (-b.num) * a.denom()) * (k.denom() * k.denom())) * (a.denom() * b.denom()));
+        assert(rhs.num * lhs.denom()
+            == (a.num * b.denom() + (-b.num) * a.denom()) * ((a.denom() * b.denom()) * (k.denom() * k.denom())));
+        assert(((a.num * b.denom() + (-b.num) * a.denom()) * (k.denom() * k.denom())) * (a.denom() * b.denom())
+            == (a.num * b.denom() + (-b.num) * a.denom()) * ((a.denom() * b.denom()) * (k.denom() * k.denom())))
+            by (nonlinear_arith);
+        assert(lhs.num * rhs.denom() == rhs.num * lhs.denom());
+        assert(lhs.eqv_spec(rhs));
+    }
+
+    pub proof fn lemma_eqv_sub_chain(a: Self, b: Self, c: Self)
+        ensures
+            a.sub_spec(c).eqv_spec(a.sub_spec(b).add_spec(b.sub_spec(c))),
+    {
+        let lhs = a.sub_spec(c);
+        let ab = a.sub_spec(b);
+        let bc = b.sub_spec(c);
+        let rhs = ab.add_spec(bc);
+
+        Self::lemma_sub_denom_product_int(a, c);
+        Self::lemma_sub_denom_product_int(a, b);
+        Self::lemma_sub_denom_product_int(b, c);
+        Self::lemma_add_denom_product_int(ab, bc);
+
+        assert(lhs.num == a.num * c.denom() + (-c.num) * a.denom());
+        assert(ab.num == a.num * b.denom() + (-b.num) * a.denom());
+        assert(bc.num == b.num * c.denom() + (-c.num) * b.denom());
+        assert(rhs.num == ab.num * bc.denom() + bc.num * ab.denom());
+
+        assert(lhs.denom() == a.denom() * c.denom());
+        assert(ab.denom() == a.denom() * b.denom());
+        assert(bc.denom() == b.denom() * c.denom());
+        assert(rhs.denom() == ab.denom() * bc.denom());
+
+        assert(lhs.eqv_spec(rhs) == (lhs.num * rhs.denom() == rhs.num * lhs.denom()));
+        assert(
+            (a.num * b.denom() + (-b.num) * a.denom()) * c.denom()
+            + (b.num * c.denom() + (-c.num) * b.denom()) * a.denom()
+            == (a.num * c.denom() + (-c.num) * a.denom()) * b.denom()
+        ) by (nonlinear_arith);
+
+        calc! {
+            (==)
+            ab.num * c.denom() + bc.num * a.denom();
+            {
+                assert(ab.num == a.num * b.denom() + (-b.num) * a.denom());
+                assert(bc.num == b.num * c.denom() + (-c.num) * b.denom());
+            }
+            (a.num * b.denom() + (-b.num) * a.denom()) * c.denom()
+                + (b.num * c.denom() + (-c.num) * b.denom()) * a.denom();
+            { }
+            (a.num * c.denom() + (-c.num) * a.denom()) * b.denom();
+            {
+                assert(lhs.num == a.num * c.denom() + (-c.num) * a.denom());
+            }
+            lhs.num * b.denom();
+        }
+
+        calc! {
+            (==)
+            rhs.num;
+            { assert(rhs.num == ab.num * bc.denom() + bc.num * ab.denom()); }
+            ab.num * bc.denom() + bc.num * ab.denom();
+            {
+                assert(bc.denom() == b.denom() * c.denom());
+                assert(ab.denom() == a.denom() * b.denom());
+            }
+            ab.num * (b.denom() * c.denom()) + bc.num * (a.denom() * b.denom());
+            {
+                assert(ab.num * (b.denom() * c.denom()) + bc.num * (a.denom() * b.denom())
+                    == b.denom() * (ab.num * c.denom() + bc.num * a.denom())) by (nonlinear_arith);
+            }
+            b.denom() * (ab.num * c.denom() + bc.num * a.denom());
+            {
+                assert(ab.num * c.denom() + bc.num * a.denom() == lhs.num * b.denom());
+            }
+            b.denom() * (lhs.num * b.denom());
+        }
+
+        calc! {
+            (==)
+            rhs.num * lhs.denom();
+            {
+                assert(lhs.denom() == a.denom() * c.denom());
+                assert(rhs.num == b.denom() * (lhs.num * b.denom()));
+            }
+            (b.denom() * (lhs.num * b.denom())) * (a.denom() * c.denom());
+        }
+
+        calc! {
+            (==)
+            lhs.num * rhs.denom();
+            {
+                assert(rhs.denom() == ab.denom() * bc.denom());
+                assert(ab.denom() == a.denom() * b.denom());
+                assert(bc.denom() == b.denom() * c.denom());
+            }
+            lhs.num * ((a.denom() * b.denom()) * (b.denom() * c.denom()));
+        }
+
+        assert((b.denom() * (lhs.num * b.denom())) * (a.denom() * c.denom())
+            == lhs.num * ((a.denom() * b.denom()) * (b.denom() * c.denom()))) by (nonlinear_arith);
+        assert(lhs.num * rhs.denom() == rhs.num * lhs.denom());
+        assert(lhs.eqv_spec(rhs));
+    }
+
     pub proof fn lemma_signum_positive_iff(a: Self)
         ensures
             (a.signum() == 1) == (a.num > 0),
@@ -203,6 +1648,14 @@ impl Scalar {
         } else {
             assert(a.signum() != 1);
         }
+    }
+
+    pub proof fn lemma_signum_neg(a: Self)
+        ensures
+            a.neg_spec().num == -a.num,
+    {
+        let n = a.neg_spec();
+        assert(n.num == -a.num);
     }
 
     pub proof fn lemma_signum_negative_iff(a: Self)
@@ -238,6 +1691,118 @@ impl Scalar {
         } else {
             assert(a.signum() == 0);
         }
+    }
+
+    pub proof fn lemma_signum_mul(a: Self, b: Self)
+        ensures
+            a.mul_spec(b).signum() == a.signum() * b.signum(),
+    {
+        let p = a.mul_spec(b);
+        assert(p.num == a.num * b.num);
+
+        if a.num == 0 {
+            assert(a.signum() == 0);
+            calc! {
+                (==)
+                p.num;
+                { assert(p.num == a.num * b.num); assert(a.num == 0); }
+                0 * b.num;
+                {
+                    lemma_mul_by_zero_is_zero(b.num);
+                    assert(0 * b.num == 0);
+                }
+                0;
+            }
+            assert(p.signum() == 0);
+            assert(a.signum() * b.signum() == 0);
+        } else if a.num > 0 {
+            assert(a.signum() == 1);
+            if b.num == 0 {
+                assert(b.signum() == 0);
+                calc! {
+                    (==)
+                    p.num;
+                    { assert(p.num == a.num * b.num); assert(b.num == 0); }
+                    a.num * 0;
+                    {
+                        lemma_mul_by_zero_is_zero(a.num);
+                        assert(a.num * 0 == 0);
+                    }
+                    0;
+                }
+                assert(p.signum() == 0);
+                assert(a.signum() * b.signum() == 0);
+            } else if b.num > 0 {
+                assert(b.signum() == 1);
+                lemma_mul_strict_inequality(0, a.num, b.num);
+                lemma_mul_basics(b.num);
+                assert(0 * b.num == 0);
+                assert(0 < a.num * b.num);
+                assert(p.num > 0);
+                assert(p.signum() == 1);
+                assert(a.signum() * b.signum() == 1);
+            } else {
+                assert(b.num < 0);
+                assert(b.signum() == -1);
+                lemma_mul_strict_inequality(b.num, 0, a.num);
+                lemma_mul_is_commutative(a.num, b.num);
+                lemma_mul_basics(a.num);
+                assert(b.num * a.num < 0 * a.num);
+                assert(0 * a.num == 0);
+                assert(a.num * b.num == b.num * a.num);
+                assert(p.num < 0);
+                assert(p.signum() == -1);
+                assert(a.signum() * b.signum() == -1);
+            }
+        } else {
+            assert(a.num < 0);
+            assert(a.signum() == -1);
+            if b.num == 0 {
+                assert(b.signum() == 0);
+                calc! {
+                    (==)
+                    p.num;
+                    { assert(p.num == a.num * b.num); assert(b.num == 0); }
+                    a.num * 0;
+                    {
+                        lemma_mul_by_zero_is_zero(a.num);
+                        assert(a.num * 0 == 0);
+                    }
+                    0;
+                }
+                assert(p.signum() == 0);
+                assert(a.signum() * b.signum() == 0);
+            } else if b.num > 0 {
+                assert(b.signum() == 1);
+                lemma_mul_strict_inequality(a.num, 0, b.num);
+                lemma_mul_basics(b.num);
+                assert(a.num * b.num < 0 * b.num);
+                assert(0 * b.num == 0);
+                assert(p.num < 0);
+                assert(p.signum() == -1);
+                assert(a.signum() * b.signum() == -1);
+            } else {
+                assert(b.num < 0);
+                assert(b.signum() == -1);
+                assert((a.num < 0) ==> (0 - a.num > 0)) by (nonlinear_arith);
+                assert(0 - a.num > 0);
+                assert(-a.num == 0 - a.num);
+                assert(-a.num > 0);
+                assert((b.num < 0) ==> (0 - b.num > 0)) by (nonlinear_arith);
+                assert(0 - b.num > 0);
+                assert(-b.num == 0 - b.num);
+                assert(-b.num > 0);
+                lemma_mul_strict_inequality(0, -a.num, -b.num);
+                lemma_mul_basics(-b.num);
+                assert(0 * (-b.num) == 0);
+                assert(0 < (-a.num) * (-b.num));
+                assert((-a.num) * (-b.num) == a.num * b.num) by (nonlinear_arith);
+                assert(p.num > 0);
+                assert(p.signum() == 1);
+                assert(a.signum() * b.signum() == 1);
+            }
+        }
+        assert(p.signum() == a.signum() * b.signum());
     }
 }
 
