@@ -78,7 +78,26 @@ This list assumes the current baseline (orientation classification, scale, norm2
   - all public contracts remain valid after swapping `Scalar` internals
   - checkpoint: strengthened public law contracts now target structural equality (not projection equality), and representation-specific reasoning is confined to implementation/proof-bridge internals
 
+## P1: Major-hole closure follow-up
+- [x] Strengthen key geometric law lemmas from `.as_int()` equality to full `Scalar` equality:
+  - dot/cross symmetry and linearity
+  - scale extraction (`dot`, `cross`)
+  - `dist2` symmetry/translation invariance
+  - `orient2d` swap/cyclic/translation/permutation identities
+- [x] Add strongest `requires`-style variants for orientation scaling lemmas:
+  - `lemma_orientation_spec_scale_nonzero_preserves_strong`
+  - `lemma_orientation_spec_scale_zero_collinear_strong`
+  - keep implication-style wrappers for ergonomic use
+- [x] Internalize representation bridge usage:
+  - scalar equality bridge remains available for proof plumbing but is crate-internal (`pub(crate)`), not part of public law surface
+- [x] Refactor crate layout so proofs are split across files:
+  - `src/scalar.rs`
+  - `src/vec2.rs`
+  - `src/point2.rs`
+  - `src/orientation.rs`
+  - root `src/lib.rs` now just wires modules/exports
+
 ## Status
-Core first-wave proof lemmas and contract-strengthening pass are complete.
+Core first-wave proof lemmas, contract-strengthening pass, and major-hole follow-up are complete.
 
 Long-horizon architecture milestones (rational migration, exec/spec dual-mode APIs, proof regression harness) now live in `docs/vcad-math-roadmap.md`.

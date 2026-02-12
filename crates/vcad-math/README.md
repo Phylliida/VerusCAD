@@ -9,7 +9,13 @@ Planned contents:
 This crate should have no dependency on higher CAD concepts.
 
 ## Prototype status
-First prototype now exists in `src/lib.rs` with:
+First prototype now exists in modular form with:
+1. `src/scalar.rs`
+2. `src/vec2.rs`
+3. `src/point2.rs`
+4. `src/orientation.rs`
+5. `src/lib.rs` as the module/exports entrypoint.
+and provides:
 1. `Scalar` backed by exact integers (temporary stand-in for rationals),
 2. verified `Vec2` dot/cross operations,
 3. verified `Point2` subtraction/addition with vectors,
