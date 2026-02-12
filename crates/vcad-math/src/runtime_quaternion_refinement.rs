@@ -124,6 +124,52 @@ pub fn runtime_quaternion_add_pair_commutative(a: &RuntimeQuaternion, b: &Runtim
 }
 
 #[allow(dead_code)]
+pub fn runtime_quaternion_add_associative(
+    a: &RuntimeQuaternion,
+    b: &RuntimeQuaternion,
+    c: &RuntimeQuaternion,
+) -> (pair: (RuntimeQuaternion, RuntimeQuaternion))
+    ensures
+        pair.0@ == a@.add_spec(b@).add_spec(c@),
+        pair.1@ == a@.add_spec(b@.add_spec(c@)),
+        pair.0@.eqv_spec(pair.1@),
+{
+    let ab = a.add(b);
+    let lhs = ab.add(c);
+    let bc = b.add(c);
+    let rhs = a.add(&bc);
+    proof {
+        Quaternion::lemma_add_associative(a@, b@, c@);
+        assert(a@.add_spec(b@).add_spec(c@).eqv_spec(a@.add_spec(b@.add_spec(c@))));
+        assert(lhs@.eqv_spec(rhs@));
+    }
+    (lhs, rhs)
+}
+
+#[allow(dead_code)]
+pub fn runtime_quaternion_add_zero_identity(
+    a: &RuntimeQuaternion,
+) -> (pair: (RuntimeQuaternion, RuntimeQuaternion))
+    ensures
+        pair.0@ == a@.add_spec(Quaternion::zero_spec()),
+        pair.1@ == Quaternion::zero_spec().add_spec(a@),
+        pair.0@ == a@,
+        pair.1@ == a@,
+{
+    let z = RuntimeQuaternion::zero();
+    let lhs = a.add(&z);
+    let rhs = z.add(a);
+    proof {
+        Quaternion::lemma_add_zero_identity(a@);
+        assert(a@.add_spec(Quaternion::zero_spec()) == a@);
+        assert(Quaternion::zero_spec().add_spec(a@) == a@);
+        assert(lhs@ == a@);
+        assert(rhs@ == a@);
+    }
+    (lhs, rhs)
+}
+
+#[allow(dead_code)]
 pub fn runtime_quaternion_conjugate_involution(q: &RuntimeQuaternion) -> (out: RuntimeQuaternion)
     ensures
         out@ == q@,
@@ -197,6 +243,29 @@ pub fn runtime_quaternion_mul_one_identity(a: &RuntimeQuaternion) -> (pair: (Run
         assert(Quaternion::one_spec().mul_spec(a@).eqv_spec(a@));
         assert(lhs@.eqv_spec(a@));
         assert(rhs@.eqv_spec(a@));
+    }
+    (lhs, rhs)
+}
+
+#[allow(dead_code)]
+pub fn runtime_quaternion_mul_associative(
+    a: &RuntimeQuaternion,
+    b: &RuntimeQuaternion,
+    c: &RuntimeQuaternion,
+) -> (pair: (RuntimeQuaternion, RuntimeQuaternion))
+    ensures
+        pair.0@ == a@.mul_spec(b@).mul_spec(c@),
+        pair.1@ == a@.mul_spec(b@.mul_spec(c@)),
+        pair.0@.eqv_spec(pair.1@),
+{
+    let ab = a.mul(b);
+    let lhs = ab.mul(c);
+    let bc = b.mul(c);
+    let rhs = a.mul(&bc);
+    proof {
+        Quaternion::lemma_mul_associative(a@, b@, c@);
+        assert(a@.mul_spec(b@).mul_spec(c@).eqv_spec(a@.mul_spec(b@.mul_spec(c@))));
+        assert(lhs@.eqv_spec(rhs@));
     }
     (lhs, rhs)
 }

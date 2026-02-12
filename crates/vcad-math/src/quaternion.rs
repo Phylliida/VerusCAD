@@ -41,6 +41,4084 @@ impl Quaternion {
         Self::from_ints_spec(1, 0, 0, 0)
     }
 
+    pub open spec fn i_spec() -> Self {
+        Self::from_ints_spec(0, 1, 0, 0)
+    }
+
+    pub open spec fn j_spec() -> Self {
+        Self::from_ints_spec(0, 0, 1, 0)
+    }
+
+    pub open spec fn k_spec() -> Self {
+        Self::from_ints_spec(0, 0, 0, 1)
+    }
+
+    pub proof fn lemma_basis_i_squared()
+        ensures
+            Self::i_spec().mul_spec(Self::i_spec()).eqv_spec(Self::from_ints_spec(-1, 0, 0, 0)),
+    {
+        let i = Self::i_spec();
+        let minus_one = Self::from_ints_spec(-1, 0, 0, 0);
+        let p = i.mul_spec(i);
+        assert(p.w.eqv_spec(minus_one.w));
+        assert(p.x.eqv_spec(minus_one.x));
+        assert(p.y.eqv_spec(minus_one.y));
+        assert(p.z.eqv_spec(minus_one.z));
+        Self::lemma_eqv_from_components(p, minus_one);
+        assert(p.eqv_spec(minus_one));
+    }
+
+    pub proof fn lemma_basis_j_squared()
+        ensures
+            Self::j_spec().mul_spec(Self::j_spec()).eqv_spec(Self::from_ints_spec(-1, 0, 0, 0)),
+    {
+        let j = Self::j_spec();
+        let minus_one = Self::from_ints_spec(-1, 0, 0, 0);
+        let p = j.mul_spec(j);
+        assert(p.w.eqv_spec(minus_one.w));
+        assert(p.x.eqv_spec(minus_one.x));
+        assert(p.y.eqv_spec(minus_one.y));
+        assert(p.z.eqv_spec(minus_one.z));
+        Self::lemma_eqv_from_components(p, minus_one);
+        assert(p.eqv_spec(minus_one));
+    }
+
+    pub proof fn lemma_basis_k_squared()
+        ensures
+            Self::k_spec().mul_spec(Self::k_spec()).eqv_spec(Self::from_ints_spec(-1, 0, 0, 0)),
+    {
+        let k = Self::k_spec();
+        let minus_one = Self::from_ints_spec(-1, 0, 0, 0);
+        let p = k.mul_spec(k);
+        assert(p.w.eqv_spec(minus_one.w));
+        assert(p.x.eqv_spec(minus_one.x));
+        assert(p.y.eqv_spec(minus_one.y));
+        assert(p.z.eqv_spec(minus_one.z));
+        Self::lemma_eqv_from_components(p, minus_one);
+        assert(p.eqv_spec(minus_one));
+    }
+
+    pub proof fn lemma_basis_i_mul_j()
+        ensures
+            Self::i_spec().mul_spec(Self::j_spec()).eqv_spec(Self::k_spec()),
+    {
+        let i = Self::i_spec();
+        let j = Self::j_spec();
+        let k = Self::k_spec();
+        let p = i.mul_spec(j);
+        assert(p.w.eqv_spec(k.w));
+        assert(p.x.eqv_spec(k.x));
+        assert(p.y.eqv_spec(k.y));
+        assert(p.z.eqv_spec(k.z));
+        Self::lemma_eqv_from_components(p, k);
+        assert(p.eqv_spec(k));
+    }
+
+    pub proof fn lemma_basis_j_mul_k()
+        ensures
+            Self::j_spec().mul_spec(Self::k_spec()).eqv_spec(Self::i_spec()),
+    {
+        let j = Self::j_spec();
+        let k = Self::k_spec();
+        let i = Self::i_spec();
+        let p = j.mul_spec(k);
+        assert(p.w.eqv_spec(i.w));
+        assert(p.x.eqv_spec(i.x));
+        assert(p.y.eqv_spec(i.y));
+        assert(p.z.eqv_spec(i.z));
+        Self::lemma_eqv_from_components(p, i);
+        assert(p.eqv_spec(i));
+    }
+
+    pub proof fn lemma_basis_k_mul_i()
+        ensures
+            Self::k_spec().mul_spec(Self::i_spec()).eqv_spec(Self::j_spec()),
+    {
+        let k = Self::k_spec();
+        let i = Self::i_spec();
+        let j = Self::j_spec();
+        let p = k.mul_spec(i);
+        assert(p.w.eqv_spec(j.w));
+        assert(p.x.eqv_spec(j.x));
+        assert(p.y.eqv_spec(j.y));
+        assert(p.z.eqv_spec(j.z));
+        Self::lemma_eqv_from_components(p, j);
+        assert(p.eqv_spec(j));
+    }
+
+    pub proof fn lemma_basis_j_mul_i()
+        ensures
+            Self::j_spec().mul_spec(Self::i_spec()).eqv_spec(Self::from_ints_spec(0, 0, 0, -1)),
+    {
+        let j = Self::j_spec();
+        let i = Self::i_spec();
+        let minus_k = Self::from_ints_spec(0, 0, 0, -1);
+        let p = j.mul_spec(i);
+        assert(p.w.eqv_spec(minus_k.w));
+        assert(p.x.eqv_spec(minus_k.x));
+        assert(p.y.eqv_spec(minus_k.y));
+        assert(p.z.eqv_spec(minus_k.z));
+        Self::lemma_eqv_from_components(p, minus_k);
+        assert(p.eqv_spec(minus_k));
+    }
+
+    pub proof fn lemma_basis_k_mul_j()
+        ensures
+            Self::k_spec().mul_spec(Self::j_spec()).eqv_spec(Self::from_ints_spec(0, -1, 0, 0)),
+    {
+        let k = Self::k_spec();
+        let j = Self::j_spec();
+        let minus_i = Self::from_ints_spec(0, -1, 0, 0);
+        let p = k.mul_spec(j);
+        assert(p.w.eqv_spec(minus_i.w));
+        assert(p.x.eqv_spec(minus_i.x));
+        assert(p.y.eqv_spec(minus_i.y));
+        assert(p.z.eqv_spec(minus_i.z));
+        Self::lemma_eqv_from_components(p, minus_i);
+        assert(p.eqv_spec(minus_i));
+    }
+
+    pub proof fn lemma_basis_i_mul_k()
+        ensures
+            Self::i_spec().mul_spec(Self::k_spec()).eqv_spec(Self::from_ints_spec(0, 0, -1, 0)),
+    {
+        let i = Self::i_spec();
+        let k = Self::k_spec();
+        let minus_j = Self::from_ints_spec(0, 0, -1, 0);
+        let p = i.mul_spec(k);
+        assert(p.w.eqv_spec(minus_j.w));
+        assert(p.x.eqv_spec(minus_j.x));
+        assert(p.y.eqv_spec(minus_j.y));
+        assert(p.z.eqv_spec(minus_j.z));
+        Self::lemma_eqv_from_components(p, minus_j);
+        assert(p.eqv_spec(minus_j));
+    }
+
+    pub proof fn lemma_basis_assoc_i_j_k_trial()
+        ensures
+            Self::assoc_instance_spec(Self::i_spec(), Self::j_spec(), Self::k_spec()),
+    {
+        let a = Self::i_spec();
+        let b = Self::j_spec();
+        let c = Self::k_spec();
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+        let minus_one = Self::from_ints_spec(-1, 0, 0, 0);
+
+        Self::lemma_basis_i_mul_j();
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::k_spec(), c);
+        assert(lhs.eqv_spec(Self::k_spec().mul_spec(c)));
+        Self::lemma_basis_k_squared();
+        Self::lemma_eqv_transitive(lhs, Self::k_spec().mul_spec(c), minus_one);
+        assert(lhs.eqv_spec(minus_one));
+
+        Self::lemma_basis_j_mul_k();
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::i_spec());
+        assert(rhs.eqv_spec(a.mul_spec(Self::i_spec())));
+        Self::lemma_basis_i_squared();
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::i_spec()), minus_one);
+        assert(rhs.eqv_spec(minus_one));
+
+        Self::lemma_eqv_symmetric(rhs, minus_one);
+        Self::lemma_eqv_transitive(lhs, minus_one, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(a, b, c));
+    }
+
+    pub open spec fn basis_spec(i: int) -> Self
+        recommends
+            0 <= i < 4,
+    {
+        if i == 0 {
+            Self::one_spec()
+        } else if i == 1 {
+            Self::i_spec()
+        } else if i == 2 {
+            Self::j_spec()
+        } else {
+            Self::k_spec()
+        }
+    }
+
+    pub open spec fn signed_basis_spec(sign: int, i: int) -> Self
+        recommends
+            (sign == 1 || sign == -1) && 0 <= i < 4,
+    {
+        Self::basis_spec(i).scale_spec(Scalar::from_int_spec(sign))
+    }
+
+    pub open spec fn basis_mul_idx_spec(i: int, j: int) -> int
+        recommends
+            0 <= i < 4 && 0 <= j < 4,
+    {
+        if i == 0 {
+            j
+        } else if j == 0 {
+            i
+        } else if i == j {
+            0
+        } else if i == 1 && j == 2 {
+            3
+        } else if i == 2 && j == 3 {
+            1
+        } else if i == 3 && j == 1 {
+            2
+        } else if i == 2 && j == 1 {
+            3
+        } else if i == 3 && j == 2 {
+            1
+        } else {
+            2
+        }
+    }
+
+    pub open spec fn basis_mul_sign_spec(i: int, j: int) -> int
+        recommends
+            0 <= i < 4 && 0 <= j < 4,
+    {
+        if i == 0 || j == 0 {
+            1
+        } else if i == j {
+            -1
+        } else if i == 1 && j == 2 {
+            1
+        } else if i == 2 && j == 3 {
+            1
+        } else if i == 3 && j == 1 {
+            1
+        } else {
+            -1
+        }
+    }
+
+    pub open spec fn basis_decompose_spec(q: Self) -> Self {
+        Self::basis_spec(0).scale_spec(q.w)
+            .add_spec(Self::basis_spec(1).scale_spec(q.x))
+            .add_spec(Self::basis_spec(2).scale_spec(q.y))
+            .add_spec(Self::basis_spec(3).scale_spec(q.z))
+    }
+
+    pub proof fn lemma_scale_one_identity(q: Self)
+        ensures
+            q.scale_spec(Scalar::from_int_spec(1)).eqv_spec(q),
+    {
+        let one = Scalar::from_int_spec(1);
+        let qs = q.scale_spec(one);
+        Scalar::lemma_mul_one_identity(q.w);
+        Scalar::lemma_mul_one_identity(q.x);
+        Scalar::lemma_mul_one_identity(q.y);
+        Scalar::lemma_mul_one_identity(q.z);
+        assert(qs.w.eqv_spec(q.w));
+        assert(qs.x.eqv_spec(q.x));
+        assert(qs.y.eqv_spec(q.y));
+        assert(qs.z.eqv_spec(q.z));
+        Self::lemma_eqv_from_components(qs, q);
+        assert(qs.eqv_spec(q));
+    }
+
+    pub proof fn lemma_scale_associative(q: Self, a: Scalar, b: Scalar)
+        ensures
+            q.scale_spec(a).scale_spec(b).eqv_spec(q.scale_spec(a.mul_spec(b))),
+    {
+        let lhs = q.scale_spec(a).scale_spec(b);
+        let rhs = q.scale_spec(a.mul_spec(b));
+        Scalar::lemma_mul_associative(q.w, a, b);
+        Scalar::lemma_mul_associative(q.x, a, b);
+        Scalar::lemma_mul_associative(q.y, a, b);
+        Scalar::lemma_mul_associative(q.z, a, b);
+        assert(lhs.w.eqv_spec(rhs.w));
+        assert(lhs.x.eqv_spec(rhs.x));
+        assert(lhs.y.eqv_spec(rhs.y));
+        assert(lhs.z.eqv_spec(rhs.z));
+        Self::lemma_eqv_from_components(lhs, rhs);
+        assert(lhs.eqv_spec(rhs));
+    }
+
+    pub proof fn lemma_signed_basis_neg_constant(i: int)
+        requires
+            0 <= i < 4,
+        ensures
+            if i == 0 {
+                Self::signed_basis_spec(-1, i).eqv_spec(Self::from_ints_spec(-1, 0, 0, 0))
+            } else if i == 1 {
+                Self::signed_basis_spec(-1, i).eqv_spec(Self::from_ints_spec(0, -1, 0, 0))
+            } else if i == 2 {
+                Self::signed_basis_spec(-1, i).eqv_spec(Self::from_ints_spec(0, 0, -1, 0))
+            } else {
+                Self::signed_basis_spec(-1, i).eqv_spec(Self::from_ints_spec(0, 0, 0, -1))
+            },
+    {
+        let m = Scalar::from_int_spec(-1);
+        let z = Scalar::from_int_spec(0);
+        if i == 0 {
+            let q = Self::signed_basis_spec(-1, i);
+            let t = Self::from_ints_spec(-1, 0, 0, 0);
+            Scalar::lemma_mul_one_identity(m);
+            Scalar::lemma_mul_zero(m);
+            assert(q.w.eqv_spec(t.w));
+            assert(q.x.eqv_spec(t.x));
+            assert(q.y.eqv_spec(t.y));
+            assert(q.z.eqv_spec(t.z));
+            Self::lemma_eqv_from_components(q, t);
+            assert(q.eqv_spec(t));
+        } else if i == 1 {
+            let q = Self::signed_basis_spec(-1, i);
+            let t = Self::from_ints_spec(0, -1, 0, 0);
+            Scalar::lemma_mul_one_identity(m);
+            Scalar::lemma_mul_zero(m);
+            assert(q.w.eqv_spec(z));
+            assert(q.x.eqv_spec(Scalar::from_int_spec(-1)));
+            assert(q.y.eqv_spec(z));
+            assert(q.z.eqv_spec(z));
+            assert(t.w == z);
+            assert(t.x == Scalar::from_int_spec(-1));
+            assert(t.y == z);
+            assert(t.z == z);
+            assert(q.w.eqv_spec(t.w));
+            assert(q.x.eqv_spec(t.x));
+            assert(q.y.eqv_spec(t.y));
+            assert(q.z.eqv_spec(t.z));
+            Self::lemma_eqv_from_components(q, t);
+            assert(q.eqv_spec(t));
+        } else if i == 2 {
+            let q = Self::signed_basis_spec(-1, i);
+            let t = Self::from_ints_spec(0, 0, -1, 0);
+            Scalar::lemma_mul_one_identity(m);
+            Scalar::lemma_mul_zero(m);
+            assert(q.w.eqv_spec(z));
+            assert(q.x.eqv_spec(z));
+            assert(q.y.eqv_spec(Scalar::from_int_spec(-1)));
+            assert(q.z.eqv_spec(z));
+            assert(t.w == z);
+            assert(t.x == z);
+            assert(t.y == Scalar::from_int_spec(-1));
+            assert(t.z == z);
+            assert(q.w.eqv_spec(t.w));
+            assert(q.x.eqv_spec(t.x));
+            assert(q.y.eqv_spec(t.y));
+            assert(q.z.eqv_spec(t.z));
+            Self::lemma_eqv_from_components(q, t);
+            assert(q.eqv_spec(t));
+        } else {
+            let q = Self::signed_basis_spec(-1, i);
+            let t = Self::from_ints_spec(0, 0, 0, -1);
+            Scalar::lemma_mul_one_identity(m);
+            Scalar::lemma_mul_zero(m);
+            assert(q.w.eqv_spec(z));
+            assert(q.x.eqv_spec(z));
+            assert(q.y.eqv_spec(z));
+            assert(q.z.eqv_spec(Scalar::from_int_spec(-1)));
+            assert(t.w == z);
+            assert(t.x == z);
+            assert(t.y == z);
+            assert(t.z == Scalar::from_int_spec(-1));
+            assert(q.w.eqv_spec(t.w));
+            assert(q.x.eqv_spec(t.x));
+            assert(q.y.eqv_spec(t.y));
+            assert(q.z.eqv_spec(t.z));
+            Self::lemma_eqv_from_components(q, t);
+            assert(q.eqv_spec(t));
+        }
+    }
+
+    pub proof fn lemma_basis_mul_to_signed(i: int, j: int)
+        requires
+            0 <= i < 4,
+            0 <= j < 4,
+        ensures
+            Self::basis_spec(i).mul_spec(Self::basis_spec(j)).eqv_spec(
+                Self::signed_basis_spec(Self::basis_mul_sign_spec(i, j), Self::basis_mul_idx_spec(i, j)),
+            ),
+    {
+        let a = Self::basis_spec(i);
+        let b = Self::basis_spec(j);
+        let p = a.mul_spec(b);
+        let target = Self::signed_basis_spec(Self::basis_mul_sign_spec(i, j), Self::basis_mul_idx_spec(i, j));
+        if i == 0 {
+            Self::lemma_mul_one_identity(b);
+            assert(a == Self::one_spec());
+            assert(a.mul_spec(b).eqv_spec(b));
+            Self::lemma_scale_one_identity(b);
+            assert(target == Self::signed_basis_spec(1, j));
+            assert(target.eqv_spec(b));
+            Self::lemma_eqv_symmetric(target, b);
+            Self::lemma_eqv_transitive(p, b, target);
+            assert(p.eqv_spec(target));
+        } else if j == 0 {
+            Self::lemma_mul_one_identity(a);
+            assert(b == Self::one_spec());
+            assert(a.mul_spec(b).eqv_spec(a));
+            Self::lemma_scale_one_identity(a);
+            assert(target == Self::signed_basis_spec(1, i));
+            assert(target.eqv_spec(a));
+            Self::lemma_eqv_symmetric(target, a);
+            Self::lemma_eqv_transitive(p, a, target);
+            assert(p.eqv_spec(target));
+        } else if i == j {
+            let minus_one = Self::from_ints_spec(-1, 0, 0, 0);
+            if i == 1 {
+                Self::lemma_basis_i_squared();
+            } else if i == 2 {
+                Self::lemma_basis_j_squared();
+            } else {
+                Self::lemma_basis_k_squared();
+            }
+            Self::lemma_signed_basis_neg_constant(0);
+            assert(target == Self::signed_basis_spec(-1, 0));
+            assert(target.eqv_spec(minus_one));
+            Self::lemma_eqv_symmetric(target, minus_one);
+            Self::lemma_eqv_transitive(p, minus_one, target);
+            assert(p.eqv_spec(target));
+        } else if i == 1 && j == 2 {
+            Self::lemma_basis_i_mul_j();
+            let k = Self::k_spec();
+            Self::lemma_scale_one_identity(k);
+            assert(target == Self::signed_basis_spec(1, 3));
+            assert(target.eqv_spec(k));
+            Self::lemma_eqv_symmetric(target, k);
+            Self::lemma_eqv_transitive(p, k, target);
+            assert(p.eqv_spec(target));
+        } else if i == 2 && j == 3 {
+            Self::lemma_basis_j_mul_k();
+            let x = Self::i_spec();
+            Self::lemma_scale_one_identity(x);
+            assert(target == Self::signed_basis_spec(1, 1));
+            assert(target.eqv_spec(x));
+            Self::lemma_eqv_symmetric(target, x);
+            Self::lemma_eqv_transitive(p, x, target);
+            assert(p.eqv_spec(target));
+        } else if i == 3 && j == 1 {
+            Self::lemma_basis_k_mul_i();
+            let y = Self::j_spec();
+            Self::lemma_scale_one_identity(y);
+            assert(target == Self::signed_basis_spec(1, 2));
+            assert(target.eqv_spec(y));
+            Self::lemma_eqv_symmetric(target, y);
+            Self::lemma_eqv_transitive(p, y, target);
+            assert(p.eqv_spec(target));
+        } else if i == 2 && j == 1 {
+            let minus_k = Self::from_ints_spec(0, 0, 0, -1);
+            Self::lemma_basis_j_mul_i();
+            Self::lemma_signed_basis_neg_constant(3);
+            assert(target == Self::signed_basis_spec(-1, 3));
+            assert(target.eqv_spec(minus_k));
+            Self::lemma_eqv_symmetric(target, minus_k);
+            Self::lemma_eqv_transitive(p, minus_k, target);
+            assert(p.eqv_spec(target));
+        } else if i == 3 && j == 2 {
+            let minus_i = Self::from_ints_spec(0, -1, 0, 0);
+            Self::lemma_basis_k_mul_j();
+            Self::lemma_signed_basis_neg_constant(1);
+            assert(target == Self::signed_basis_spec(-1, 1));
+            assert(target.eqv_spec(minus_i));
+            Self::lemma_eqv_symmetric(target, minus_i);
+            Self::lemma_eqv_transitive(p, minus_i, target);
+            assert(p.eqv_spec(target));
+        } else {
+            let minus_j = Self::from_ints_spec(0, 0, -1, 0);
+            Self::lemma_basis_i_mul_k();
+            Self::lemma_signed_basis_neg_constant(2);
+            assert(target == Self::signed_basis_spec(-1, 2));
+            assert(target.eqv_spec(minus_j));
+            Self::lemma_eqv_symmetric(target, minus_j);
+            Self::lemma_eqv_transitive(p, minus_j, target);
+            assert(p.eqv_spec(target));
+        }
+    }
+
+    pub proof fn lemma_signed_basis_scale_neg_one(sign: int, i: int)
+        requires
+            (sign == 1 || sign == -1),
+            0 <= i < 4,
+        ensures
+            Self::signed_basis_spec(sign, i).scale_spec(Scalar::from_int_spec(-1))
+                .eqv_spec(Self::signed_basis_spec(-sign, i)),
+    {
+        let m = Scalar::from_int_spec(-1);
+        let s = Scalar::from_int_spec(sign);
+        let lhs = Self::signed_basis_spec(sign, i).scale_spec(m);
+        let rhs = Self::signed_basis_spec(-sign, i);
+        let b = Self::basis_spec(i);
+        Self::lemma_scale_associative(b, s, m);
+        assert(Self::signed_basis_spec(sign, i) == b.scale_spec(s));
+        assert(lhs.eqv_spec(b.scale_spec(s.mul_spec(m))));
+        Scalar::lemma_mul_commutative(s, m);
+        assert(s.mul_spec(m).eqv_spec(m.mul_spec(s)));
+        Self::lemma_eqv_transitive(b.scale_spec(s.mul_spec(m)), b.scale_spec(m.mul_spec(s)), rhs);
+        if sign == 1 {
+            assert(m.mul_spec(s) == Scalar::from_int_spec(-1));
+            assert(rhs == b.scale_spec(Scalar::from_int_spec(-1)));
+            Self::lemma_eqv_reflexive(rhs);
+            assert(b.scale_spec(m.mul_spec(s)).eqv_spec(rhs));
+        } else {
+            assert(sign == -1);
+            assert(s == Scalar::from_int_spec(-1));
+            assert(m.mul_spec(s).num == (-1) * (-1));
+            assert((-1) * (-1) == 1) by (nonlinear_arith);
+            assert(m.mul_spec(s).num == 1);
+            assert(m.mul_spec(s).den == 0);
+            assert(m.mul_spec(s) == Scalar::from_int_spec(1));
+            assert(rhs == b.scale_spec(Scalar::from_int_spec(1)));
+            Self::lemma_eqv_reflexive(rhs);
+            assert(b.scale_spec(m.mul_spec(s)).eqv_spec(rhs));
+        }
+        Self::lemma_eqv_transitive(lhs, b.scale_spec(s.mul_spec(m)), b.scale_spec(m.mul_spec(s)));
+        Self::lemma_eqv_transitive(lhs, b.scale_spec(m.mul_spec(s)), rhs);
+        assert(lhs.eqv_spec(rhs));
+    }
+
+    pub proof fn lemma_signed_basis_mul_basis(sign: int, i: int, j: int)
+        requires
+            (sign == 1 || sign == -1),
+            0 <= i < 4,
+            0 <= j < 4,
+        ensures
+            Self::signed_basis_spec(sign, i).mul_spec(Self::basis_spec(j)).eqv_spec(
+                Self::signed_basis_spec(sign * Self::basis_mul_sign_spec(i, j), Self::basis_mul_idx_spec(i, j)),
+            ),
+    {
+        let a = Self::basis_spec(i);
+        let b = Self::basis_spec(j);
+        let s = Scalar::from_int_spec(sign);
+        let lhs = Self::signed_basis_spec(sign, i).mul_spec(b);
+        let mid0 = a.mul_spec(b).scale_spec(s);
+        let base = Self::signed_basis_spec(Self::basis_mul_sign_spec(i, j), Self::basis_mul_idx_spec(i, j));
+        let mid1 = base.scale_spec(s);
+        let rhs = Self::signed_basis_spec(sign * Self::basis_mul_sign_spec(i, j), Self::basis_mul_idx_spec(i, j));
+
+        Self::lemma_mul_scale_left(a, b, s);
+        assert(lhs.eqv_spec(mid0));
+
+        Self::lemma_basis_mul_to_signed(i, j);
+        Self::lemma_scale_eqv_congruence(a.mul_spec(b), base, s);
+        assert(mid0.eqv_spec(mid1));
+
+        Self::lemma_signed_basis_scale_neg_one(Self::basis_mul_sign_spec(i, j), Self::basis_mul_idx_spec(i, j));
+        if sign == 1 {
+            Self::lemma_scale_one_identity(base);
+            assert(mid1.eqv_spec(base));
+            assert(rhs == base);
+            Self::lemma_eqv_reflexive(rhs);
+            assert(base.eqv_spec(rhs));
+            Self::lemma_eqv_transitive(lhs, mid0, mid1);
+            Self::lemma_eqv_transitive(lhs, mid1, rhs);
+            assert(lhs.eqv_spec(rhs));
+        } else {
+            assert(sign == -1);
+            assert(mid1 == base.scale_spec(Scalar::from_int_spec(-1)));
+            assert(rhs == Self::signed_basis_spec(-Self::basis_mul_sign_spec(i, j), Self::basis_mul_idx_spec(i, j)));
+            assert(base.scale_spec(Scalar::from_int_spec(-1)).eqv_spec(rhs));
+            Self::lemma_eqv_transitive(lhs, mid0, mid1);
+            Self::lemma_eqv_transitive(lhs, mid1, rhs);
+            assert(lhs.eqv_spec(rhs));
+        }
+    }
+
+    pub proof fn lemma_basis_mul_signed_basis(i: int, sign: int, j: int)
+        requires
+            0 <= i < 4,
+            (sign == 1 || sign == -1),
+            0 <= j < 4,
+        ensures
+            Self::basis_spec(i).mul_spec(Self::signed_basis_spec(sign, j)).eqv_spec(
+                Self::signed_basis_spec(sign * Self::basis_mul_sign_spec(i, j), Self::basis_mul_idx_spec(i, j)),
+            ),
+    {
+        let a = Self::basis_spec(i);
+        let b = Self::basis_spec(j);
+        let s = Scalar::from_int_spec(sign);
+        let lhs = a.mul_spec(Self::signed_basis_spec(sign, j));
+        let mid0 = a.mul_spec(b).scale_spec(s);
+        let base = Self::signed_basis_spec(Self::basis_mul_sign_spec(i, j), Self::basis_mul_idx_spec(i, j));
+        let mid1 = base.scale_spec(s);
+        let rhs = Self::signed_basis_spec(sign * Self::basis_mul_sign_spec(i, j), Self::basis_mul_idx_spec(i, j));
+
+        Self::lemma_mul_scale_right(a, b, s);
+        assert(lhs.eqv_spec(mid0));
+
+        Self::lemma_basis_mul_to_signed(i, j);
+        Self::lemma_scale_eqv_congruence(a.mul_spec(b), base, s);
+        assert(mid0.eqv_spec(mid1));
+
+        Self::lemma_signed_basis_scale_neg_one(Self::basis_mul_sign_spec(i, j), Self::basis_mul_idx_spec(i, j));
+        if sign == 1 {
+            Self::lemma_scale_one_identity(base);
+            assert(mid1.eqv_spec(base));
+            assert(rhs == base);
+            Self::lemma_eqv_reflexive(rhs);
+            assert(base.eqv_spec(rhs));
+            Self::lemma_eqv_transitive(lhs, mid0, mid1);
+            Self::lemma_eqv_transitive(lhs, mid1, rhs);
+            assert(lhs.eqv_spec(rhs));
+        } else {
+            assert(sign == -1);
+            assert(mid1 == base.scale_spec(Scalar::from_int_spec(-1)));
+            assert(rhs == Self::signed_basis_spec(-Self::basis_mul_sign_spec(i, j), Self::basis_mul_idx_spec(i, j)));
+            assert(base.scale_spec(Scalar::from_int_spec(-1)).eqv_spec(rhs));
+            Self::lemma_eqv_transitive(lhs, mid0, mid1);
+            Self::lemma_eqv_transitive(lhs, mid1, rhs);
+            assert(lhs.eqv_spec(rhs));
+        }
+    }
+
+    #[verifier::rlimit(300)]
+    pub proof fn lemma_basis_decompose_eqv(q: Self)
+        ensures
+            q.eqv_spec(Self::basis_decompose_spec(q)),
+    {
+        let z = Scalar::from_int_spec(0);
+        let d0 = Self::basis_spec(0).scale_spec(q.w);
+        let d1 = Self::basis_spec(1).scale_spec(q.x);
+        let d2 = Self::basis_spec(2).scale_spec(q.y);
+        let d3 = Self::basis_spec(3).scale_spec(q.z);
+        let d = Self::basis_decompose_spec(q);
+
+        Scalar::lemma_mul_one_identity(q.w);
+        Scalar::lemma_mul_one_identity(q.x);
+        Scalar::lemma_mul_one_identity(q.y);
+        Scalar::lemma_mul_one_identity(q.z);
+        Scalar::lemma_mul_zero(q.w);
+        Scalar::lemma_mul_zero(q.x);
+        Scalar::lemma_mul_zero(q.y);
+        Scalar::lemma_mul_zero(q.z);
+
+        assert(d0.w.eqv_spec(q.w));
+        assert(d0.x.eqv_spec(z));
+        assert(d0.y.eqv_spec(z));
+        assert(d0.z.eqv_spec(z));
+
+        assert(d1.w.eqv_spec(z));
+        assert(d1.x.eqv_spec(q.x));
+        assert(d1.y.eqv_spec(z));
+        assert(d1.z.eqv_spec(z));
+
+        assert(d2.w.eqv_spec(z));
+        assert(d2.x.eqv_spec(z));
+        assert(d2.y.eqv_spec(q.y));
+        assert(d2.z.eqv_spec(z));
+
+        assert(d3.w.eqv_spec(z));
+        assert(d3.x.eqv_spec(z));
+        assert(d3.y.eqv_spec(z));
+        assert(d3.z.eqv_spec(q.z));
+
+        assert(d.w == d0.w.add_spec(d1.w).add_spec(d2.w).add_spec(d3.w));
+        assert(d.x == d0.x.add_spec(d1.x).add_spec(d2.x).add_spec(d3.x));
+        assert(d.y == d0.y.add_spec(d1.y).add_spec(d2.y).add_spec(d3.y));
+        assert(d.z == d0.z.add_spec(d1.z).add_spec(d2.z).add_spec(d3.z));
+
+        let w01 = d0.w.add_spec(d1.w);
+        Scalar::lemma_eqv_add_congruence(d0.w, q.w, d1.w, z);
+        assert(w01.eqv_spec(q.w.add_spec(z)));
+        Scalar::lemma_add_zero_identity(q.w);
+        assert(w01.eqv_spec(q.w));
+        let w012 = w01.add_spec(d2.w);
+        Scalar::lemma_eqv_add_congruence(w01, q.w, d2.w, z);
+        assert(w012.eqv_spec(q.w.add_spec(z)));
+        assert(w012.eqv_spec(q.w));
+        let w0123 = w012.add_spec(d3.w);
+        Scalar::lemma_eqv_add_congruence(w012, q.w, d3.w, z);
+        assert(w0123.eqv_spec(q.w.add_spec(z)));
+        assert(w0123.eqv_spec(q.w));
+        assert(d.w.eqv_spec(w0123));
+        Scalar::lemma_eqv_transitive(d.w, w0123, q.w);
+        assert(d.w.eqv_spec(q.w));
+
+        let x01 = d0.x.add_spec(d1.x);
+        Scalar::lemma_eqv_add_congruence(d0.x, z, d1.x, q.x);
+        assert(x01.eqv_spec(z.add_spec(q.x)));
+        Scalar::lemma_add_zero_identity(q.x);
+        assert(x01.eqv_spec(q.x));
+        let x012 = x01.add_spec(d2.x);
+        Scalar::lemma_eqv_add_congruence(x01, q.x, d2.x, z);
+        assert(x012.eqv_spec(q.x.add_spec(z)));
+        assert(x012.eqv_spec(q.x));
+        let x0123 = x012.add_spec(d3.x);
+        Scalar::lemma_eqv_add_congruence(x012, q.x, d3.x, z);
+        assert(x0123.eqv_spec(q.x.add_spec(z)));
+        assert(x0123.eqv_spec(q.x));
+        assert(d.x.eqv_spec(x0123));
+        Scalar::lemma_eqv_transitive(d.x, x0123, q.x);
+        assert(d.x.eqv_spec(q.x));
+
+        let y01 = d0.y.add_spec(d1.y);
+        Scalar::lemma_eqv_add_congruence(d0.y, z, d1.y, z);
+        assert(y01.eqv_spec(z.add_spec(z)));
+        assert(z.add_spec(z) == z);
+        assert(y01.eqv_spec(z));
+        let y012 = y01.add_spec(d2.y);
+        Scalar::lemma_eqv_add_congruence(y01, z, d2.y, q.y);
+        assert(y012.eqv_spec(z.add_spec(q.y)));
+        Scalar::lemma_add_zero_identity(q.y);
+        assert(y012.eqv_spec(q.y));
+        let y0123 = y012.add_spec(d3.y);
+        Scalar::lemma_eqv_add_congruence(y012, q.y, d3.y, z);
+        assert(y0123.eqv_spec(q.y.add_spec(z)));
+        assert(y0123.eqv_spec(q.y));
+        assert(d.y.eqv_spec(y0123));
+        Scalar::lemma_eqv_transitive(d.y, y0123, q.y);
+        assert(d.y.eqv_spec(q.y));
+
+        let z01 = d0.z.add_spec(d1.z);
+        Scalar::lemma_eqv_add_congruence(d0.z, z, d1.z, z);
+        assert(z01.eqv_spec(z.add_spec(z)));
+        assert(z01.eqv_spec(z));
+        let z012 = z01.add_spec(d2.z);
+        Scalar::lemma_eqv_add_congruence(z01, z, d2.z, z);
+        assert(z012.eqv_spec(z.add_spec(z)));
+        assert(z012.eqv_spec(z));
+        let z0123 = z012.add_spec(d3.z);
+        Scalar::lemma_eqv_add_congruence(z012, z, d3.z, q.z);
+        assert(z0123.eqv_spec(z.add_spec(q.z)));
+        Scalar::lemma_add_zero_identity(q.z);
+        assert(z0123.eqv_spec(q.z));
+        assert(d.z.eqv_spec(z0123));
+        Scalar::lemma_eqv_transitive(d.z, z0123, q.z);
+        assert(d.z.eqv_spec(q.z));
+
+        Self::lemma_eqv_symmetric(q, d);
+        assert(q.w.eqv_spec(d.w));
+        assert(q.x.eqv_spec(d.x));
+        assert(q.y.eqv_spec(d.y));
+        assert(q.z.eqv_spec(d.z));
+        Self::lemma_eqv_from_components(q, d);
+        assert(q.eqv_spec(d));
+    }
+
+    #[verifier::rlimit(1200)]
+    pub proof fn lemma_assoc_basis_any(i: int, b: Self, c: Self)
+        requires
+            0 <= i < 4,
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(i), b, c),
+    {
+        let a = Self::basis_spec(i);
+
+        let b0 = Self::basis_spec(0).scale_spec(b.w);
+        let b1 = Self::basis_spec(1).scale_spec(b.x);
+        let b2 = Self::basis_spec(2).scale_spec(b.y);
+        let b3 = Self::basis_spec(3).scale_spec(b.z);
+        let bsum = Self::basis_decompose_spec(b);
+
+        let c0 = Self::basis_spec(0).scale_spec(c.w);
+        let c1 = Self::basis_spec(1).scale_spec(c.x);
+        let c2 = Self::basis_spec(2).scale_spec(c.y);
+        let c3 = Self::basis_spec(3).scale_spec(c.z);
+        let csum = Self::basis_decompose_spec(c);
+
+        // j = 0
+        Self::lemma_basis_assoc_indices(i, 0, 0);
+        Self::lemma_assoc_linear_right_scale(a, Self::basis_spec(0), Self::basis_spec(0), c.w);
+        Self::lemma_basis_assoc_indices(i, 0, 1);
+        Self::lemma_assoc_linear_right_scale(a, Self::basis_spec(0), Self::basis_spec(1), c.x);
+        Self::lemma_basis_assoc_indices(i, 0, 2);
+        Self::lemma_assoc_linear_right_scale(a, Self::basis_spec(0), Self::basis_spec(2), c.y);
+        Self::lemma_basis_assoc_indices(i, 0, 3);
+        Self::lemma_assoc_linear_right_scale(a, Self::basis_spec(0), Self::basis_spec(3), c.z);
+        Self::lemma_assoc_linear_right_add(a, Self::basis_spec(0), c0, c1);
+        Self::lemma_assoc_linear_right_add(a, Self::basis_spec(0), c0.add_spec(c1), c2);
+        Self::lemma_assoc_linear_right_add(a, Self::basis_spec(0), c0.add_spec(c1).add_spec(c2), c3);
+        let ac0 = Self::assoc_instance_spec(a, Self::basis_spec(0), csum);
+        assert(ac0);
+
+        // j = 1
+        Self::lemma_basis_assoc_indices(i, 1, 0);
+        Self::lemma_assoc_linear_right_scale(a, Self::basis_spec(1), Self::basis_spec(0), c.w);
+        Self::lemma_basis_assoc_indices(i, 1, 1);
+        Self::lemma_assoc_linear_right_scale(a, Self::basis_spec(1), Self::basis_spec(1), c.x);
+        Self::lemma_basis_assoc_indices(i, 1, 2);
+        Self::lemma_assoc_linear_right_scale(a, Self::basis_spec(1), Self::basis_spec(2), c.y);
+        Self::lemma_basis_assoc_indices(i, 1, 3);
+        Self::lemma_assoc_linear_right_scale(a, Self::basis_spec(1), Self::basis_spec(3), c.z);
+        Self::lemma_assoc_linear_right_add(a, Self::basis_spec(1), c0, c1);
+        Self::lemma_assoc_linear_right_add(a, Self::basis_spec(1), c0.add_spec(c1), c2);
+        Self::lemma_assoc_linear_right_add(a, Self::basis_spec(1), c0.add_spec(c1).add_spec(c2), c3);
+        let ac1 = Self::assoc_instance_spec(a, Self::basis_spec(1), csum);
+        assert(ac1);
+
+        // j = 2
+        Self::lemma_basis_assoc_indices(i, 2, 0);
+        Self::lemma_assoc_linear_right_scale(a, Self::basis_spec(2), Self::basis_spec(0), c.w);
+        Self::lemma_basis_assoc_indices(i, 2, 1);
+        Self::lemma_assoc_linear_right_scale(a, Self::basis_spec(2), Self::basis_spec(1), c.x);
+        Self::lemma_basis_assoc_indices(i, 2, 2);
+        Self::lemma_assoc_linear_right_scale(a, Self::basis_spec(2), Self::basis_spec(2), c.y);
+        Self::lemma_basis_assoc_indices(i, 2, 3);
+        Self::lemma_assoc_linear_right_scale(a, Self::basis_spec(2), Self::basis_spec(3), c.z);
+        Self::lemma_assoc_linear_right_add(a, Self::basis_spec(2), c0, c1);
+        Self::lemma_assoc_linear_right_add(a, Self::basis_spec(2), c0.add_spec(c1), c2);
+        Self::lemma_assoc_linear_right_add(a, Self::basis_spec(2), c0.add_spec(c1).add_spec(c2), c3);
+        let ac2 = Self::assoc_instance_spec(a, Self::basis_spec(2), csum);
+        assert(ac2);
+
+        // j = 3
+        Self::lemma_basis_assoc_indices(i, 3, 0);
+        Self::lemma_assoc_linear_right_scale(a, Self::basis_spec(3), Self::basis_spec(0), c.w);
+        Self::lemma_basis_assoc_indices(i, 3, 1);
+        Self::lemma_assoc_linear_right_scale(a, Self::basis_spec(3), Self::basis_spec(1), c.x);
+        Self::lemma_basis_assoc_indices(i, 3, 2);
+        Self::lemma_assoc_linear_right_scale(a, Self::basis_spec(3), Self::basis_spec(2), c.y);
+        Self::lemma_basis_assoc_indices(i, 3, 3);
+        Self::lemma_assoc_linear_right_scale(a, Self::basis_spec(3), Self::basis_spec(3), c.z);
+        Self::lemma_assoc_linear_right_add(a, Self::basis_spec(3), c0, c1);
+        Self::lemma_assoc_linear_right_add(a, Self::basis_spec(3), c0.add_spec(c1), c2);
+        Self::lemma_assoc_linear_right_add(a, Self::basis_spec(3), c0.add_spec(c1).add_spec(c2), c3);
+        let ac3 = Self::assoc_instance_spec(a, Self::basis_spec(3), csum);
+        assert(ac3);
+
+        // Lift middle operand from basis terms to full decomposition.
+        Self::lemma_assoc_linear_middle_scale(a, Self::basis_spec(0), csum, b.w);
+        Self::lemma_assoc_linear_middle_scale(a, Self::basis_spec(1), csum, b.x);
+        Self::lemma_assoc_linear_middle_scale(a, Self::basis_spec(2), csum, b.y);
+        Self::lemma_assoc_linear_middle_scale(a, Self::basis_spec(3), csum, b.z);
+        Self::lemma_assoc_linear_middle_add(a, b0, b1, csum);
+        Self::lemma_assoc_linear_middle_add(a, b0.add_spec(b1), b2, csum);
+        Self::lemma_assoc_linear_middle_add(a, b0.add_spec(b1).add_spec(b2), b3, csum);
+        assert(Self::assoc_instance_spec(a, bsum, csum));
+
+        // Move from decomposition representatives back to b and c.
+        Self::lemma_basis_decompose_eqv(c);
+        Self::lemma_eqv_symmetric(c, csum);
+        Self::lemma_assoc_eqv_right(a, bsum, csum, c);
+        assert(Self::assoc_instance_spec(a, bsum, c));
+
+        Self::lemma_basis_decompose_eqv(b);
+        Self::lemma_eqv_symmetric(b, bsum);
+        Self::lemma_assoc_eqv_middle(a, bsum, b, c);
+        assert(Self::assoc_instance_spec(a, b, c));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_helpers_1_2_3()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(2), Self::basis_spec(3)),
+    {
+        let a = Self::basis_spec(1);
+        let b = Self::basis_spec(2);
+        let c = Self::basis_spec(3);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(1, 2);
+        let idx_ab = Self::basis_mul_idx_spec(1, 2);
+        let s_bc = Self::basis_mul_sign_spec(2, 3);
+        let idx_bc = Self::basis_mul_idx_spec(2, 3);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 3),
+            Self::basis_mul_idx_spec(idx_ab, 3),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(1, idx_bc),
+            Self::basis_mul_idx_spec(1, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(1, 2);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 3);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(2, 3);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(1, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(2), Self::basis_spec(3)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_0_0_0()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(0), Self::basis_spec(0)),
+    {
+        let a = Self::basis_spec(0);
+        let b = Self::basis_spec(0);
+        let c = Self::basis_spec(0);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(0, 0);
+        let idx_ab = Self::basis_mul_idx_spec(0, 0);
+        let s_bc = Self::basis_mul_sign_spec(0, 0);
+        let idx_bc = Self::basis_mul_idx_spec(0, 0);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 0),
+            Self::basis_mul_idx_spec(idx_ab, 0),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(0, idx_bc),
+            Self::basis_mul_idx_spec(0, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(0, 0);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 0);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(0, 0);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(0, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(0), Self::basis_spec(0)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_0_0_1()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(0), Self::basis_spec(1)),
+    {
+        let a = Self::basis_spec(0);
+        let b = Self::basis_spec(0);
+        let c = Self::basis_spec(1);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(0, 0);
+        let idx_ab = Self::basis_mul_idx_spec(0, 0);
+        let s_bc = Self::basis_mul_sign_spec(0, 1);
+        let idx_bc = Self::basis_mul_idx_spec(0, 1);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 1),
+            Self::basis_mul_idx_spec(idx_ab, 1),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(0, idx_bc),
+            Self::basis_mul_idx_spec(0, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(0, 0);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 1);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(0, 1);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(0, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(0), Self::basis_spec(1)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_0_0_2()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(0), Self::basis_spec(2)),
+    {
+        let a = Self::basis_spec(0);
+        let b = Self::basis_spec(0);
+        let c = Self::basis_spec(2);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(0, 0);
+        let idx_ab = Self::basis_mul_idx_spec(0, 0);
+        let s_bc = Self::basis_mul_sign_spec(0, 2);
+        let idx_bc = Self::basis_mul_idx_spec(0, 2);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 2),
+            Self::basis_mul_idx_spec(idx_ab, 2),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(0, idx_bc),
+            Self::basis_mul_idx_spec(0, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(0, 0);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 2);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(0, 2);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(0, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(0), Self::basis_spec(2)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_0_0_3()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(0), Self::basis_spec(3)),
+    {
+        let a = Self::basis_spec(0);
+        let b = Self::basis_spec(0);
+        let c = Self::basis_spec(3);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(0, 0);
+        let idx_ab = Self::basis_mul_idx_spec(0, 0);
+        let s_bc = Self::basis_mul_sign_spec(0, 3);
+        let idx_bc = Self::basis_mul_idx_spec(0, 3);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 3),
+            Self::basis_mul_idx_spec(idx_ab, 3),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(0, idx_bc),
+            Self::basis_mul_idx_spec(0, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(0, 0);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 3);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(0, 3);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(0, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(0), Self::basis_spec(3)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_0_1_0()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(1), Self::basis_spec(0)),
+    {
+        let a = Self::basis_spec(0);
+        let b = Self::basis_spec(1);
+        let c = Self::basis_spec(0);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(0, 1);
+        let idx_ab = Self::basis_mul_idx_spec(0, 1);
+        let s_bc = Self::basis_mul_sign_spec(1, 0);
+        let idx_bc = Self::basis_mul_idx_spec(1, 0);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 0),
+            Self::basis_mul_idx_spec(idx_ab, 0),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(0, idx_bc),
+            Self::basis_mul_idx_spec(0, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(0, 1);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 0);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(1, 0);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(0, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(1), Self::basis_spec(0)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_0_1_1()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(1), Self::basis_spec(1)),
+    {
+        let a = Self::basis_spec(0);
+        let b = Self::basis_spec(1);
+        let c = Self::basis_spec(1);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(0, 1);
+        let idx_ab = Self::basis_mul_idx_spec(0, 1);
+        let s_bc = Self::basis_mul_sign_spec(1, 1);
+        let idx_bc = Self::basis_mul_idx_spec(1, 1);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 1),
+            Self::basis_mul_idx_spec(idx_ab, 1),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(0, idx_bc),
+            Self::basis_mul_idx_spec(0, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(0, 1);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 1);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(1, 1);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(0, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(1), Self::basis_spec(1)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_0_1_2()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(1), Self::basis_spec(2)),
+    {
+        let a = Self::basis_spec(0);
+        let b = Self::basis_spec(1);
+        let c = Self::basis_spec(2);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(0, 1);
+        let idx_ab = Self::basis_mul_idx_spec(0, 1);
+        let s_bc = Self::basis_mul_sign_spec(1, 2);
+        let idx_bc = Self::basis_mul_idx_spec(1, 2);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 2),
+            Self::basis_mul_idx_spec(idx_ab, 2),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(0, idx_bc),
+            Self::basis_mul_idx_spec(0, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(0, 1);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 2);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(1, 2);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(0, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(1), Self::basis_spec(2)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_0_1_3()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(1), Self::basis_spec(3)),
+    {
+        let a = Self::basis_spec(0);
+        let b = Self::basis_spec(1);
+        let c = Self::basis_spec(3);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(0, 1);
+        let idx_ab = Self::basis_mul_idx_spec(0, 1);
+        let s_bc = Self::basis_mul_sign_spec(1, 3);
+        let idx_bc = Self::basis_mul_idx_spec(1, 3);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 3),
+            Self::basis_mul_idx_spec(idx_ab, 3),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(0, idx_bc),
+            Self::basis_mul_idx_spec(0, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(0, 1);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 3);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(1, 3);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(0, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(1), Self::basis_spec(3)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_0_2_0()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(2), Self::basis_spec(0)),
+    {
+        let a = Self::basis_spec(0);
+        let b = Self::basis_spec(2);
+        let c = Self::basis_spec(0);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(0, 2);
+        let idx_ab = Self::basis_mul_idx_spec(0, 2);
+        let s_bc = Self::basis_mul_sign_spec(2, 0);
+        let idx_bc = Self::basis_mul_idx_spec(2, 0);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 0),
+            Self::basis_mul_idx_spec(idx_ab, 0),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(0, idx_bc),
+            Self::basis_mul_idx_spec(0, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(0, 2);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 0);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(2, 0);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(0, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(2), Self::basis_spec(0)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_0_2_1()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(2), Self::basis_spec(1)),
+    {
+        let a = Self::basis_spec(0);
+        let b = Self::basis_spec(2);
+        let c = Self::basis_spec(1);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(0, 2);
+        let idx_ab = Self::basis_mul_idx_spec(0, 2);
+        let s_bc = Self::basis_mul_sign_spec(2, 1);
+        let idx_bc = Self::basis_mul_idx_spec(2, 1);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 1),
+            Self::basis_mul_idx_spec(idx_ab, 1),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(0, idx_bc),
+            Self::basis_mul_idx_spec(0, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(0, 2);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 1);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(2, 1);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(0, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(2), Self::basis_spec(1)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_0_2_2()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(2), Self::basis_spec(2)),
+    {
+        let a = Self::basis_spec(0);
+        let b = Self::basis_spec(2);
+        let c = Self::basis_spec(2);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(0, 2);
+        let idx_ab = Self::basis_mul_idx_spec(0, 2);
+        let s_bc = Self::basis_mul_sign_spec(2, 2);
+        let idx_bc = Self::basis_mul_idx_spec(2, 2);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 2),
+            Self::basis_mul_idx_spec(idx_ab, 2),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(0, idx_bc),
+            Self::basis_mul_idx_spec(0, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(0, 2);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 2);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(2, 2);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(0, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(2), Self::basis_spec(2)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_0_2_3()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(2), Self::basis_spec(3)),
+    {
+        let a = Self::basis_spec(0);
+        let b = Self::basis_spec(2);
+        let c = Self::basis_spec(3);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(0, 2);
+        let idx_ab = Self::basis_mul_idx_spec(0, 2);
+        let s_bc = Self::basis_mul_sign_spec(2, 3);
+        let idx_bc = Self::basis_mul_idx_spec(2, 3);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 3),
+            Self::basis_mul_idx_spec(idx_ab, 3),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(0, idx_bc),
+            Self::basis_mul_idx_spec(0, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(0, 2);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 3);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(2, 3);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(0, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(2), Self::basis_spec(3)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_0_3_0()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(3), Self::basis_spec(0)),
+    {
+        let a = Self::basis_spec(0);
+        let b = Self::basis_spec(3);
+        let c = Self::basis_spec(0);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(0, 3);
+        let idx_ab = Self::basis_mul_idx_spec(0, 3);
+        let s_bc = Self::basis_mul_sign_spec(3, 0);
+        let idx_bc = Self::basis_mul_idx_spec(3, 0);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 0),
+            Self::basis_mul_idx_spec(idx_ab, 0),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(0, idx_bc),
+            Self::basis_mul_idx_spec(0, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(0, 3);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 0);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(3, 0);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(0, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(3), Self::basis_spec(0)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_0_3_1()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(3), Self::basis_spec(1)),
+    {
+        let a = Self::basis_spec(0);
+        let b = Self::basis_spec(3);
+        let c = Self::basis_spec(1);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(0, 3);
+        let idx_ab = Self::basis_mul_idx_spec(0, 3);
+        let s_bc = Self::basis_mul_sign_spec(3, 1);
+        let idx_bc = Self::basis_mul_idx_spec(3, 1);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 1),
+            Self::basis_mul_idx_spec(idx_ab, 1),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(0, idx_bc),
+            Self::basis_mul_idx_spec(0, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(0, 3);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 1);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(3, 1);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(0, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(3), Self::basis_spec(1)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_0_3_2()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(3), Self::basis_spec(2)),
+    {
+        let a = Self::basis_spec(0);
+        let b = Self::basis_spec(3);
+        let c = Self::basis_spec(2);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(0, 3);
+        let idx_ab = Self::basis_mul_idx_spec(0, 3);
+        let s_bc = Self::basis_mul_sign_spec(3, 2);
+        let idx_bc = Self::basis_mul_idx_spec(3, 2);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 2),
+            Self::basis_mul_idx_spec(idx_ab, 2),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(0, idx_bc),
+            Self::basis_mul_idx_spec(0, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(0, 3);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 2);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(3, 2);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(0, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(3), Self::basis_spec(2)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_0_3_3()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(3), Self::basis_spec(3)),
+    {
+        let a = Self::basis_spec(0);
+        let b = Self::basis_spec(3);
+        let c = Self::basis_spec(3);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(0, 3);
+        let idx_ab = Self::basis_mul_idx_spec(0, 3);
+        let s_bc = Self::basis_mul_sign_spec(3, 3);
+        let idx_bc = Self::basis_mul_idx_spec(3, 3);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 3),
+            Self::basis_mul_idx_spec(idx_ab, 3),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(0, idx_bc),
+            Self::basis_mul_idx_spec(0, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(0, 3);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 3);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(3, 3);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(0, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(0), Self::basis_spec(3), Self::basis_spec(3)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_1_0_0()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(0), Self::basis_spec(0)),
+    {
+        let a = Self::basis_spec(1);
+        let b = Self::basis_spec(0);
+        let c = Self::basis_spec(0);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(1, 0);
+        let idx_ab = Self::basis_mul_idx_spec(1, 0);
+        let s_bc = Self::basis_mul_sign_spec(0, 0);
+        let idx_bc = Self::basis_mul_idx_spec(0, 0);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 0),
+            Self::basis_mul_idx_spec(idx_ab, 0),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(1, idx_bc),
+            Self::basis_mul_idx_spec(1, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(1, 0);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 0);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(0, 0);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(1, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(0), Self::basis_spec(0)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_1_0_1()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(0), Self::basis_spec(1)),
+    {
+        let a = Self::basis_spec(1);
+        let b = Self::basis_spec(0);
+        let c = Self::basis_spec(1);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(1, 0);
+        let idx_ab = Self::basis_mul_idx_spec(1, 0);
+        let s_bc = Self::basis_mul_sign_spec(0, 1);
+        let idx_bc = Self::basis_mul_idx_spec(0, 1);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 1),
+            Self::basis_mul_idx_spec(idx_ab, 1),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(1, idx_bc),
+            Self::basis_mul_idx_spec(1, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(1, 0);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 1);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(0, 1);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(1, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(0), Self::basis_spec(1)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_1_0_2()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(0), Self::basis_spec(2)),
+    {
+        let a = Self::basis_spec(1);
+        let b = Self::basis_spec(0);
+        let c = Self::basis_spec(2);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(1, 0);
+        let idx_ab = Self::basis_mul_idx_spec(1, 0);
+        let s_bc = Self::basis_mul_sign_spec(0, 2);
+        let idx_bc = Self::basis_mul_idx_spec(0, 2);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 2),
+            Self::basis_mul_idx_spec(idx_ab, 2),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(1, idx_bc),
+            Self::basis_mul_idx_spec(1, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(1, 0);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 2);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(0, 2);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(1, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(0), Self::basis_spec(2)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_1_0_3()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(0), Self::basis_spec(3)),
+    {
+        let a = Self::basis_spec(1);
+        let b = Self::basis_spec(0);
+        let c = Self::basis_spec(3);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(1, 0);
+        let idx_ab = Self::basis_mul_idx_spec(1, 0);
+        let s_bc = Self::basis_mul_sign_spec(0, 3);
+        let idx_bc = Self::basis_mul_idx_spec(0, 3);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 3),
+            Self::basis_mul_idx_spec(idx_ab, 3),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(1, idx_bc),
+            Self::basis_mul_idx_spec(1, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(1, 0);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 3);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(0, 3);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(1, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(0), Self::basis_spec(3)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_1_1_0()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(1), Self::basis_spec(0)),
+    {
+        let a = Self::basis_spec(1);
+        let b = Self::basis_spec(1);
+        let c = Self::basis_spec(0);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(1, 1);
+        let idx_ab = Self::basis_mul_idx_spec(1, 1);
+        let s_bc = Self::basis_mul_sign_spec(1, 0);
+        let idx_bc = Self::basis_mul_idx_spec(1, 0);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 0),
+            Self::basis_mul_idx_spec(idx_ab, 0),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(1, idx_bc),
+            Self::basis_mul_idx_spec(1, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(1, 1);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 0);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(1, 0);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(1, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(1), Self::basis_spec(0)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_1_1_1()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(1), Self::basis_spec(1)),
+    {
+        let a = Self::basis_spec(1);
+        let b = Self::basis_spec(1);
+        let c = Self::basis_spec(1);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(1, 1);
+        let idx_ab = Self::basis_mul_idx_spec(1, 1);
+        let s_bc = Self::basis_mul_sign_spec(1, 1);
+        let idx_bc = Self::basis_mul_idx_spec(1, 1);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 1),
+            Self::basis_mul_idx_spec(idx_ab, 1),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(1, idx_bc),
+            Self::basis_mul_idx_spec(1, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(1, 1);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 1);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(1, 1);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(1, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(1), Self::basis_spec(1)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_1_1_2()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(1), Self::basis_spec(2)),
+    {
+        let a = Self::basis_spec(1);
+        let b = Self::basis_spec(1);
+        let c = Self::basis_spec(2);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(1, 1);
+        let idx_ab = Self::basis_mul_idx_spec(1, 1);
+        let s_bc = Self::basis_mul_sign_spec(1, 2);
+        let idx_bc = Self::basis_mul_idx_spec(1, 2);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 2),
+            Self::basis_mul_idx_spec(idx_ab, 2),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(1, idx_bc),
+            Self::basis_mul_idx_spec(1, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(1, 1);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 2);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(1, 2);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(1, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(1), Self::basis_spec(2)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_1_1_3()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(1), Self::basis_spec(3)),
+    {
+        let a = Self::basis_spec(1);
+        let b = Self::basis_spec(1);
+        let c = Self::basis_spec(3);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(1, 1);
+        let idx_ab = Self::basis_mul_idx_spec(1, 1);
+        let s_bc = Self::basis_mul_sign_spec(1, 3);
+        let idx_bc = Self::basis_mul_idx_spec(1, 3);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 3),
+            Self::basis_mul_idx_spec(idx_ab, 3),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(1, idx_bc),
+            Self::basis_mul_idx_spec(1, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(1, 1);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 3);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(1, 3);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(1, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(1), Self::basis_spec(3)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_1_2_0()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(2), Self::basis_spec(0)),
+    {
+        let a = Self::basis_spec(1);
+        let b = Self::basis_spec(2);
+        let c = Self::basis_spec(0);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(1, 2);
+        let idx_ab = Self::basis_mul_idx_spec(1, 2);
+        let s_bc = Self::basis_mul_sign_spec(2, 0);
+        let idx_bc = Self::basis_mul_idx_spec(2, 0);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 0),
+            Self::basis_mul_idx_spec(idx_ab, 0),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(1, idx_bc),
+            Self::basis_mul_idx_spec(1, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(1, 2);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 0);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(2, 0);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(1, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(2), Self::basis_spec(0)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_1_2_1()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(2), Self::basis_spec(1)),
+    {
+        let a = Self::basis_spec(1);
+        let b = Self::basis_spec(2);
+        let c = Self::basis_spec(1);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(1, 2);
+        let idx_ab = Self::basis_mul_idx_spec(1, 2);
+        let s_bc = Self::basis_mul_sign_spec(2, 1);
+        let idx_bc = Self::basis_mul_idx_spec(2, 1);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 1),
+            Self::basis_mul_idx_spec(idx_ab, 1),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(1, idx_bc),
+            Self::basis_mul_idx_spec(1, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(1, 2);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 1);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(2, 1);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(1, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(2), Self::basis_spec(1)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_1_2_2()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(2), Self::basis_spec(2)),
+    {
+        let a = Self::basis_spec(1);
+        let b = Self::basis_spec(2);
+        let c = Self::basis_spec(2);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(1, 2);
+        let idx_ab = Self::basis_mul_idx_spec(1, 2);
+        let s_bc = Self::basis_mul_sign_spec(2, 2);
+        let idx_bc = Self::basis_mul_idx_spec(2, 2);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 2),
+            Self::basis_mul_idx_spec(idx_ab, 2),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(1, idx_bc),
+            Self::basis_mul_idx_spec(1, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(1, 2);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 2);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(2, 2);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(1, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(2), Self::basis_spec(2)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_1_2_3()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(2), Self::basis_spec(3)),
+    {
+        let a = Self::basis_spec(1);
+        let b = Self::basis_spec(2);
+        let c = Self::basis_spec(3);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(1, 2);
+        let idx_ab = Self::basis_mul_idx_spec(1, 2);
+        let s_bc = Self::basis_mul_sign_spec(2, 3);
+        let idx_bc = Self::basis_mul_idx_spec(2, 3);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 3),
+            Self::basis_mul_idx_spec(idx_ab, 3),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(1, idx_bc),
+            Self::basis_mul_idx_spec(1, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(1, 2);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 3);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(2, 3);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(1, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(2), Self::basis_spec(3)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_1_3_0()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(3), Self::basis_spec(0)),
+    {
+        let a = Self::basis_spec(1);
+        let b = Self::basis_spec(3);
+        let c = Self::basis_spec(0);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(1, 3);
+        let idx_ab = Self::basis_mul_idx_spec(1, 3);
+        let s_bc = Self::basis_mul_sign_spec(3, 0);
+        let idx_bc = Self::basis_mul_idx_spec(3, 0);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 0),
+            Self::basis_mul_idx_spec(idx_ab, 0),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(1, idx_bc),
+            Self::basis_mul_idx_spec(1, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(1, 3);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 0);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(3, 0);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(1, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(3), Self::basis_spec(0)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_1_3_1()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(3), Self::basis_spec(1)),
+    {
+        let a = Self::basis_spec(1);
+        let b = Self::basis_spec(3);
+        let c = Self::basis_spec(1);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(1, 3);
+        let idx_ab = Self::basis_mul_idx_spec(1, 3);
+        let s_bc = Self::basis_mul_sign_spec(3, 1);
+        let idx_bc = Self::basis_mul_idx_spec(3, 1);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 1),
+            Self::basis_mul_idx_spec(idx_ab, 1),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(1, idx_bc),
+            Self::basis_mul_idx_spec(1, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(1, 3);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 1);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(3, 1);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(1, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(3), Self::basis_spec(1)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_1_3_2()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(3), Self::basis_spec(2)),
+    {
+        let a = Self::basis_spec(1);
+        let b = Self::basis_spec(3);
+        let c = Self::basis_spec(2);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(1, 3);
+        let idx_ab = Self::basis_mul_idx_spec(1, 3);
+        let s_bc = Self::basis_mul_sign_spec(3, 2);
+        let idx_bc = Self::basis_mul_idx_spec(3, 2);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 2),
+            Self::basis_mul_idx_spec(idx_ab, 2),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(1, idx_bc),
+            Self::basis_mul_idx_spec(1, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(1, 3);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 2);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(3, 2);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(1, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(3), Self::basis_spec(2)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_1_3_3()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(3), Self::basis_spec(3)),
+    {
+        let a = Self::basis_spec(1);
+        let b = Self::basis_spec(3);
+        let c = Self::basis_spec(3);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(1, 3);
+        let idx_ab = Self::basis_mul_idx_spec(1, 3);
+        let s_bc = Self::basis_mul_sign_spec(3, 3);
+        let idx_bc = Self::basis_mul_idx_spec(3, 3);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 3),
+            Self::basis_mul_idx_spec(idx_ab, 3),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(1, idx_bc),
+            Self::basis_mul_idx_spec(1, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(1, 3);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 3);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(3, 3);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(1, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(1), Self::basis_spec(3), Self::basis_spec(3)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_2_0_0()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(0), Self::basis_spec(0)),
+    {
+        let a = Self::basis_spec(2);
+        let b = Self::basis_spec(0);
+        let c = Self::basis_spec(0);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(2, 0);
+        let idx_ab = Self::basis_mul_idx_spec(2, 0);
+        let s_bc = Self::basis_mul_sign_spec(0, 0);
+        let idx_bc = Self::basis_mul_idx_spec(0, 0);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 0),
+            Self::basis_mul_idx_spec(idx_ab, 0),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(2, idx_bc),
+            Self::basis_mul_idx_spec(2, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(2, 0);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 0);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(0, 0);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(2, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(0), Self::basis_spec(0)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_2_0_1()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(0), Self::basis_spec(1)),
+    {
+        let a = Self::basis_spec(2);
+        let b = Self::basis_spec(0);
+        let c = Self::basis_spec(1);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(2, 0);
+        let idx_ab = Self::basis_mul_idx_spec(2, 0);
+        let s_bc = Self::basis_mul_sign_spec(0, 1);
+        let idx_bc = Self::basis_mul_idx_spec(0, 1);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 1),
+            Self::basis_mul_idx_spec(idx_ab, 1),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(2, idx_bc),
+            Self::basis_mul_idx_spec(2, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(2, 0);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 1);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(0, 1);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(2, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(0), Self::basis_spec(1)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_2_0_2()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(0), Self::basis_spec(2)),
+    {
+        let a = Self::basis_spec(2);
+        let b = Self::basis_spec(0);
+        let c = Self::basis_spec(2);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(2, 0);
+        let idx_ab = Self::basis_mul_idx_spec(2, 0);
+        let s_bc = Self::basis_mul_sign_spec(0, 2);
+        let idx_bc = Self::basis_mul_idx_spec(0, 2);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 2),
+            Self::basis_mul_idx_spec(idx_ab, 2),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(2, idx_bc),
+            Self::basis_mul_idx_spec(2, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(2, 0);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 2);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(0, 2);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(2, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(0), Self::basis_spec(2)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_2_0_3()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(0), Self::basis_spec(3)),
+    {
+        let a = Self::basis_spec(2);
+        let b = Self::basis_spec(0);
+        let c = Self::basis_spec(3);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(2, 0);
+        let idx_ab = Self::basis_mul_idx_spec(2, 0);
+        let s_bc = Self::basis_mul_sign_spec(0, 3);
+        let idx_bc = Self::basis_mul_idx_spec(0, 3);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 3),
+            Self::basis_mul_idx_spec(idx_ab, 3),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(2, idx_bc),
+            Self::basis_mul_idx_spec(2, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(2, 0);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 3);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(0, 3);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(2, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(0), Self::basis_spec(3)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_2_1_0()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(1), Self::basis_spec(0)),
+    {
+        let a = Self::basis_spec(2);
+        let b = Self::basis_spec(1);
+        let c = Self::basis_spec(0);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(2, 1);
+        let idx_ab = Self::basis_mul_idx_spec(2, 1);
+        let s_bc = Self::basis_mul_sign_spec(1, 0);
+        let idx_bc = Self::basis_mul_idx_spec(1, 0);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 0),
+            Self::basis_mul_idx_spec(idx_ab, 0),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(2, idx_bc),
+            Self::basis_mul_idx_spec(2, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(2, 1);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 0);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(1, 0);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(2, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(1), Self::basis_spec(0)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_2_1_1()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(1), Self::basis_spec(1)),
+    {
+        let a = Self::basis_spec(2);
+        let b = Self::basis_spec(1);
+        let c = Self::basis_spec(1);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(2, 1);
+        let idx_ab = Self::basis_mul_idx_spec(2, 1);
+        let s_bc = Self::basis_mul_sign_spec(1, 1);
+        let idx_bc = Self::basis_mul_idx_spec(1, 1);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 1),
+            Self::basis_mul_idx_spec(idx_ab, 1),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(2, idx_bc),
+            Self::basis_mul_idx_spec(2, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(2, 1);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 1);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(1, 1);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(2, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(1), Self::basis_spec(1)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_2_1_2()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(1), Self::basis_spec(2)),
+    {
+        let a = Self::basis_spec(2);
+        let b = Self::basis_spec(1);
+        let c = Self::basis_spec(2);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(2, 1);
+        let idx_ab = Self::basis_mul_idx_spec(2, 1);
+        let s_bc = Self::basis_mul_sign_spec(1, 2);
+        let idx_bc = Self::basis_mul_idx_spec(1, 2);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 2),
+            Self::basis_mul_idx_spec(idx_ab, 2),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(2, idx_bc),
+            Self::basis_mul_idx_spec(2, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(2, 1);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 2);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(1, 2);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(2, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(1), Self::basis_spec(2)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_2_1_3()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(1), Self::basis_spec(3)),
+    {
+        let a = Self::basis_spec(2);
+        let b = Self::basis_spec(1);
+        let c = Self::basis_spec(3);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(2, 1);
+        let idx_ab = Self::basis_mul_idx_spec(2, 1);
+        let s_bc = Self::basis_mul_sign_spec(1, 3);
+        let idx_bc = Self::basis_mul_idx_spec(1, 3);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 3),
+            Self::basis_mul_idx_spec(idx_ab, 3),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(2, idx_bc),
+            Self::basis_mul_idx_spec(2, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(2, 1);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 3);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(1, 3);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(2, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(1), Self::basis_spec(3)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_2_2_0()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(2), Self::basis_spec(0)),
+    {
+        let a = Self::basis_spec(2);
+        let b = Self::basis_spec(2);
+        let c = Self::basis_spec(0);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(2, 2);
+        let idx_ab = Self::basis_mul_idx_spec(2, 2);
+        let s_bc = Self::basis_mul_sign_spec(2, 0);
+        let idx_bc = Self::basis_mul_idx_spec(2, 0);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 0),
+            Self::basis_mul_idx_spec(idx_ab, 0),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(2, idx_bc),
+            Self::basis_mul_idx_spec(2, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(2, 2);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 0);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(2, 0);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(2, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(2), Self::basis_spec(0)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_2_2_1()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(2), Self::basis_spec(1)),
+    {
+        let a = Self::basis_spec(2);
+        let b = Self::basis_spec(2);
+        let c = Self::basis_spec(1);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(2, 2);
+        let idx_ab = Self::basis_mul_idx_spec(2, 2);
+        let s_bc = Self::basis_mul_sign_spec(2, 1);
+        let idx_bc = Self::basis_mul_idx_spec(2, 1);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 1),
+            Self::basis_mul_idx_spec(idx_ab, 1),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(2, idx_bc),
+            Self::basis_mul_idx_spec(2, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(2, 2);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 1);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(2, 1);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(2, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(2), Self::basis_spec(1)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_2_2_2()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(2), Self::basis_spec(2)),
+    {
+        let a = Self::basis_spec(2);
+        let b = Self::basis_spec(2);
+        let c = Self::basis_spec(2);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(2, 2);
+        let idx_ab = Self::basis_mul_idx_spec(2, 2);
+        let s_bc = Self::basis_mul_sign_spec(2, 2);
+        let idx_bc = Self::basis_mul_idx_spec(2, 2);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 2),
+            Self::basis_mul_idx_spec(idx_ab, 2),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(2, idx_bc),
+            Self::basis_mul_idx_spec(2, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(2, 2);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 2);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(2, 2);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(2, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(2), Self::basis_spec(2)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_2_2_3()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(2), Self::basis_spec(3)),
+    {
+        let a = Self::basis_spec(2);
+        let b = Self::basis_spec(2);
+        let c = Self::basis_spec(3);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(2, 2);
+        let idx_ab = Self::basis_mul_idx_spec(2, 2);
+        let s_bc = Self::basis_mul_sign_spec(2, 3);
+        let idx_bc = Self::basis_mul_idx_spec(2, 3);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 3),
+            Self::basis_mul_idx_spec(idx_ab, 3),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(2, idx_bc),
+            Self::basis_mul_idx_spec(2, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(2, 2);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 3);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(2, 3);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(2, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(2), Self::basis_spec(3)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_2_3_0()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(3), Self::basis_spec(0)),
+    {
+        let a = Self::basis_spec(2);
+        let b = Self::basis_spec(3);
+        let c = Self::basis_spec(0);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(2, 3);
+        let idx_ab = Self::basis_mul_idx_spec(2, 3);
+        let s_bc = Self::basis_mul_sign_spec(3, 0);
+        let idx_bc = Self::basis_mul_idx_spec(3, 0);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 0),
+            Self::basis_mul_idx_spec(idx_ab, 0),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(2, idx_bc),
+            Self::basis_mul_idx_spec(2, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(2, 3);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 0);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(3, 0);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(2, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(3), Self::basis_spec(0)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_2_3_1()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(3), Self::basis_spec(1)),
+    {
+        let a = Self::basis_spec(2);
+        let b = Self::basis_spec(3);
+        let c = Self::basis_spec(1);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(2, 3);
+        let idx_ab = Self::basis_mul_idx_spec(2, 3);
+        let s_bc = Self::basis_mul_sign_spec(3, 1);
+        let idx_bc = Self::basis_mul_idx_spec(3, 1);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 1),
+            Self::basis_mul_idx_spec(idx_ab, 1),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(2, idx_bc),
+            Self::basis_mul_idx_spec(2, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(2, 3);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 1);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(3, 1);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(2, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(3), Self::basis_spec(1)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_2_3_2()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(3), Self::basis_spec(2)),
+    {
+        let a = Self::basis_spec(2);
+        let b = Self::basis_spec(3);
+        let c = Self::basis_spec(2);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(2, 3);
+        let idx_ab = Self::basis_mul_idx_spec(2, 3);
+        let s_bc = Self::basis_mul_sign_spec(3, 2);
+        let idx_bc = Self::basis_mul_idx_spec(3, 2);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 2),
+            Self::basis_mul_idx_spec(idx_ab, 2),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(2, idx_bc),
+            Self::basis_mul_idx_spec(2, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(2, 3);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 2);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(3, 2);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(2, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(3), Self::basis_spec(2)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_2_3_3()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(3), Self::basis_spec(3)),
+    {
+        let a = Self::basis_spec(2);
+        let b = Self::basis_spec(3);
+        let c = Self::basis_spec(3);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(2, 3);
+        let idx_ab = Self::basis_mul_idx_spec(2, 3);
+        let s_bc = Self::basis_mul_sign_spec(3, 3);
+        let idx_bc = Self::basis_mul_idx_spec(3, 3);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 3),
+            Self::basis_mul_idx_spec(idx_ab, 3),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(2, idx_bc),
+            Self::basis_mul_idx_spec(2, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(2, 3);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 3);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(3, 3);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(2, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(2), Self::basis_spec(3), Self::basis_spec(3)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_3_0_0()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(0), Self::basis_spec(0)),
+    {
+        let a = Self::basis_spec(3);
+        let b = Self::basis_spec(0);
+        let c = Self::basis_spec(0);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(3, 0);
+        let idx_ab = Self::basis_mul_idx_spec(3, 0);
+        let s_bc = Self::basis_mul_sign_spec(0, 0);
+        let idx_bc = Self::basis_mul_idx_spec(0, 0);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 0),
+            Self::basis_mul_idx_spec(idx_ab, 0),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(3, idx_bc),
+            Self::basis_mul_idx_spec(3, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(3, 0);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 0);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(0, 0);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(3, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(0), Self::basis_spec(0)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_3_0_1()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(0), Self::basis_spec(1)),
+    {
+        let a = Self::basis_spec(3);
+        let b = Self::basis_spec(0);
+        let c = Self::basis_spec(1);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(3, 0);
+        let idx_ab = Self::basis_mul_idx_spec(3, 0);
+        let s_bc = Self::basis_mul_sign_spec(0, 1);
+        let idx_bc = Self::basis_mul_idx_spec(0, 1);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 1),
+            Self::basis_mul_idx_spec(idx_ab, 1),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(3, idx_bc),
+            Self::basis_mul_idx_spec(3, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(3, 0);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 1);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(0, 1);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(3, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(0), Self::basis_spec(1)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_3_0_2()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(0), Self::basis_spec(2)),
+    {
+        let a = Self::basis_spec(3);
+        let b = Self::basis_spec(0);
+        let c = Self::basis_spec(2);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(3, 0);
+        let idx_ab = Self::basis_mul_idx_spec(3, 0);
+        let s_bc = Self::basis_mul_sign_spec(0, 2);
+        let idx_bc = Self::basis_mul_idx_spec(0, 2);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 2),
+            Self::basis_mul_idx_spec(idx_ab, 2),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(3, idx_bc),
+            Self::basis_mul_idx_spec(3, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(3, 0);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 2);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(0, 2);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(3, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(0), Self::basis_spec(2)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_3_0_3()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(0), Self::basis_spec(3)),
+    {
+        let a = Self::basis_spec(3);
+        let b = Self::basis_spec(0);
+        let c = Self::basis_spec(3);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(3, 0);
+        let idx_ab = Self::basis_mul_idx_spec(3, 0);
+        let s_bc = Self::basis_mul_sign_spec(0, 3);
+        let idx_bc = Self::basis_mul_idx_spec(0, 3);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 3),
+            Self::basis_mul_idx_spec(idx_ab, 3),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(3, idx_bc),
+            Self::basis_mul_idx_spec(3, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(3, 0);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 3);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(0, 3);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(3, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(0), Self::basis_spec(3)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_3_1_0()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(1), Self::basis_spec(0)),
+    {
+        let a = Self::basis_spec(3);
+        let b = Self::basis_spec(1);
+        let c = Self::basis_spec(0);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(3, 1);
+        let idx_ab = Self::basis_mul_idx_spec(3, 1);
+        let s_bc = Self::basis_mul_sign_spec(1, 0);
+        let idx_bc = Self::basis_mul_idx_spec(1, 0);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 0),
+            Self::basis_mul_idx_spec(idx_ab, 0),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(3, idx_bc),
+            Self::basis_mul_idx_spec(3, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(3, 1);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 0);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(1, 0);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(3, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(1), Self::basis_spec(0)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_3_1_1()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(1), Self::basis_spec(1)),
+    {
+        let a = Self::basis_spec(3);
+        let b = Self::basis_spec(1);
+        let c = Self::basis_spec(1);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(3, 1);
+        let idx_ab = Self::basis_mul_idx_spec(3, 1);
+        let s_bc = Self::basis_mul_sign_spec(1, 1);
+        let idx_bc = Self::basis_mul_idx_spec(1, 1);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 1),
+            Self::basis_mul_idx_spec(idx_ab, 1),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(3, idx_bc),
+            Self::basis_mul_idx_spec(3, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(3, 1);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 1);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(1, 1);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(3, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(1), Self::basis_spec(1)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_3_1_2()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(1), Self::basis_spec(2)),
+    {
+        let a = Self::basis_spec(3);
+        let b = Self::basis_spec(1);
+        let c = Self::basis_spec(2);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(3, 1);
+        let idx_ab = Self::basis_mul_idx_spec(3, 1);
+        let s_bc = Self::basis_mul_sign_spec(1, 2);
+        let idx_bc = Self::basis_mul_idx_spec(1, 2);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 2),
+            Self::basis_mul_idx_spec(idx_ab, 2),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(3, idx_bc),
+            Self::basis_mul_idx_spec(3, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(3, 1);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 2);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(1, 2);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(3, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(1), Self::basis_spec(2)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_3_1_3()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(1), Self::basis_spec(3)),
+    {
+        let a = Self::basis_spec(3);
+        let b = Self::basis_spec(1);
+        let c = Self::basis_spec(3);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(3, 1);
+        let idx_ab = Self::basis_mul_idx_spec(3, 1);
+        let s_bc = Self::basis_mul_sign_spec(1, 3);
+        let idx_bc = Self::basis_mul_idx_spec(1, 3);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 3),
+            Self::basis_mul_idx_spec(idx_ab, 3),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(3, idx_bc),
+            Self::basis_mul_idx_spec(3, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(3, 1);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 3);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(1, 3);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(3, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(1), Self::basis_spec(3)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_3_2_0()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(2), Self::basis_spec(0)),
+    {
+        let a = Self::basis_spec(3);
+        let b = Self::basis_spec(2);
+        let c = Self::basis_spec(0);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(3, 2);
+        let idx_ab = Self::basis_mul_idx_spec(3, 2);
+        let s_bc = Self::basis_mul_sign_spec(2, 0);
+        let idx_bc = Self::basis_mul_idx_spec(2, 0);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 0),
+            Self::basis_mul_idx_spec(idx_ab, 0),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(3, idx_bc),
+            Self::basis_mul_idx_spec(3, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(3, 2);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 0);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(2, 0);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(3, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(2), Self::basis_spec(0)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_3_2_1()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(2), Self::basis_spec(1)),
+    {
+        let a = Self::basis_spec(3);
+        let b = Self::basis_spec(2);
+        let c = Self::basis_spec(1);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(3, 2);
+        let idx_ab = Self::basis_mul_idx_spec(3, 2);
+        let s_bc = Self::basis_mul_sign_spec(2, 1);
+        let idx_bc = Self::basis_mul_idx_spec(2, 1);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 1),
+            Self::basis_mul_idx_spec(idx_ab, 1),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(3, idx_bc),
+            Self::basis_mul_idx_spec(3, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(3, 2);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 1);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(2, 1);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(3, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(2), Self::basis_spec(1)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_3_2_2()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(2), Self::basis_spec(2)),
+    {
+        let a = Self::basis_spec(3);
+        let b = Self::basis_spec(2);
+        let c = Self::basis_spec(2);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(3, 2);
+        let idx_ab = Self::basis_mul_idx_spec(3, 2);
+        let s_bc = Self::basis_mul_sign_spec(2, 2);
+        let idx_bc = Self::basis_mul_idx_spec(2, 2);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 2),
+            Self::basis_mul_idx_spec(idx_ab, 2),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(3, idx_bc),
+            Self::basis_mul_idx_spec(3, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(3, 2);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 2);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(2, 2);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(3, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(2), Self::basis_spec(2)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_3_2_3()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(2), Self::basis_spec(3)),
+    {
+        let a = Self::basis_spec(3);
+        let b = Self::basis_spec(2);
+        let c = Self::basis_spec(3);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(3, 2);
+        let idx_ab = Self::basis_mul_idx_spec(3, 2);
+        let s_bc = Self::basis_mul_sign_spec(2, 3);
+        let idx_bc = Self::basis_mul_idx_spec(2, 3);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 3),
+            Self::basis_mul_idx_spec(idx_ab, 3),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(3, idx_bc),
+            Self::basis_mul_idx_spec(3, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(3, 2);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 3);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(2, 3);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(3, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(2), Self::basis_spec(3)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_3_3_0()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(3), Self::basis_spec(0)),
+    {
+        let a = Self::basis_spec(3);
+        let b = Self::basis_spec(3);
+        let c = Self::basis_spec(0);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(3, 3);
+        let idx_ab = Self::basis_mul_idx_spec(3, 3);
+        let s_bc = Self::basis_mul_sign_spec(3, 0);
+        let idx_bc = Self::basis_mul_idx_spec(3, 0);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 0),
+            Self::basis_mul_idx_spec(idx_ab, 0),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(3, idx_bc),
+            Self::basis_mul_idx_spec(3, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(3, 3);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 0);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(3, 0);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(3, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(3), Self::basis_spec(0)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_3_3_1()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(3), Self::basis_spec(1)),
+    {
+        let a = Self::basis_spec(3);
+        let b = Self::basis_spec(3);
+        let c = Self::basis_spec(1);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(3, 3);
+        let idx_ab = Self::basis_mul_idx_spec(3, 3);
+        let s_bc = Self::basis_mul_sign_spec(3, 1);
+        let idx_bc = Self::basis_mul_idx_spec(3, 1);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 1),
+            Self::basis_mul_idx_spec(idx_ab, 1),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(3, idx_bc),
+            Self::basis_mul_idx_spec(3, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(3, 3);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 1);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(3, 1);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(3, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(3), Self::basis_spec(1)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_3_3_2()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(3), Self::basis_spec(2)),
+    {
+        let a = Self::basis_spec(3);
+        let b = Self::basis_spec(3);
+        let c = Self::basis_spec(2);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(3, 3);
+        let idx_ab = Self::basis_mul_idx_spec(3, 3);
+        let s_bc = Self::basis_mul_sign_spec(3, 2);
+        let idx_bc = Self::basis_mul_idx_spec(3, 2);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 2),
+            Self::basis_mul_idx_spec(idx_ab, 2),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(3, idx_bc),
+            Self::basis_mul_idx_spec(3, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(3, 3);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 2);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(3, 2);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(3, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(3), Self::basis_spec(2)));
+    }
+
+    #[verifier::rlimit(800)]
+    pub proof fn lemma_basis_assoc_case_3_3_3()
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(3), Self::basis_spec(3)),
+    {
+        let a = Self::basis_spec(3);
+        let b = Self::basis_spec(3);
+        let c = Self::basis_spec(3);
+        let lhs = a.mul_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(b.mul_spec(c));
+
+        let s_ab = Self::basis_mul_sign_spec(3, 3);
+        let idx_ab = Self::basis_mul_idx_spec(3, 3);
+        let s_bc = Self::basis_mul_sign_spec(3, 3);
+        let idx_bc = Self::basis_mul_idx_spec(3, 3);
+
+        let lhs_target = Self::signed_basis_spec(
+            s_ab * Self::basis_mul_sign_spec(idx_ab, 3),
+            Self::basis_mul_idx_spec(idx_ab, 3),
+        );
+        let rhs_target = Self::signed_basis_spec(
+            s_bc * Self::basis_mul_sign_spec(3, idx_bc),
+            Self::basis_mul_idx_spec(3, idx_bc),
+        );
+
+        Self::lemma_basis_mul_to_signed(3, 3);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b), Self::signed_basis_spec(s_ab, idx_ab), c);
+        Self::lemma_signed_basis_mul_basis(s_ab, idx_ab, 3);
+        Self::lemma_eqv_transitive(lhs, Self::signed_basis_spec(s_ab, idx_ab).mul_spec(c), lhs_target);
+        assert(lhs.eqv_spec(lhs_target));
+
+        Self::lemma_basis_mul_to_signed(3, 3);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c), Self::signed_basis_spec(s_bc, idx_bc));
+        Self::lemma_basis_mul_signed_basis(3, s_bc, idx_bc);
+        Self::lemma_eqv_transitive(rhs, a.mul_spec(Self::signed_basis_spec(s_bc, idx_bc)), rhs_target);
+        assert(rhs.eqv_spec(rhs_target));
+
+        assert(lhs_target == rhs_target);
+        Self::lemma_eqv_symmetric(rhs, rhs_target);
+        Self::lemma_eqv_transitive(lhs, lhs_target, rhs_target);
+        Self::lemma_eqv_transitive(lhs, rhs_target, rhs);
+        assert(lhs.eqv_spec(rhs));
+        assert(Self::assoc_instance_spec(Self::basis_spec(3), Self::basis_spec(3), Self::basis_spec(3)));
+    }
+
+    pub proof fn lemma_basis_assoc_indices(i: int, j: int, k: int)
+        requires
+            0 <= i < 4,
+            0 <= j < 4,
+            0 <= k < 4,
+        ensures
+            Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)),
+    {
+        if i == 0 {
+            if j == 0 {
+                if k == 0 {
+                    Self::lemma_basis_assoc_case_0_0_0();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 1 {
+                    Self::lemma_basis_assoc_case_0_0_1();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 2 {
+                    Self::lemma_basis_assoc_case_0_0_2();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 3 {
+                    Self::lemma_basis_assoc_case_0_0_3();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+            }
+            if j == 1 {
+                if k == 0 {
+                    Self::lemma_basis_assoc_case_0_1_0();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 1 {
+                    Self::lemma_basis_assoc_case_0_1_1();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 2 {
+                    Self::lemma_basis_assoc_case_0_1_2();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 3 {
+                    Self::lemma_basis_assoc_case_0_1_3();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+            }
+            if j == 2 {
+                if k == 0 {
+                    Self::lemma_basis_assoc_case_0_2_0();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 1 {
+                    Self::lemma_basis_assoc_case_0_2_1();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 2 {
+                    Self::lemma_basis_assoc_case_0_2_2();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 3 {
+                    Self::lemma_basis_assoc_case_0_2_3();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+            }
+            if j == 3 {
+                if k == 0 {
+                    Self::lemma_basis_assoc_case_0_3_0();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 1 {
+                    Self::lemma_basis_assoc_case_0_3_1();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 2 {
+                    Self::lemma_basis_assoc_case_0_3_2();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 3 {
+                    Self::lemma_basis_assoc_case_0_3_3();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+            }
+        }
+        if i == 1 {
+            if j == 0 {
+                if k == 0 {
+                    Self::lemma_basis_assoc_case_1_0_0();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 1 {
+                    Self::lemma_basis_assoc_case_1_0_1();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 2 {
+                    Self::lemma_basis_assoc_case_1_0_2();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 3 {
+                    Self::lemma_basis_assoc_case_1_0_3();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+            }
+            if j == 1 {
+                if k == 0 {
+                    Self::lemma_basis_assoc_case_1_1_0();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 1 {
+                    Self::lemma_basis_assoc_case_1_1_1();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 2 {
+                    Self::lemma_basis_assoc_case_1_1_2();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 3 {
+                    Self::lemma_basis_assoc_case_1_1_3();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+            }
+            if j == 2 {
+                if k == 0 {
+                    Self::lemma_basis_assoc_case_1_2_0();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 1 {
+                    Self::lemma_basis_assoc_case_1_2_1();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 2 {
+                    Self::lemma_basis_assoc_case_1_2_2();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 3 {
+                    Self::lemma_basis_assoc_case_1_2_3();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+            }
+            if j == 3 {
+                if k == 0 {
+                    Self::lemma_basis_assoc_case_1_3_0();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 1 {
+                    Self::lemma_basis_assoc_case_1_3_1();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 2 {
+                    Self::lemma_basis_assoc_case_1_3_2();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 3 {
+                    Self::lemma_basis_assoc_case_1_3_3();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+            }
+        }
+        if i == 2 {
+            if j == 0 {
+                if k == 0 {
+                    Self::lemma_basis_assoc_case_2_0_0();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 1 {
+                    Self::lemma_basis_assoc_case_2_0_1();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 2 {
+                    Self::lemma_basis_assoc_case_2_0_2();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 3 {
+                    Self::lemma_basis_assoc_case_2_0_3();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+            }
+            if j == 1 {
+                if k == 0 {
+                    Self::lemma_basis_assoc_case_2_1_0();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 1 {
+                    Self::lemma_basis_assoc_case_2_1_1();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 2 {
+                    Self::lemma_basis_assoc_case_2_1_2();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 3 {
+                    Self::lemma_basis_assoc_case_2_1_3();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+            }
+            if j == 2 {
+                if k == 0 {
+                    Self::lemma_basis_assoc_case_2_2_0();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 1 {
+                    Self::lemma_basis_assoc_case_2_2_1();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 2 {
+                    Self::lemma_basis_assoc_case_2_2_2();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 3 {
+                    Self::lemma_basis_assoc_case_2_2_3();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+            }
+            if j == 3 {
+                if k == 0 {
+                    Self::lemma_basis_assoc_case_2_3_0();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 1 {
+                    Self::lemma_basis_assoc_case_2_3_1();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 2 {
+                    Self::lemma_basis_assoc_case_2_3_2();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 3 {
+                    Self::lemma_basis_assoc_case_2_3_3();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+            }
+        }
+        if i == 3 {
+            if j == 0 {
+                if k == 0 {
+                    Self::lemma_basis_assoc_case_3_0_0();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 1 {
+                    Self::lemma_basis_assoc_case_3_0_1();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 2 {
+                    Self::lemma_basis_assoc_case_3_0_2();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 3 {
+                    Self::lemma_basis_assoc_case_3_0_3();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+            }
+            if j == 1 {
+                if k == 0 {
+                    Self::lemma_basis_assoc_case_3_1_0();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 1 {
+                    Self::lemma_basis_assoc_case_3_1_1();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 2 {
+                    Self::lemma_basis_assoc_case_3_1_2();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 3 {
+                    Self::lemma_basis_assoc_case_3_1_3();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+            }
+            if j == 2 {
+                if k == 0 {
+                    Self::lemma_basis_assoc_case_3_2_0();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 1 {
+                    Self::lemma_basis_assoc_case_3_2_1();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 2 {
+                    Self::lemma_basis_assoc_case_3_2_2();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 3 {
+                    Self::lemma_basis_assoc_case_3_2_3();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+            }
+            if j == 3 {
+                if k == 0 {
+                    Self::lemma_basis_assoc_case_3_3_0();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 1 {
+                    Self::lemma_basis_assoc_case_3_3_1();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 2 {
+                    Self::lemma_basis_assoc_case_3_3_2();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+                if k == 3 {
+                    Self::lemma_basis_assoc_case_3_3_3();
+                    assert(Self::assoc_instance_spec(Self::basis_spec(i), Self::basis_spec(j), Self::basis_spec(k)));
+                }
+            }
+        }
+    }
+
     pub open spec fn real_spec(s: Scalar) -> Self {
         Quaternion { w: s, x: Scalar::from_int_spec(0), y: Scalar::from_int_spec(0), z: Scalar::from_int_spec(0) }
     }
@@ -338,6 +4416,371 @@ impl Quaternion {
         assert(a.eqv_spec(c));
     }
 
+    pub open spec fn assoc_instance_spec(a: Self, b: Self, c: Self) -> bool {
+        a.mul_spec(b).mul_spec(c).eqv_spec(a.mul_spec(b.mul_spec(c)))
+    }
+
+    pub proof fn lemma_add_eqv_congruence(a1: Self, a2: Self, b1: Self, b2: Self)
+        requires
+            a1.eqv_spec(a2),
+            b1.eqv_spec(b2),
+        ensures
+            a1.add_spec(b1).eqv_spec(a2.add_spec(b2)),
+    {
+        let lhs = a1.add_spec(b1);
+        let rhs = a2.add_spec(b2);
+        Scalar::lemma_eqv_add_congruence(a1.w, a2.w, b1.w, b2.w);
+        Scalar::lemma_eqv_add_congruence(a1.x, a2.x, b1.x, b2.x);
+        Scalar::lemma_eqv_add_congruence(a1.y, a2.y, b1.y, b2.y);
+        Scalar::lemma_eqv_add_congruence(a1.z, a2.z, b1.z, b2.z);
+        assert(lhs.w.eqv_spec(rhs.w));
+        assert(lhs.x.eqv_spec(rhs.x));
+        assert(lhs.y.eqv_spec(rhs.y));
+        assert(lhs.z.eqv_spec(rhs.z));
+        Self::lemma_eqv_from_components(lhs, rhs);
+        assert(lhs.eqv_spec(rhs));
+    }
+
+    pub proof fn lemma_assoc_linear_left_add(a1: Self, a2: Self, b: Self, c: Self)
+        requires
+            Self::assoc_instance_spec(a1, b, c),
+            Self::assoc_instance_spec(a2, b, c),
+        ensures
+            Self::assoc_instance_spec(a1.add_spec(a2), b, c),
+    {
+        let lhs = a1.add_spec(a2).mul_spec(b).mul_spec(c);
+        let rhs = a1.add_spec(a2).mul_spec(b.mul_spec(c));
+        let mid_ab = a1.mul_spec(b).add_spec(a2.mul_spec(b));
+        let mid_l = mid_ab.mul_spec(c);
+        let sum_l = a1.mul_spec(b).mul_spec(c).add_spec(a2.mul_spec(b).mul_spec(c));
+        let sum_r = a1.mul_spec(b.mul_spec(c)).add_spec(a2.mul_spec(b.mul_spec(c)));
+        let mid_r = a1.mul_spec(b.mul_spec(c)).add_spec(a2.mul_spec(b.mul_spec(c)));
+
+        Self::lemma_mul_distributes_over_add_left(a1, a2, b);
+        Self::lemma_mul_distributes_over_add_left(a1.mul_spec(b), a2.mul_spec(b), c);
+        Self::lemma_mul_distributes_over_add_left(a1, a2, b.mul_spec(c));
+        Self::lemma_mul_eqv_congruence_left(a1.add_spec(a2).mul_spec(b), mid_ab, c);
+
+        assert(a1.add_spec(a2).mul_spec(b).eqv_spec(mid_ab));
+        assert(lhs.eqv_spec(mid_l));
+        assert(mid_ab.mul_spec(c).eqv_spec(sum_l));
+        assert(a1.mul_spec(b).mul_spec(c).eqv_spec(a1.mul_spec(b.mul_spec(c))));
+        assert(a2.mul_spec(b).mul_spec(c).eqv_spec(a2.mul_spec(b.mul_spec(c))));
+        Self::lemma_add_eqv_congruence(
+            a1.mul_spec(b).mul_spec(c),
+            a1.mul_spec(b.mul_spec(c)),
+            a2.mul_spec(b).mul_spec(c),
+            a2.mul_spec(b.mul_spec(c)),
+        );
+        assert(sum_l.eqv_spec(sum_r));
+        assert(mid_r == sum_r);
+        assert(rhs.eqv_spec(mid_r));
+        Self::lemma_eqv_symmetric(rhs, mid_r);
+        Self::lemma_eqv_transitive(lhs, mid_l, sum_l);
+        Self::lemma_eqv_transitive(lhs, sum_l, sum_r);
+        Self::lemma_eqv_transitive(lhs, sum_r, mid_r);
+        Self::lemma_eqv_transitive(lhs, mid_r, rhs);
+        assert(lhs.eqv_spec(rhs));
+    }
+
+    pub proof fn lemma_assoc_linear_left_scale(a: Self, b: Self, c: Self, k: Scalar)
+        requires
+            Self::assoc_instance_spec(a, b, c),
+        ensures
+            Self::assoc_instance_spec(a.scale_spec(k), b, c),
+    {
+        let lhs = a.scale_spec(k).mul_spec(b).mul_spec(c);
+        let rhs = a.scale_spec(k).mul_spec(b.mul_spec(c));
+
+        let ab = a.mul_spec(b);
+        let abc = ab.mul_spec(c);
+        let abc_r = a.mul_spec(b.mul_spec(c));
+
+        let lhs_mid = ab.scale_spec(k).mul_spec(c);
+        let lhs_scaled = abc.scale_spec(k);
+        let rhs_scaled = abc_r.scale_spec(k);
+        let rhs_mid = a.mul_spec(b.mul_spec(c)).scale_spec(k);
+
+        Self::lemma_mul_scale_left(a, b, k);
+        Self::lemma_mul_eqv_congruence_left(a.scale_spec(k).mul_spec(b), ab.scale_spec(k), c);
+        Self::lemma_mul_scale_left(ab, c, k);
+        Self::lemma_scale_eqv_congruence(abc, abc_r, k);
+        Self::lemma_mul_scale_left(a, b.mul_spec(c), k);
+
+        assert(a.scale_spec(k).mul_spec(b).eqv_spec(ab.scale_spec(k)));
+        assert(lhs.eqv_spec(lhs_mid));
+        assert(lhs_mid.eqv_spec(lhs_scaled));
+        assert(abc.eqv_spec(abc_r));
+        assert(lhs_scaled.eqv_spec(rhs_scaled));
+        assert(rhs_mid == rhs_scaled);
+        assert(rhs.eqv_spec(rhs_mid));
+        Self::lemma_eqv_symmetric(rhs, rhs_mid);
+        Self::lemma_eqv_transitive(lhs, lhs_mid, lhs_scaled);
+        Self::lemma_eqv_transitive(lhs, lhs_scaled, rhs_scaled);
+        Self::lemma_eqv_transitive(lhs, rhs_scaled, rhs_mid);
+        Self::lemma_eqv_transitive(lhs, rhs_mid, rhs);
+        assert(lhs.eqv_spec(rhs));
+    }
+
+    pub proof fn lemma_assoc_linear_middle_add(a: Self, b1: Self, b2: Self, c: Self)
+        requires
+            Self::assoc_instance_spec(a, b1, c),
+            Self::assoc_instance_spec(a, b2, c),
+        ensures
+            Self::assoc_instance_spec(a, b1.add_spec(b2), c),
+    {
+        let lhs = a.mul_spec(b1.add_spec(b2)).mul_spec(c);
+        let rhs = a.mul_spec(b1.add_spec(b2).mul_spec(c));
+
+        let mid_ab = a.mul_spec(b1).add_spec(a.mul_spec(b2));
+        let mid_l = mid_ab.mul_spec(c);
+        let sum_l = a.mul_spec(b1).mul_spec(c).add_spec(a.mul_spec(b2).mul_spec(c));
+        let sum_r = a.mul_spec(b1.mul_spec(c)).add_spec(a.mul_spec(b2.mul_spec(c)));
+
+        let bc_sum = b1.mul_spec(c).add_spec(b2.mul_spec(c));
+        let rhs_mid = a.mul_spec(bc_sum);
+
+        Self::lemma_mul_distributes_over_add_right(a, b1, b2);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b1.add_spec(b2)), mid_ab, c);
+        Self::lemma_mul_distributes_over_add_left(a.mul_spec(b1), a.mul_spec(b2), c);
+
+        assert(a.mul_spec(b1.add_spec(b2)).eqv_spec(mid_ab));
+        assert(lhs.eqv_spec(mid_l));
+        assert(mid_l.eqv_spec(sum_l));
+
+        assert(a.mul_spec(b1).mul_spec(c).eqv_spec(a.mul_spec(b1.mul_spec(c))));
+        assert(a.mul_spec(b2).mul_spec(c).eqv_spec(a.mul_spec(b2.mul_spec(c))));
+        Self::lemma_add_eqv_congruence(
+            a.mul_spec(b1).mul_spec(c),
+            a.mul_spec(b1.mul_spec(c)),
+            a.mul_spec(b2).mul_spec(c),
+            a.mul_spec(b2.mul_spec(c)),
+        );
+        assert(sum_l.eqv_spec(sum_r));
+
+        Self::lemma_mul_distributes_over_add_left(b1, b2, c);
+        assert(b1.add_spec(b2).mul_spec(c).eqv_spec(bc_sum));
+        Self::lemma_mul_eqv_congruence_right(a, b1.add_spec(b2).mul_spec(c), bc_sum);
+        assert(rhs.eqv_spec(rhs_mid));
+
+        Self::lemma_mul_distributes_over_add_right(a, b1.mul_spec(c), b2.mul_spec(c));
+        assert(rhs_mid.eqv_spec(sum_r));
+
+        Self::lemma_eqv_transitive(lhs, mid_l, sum_l);
+        Self::lemma_eqv_transitive(lhs, sum_l, sum_r);
+        Self::lemma_eqv_symmetric(rhs_mid, sum_r);
+        Self::lemma_eqv_symmetric(rhs, rhs_mid);
+        Self::lemma_eqv_transitive(lhs, sum_r, rhs_mid);
+        Self::lemma_eqv_transitive(lhs, rhs_mid, rhs);
+        assert(lhs.eqv_spec(rhs));
+    }
+
+    pub proof fn lemma_assoc_linear_right_add(a: Self, b: Self, c1: Self, c2: Self)
+        requires
+            Self::assoc_instance_spec(a, b, c1),
+            Self::assoc_instance_spec(a, b, c2),
+        ensures
+            Self::assoc_instance_spec(a, b, c1.add_spec(c2)),
+    {
+        let lhs = a.mul_spec(b).mul_spec(c1.add_spec(c2));
+        let rhs = a.mul_spec(b.mul_spec(c1.add_spec(c2)));
+
+        let lhs_mid = a.mul_spec(b).mul_spec(c1).add_spec(a.mul_spec(b).mul_spec(c2));
+        let sum_r = a.mul_spec(b.mul_spec(c1)).add_spec(a.mul_spec(b.mul_spec(c2)));
+
+        let bc_sum = b.mul_spec(c1).add_spec(b.mul_spec(c2));
+        let rhs_mid = a.mul_spec(bc_sum);
+
+        Self::lemma_mul_distributes_over_add_right(a.mul_spec(b), c1, c2);
+        assert(lhs.eqv_spec(lhs_mid));
+
+        assert(a.mul_spec(b).mul_spec(c1).eqv_spec(a.mul_spec(b.mul_spec(c1))));
+        assert(a.mul_spec(b).mul_spec(c2).eqv_spec(a.mul_spec(b.mul_spec(c2))));
+        Self::lemma_add_eqv_congruence(
+            a.mul_spec(b).mul_spec(c1),
+            a.mul_spec(b.mul_spec(c1)),
+            a.mul_spec(b).mul_spec(c2),
+            a.mul_spec(b.mul_spec(c2)),
+        );
+        assert(lhs_mid.eqv_spec(sum_r));
+
+        Self::lemma_mul_distributes_over_add_right(b, c1, c2);
+        assert(b.mul_spec(c1.add_spec(c2)).eqv_spec(bc_sum));
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c1.add_spec(c2)), bc_sum);
+        assert(rhs.eqv_spec(rhs_mid));
+
+        Self::lemma_mul_distributes_over_add_right(a, b.mul_spec(c1), b.mul_spec(c2));
+        assert(rhs_mid.eqv_spec(sum_r));
+
+        Self::lemma_eqv_transitive(lhs, lhs_mid, sum_r);
+        Self::lemma_eqv_symmetric(rhs_mid, sum_r);
+        Self::lemma_eqv_symmetric(rhs, rhs_mid);
+        Self::lemma_eqv_transitive(lhs, sum_r, rhs_mid);
+        Self::lemma_eqv_transitive(lhs, rhs_mid, rhs);
+        assert(lhs.eqv_spec(rhs));
+    }
+
+    pub proof fn lemma_assoc_linear_middle_scale(a: Self, b: Self, c: Self, k: Scalar)
+        requires
+            Self::assoc_instance_spec(a, b, c),
+        ensures
+            Self::assoc_instance_spec(a, b.scale_spec(k), c),
+    {
+        let lhs = a.mul_spec(b.scale_spec(k)).mul_spec(c);
+        let rhs = a.mul_spec(b.scale_spec(k).mul_spec(c));
+
+        let ab = a.mul_spec(b);
+        let abc = ab.mul_spec(c);
+        let abc_r = a.mul_spec(b.mul_spec(c));
+
+        let lhs_mid = ab.scale_spec(k).mul_spec(c);
+        let lhs_scaled = abc.scale_spec(k);
+
+        let bc_scaled = b.mul_spec(c).scale_spec(k);
+        let rhs_mid = a.mul_spec(bc_scaled);
+        let rhs_scaled = abc_r.scale_spec(k);
+
+        Self::lemma_mul_scale_right(a, b, k);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b.scale_spec(k)), ab.scale_spec(k), c);
+        Self::lemma_mul_scale_left(ab, c, k);
+        Self::lemma_scale_eqv_congruence(abc, abc_r, k);
+        Self::lemma_mul_scale_left(b, c, k);
+        Self::lemma_mul_eqv_congruence_right(a, b.scale_spec(k).mul_spec(c), bc_scaled);
+        Self::lemma_mul_scale_right(a, b.mul_spec(c), k);
+
+        assert(a.mul_spec(b.scale_spec(k)).eqv_spec(ab.scale_spec(k)));
+        assert(lhs.eqv_spec(lhs_mid));
+        assert(lhs_mid.eqv_spec(lhs_scaled));
+        assert(abc.eqv_spec(abc_r));
+        assert(lhs_scaled.eqv_spec(rhs_scaled));
+
+        assert(b.scale_spec(k).mul_spec(c).eqv_spec(bc_scaled));
+        assert(rhs.eqv_spec(rhs_mid));
+        assert(rhs_mid.eqv_spec(rhs_scaled));
+
+        Self::lemma_eqv_transitive(lhs, lhs_mid, lhs_scaled);
+        Self::lemma_eqv_transitive(lhs, lhs_scaled, rhs_scaled);
+        Self::lemma_eqv_symmetric(rhs_mid, rhs_scaled);
+        Self::lemma_eqv_symmetric(rhs, rhs_mid);
+        Self::lemma_eqv_transitive(lhs, rhs_scaled, rhs_mid);
+        Self::lemma_eqv_transitive(lhs, rhs_mid, rhs);
+        assert(lhs.eqv_spec(rhs));
+    }
+
+    pub proof fn lemma_assoc_linear_right_scale(a: Self, b: Self, c: Self, k: Scalar)
+        requires
+            Self::assoc_instance_spec(a, b, c),
+        ensures
+            Self::assoc_instance_spec(a, b, c.scale_spec(k)),
+    {
+        let lhs = a.mul_spec(b).mul_spec(c.scale_spec(k));
+        let rhs = a.mul_spec(b.mul_spec(c.scale_spec(k)));
+
+        let abc = a.mul_spec(b).mul_spec(c);
+        let abc_r = a.mul_spec(b.mul_spec(c));
+        let target = abc.scale_spec(k);
+        let target_r = abc_r.scale_spec(k);
+
+        let bc_scaled = b.mul_spec(c).scale_spec(k);
+        let rhs_mid = a.mul_spec(bc_scaled);
+
+        Self::lemma_mul_scale_right(a.mul_spec(b), c, k);
+        assert(lhs.eqv_spec(target));
+        assert(abc.eqv_spec(abc_r));
+        Self::lemma_scale_eqv_congruence(abc, abc_r, k);
+        assert(target.eqv_spec(target_r));
+
+        Self::lemma_mul_scale_right(b, c, k);
+        assert(b.mul_spec(c.scale_spec(k)).eqv_spec(bc_scaled));
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c.scale_spec(k)), bc_scaled);
+        assert(rhs.eqv_spec(rhs_mid));
+
+        Self::lemma_mul_scale_right(a, b.mul_spec(c), k);
+        assert(rhs_mid.eqv_spec(target_r));
+
+        Self::lemma_eqv_transitive(lhs, target, target_r);
+        Self::lemma_eqv_symmetric(rhs_mid, target_r);
+        Self::lemma_eqv_symmetric(rhs, rhs_mid);
+        Self::lemma_eqv_transitive(lhs, target_r, rhs_mid);
+        Self::lemma_eqv_transitive(lhs, rhs_mid, rhs);
+        assert(lhs.eqv_spec(rhs));
+    }
+
+    pub proof fn lemma_assoc_eqv_right(a: Self, b: Self, c1: Self, c2: Self)
+        requires
+            Self::assoc_instance_spec(a, b, c1),
+            c1.eqv_spec(c2),
+        ensures
+            Self::assoc_instance_spec(a, b, c2),
+    {
+        let lhs1 = a.mul_spec(b).mul_spec(c1);
+        let lhs2 = a.mul_spec(b).mul_spec(c2);
+        let rhs1 = a.mul_spec(b.mul_spec(c1));
+        let rhs2 = a.mul_spec(b.mul_spec(c2));
+
+        Self::lemma_mul_eqv_congruence_right(a.mul_spec(b), c1, c2);
+        assert(lhs1.eqv_spec(lhs2));
+        Self::lemma_mul_eqv_congruence_right(b, c1, c2);
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(c1), b.mul_spec(c2));
+        assert(rhs1.eqv_spec(rhs2));
+
+        Self::lemma_eqv_symmetric(lhs1, lhs2);
+        Self::lemma_eqv_transitive(lhs2, lhs1, rhs1);
+        Self::lemma_eqv_transitive(lhs2, rhs1, rhs2);
+        assert(lhs2.eqv_spec(rhs2));
+    }
+
+    pub proof fn lemma_assoc_eqv_middle(a: Self, b1: Self, b2: Self, c: Self)
+        requires
+            Self::assoc_instance_spec(a, b1, c),
+            b1.eqv_spec(b2),
+        ensures
+            Self::assoc_instance_spec(a, b2, c),
+    {
+        let lhs1 = a.mul_spec(b1).mul_spec(c);
+        let lhs2 = a.mul_spec(b2).mul_spec(c);
+        let rhs1 = a.mul_spec(b1.mul_spec(c));
+        let rhs2 = a.mul_spec(b2.mul_spec(c));
+
+        Self::lemma_mul_eqv_congruence_right(a, b1, b2);
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b1), a.mul_spec(b2), c);
+        assert(lhs1.eqv_spec(lhs2));
+
+        Self::lemma_mul_eqv_congruence_left(b1, b2, c);
+        Self::lemma_mul_eqv_congruence_right(a, b1.mul_spec(c), b2.mul_spec(c));
+        assert(rhs1.eqv_spec(rhs2));
+
+        Self::lemma_eqv_symmetric(lhs1, lhs2);
+        Self::lemma_eqv_transitive(lhs2, lhs1, rhs1);
+        Self::lemma_eqv_transitive(lhs2, rhs1, rhs2);
+        assert(lhs2.eqv_spec(rhs2));
+    }
+
+    pub proof fn lemma_assoc_eqv_left(a1: Self, a2: Self, b: Self, c: Self)
+        requires
+            Self::assoc_instance_spec(a1, b, c),
+            a1.eqv_spec(a2),
+        ensures
+            Self::assoc_instance_spec(a2, b, c),
+    {
+        let lhs1 = a1.mul_spec(b).mul_spec(c);
+        let lhs2 = a2.mul_spec(b).mul_spec(c);
+        let rhs1 = a1.mul_spec(b.mul_spec(c));
+        let rhs2 = a2.mul_spec(b.mul_spec(c));
+
+        Self::lemma_mul_eqv_congruence_left(a1, a2, b);
+        Self::lemma_mul_eqv_congruence_left(a1.mul_spec(b), a2.mul_spec(b), c);
+        assert(lhs1.eqv_spec(lhs2));
+
+        Self::lemma_mul_eqv_congruence_left(a1, a2, b.mul_spec(c));
+        assert(rhs1.eqv_spec(rhs2));
+
+        Self::lemma_eqv_symmetric(lhs1, lhs2);
+        Self::lemma_eqv_transitive(lhs2, lhs1, rhs1);
+        Self::lemma_eqv_transitive(lhs2, rhs1, rhs2);
+        assert(lhs2.eqv_spec(rhs2));
+    }
+
     pub proof fn lemma_scale_eqv_congruence(u: Self, v: Self, k: Scalar)
         requires
             u.eqv_spec(v),
@@ -458,6 +4901,218 @@ impl Quaternion {
         assert(rhs.w == b.w.add_spec(c.w));
         assert(lhs.z == rhs.z);
         assert(lhs == rhs);
+    }
+
+    pub proof fn lemma_as_vec4_eqv_congruence(a: Self, b: Self)
+        requires
+            a.eqv_spec(b),
+        ensures
+            a.as_vec4_spec().eqv_spec(b.as_vec4_spec()),
+    {
+        let av = a.as_vec4_spec();
+        let bv = b.as_vec4_spec();
+        assert(a.w.eqv_spec(b.w));
+        assert(a.x.eqv_spec(b.x));
+        assert(a.y.eqv_spec(b.y));
+        assert(a.z.eqv_spec(b.z));
+        assert(av.x.eqv_spec(bv.x));
+        assert(av.y.eqv_spec(bv.y));
+        assert(av.z.eqv_spec(bv.z));
+        assert(av.w.eqv_spec(bv.w));
+        Vec4::lemma_eqv_from_components(av, bv);
+        assert(av.eqv_spec(bv));
+    }
+
+    pub proof fn lemma_mul_row_w_eqv_congruence(b1: Self, b2: Self)
+        requires
+            b1.eqv_spec(b2),
+        ensures
+            Self::mul_row_w_spec(b1).eqv_spec(Self::mul_row_w_spec(b2)),
+    {
+        let r1 = Self::mul_row_w_spec(b1);
+        let r2 = Self::mul_row_w_spec(b2);
+        Scalar::lemma_eqv_neg_congruence(b1.x, b2.x);
+        Scalar::lemma_eqv_neg_congruence(b1.y, b2.y);
+        Scalar::lemma_eqv_neg_congruence(b1.z, b2.z);
+        assert(r1.x.eqv_spec(r2.x));
+        assert(r1.y.eqv_spec(r2.y));
+        assert(r1.z.eqv_spec(r2.z));
+        assert(r1.w.eqv_spec(r2.w));
+        Vec4::lemma_eqv_from_components(r1, r2);
+        assert(r1.eqv_spec(r2));
+    }
+
+    pub proof fn lemma_mul_row_x_eqv_congruence(b1: Self, b2: Self)
+        requires
+            b1.eqv_spec(b2),
+        ensures
+            Self::mul_row_x_spec(b1).eqv_spec(Self::mul_row_x_spec(b2)),
+    {
+        let r1 = Self::mul_row_x_spec(b1);
+        let r2 = Self::mul_row_x_spec(b2);
+        Scalar::lemma_eqv_neg_congruence(b1.y, b2.y);
+        assert(r1.x.eqv_spec(r2.x));
+        assert(r1.y.eqv_spec(r2.y));
+        assert(r1.z.eqv_spec(r2.z));
+        assert(r1.w.eqv_spec(r2.w));
+        Vec4::lemma_eqv_from_components(r1, r2);
+        assert(r1.eqv_spec(r2));
+    }
+
+    pub proof fn lemma_mul_row_y_eqv_congruence(b1: Self, b2: Self)
+        requires
+            b1.eqv_spec(b2),
+        ensures
+            Self::mul_row_y_spec(b1).eqv_spec(Self::mul_row_y_spec(b2)),
+    {
+        let r1 = Self::mul_row_y_spec(b1);
+        let r2 = Self::mul_row_y_spec(b2);
+        Scalar::lemma_eqv_neg_congruence(b1.z, b2.z);
+        assert(r1.x.eqv_spec(r2.x));
+        assert(r1.y.eqv_spec(r2.y));
+        assert(r1.z.eqv_spec(r2.z));
+        assert(r1.w.eqv_spec(r2.w));
+        Vec4::lemma_eqv_from_components(r1, r2);
+        assert(r1.eqv_spec(r2));
+    }
+
+    pub proof fn lemma_mul_row_z_eqv_congruence(b1: Self, b2: Self)
+        requires
+            b1.eqv_spec(b2),
+        ensures
+            Self::mul_row_z_spec(b1).eqv_spec(Self::mul_row_z_spec(b2)),
+    {
+        let r1 = Self::mul_row_z_spec(b1);
+        let r2 = Self::mul_row_z_spec(b2);
+        Scalar::lemma_eqv_neg_congruence(b1.x, b2.x);
+        assert(r1.x.eqv_spec(r2.x));
+        assert(r1.y.eqv_spec(r2.y));
+        assert(r1.z.eqv_spec(r2.z));
+        assert(r1.w.eqv_spec(r2.w));
+        Vec4::lemma_eqv_from_components(r1, r2);
+        assert(r1.eqv_spec(r2));
+    }
+
+    pub proof fn lemma_mul_eqv_congruence_left(a1: Self, a2: Self, b: Self)
+        requires
+            a1.eqv_spec(a2),
+        ensures
+            a1.mul_spec(b).eqv_spec(a2.mul_spec(b)),
+    {
+        let p1 = a1.mul_spec(b);
+        let p2 = a2.mul_spec(b);
+        let av1 = a1.as_vec4_spec();
+        let av2 = a2.as_vec4_spec();
+        let rw = Self::mul_row_w_spec(b);
+        let rx = Self::mul_row_x_spec(b);
+        let ry = Self::mul_row_y_spec(b);
+        let rz = Self::mul_row_z_spec(b);
+
+        Self::lemma_as_vec4_eqv_congruence(a1, a2);
+        Vec4::lemma_eqv_reflexive(rw);
+        Vec4::lemma_eqv_reflexive(rx);
+        Vec4::lemma_eqv_reflexive(ry);
+        Vec4::lemma_eqv_reflexive(rz);
+
+        Self::lemma_mul_w_dot_row(a1, b);
+        Self::lemma_mul_w_dot_row(a2, b);
+        Vec4::lemma_dot_eqv_congruence(av1, av2, rw, rw);
+        assert(p1.w == av1.dot_spec(rw));
+        assert(p2.w == av2.dot_spec(rw));
+        assert(p1.w.eqv_spec(p2.w));
+
+        Self::lemma_mul_x_dot_row(a1, b);
+        Self::lemma_mul_x_dot_row(a2, b);
+        Vec4::lemma_dot_eqv_congruence(av1, av2, rx, rx);
+        assert(p1.x == av1.dot_spec(rx));
+        assert(p2.x == av2.dot_spec(rx));
+        assert(p1.x.eqv_spec(p2.x));
+
+        Self::lemma_mul_y_dot_row(a1, b);
+        Self::lemma_mul_y_dot_row(a2, b);
+        Vec4::lemma_dot_eqv_congruence(av1, av2, ry, ry);
+        assert(p1.y == av1.dot_spec(ry));
+        assert(p2.y == av2.dot_spec(ry));
+        assert(p1.y.eqv_spec(p2.y));
+
+        Self::lemma_mul_z_dot_row(a1, b);
+        Self::lemma_mul_z_dot_row(a2, b);
+        Vec4::lemma_dot_eqv_congruence(av1, av2, rz, rz);
+        assert(p1.z == av1.dot_spec(rz));
+        assert(p2.z == av2.dot_spec(rz));
+        assert(p1.z.eqv_spec(p2.z));
+
+        Self::lemma_eqv_from_components(p1, p2);
+        assert(p1.eqv_spec(p2));
+    }
+
+    pub proof fn lemma_mul_eqv_congruence_right(a: Self, b1: Self, b2: Self)
+        requires
+            b1.eqv_spec(b2),
+        ensures
+            a.mul_spec(b1).eqv_spec(a.mul_spec(b2)),
+    {
+        let p1 = a.mul_spec(b1);
+        let p2 = a.mul_spec(b2);
+        let av = a.as_vec4_spec();
+        let rw1 = Self::mul_row_w_spec(b1);
+        let rw2 = Self::mul_row_w_spec(b2);
+        let rx1 = Self::mul_row_x_spec(b1);
+        let rx2 = Self::mul_row_x_spec(b2);
+        let ry1 = Self::mul_row_y_spec(b1);
+        let ry2 = Self::mul_row_y_spec(b2);
+        let rz1 = Self::mul_row_z_spec(b1);
+        let rz2 = Self::mul_row_z_spec(b2);
+
+        Self::lemma_mul_row_w_eqv_congruence(b1, b2);
+        Self::lemma_mul_row_x_eqv_congruence(b1, b2);
+        Self::lemma_mul_row_y_eqv_congruence(b1, b2);
+        Self::lemma_mul_row_z_eqv_congruence(b1, b2);
+        Vec4::lemma_eqv_reflexive(av);
+
+        Self::lemma_mul_w_dot_row(a, b1);
+        Self::lemma_mul_w_dot_row(a, b2);
+        Vec4::lemma_dot_eqv_congruence(av, av, rw1, rw2);
+        assert(p1.w == av.dot_spec(rw1));
+        assert(p2.w == av.dot_spec(rw2));
+        assert(p1.w.eqv_spec(p2.w));
+
+        Self::lemma_mul_x_dot_row(a, b1);
+        Self::lemma_mul_x_dot_row(a, b2);
+        Vec4::lemma_dot_eqv_congruence(av, av, rx1, rx2);
+        assert(p1.x == av.dot_spec(rx1));
+        assert(p2.x == av.dot_spec(rx2));
+        assert(p1.x.eqv_spec(p2.x));
+
+        Self::lemma_mul_y_dot_row(a, b1);
+        Self::lemma_mul_y_dot_row(a, b2);
+        Vec4::lemma_dot_eqv_congruence(av, av, ry1, ry2);
+        assert(p1.y == av.dot_spec(ry1));
+        assert(p2.y == av.dot_spec(ry2));
+        assert(p1.y.eqv_spec(p2.y));
+
+        Self::lemma_mul_z_dot_row(a, b1);
+        Self::lemma_mul_z_dot_row(a, b2);
+        Vec4::lemma_dot_eqv_congruence(av, av, rz1, rz2);
+        assert(p1.z == av.dot_spec(rz1));
+        assert(p2.z == av.dot_spec(rz2));
+        assert(p1.z.eqv_spec(p2.z));
+
+        Self::lemma_eqv_from_components(p1, p2);
+        assert(p1.eqv_spec(p2));
+    }
+
+    pub proof fn lemma_mul_eqv_congruence(a1: Self, a2: Self, b1: Self, b2: Self)
+        requires
+            a1.eqv_spec(a2),
+            b1.eqv_spec(b2),
+        ensures
+            a1.mul_spec(b1).eqv_spec(a2.mul_spec(b2)),
+    {
+        Self::lemma_mul_eqv_congruence_left(a1, a2, b1);
+        Self::lemma_mul_eqv_congruence_right(a2, b1, b2);
+        Self::lemma_eqv_transitive(a1.mul_spec(b1), a2.mul_spec(b1), a2.mul_spec(b2));
+        assert(a1.mul_spec(b1).eqv_spec(a2.mul_spec(b2)));
     }
 
     pub proof fn lemma_mul_w_dot_row(a: Self, b: Self)
@@ -676,6 +5331,37 @@ impl Quaternion {
         assert(a.sub_spec(b).y == a.add_spec(b.neg_spec()).y);
         assert(a.sub_spec(b).z == a.add_spec(b.neg_spec()).z);
         assert(a.sub_spec(b) == a.add_spec(b.neg_spec()));
+    }
+
+    #[verifier::rlimit(1200)]
+    pub proof fn lemma_mul_associative(a: Self, b: Self, c: Self)
+        ensures
+            a.mul_spec(b).mul_spec(c).eqv_spec(a.mul_spec(b.mul_spec(c))),
+    {
+        let a0 = Self::basis_spec(0).scale_spec(a.w);
+        let a1 = Self::basis_spec(1).scale_spec(a.x);
+        let a2 = Self::basis_spec(2).scale_spec(a.y);
+        let a3 = Self::basis_spec(3).scale_spec(a.z);
+        let asum = Self::basis_decompose_spec(a);
+
+        Self::lemma_assoc_basis_any(0, b, c);
+        Self::lemma_assoc_linear_left_scale(Self::basis_spec(0), b, c, a.w);
+        Self::lemma_assoc_basis_any(1, b, c);
+        Self::lemma_assoc_linear_left_scale(Self::basis_spec(1), b, c, a.x);
+        Self::lemma_assoc_basis_any(2, b, c);
+        Self::lemma_assoc_linear_left_scale(Self::basis_spec(2), b, c, a.y);
+        Self::lemma_assoc_basis_any(3, b, c);
+        Self::lemma_assoc_linear_left_scale(Self::basis_spec(3), b, c, a.z);
+
+        Self::lemma_assoc_linear_left_add(a0, a1, b, c);
+        Self::lemma_assoc_linear_left_add(a0.add_spec(a1), a2, b, c);
+        Self::lemma_assoc_linear_left_add(a0.add_spec(a1).add_spec(a2), a3, b, c);
+        assert(Self::assoc_instance_spec(asum, b, c));
+
+        Self::lemma_basis_decompose_eqv(a);
+        Self::lemma_eqv_symmetric(a, asum);
+        Self::lemma_assoc_eqv_left(asum, a, b, c);
+        assert(Self::assoc_instance_spec(a, b, c));
     }
 
     pub proof fn lemma_mul_one_identity(a: Self)

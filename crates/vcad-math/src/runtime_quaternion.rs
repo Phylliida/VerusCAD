@@ -133,3 +133,55 @@ impl RuntimeQuaternion {
         Some(self.conjugate().scale(&inv_n))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::RuntimeQuaternion;
+
+    fn small_quaternions() -> Vec<RuntimeQuaternion> {
+        let vals = [-1, 0, 1];
+        let mut out = Vec::new();
+        for &w in &vals {
+            for &x in &vals {
+                for &y in &vals {
+                    for &z in &vals {
+                        out.push(RuntimeQuaternion::from_ints(w, x, y, z));
+                    }
+                }
+            }
+        }
+        out
+    }
+
+    #[test]
+    fn multiplication_is_associative_on_small_integer_grid() {
+        let qs = small_quaternions();
+        for a in &qs {
+            for b in &qs {
+                for c in &qs {
+                    let lhs = a.mul(b).mul(c);
+                    let rhs = a.mul(&b.mul(c));
+                    assert_eq!(lhs, rhs);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn multiplication_distributes_over_addition_on_small_integer_grid() {
+        let qs = small_quaternions();
+        for a in &qs {
+            for b in &qs {
+                for c in &qs {
+                    let left_lhs = a.add(b).mul(c);
+                    let left_rhs = a.mul(c).add(&b.mul(c));
+                    assert_eq!(left_lhs, left_rhs);
+
+                    let right_lhs = a.mul(&b.add(c));
+                    let right_rhs = a.mul(b).add(&a.mul(c));
+                    assert_eq!(right_lhs, right_rhs);
+                }
+            }
+        }
+    }
+}
