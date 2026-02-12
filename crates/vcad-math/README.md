@@ -19,7 +19,13 @@ Current code is modular:
 4. `src/orientation.rs`
 5. `src/runtime_scalar.rs`
 6. `src/runtime_scalar_refinement.rs`
-7. `src/lib.rs` module/export entrypoint.
+7. `src/runtime_vec2.rs`
+8. `src/runtime_vec2_refinement.rs`
+9. `src/runtime_point2.rs`
+10. `src/runtime_point2_refinement.rs`
+11. `src/runtime_orientation.rs`
+12. `src/runtime_orientation_refinement.rs`
+13. `src/lib.rs` module/export entrypoint.
 
 Verified theorem surface:
 1. `Scalar` algebra/order/sign laws:
@@ -53,11 +59,16 @@ Verified theorem surface:
    - `RuntimeScalar` uses `rug::Rational` for arbitrary-precision executable arithmetic.
    - equivalent values compare equal and hash equal via canonical rational form.
    - explicit runtime `normalize()` entrypoint is available for canonicalization.
-   - Verus refinement contracts are provided for `from_int`, `from_fraction`, `add`, `sub`, `mul`, `neg`, and `normalize` via `RuntimeScalar`'s model `view`.
+   - runtime geometry APIs now include `RuntimeVec2`, `RuntimePoint2`, and `RuntimeOrientation` (`orient2d`/`orientation`).
+   - Verus refinement contracts are provided for runtime scalar/vector/point/orientation APIs via model `view` mappings.
    - refinement contracts are trusted specs at the external backend boundary (`rug` implementation).
-   - verified regression wrappers validate contract composition for commutativity (`add`, `mul`), `sub == add(neg)`, and normalization identity.
+   - verified regression wrappers validate runtime->model recovery of:
+     - scalar algebra composition + normalization identity,
+     - vector add/sub/dot/cross law fragments,
+     - point affine/metric bridges,
+     - orientation swap/cyclic/permutation + translation/scale behavior.
 Verification status:
-1. End-to-end crate verification via `./scripts/verify-vcad-math.sh` is green (`292 verified, 0 errors` in the latest run).
+1. End-to-end crate verification via `./scripts/verify-vcad-math.sh` is green (`306 verified, 0 errors` in the latest run).
 
 Intentionally deferred (roadmap):
 1. Eliminate trusted `assume_specification` wrappers at the `rug` boundary by introducing a verified arithmetic boundary strategy.

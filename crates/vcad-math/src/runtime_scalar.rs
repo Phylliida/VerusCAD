@@ -54,6 +54,16 @@ impl RuntimeScalar {
     pub fn normalize(&self) -> Self {
         Self { value: self.value.clone() }
     }
+
+    pub fn signum_i8(&self) -> i8 {
+        if self.value > 0 {
+            1
+        } else if self.value < 0 {
+            -1
+        } else {
+            0
+        }
+    }
 }
 
 impl Hash for RuntimeScalar {

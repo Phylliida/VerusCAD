@@ -264,7 +264,8 @@ Derived from diff against:
   - root `src/lib.rs` now just wires modules/exports
 
 ## Status
-All currently tracked `vcad-math` proof TODO items are complete and green-verified on the rational branch.
+`P0-P3` tracked `vcad-math` proof/runtime TODO items are complete and green-verified on the rational branch.
+`P4` (higher-dimensional + quaternion expansion) is now tracked as active planned work.
 
 Anti-cheating follow-up notes:
 - legacy compatibility wrappers restored where needed (`lemma_ccw_swap_to_cw`, `lemma_eq_from_component_ints` in `Vec2`/`Point2`) using rational semantic equality.
@@ -281,3 +282,46 @@ Long-horizon milestones (canonical rational normalization, exec/spec dual-mode A
 - [x] Add direct gcd-oriented normalization theorem surface:
   - `Scalar::gcd_one_spec`
   - `Scalar::lemma_normalized_implies_gcd_one`
+
+## P3 Runtime/Refinement Expansion (Vec2, Point2, Orientation)
+- [x] Add `RuntimeVec2` runtime type:
+  - backing fields: runtime scalars for `x` and `y`
+  - constructors mirroring `Vec2` model API
+- [x] Add `RuntimeVec2` refinement layer (`runtime_vec2_refinement.rs`):
+  - `View` mapping to model `Vec2`
+  - contracts for `add`, `sub`, `neg`, `scale`, `dot`, `cross`, `norm2`
+  - trusted boundary clearly isolated (same style as runtime scalar boundary)
+- [x] Add runtime regression wrappers for `RuntimeVec2`:
+  - add commutativity / associativity (model recovery)
+  - `sub == add(neg)` composition
+  - `dot` symmetry and `cross` antisymmetry recovery
+- [x] Add `RuntimePoint2` runtime type:
+  - backing fields: runtime scalars for `x` and `y`
+  - constructors + affine ops (`add_vec`, `sub`)
+- [x] Add `RuntimePoint2` refinement layer (`runtime_point2_refinement.rs`):
+  - `View` mapping to model `Point2`
+  - contracts for `add_vec`, `sub`, `dist2`
+- [x] Add runtime regression wrappers for `RuntimePoint2`:
+  - subtraction/addition cancellation recovery
+  - translation invariance recovery
+  - `dist2(p, q) == norm2(p - q)` recovery
+- [x] Add runtime orientation API over runtime points:
+  - `orient2d`
+  - orientation classification enum compatible with model classification
+- [x] Add runtime orientation refinement layer (`runtime_orientation_refinement.rs`):
+  - contract linking runtime `orient2d` to model `orient2d_spec`
+  - contract linking runtime classifier to model `orientation_spec`
+- [x] Add runtime orientation regression wrappers:
+  - swap/cyclic/permutation behavior recovery
+  - translation invariance recovery
+  - uniform-scale behavior recovery
+
+## P4 Higher-Dimensional + Quaternion Expansion
+- [x] Create dedicated TODO document for `Vec3/Point3`, `Vec4/Point4`, and `Quaternion`:
+  - `docs/vcad-math-higher-dim-todo.md`
+- [ ] Execute `P4.1 Vec3` checklist from `docs/vcad-math-higher-dim-todo.md`.
+- [ ] Execute `P4.2 Point3 + orientation3d` checklist from `docs/vcad-math-higher-dim-todo.md`.
+- [ ] Execute `P4.3 Vec4/Point4` checklist from `docs/vcad-math-higher-dim-todo.md`.
+- [ ] Execute `P4.4 Quaternion` checklist from `docs/vcad-math-higher-dim-todo.md`.
+- [ ] Execute `P4.5 Runtime + refinement rollout` checklist from `docs/vcad-math-higher-dim-todo.md`.
+- [ ] Execute `P4.6 Anti-cheating + quality gates` checklist from `docs/vcad-math-higher-dim-todo.md`.
