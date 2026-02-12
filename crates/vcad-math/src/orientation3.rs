@@ -421,6 +421,389 @@ pub proof fn lemma_orientation3_spec_degenerate_repeated_points(a: Point3, b: Po
     assert(orientation3_spec(a, b, c, c) is Coplanar);
 }
 
+pub proof fn lemma_orient3d_scale_from_origin(a: Point3, b: Point3, c: Point3, d: Point3, k: Scalar)
+    ensures
+        orient3d_spec(
+            scale_point_from_origin3_spec(a, k),
+            scale_point_from_origin3_spec(b, k),
+            scale_point_from_origin3_spec(c, k),
+            scale_point_from_origin3_spec(d, k),
+        ).eqv_spec(k.mul_spec(k.mul_spec(k).mul_spec(orient3d_spec(a, b, c, d)))),
+{
+    let sa = scale_point_from_origin3_spec(a, k);
+    let sb = scale_point_from_origin3_spec(b, k);
+    let sc = scale_point_from_origin3_spec(c, k);
+    let sd = scale_point_from_origin3_spec(d, k);
+
+    let ba_s = sb.sub_spec(sa);
+    let ca_s = sc.sub_spec(sa);
+    let da_s = sd.sub_spec(sa);
+
+    let ba = b.sub_spec(a);
+    let ca = c.sub_spec(a);
+    let da = d.sub_spec(a);
+
+    let ba_k = ba.scale_spec(k);
+    let ca_k = ca.scale_spec(k);
+    let da_k = da.scale_spec(k);
+
+    let lhs = orient3d_spec(sa, sb, sc, sd);
+    let o = orient3d_spec(a, b, c, d);
+    let kk = k.mul_spec(k);
+    let rhs = k.mul_spec(kk.mul_spec(o));
+
+    let cross = ca.cross_spec(da);
+    let cross_kk = ca_k.cross_spec(da_k);
+    let s1 = ba_k.dot_spec(cross_kk);
+
+    lemma_scale_point_sub_eqv(b, a, k);
+    lemma_scale_point_sub_eqv(c, a, k);
+    lemma_scale_point_sub_eqv(d, a, k);
+    assert(ba_s.eqv_spec(ba_k));
+    assert(ca_s.eqv_spec(ca_k));
+    assert(da_s.eqv_spec(da_k));
+
+    Vec3::lemma_cross_eqv_congruence(ca_s, ca_k, da_s, da_k);
+    assert(ca_s.cross_spec(da_s).eqv_spec(cross_kk));
+    Vec3::lemma_dot_eqv_congruence(ba_s, ba_k, ca_s.cross_spec(da_s), cross_kk);
+    assert(lhs == ba_s.dot_spec(ca_s.cross_spec(da_s)));
+    assert(lhs.eqv_spec(s1));
+
+    let c1 = ca.cross_spec(da_k).scale_spec(k);
+    Vec3::lemma_cross_scale_extract_left(ca, da_k, k);
+    assert(c1.eqv_spec(cross_kk));
+    let s2 = ba_k.dot_spec(c1);
+    Vec3::lemma_dot_eqv_congruence(ba_k, ba_k, c1, cross_kk);
+    assert(s2.eqv_spec(s1));
+    Scalar::lemma_eqv_symmetric(s2, s1);
+    assert(s1.eqv_spec(s2));
+
+    let c_base_k = cross.scale_spec(k);
+    Vec3::lemma_cross_scale_extract_right(ca, da, k);
+    assert(ca.cross_spec(da_k).eqv_spec(c_base_k));
+    Vec3::lemma_scale_eqv_congruence(ca.cross_spec(da_k), c_base_k, k);
+    let c2 = c_base_k.scale_spec(k);
+    assert(c1.eqv_spec(c2));
+    let s3 = ba_k.dot_spec(c2);
+    Vec3::lemma_dot_eqv_congruence(ba_k, ba_k, c1, c2);
+    assert(s2.eqv_spec(s3));
+
+    let c3 = cross.scale_spec(kk);
+    Vec3::lemma_scale_associative(cross, k, k);
+    assert(c2.eqv_spec(c3));
+    let s4 = ba_k.dot_spec(c3);
+    Vec3::lemma_dot_eqv_congruence(ba_k, ba_k, c2, c3);
+    assert(s3.eqv_spec(s4));
+
+    Vec3::lemma_dot_scale_extract_left(ba, c3, k);
+    let s5 = k.mul_spec(ba.dot_spec(c3));
+    assert(s4.eqv_spec(s5));
+
+    Vec3::lemma_dot_scale_extract_right(ba, cross, kk);
+    let t1 = ba.dot_spec(c3);
+    let t2 = kk.mul_spec(ba.dot_spec(cross));
+    assert(t1.eqv_spec(t2));
+    Scalar::lemma_eqv_mul_congruence_right(k, t1, t2);
+    let s6 = k.mul_spec(t2);
+    assert(s5.eqv_spec(s6));
+
+    assert(o == ba.dot_spec(cross));
+    assert(s6 == k.mul_spec(kk.mul_spec(o)));
+    assert(s6 == rhs);
+    Scalar::lemma_eqv_reflexive(s6);
+    assert(s6.eqv_spec(rhs));
+
+    Scalar::lemma_eqv_transitive(lhs, s1, s2);
+    Scalar::lemma_eqv_transitive(lhs, s2, s3);
+    Scalar::lemma_eqv_transitive(lhs, s3, s4);
+    Scalar::lemma_eqv_transitive(lhs, s4, s5);
+    Scalar::lemma_eqv_transitive(lhs, s5, s6);
+    Scalar::lemma_eqv_transitive(lhs, s6, rhs);
+    assert(lhs.eqv_spec(rhs));
+}
+
+pub proof fn lemma_orientation3_spec_scale_nonzero_behavior(a: Point3, b: Point3, c: Point3, d: Point3, k: Scalar)
+    ensures
+        (k.num != 0) ==> (
+            (orientation3_spec(
+                scale_point_from_origin3_spec(a, k),
+                scale_point_from_origin3_spec(b, k),
+                scale_point_from_origin3_spec(c, k),
+                scale_point_from_origin3_spec(d, k),
+            ) is Coplanar)
+                == (orientation3_spec(a, b, c, d) is Coplanar)
+        ),
+        (k.num != 0) ==> (
+            (k.signum() == 1) ==> (
+                orientation3_spec(
+                    scale_point_from_origin3_spec(a, k),
+                    scale_point_from_origin3_spec(b, k),
+                    scale_point_from_origin3_spec(c, k),
+                    scale_point_from_origin3_spec(d, k),
+                ) == orientation3_spec(a, b, c, d)
+            )
+        ),
+        (k.num != 0) ==> (
+            (k.signum() == -1) ==> (
+                (orientation3_spec(
+                    scale_point_from_origin3_spec(a, k),
+                    scale_point_from_origin3_spec(b, k),
+                    scale_point_from_origin3_spec(c, k),
+                    scale_point_from_origin3_spec(d, k),
+                ) is Positive) == (orientation3_spec(a, b, c, d) is Negative)
+            )
+        ),
+        (k.num != 0) ==> (
+            (k.signum() == -1) ==> (
+                (orientation3_spec(
+                    scale_point_from_origin3_spec(a, k),
+                    scale_point_from_origin3_spec(b, k),
+                    scale_point_from_origin3_spec(c, k),
+                    scale_point_from_origin3_spec(d, k),
+                ) is Negative) == (orientation3_spec(a, b, c, d) is Positive)
+            )
+        ),
+        (k.num != 0) ==> (
+            (k.signum() == -1) ==> (
+                (orientation3_spec(
+                    scale_point_from_origin3_spec(a, k),
+                    scale_point_from_origin3_spec(b, k),
+                    scale_point_from_origin3_spec(c, k),
+                    scale_point_from_origin3_spec(d, k),
+                ) is Coplanar) == (orientation3_spec(a, b, c, d) is Coplanar)
+            )
+        ),
+{
+    if k.num != 0 {
+        lemma_orientation3_spec_scale_nonzero_behavior_strong(a, b, c, d, k);
+        assert(
+            (orientation3_spec(
+                scale_point_from_origin3_spec(a, k),
+                scale_point_from_origin3_spec(b, k),
+                scale_point_from_origin3_spec(c, k),
+                scale_point_from_origin3_spec(d, k),
+            ) is Coplanar)
+                == (orientation3_spec(a, b, c, d) is Coplanar)
+        );
+        if k.signum() == 1 {
+            assert(
+                orientation3_spec(
+                    scale_point_from_origin3_spec(a, k),
+                    scale_point_from_origin3_spec(b, k),
+                    scale_point_from_origin3_spec(c, k),
+                    scale_point_from_origin3_spec(d, k),
+                ) == orientation3_spec(a, b, c, d)
+            );
+        }
+        if k.signum() == -1 {
+            assert(
+                (orientation3_spec(
+                    scale_point_from_origin3_spec(a, k),
+                    scale_point_from_origin3_spec(b, k),
+                    scale_point_from_origin3_spec(c, k),
+                    scale_point_from_origin3_spec(d, k),
+                ) is Positive) == (orientation3_spec(a, b, c, d) is Negative)
+            );
+            assert(
+                (orientation3_spec(
+                    scale_point_from_origin3_spec(a, k),
+                    scale_point_from_origin3_spec(b, k),
+                    scale_point_from_origin3_spec(c, k),
+                    scale_point_from_origin3_spec(d, k),
+                ) is Negative) == (orientation3_spec(a, b, c, d) is Positive)
+            );
+            assert(
+                (orientation3_spec(
+                    scale_point_from_origin3_spec(a, k),
+                    scale_point_from_origin3_spec(b, k),
+                    scale_point_from_origin3_spec(c, k),
+                    scale_point_from_origin3_spec(d, k),
+                ) is Coplanar) == (orientation3_spec(a, b, c, d) is Coplanar)
+            );
+        }
+    }
+}
+
+pub proof fn lemma_orientation3_spec_scale_nonzero_behavior_strong(a: Point3, b: Point3, c: Point3, d: Point3, k: Scalar)
+    requires
+        k.num != 0,
+    ensures
+        orient3d_spec(
+            scale_point_from_origin3_spec(a, k),
+            scale_point_from_origin3_spec(b, k),
+            scale_point_from_origin3_spec(c, k),
+            scale_point_from_origin3_spec(d, k),
+        ).signum() == k.signum() * orient3d_spec(a, b, c, d).signum(),
+        (orientation3_spec(
+            scale_point_from_origin3_spec(a, k),
+            scale_point_from_origin3_spec(b, k),
+            scale_point_from_origin3_spec(c, k),
+            scale_point_from_origin3_spec(d, k),
+        ) is Coplanar) == (orientation3_spec(a, b, c, d) is Coplanar),
+        (k.signum() == 1) ==> (
+            orientation3_spec(
+                scale_point_from_origin3_spec(a, k),
+                scale_point_from_origin3_spec(b, k),
+                scale_point_from_origin3_spec(c, k),
+                scale_point_from_origin3_spec(d, k),
+            ) == orientation3_spec(a, b, c, d)
+        ),
+        (k.signum() == -1) ==> (
+            (orientation3_spec(
+                scale_point_from_origin3_spec(a, k),
+                scale_point_from_origin3_spec(b, k),
+                scale_point_from_origin3_spec(c, k),
+                scale_point_from_origin3_spec(d, k),
+            ) is Positive) == (orientation3_spec(a, b, c, d) is Negative)
+        ),
+        (k.signum() == -1) ==> (
+            (orientation3_spec(
+                scale_point_from_origin3_spec(a, k),
+                scale_point_from_origin3_spec(b, k),
+                scale_point_from_origin3_spec(c, k),
+                scale_point_from_origin3_spec(d, k),
+            ) is Negative) == (orientation3_spec(a, b, c, d) is Positive)
+        ),
+        (k.signum() == -1) ==> (
+            (orientation3_spec(
+                scale_point_from_origin3_spec(a, k),
+                scale_point_from_origin3_spec(b, k),
+                scale_point_from_origin3_spec(c, k),
+                scale_point_from_origin3_spec(d, k),
+            ) is Coplanar) == (orientation3_spec(a, b, c, d) is Coplanar)
+        ),
+{
+    let sa = scale_point_from_origin3_spec(a, k);
+    let sb = scale_point_from_origin3_spec(b, k);
+    let sc = scale_point_from_origin3_spec(c, k);
+    let sd = scale_point_from_origin3_spec(d, k);
+    let ds = orient3d_spec(sa, sb, sc, sd);
+    let d0 = orient3d_spec(a, b, c, d);
+    let kk = k.mul_spec(k);
+    let k3 = k.mul_spec(kk);
+    let prod = k3.mul_spec(d0);
+    let os = orientation3_spec(sa, sb, sc, sd);
+    let o0 = orientation3_spec(a, b, c, d);
+
+    lemma_orient3d_scale_from_origin(a, b, c, d, k);
+    assert(ds.eqv_spec(k.mul_spec(kk.mul_spec(d0))));
+    Scalar::lemma_mul_associative(k, kk, d0);
+    assert(k3.mul_spec(d0).eqv_spec(k.mul_spec(kk.mul_spec(d0))));
+    Scalar::lemma_eqv_symmetric(k3.mul_spec(d0), k.mul_spec(kk.mul_spec(d0)));
+    assert(k.mul_spec(kk.mul_spec(d0)).eqv_spec(prod));
+    Scalar::lemma_eqv_transitive(ds, k.mul_spec(kk.mul_spec(d0)), prod);
+    assert(ds.eqv_spec(prod));
+    Scalar::lemma_eqv_signum(ds, prod);
+    assert(ds.signum() == prod.signum());
+
+    Scalar::lemma_signum_zero_iff(k);
+    assert((k.signum() == 0) == (k.num == 0));
+    assert(k.signum() != 0);
+    Scalar::lemma_signum_cases(k);
+    assert(k.signum() == 1 || k.signum() == -1);
+
+    Scalar::lemma_signum_mul(k, k);
+    assert(kk.signum() == k.signum() * k.signum());
+    if k.signum() == 1 {
+        assert(kk.signum() == 1 * 1);
+        assert(kk.signum() == 1);
+    } else {
+        assert(k.signum() == -1);
+        assert(kk.signum() == (-1) * (-1));
+        assert((-1) * (-1) == 1) by (nonlinear_arith);
+        assert(kk.signum() == 1);
+    }
+    assert(kk.signum() == 1);
+
+    Scalar::lemma_signum_mul(k, kk);
+    assert(k3.signum() == k.signum() * kk.signum());
+    assert(k3.signum() == k.signum() * 1);
+    assert(k3.signum() == k.signum());
+
+    Scalar::lemma_signum_mul(k3, d0);
+    assert(prod.signum() == k3.signum() * d0.signum());
+    assert(prod.signum() == k.signum() * d0.signum());
+    assert(ds.signum() == k.signum() * d0.signum());
+
+    lemma_orientation3_spec_matches_predicates(sa, sb, sc, sd);
+    lemma_orientation3_spec_matches_predicates(a, b, c, d);
+    Scalar::lemma_signum_cases(d0);
+
+    if d0.signum() == 1 {
+        assert(o0 is Positive);
+        assert(!(o0 is Negative));
+        assert(!(o0 is Coplanar));
+        assert(ds.signum() == k.signum() * 1);
+        if k.signum() == 1 {
+            assert(ds.signum() == 1);
+            assert(os is Positive);
+            assert(!(os is Negative));
+            assert(!(os is Coplanar));
+            assert(os == o0);
+        } else {
+            assert(k.signum() == -1);
+            assert(ds.signum() == -1);
+            assert(!(os is Positive));
+            assert(os is Negative);
+            assert(!(os is Coplanar));
+            assert((os is Positive) == (o0 is Negative));
+            assert((os is Negative) == (o0 is Positive));
+            assert((os is Coplanar) == (o0 is Coplanar));
+        }
+        assert((os is Coplanar) == (o0 is Coplanar));
+    } else if d0.signum() == -1 {
+        assert(!(o0 is Positive));
+        assert(o0 is Negative);
+        assert(!(o0 is Coplanar));
+        assert(ds.signum() == k.signum() * (-1));
+        if k.signum() == 1 {
+            assert(ds.signum() == -1);
+            assert(!(os is Positive));
+            assert(os is Negative);
+            assert(!(os is Coplanar));
+            assert(os == o0);
+        } else {
+            assert(k.signum() == -1);
+            assert(ds.signum() == 1);
+            assert(os is Positive);
+            assert(!(os is Negative));
+            assert(!(os is Coplanar));
+            assert((os is Positive) == (o0 is Negative));
+            assert((os is Negative) == (o0 is Positive));
+            assert((os is Coplanar) == (o0 is Coplanar));
+        }
+        assert((os is Coplanar) == (o0 is Coplanar));
+    } else {
+        assert(d0.signum() == 0);
+        assert(!(o0 is Positive));
+        assert(!(o0 is Negative));
+        assert(o0 is Coplanar);
+        assert(ds.signum() == k.signum() * 0);
+        assert(ds.signum() == 0);
+        assert(!(os is Positive));
+        assert(!(os is Negative));
+        assert(os is Coplanar);
+        assert((os is Coplanar) == (o0 is Coplanar));
+    }
+
+    if k.signum() == -1 {
+        if d0.signum() == 1 {
+            assert((os is Positive) == (o0 is Negative));
+            assert((os is Negative) == (o0 is Positive));
+            assert((os is Coplanar) == (o0 is Coplanar));
+        } else if d0.signum() == -1 {
+            assert((os is Positive) == (o0 is Negative));
+            assert((os is Negative) == (o0 is Positive));
+            assert((os is Coplanar) == (o0 is Coplanar));
+        } else {
+            assert(d0.signum() == 0);
+            assert((os is Positive) == (o0 is Negative));
+            assert((os is Negative) == (o0 is Positive));
+            assert((os is Coplanar) == (o0 is Coplanar));
+        }
+    }
+}
+
 pub proof fn lemma_orientation3_spec_scale_zero_coplanar(a: Point3, b: Point3, c: Point3, d: Point3, k: Scalar)
     ensures
         (k.num == 0) ==> (

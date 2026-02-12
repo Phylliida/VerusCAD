@@ -48,13 +48,13 @@ This backlog follows the same pattern used for 2D:
 - [x] Add `src/orientation3.rs` model API:
   - signed volume / scalar triple product predicate for tetrahedron orientation
   - classification (`Positive | Negative | Coplanar`) or equivalent sign-based predicates
-- [ ] Prove orientation3d law surface:
+- [x] Prove orientation3d law surface:
   - class exclusivity/exhaustiveness
   - permutation/sign behavior
   - translation invariance
   - uniform-scale behavior
   - degeneracy lemmas for repeated/coplanar points
-  - progress: class exclusivity/exhaustiveness, translation invariance, swap-sign behavior (`c`/`d`), repeated-point degeneracy, and zero-scale coplanarity are implemented; full uniform-scale (nonzero) theorem surface is still pending.
+  - progress: complete for this surface (class exclusivity/exhaustiveness, translation invariance, swap-sign behavior (`c`/`d`), repeated-point degeneracy, and sign-aware uniform scaling for both zero and nonzero factors).
 
 ## P4.3 Vec4 / Point4 (model + proofs)
 - [x] Add `src/vec4.rs` model API:
@@ -111,7 +111,7 @@ This backlog follows the same pattern used for 2D:
   - `runtime_quaternion_refinement.rs`
 - [x] Add `View` mappings and contracts (`assume_specification` initially at backend boundary) for all runtime APIs.
 - [ ] Add regression wrappers proving runtime composition recovers key model laws for each new type.
-  - progress: initial regression wrappers are implemented for all newly added runtime families; orientation3 wrappers now include swap, zero-scale coplanarity, and repeated-point degeneracy, but full theorem coverage still needs expansion.
+  - progress: initial regression wrappers are implemented for all newly added runtime families; orientation3 wrappers now include swap, zero/nonzero scale behavior, and repeated-point degeneracy, but full theorem coverage still needs expansion.
 
 ## P4.6 Anti-cheating + quality gates
 - [ ] Anti-cheating pass on all new lemmas:

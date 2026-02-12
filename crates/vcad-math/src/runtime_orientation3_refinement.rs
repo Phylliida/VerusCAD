@@ -171,6 +171,86 @@ pub fn runtime_orientation3_scale_zero_coplanar(
 }
 
 #[allow(dead_code)]
+pub fn runtime_orientation3_scale_nonzero_behavior(
+    a: &RuntimePoint3,
+    b: &RuntimePoint3,
+    c: &RuntimePoint3,
+    d: &RuntimePoint3,
+    k: &RuntimeScalar,
+) -> (pair: (RuntimeOrientation3, RuntimeOrientation3))
+    requires
+        k@.num != 0,
+    ensures
+        pair.0@ == orientation3_spec(
+            scale_point_from_origin3_spec(a@, k@),
+            scale_point_from_origin3_spec(b@, k@),
+            scale_point_from_origin3_spec(c@, k@),
+            scale_point_from_origin3_spec(d@, k@),
+        ),
+        pair.1@ == orientation3_spec(a@, b@, c@, d@),
+        (pair.0@ is Coplanar) == (pair.1@ is Coplanar),
+        (k@.signum() == 1) ==> (pair.0@ == pair.1@),
+        (k@.signum() == -1) ==> ((pair.0@ is Positive) == (pair.1@ is Negative)),
+        (k@.signum() == -1) ==> ((pair.0@ is Negative) == (pair.1@ is Positive)),
+        (k@.signum() == -1) ==> ((pair.0@ is Coplanar) == (pair.1@ is Coplanar)),
+{
+    let sa = runtime_orientation3::scale_point_from_origin3(a, k);
+    let sb = runtime_orientation3::scale_point_from_origin3(b, k);
+    let sc = runtime_orientation3::scale_point_from_origin3(c, k);
+    let sd = runtime_orientation3::scale_point_from_origin3(d, k);
+    let lhs = runtime_orientation3::orientation3(&sa, &sb, &sc, &sd);
+    let rhs = runtime_orientation3::orientation3(a, b, c, d);
+    proof {
+        crate::orientation3::lemma_orientation3_spec_scale_nonzero_behavior_strong(a@, b@, c@, d@, k@);
+        assert(
+            (orientation3_spec(
+                scale_point_from_origin3_spec(a@, k@),
+                scale_point_from_origin3_spec(b@, k@),
+                scale_point_from_origin3_spec(c@, k@),
+                scale_point_from_origin3_spec(d@, k@),
+            ) is Coplanar) == (orientation3_spec(a@, b@, c@, d@) is Coplanar)
+        );
+        if k@.signum() == 1 {
+            assert(
+                orientation3_spec(
+                    scale_point_from_origin3_spec(a@, k@),
+                    scale_point_from_origin3_spec(b@, k@),
+                    scale_point_from_origin3_spec(c@, k@),
+                    scale_point_from_origin3_spec(d@, k@),
+                ) == orientation3_spec(a@, b@, c@, d@)
+            );
+        }
+        if k@.signum() == -1 {
+            assert(
+                (orientation3_spec(
+                    scale_point_from_origin3_spec(a@, k@),
+                    scale_point_from_origin3_spec(b@, k@),
+                    scale_point_from_origin3_spec(c@, k@),
+                    scale_point_from_origin3_spec(d@, k@),
+                ) is Positive) == (orientation3_spec(a@, b@, c@, d@) is Negative)
+            );
+            assert(
+                (orientation3_spec(
+                    scale_point_from_origin3_spec(a@, k@),
+                    scale_point_from_origin3_spec(b@, k@),
+                    scale_point_from_origin3_spec(c@, k@),
+                    scale_point_from_origin3_spec(d@, k@),
+                ) is Negative) == (orientation3_spec(a@, b@, c@, d@) is Positive)
+            );
+            assert(
+                (orientation3_spec(
+                    scale_point_from_origin3_spec(a@, k@),
+                    scale_point_from_origin3_spec(b@, k@),
+                    scale_point_from_origin3_spec(c@, k@),
+                    scale_point_from_origin3_spec(d@, k@),
+                ) is Coplanar) == (orientation3_spec(a@, b@, c@, d@) is Coplanar)
+            );
+        }
+    }
+    (lhs, rhs)
+}
+
+#[allow(dead_code)]
 pub fn runtime_orientation3_degenerate_repeated_points(
     a: &RuntimePoint3,
     b: &RuntimePoint3,
