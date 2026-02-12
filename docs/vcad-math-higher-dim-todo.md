@@ -87,7 +87,7 @@ This backlog follows the same pattern used for 2D:
   - multiplicative identity
   - left/right distributivity
   - explicit non-commutativity witness lemma for multiplication
-  - progress: add commutativity/associativity, additive identity/inverse, multiplicative identity, and a non-commutativity witness are implemented; associativity + distributivity are still pending.
+  - progress: add commutativity/associativity, additive identity/inverse, multiplicative identity, left/right distributivity, and a non-commutativity witness are implemented; multiplication associativity is still pending.
 - [ ] Prove conjugation/norm/inverse laws:
   - conjugate involution
   - `q * conjugate(q)` and `conjugate(q) * q` are real-valued and equal to `norm2(q)`
@@ -111,7 +111,7 @@ This backlog follows the same pattern used for 2D:
   - `runtime_quaternion_refinement.rs`
 - [x] Add `View` mappings and contracts (`assume_specification` initially at backend boundary) for all runtime APIs.
 - [ ] Add regression wrappers proving runtime composition recovers key model laws for each new type.
-  - progress: initial regression wrappers are implemented for all newly added runtime families; `RuntimeVec4/RuntimePoint4` now include cancellation/linearity/metric wrappers, `orientation3` wrappers include swap/zero-nonzero scale/repeated-point behavior, and `RuntimeQuaternion` wrappers now include sub-via-add-neg, additive inverse, multiplicative identity, non-commutativity witness, norm laws, conjugate-product recovery, and inverse-identity recovery via runtime `inverse()`.
+  - progress: initial regression wrappers are implemented for all newly added runtime families; `RuntimeVec4/RuntimePoint4` now include cancellation/linearity/metric wrappers, `orientation3` wrappers include swap/zero-nonzero scale/repeated-point behavior, and `RuntimeQuaternion` wrappers now include sub-via-add-neg, additive inverse, multiplicative identity, left/right distributivity, non-commutativity witness, norm laws, conjugate-product recovery, and inverse-identity recovery via runtime `inverse()`.
 
 ## P4.6 Anti-cheating + quality gates
 - [ ] Anti-cheating pass on all new lemmas:

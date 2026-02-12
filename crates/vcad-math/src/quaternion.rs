@@ -226,6 +226,59 @@ impl Quaternion {
         Vec4 { x: self.w, y: self.x, z: self.y, w: self.z }
     }
 
+    pub proof fn lemma_as_vec4_add(a: Self, b: Self)
+        ensures
+            a.add_spec(b).as_vec4_spec() == a.as_vec4_spec().add_spec(b.as_vec4_spec()),
+    {
+        let lhs = a.add_spec(b).as_vec4_spec();
+        let rhs = a.as_vec4_spec().add_spec(b.as_vec4_spec());
+        assert(lhs.x == a.w.add_spec(b.w));
+        assert(lhs.y == a.x.add_spec(b.x));
+        assert(lhs.z == a.y.add_spec(b.y));
+        assert(lhs.w == a.z.add_spec(b.z));
+        assert(rhs.x == a.w.add_spec(b.w));
+        assert(rhs.y == a.x.add_spec(b.x));
+        assert(rhs.z == a.y.add_spec(b.y));
+        assert(rhs.w == a.z.add_spec(b.z));
+        assert(lhs == rhs);
+    }
+
+    pub open spec fn mul_row_w_spec(rhs: Self) -> Vec4 {
+        Vec4 {
+            x: rhs.w,
+            y: rhs.x.neg_spec(),
+            z: rhs.y.neg_spec(),
+            w: rhs.z.neg_spec(),
+        }
+    }
+
+    pub open spec fn mul_row_x_spec(rhs: Self) -> Vec4 {
+        Vec4 {
+            x: rhs.x,
+            y: rhs.w,
+            z: rhs.z,
+            w: rhs.y.neg_spec(),
+        }
+    }
+
+    pub open spec fn mul_row_y_spec(rhs: Self) -> Vec4 {
+        Vec4 {
+            x: rhs.y,
+            y: rhs.z.neg_spec(),
+            z: rhs.w,
+            w: rhs.x,
+        }
+    }
+
+    pub open spec fn mul_row_z_spec(rhs: Self) -> Vec4 {
+        Vec4 {
+            x: rhs.z,
+            y: rhs.y,
+            z: rhs.x.neg_spec(),
+            w: rhs.w,
+        }
+    }
+
     pub open spec fn inverse_spec(self) -> Self
         recommends
             self.norm2_spec().num > 0,
@@ -321,6 +374,198 @@ impl Quaternion {
         assert(vk1.y.eqv_spec(vk2.y));
         assert(vk1.z.eqv_spec(vk2.z));
         assert(vk1.eqv_spec(vk2));
+    }
+
+    pub proof fn lemma_mul_row_w_additive(b: Self, c: Self)
+        ensures
+            Self::mul_row_w_spec(b.add_spec(c))
+                == Self::mul_row_w_spec(b).add_spec(Self::mul_row_w_spec(c)),
+    {
+        let lhs = Self::mul_row_w_spec(b.add_spec(c));
+        let rhs = Self::mul_row_w_spec(b).add_spec(Self::mul_row_w_spec(c));
+        Scalar::lemma_neg_add(b.x, c.x);
+        Scalar::lemma_neg_add(b.y, c.y);
+        Scalar::lemma_neg_add(b.z, c.z);
+        assert(lhs.x == b.w.add_spec(c.w));
+        assert(lhs.y == b.x.add_spec(c.x).neg_spec());
+        assert(lhs.z == b.y.add_spec(c.y).neg_spec());
+        assert(lhs.w == b.z.add_spec(c.z).neg_spec());
+        assert(rhs.x == b.w.add_spec(c.w));
+        assert(rhs.y == b.x.neg_spec().add_spec(c.x.neg_spec()));
+        assert(rhs.z == b.y.neg_spec().add_spec(c.y.neg_spec()));
+        assert(rhs.w == b.z.neg_spec().add_spec(c.z.neg_spec()));
+        assert(lhs.y == rhs.y);
+        assert(lhs.z == rhs.z);
+        assert(lhs.w == rhs.w);
+        assert(lhs == rhs);
+    }
+
+    pub proof fn lemma_mul_row_x_additive(b: Self, c: Self)
+        ensures
+            Self::mul_row_x_spec(b.add_spec(c))
+                == Self::mul_row_x_spec(b).add_spec(Self::mul_row_x_spec(c)),
+    {
+        let lhs = Self::mul_row_x_spec(b.add_spec(c));
+        let rhs = Self::mul_row_x_spec(b).add_spec(Self::mul_row_x_spec(c));
+        Scalar::lemma_neg_add(b.y, c.y);
+        assert(lhs.x == b.x.add_spec(c.x));
+        assert(lhs.y == b.w.add_spec(c.w));
+        assert(lhs.z == b.z.add_spec(c.z));
+        assert(lhs.w == b.y.add_spec(c.y).neg_spec());
+        assert(rhs.x == b.x.add_spec(c.x));
+        assert(rhs.y == b.w.add_spec(c.w));
+        assert(rhs.z == b.z.add_spec(c.z));
+        assert(rhs.w == b.y.neg_spec().add_spec(c.y.neg_spec()));
+        assert(lhs.w == rhs.w);
+        assert(lhs == rhs);
+    }
+
+    pub proof fn lemma_mul_row_y_additive(b: Self, c: Self)
+        ensures
+            Self::mul_row_y_spec(b.add_spec(c))
+                == Self::mul_row_y_spec(b).add_spec(Self::mul_row_y_spec(c)),
+    {
+        let lhs = Self::mul_row_y_spec(b.add_spec(c));
+        let rhs = Self::mul_row_y_spec(b).add_spec(Self::mul_row_y_spec(c));
+        Scalar::lemma_neg_add(b.z, c.z);
+        assert(lhs.x == b.y.add_spec(c.y));
+        assert(lhs.y == b.z.add_spec(c.z).neg_spec());
+        assert(lhs.z == b.w.add_spec(c.w));
+        assert(lhs.w == b.x.add_spec(c.x));
+        assert(rhs.x == b.y.add_spec(c.y));
+        assert(rhs.y == b.z.neg_spec().add_spec(c.z.neg_spec()));
+        assert(rhs.z == b.w.add_spec(c.w));
+        assert(rhs.w == b.x.add_spec(c.x));
+        assert(lhs.y == rhs.y);
+        assert(lhs == rhs);
+    }
+
+    pub proof fn lemma_mul_row_z_additive(b: Self, c: Self)
+        ensures
+            Self::mul_row_z_spec(b.add_spec(c))
+                == Self::mul_row_z_spec(b).add_spec(Self::mul_row_z_spec(c)),
+    {
+        let lhs = Self::mul_row_z_spec(b.add_spec(c));
+        let rhs = Self::mul_row_z_spec(b).add_spec(Self::mul_row_z_spec(c));
+        Scalar::lemma_neg_add(b.x, c.x);
+        assert(lhs.x == b.z.add_spec(c.z));
+        assert(lhs.y == b.y.add_spec(c.y));
+        assert(lhs.z == b.x.add_spec(c.x).neg_spec());
+        assert(lhs.w == b.w.add_spec(c.w));
+        assert(rhs.x == b.z.add_spec(c.z));
+        assert(rhs.y == b.y.add_spec(c.y));
+        assert(rhs.z == b.x.neg_spec().add_spec(c.x.neg_spec()));
+        assert(rhs.w == b.w.add_spec(c.w));
+        assert(lhs.z == rhs.z);
+        assert(lhs == rhs);
+    }
+
+    pub proof fn lemma_mul_w_dot_row(a: Self, b: Self)
+        ensures
+            a.mul_spec(b).w == a.as_vec4_spec().dot_spec(Self::mul_row_w_spec(b)),
+    {
+        let p = a.mul_spec(b);
+        let av = a.as_vec4_spec();
+        let row = Self::mul_row_w_spec(b);
+        let m0 = a.w.mul_spec(b.w);
+        let m1 = a.x.mul_spec(b.x);
+        let m2 = a.y.mul_spec(b.y);
+        let m3 = a.z.mul_spec(b.z);
+        let d1 = a.x.mul_spec(b.x.neg_spec());
+        let d2 = a.y.mul_spec(b.y.neg_spec());
+        let d3 = a.z.mul_spec(b.z.neg_spec());
+        Scalar::lemma_mul_neg_right(a.x, b.x);
+        Scalar::lemma_mul_neg_right(a.y, b.y);
+        Scalar::lemma_mul_neg_right(a.z, b.z);
+        assert(d1 == m1.neg_spec());
+        assert(d2 == m2.neg_spec());
+        assert(d3 == m3.neg_spec());
+        assert(av.dot_spec(row) == m0.add_spec(d1).add_spec(d2).add_spec(d3));
+        Scalar::lemma_sub_is_add_neg(m0, m1);
+        let w0 = m0.add_spec(m1.neg_spec());
+        assert(m0.sub_spec(m1) == w0);
+        Scalar::lemma_sub_is_add_neg(w0, m2);
+        let w1 = w0.add_spec(m2.neg_spec());
+        assert(w0.sub_spec(m2) == w1);
+        Scalar::lemma_sub_is_add_neg(w1, m3);
+        let w2 = w1.add_spec(m3.neg_spec());
+        assert(w1.sub_spec(m3) == w2);
+        assert(p.w == w2);
+        assert(m0.add_spec(d1).add_spec(d2).add_spec(d3) == w2);
+        assert(p.w == av.dot_spec(row));
+    }
+
+    pub proof fn lemma_mul_x_dot_row(a: Self, b: Self)
+        ensures
+            a.mul_spec(b).x == a.as_vec4_spec().dot_spec(Self::mul_row_x_spec(b)),
+    {
+        let p = a.mul_spec(b);
+        let av = a.as_vec4_spec();
+        let row = Self::mul_row_x_spec(b);
+        let m0 = a.w.mul_spec(b.x);
+        let m1 = a.x.mul_spec(b.w);
+        let m2 = a.y.mul_spec(b.z);
+        let m3 = a.z.mul_spec(b.y);
+        let d3 = a.z.mul_spec(b.y.neg_spec());
+        Scalar::lemma_mul_neg_right(a.z, b.y);
+        assert(d3 == m3.neg_spec());
+        let mid = m0.add_spec(m1).add_spec(m2);
+        Scalar::lemma_sub_is_add_neg(mid, m3);
+        let px = mid.add_spec(m3.neg_spec());
+        assert(mid.sub_spec(m3) == px);
+        assert(p.x == px);
+        assert(av.dot_spec(row) == m0.add_spec(m1).add_spec(m2).add_spec(d3));
+        assert(px == m0.add_spec(m1).add_spec(m2).add_spec(d3));
+        assert(p.x == av.dot_spec(row));
+    }
+
+    pub proof fn lemma_mul_y_dot_row(a: Self, b: Self)
+        ensures
+            a.mul_spec(b).y == a.as_vec4_spec().dot_spec(Self::mul_row_y_spec(b)),
+    {
+        let p = a.mul_spec(b);
+        let av = a.as_vec4_spec();
+        let row = Self::mul_row_y_spec(b);
+        let m0 = a.w.mul_spec(b.y);
+        let m1 = a.x.mul_spec(b.z);
+        let m2 = a.y.mul_spec(b.w);
+        let m3 = a.z.mul_spec(b.x);
+        let d1 = a.x.mul_spec(b.z.neg_spec());
+        Scalar::lemma_mul_neg_right(a.x, b.z);
+        assert(d1 == m1.neg_spec());
+        Scalar::lemma_sub_is_add_neg(m0, m1);
+        let y0 = m0.add_spec(m1.neg_spec());
+        assert(m0.sub_spec(m1) == y0);
+        let y1 = y0.add_spec(m2).add_spec(m3);
+        assert(p.y == y1);
+        assert(av.dot_spec(row) == m0.add_spec(d1).add_spec(m2).add_spec(m3));
+        assert(y1 == m0.add_spec(d1).add_spec(m2).add_spec(m3));
+        assert(p.y == av.dot_spec(row));
+    }
+
+    pub proof fn lemma_mul_z_dot_row(a: Self, b: Self)
+        ensures
+            a.mul_spec(b).z == a.as_vec4_spec().dot_spec(Self::mul_row_z_spec(b)),
+    {
+        let p = a.mul_spec(b);
+        let av = a.as_vec4_spec();
+        let row = Self::mul_row_z_spec(b);
+        let m0 = a.w.mul_spec(b.z);
+        let m1 = a.x.mul_spec(b.y);
+        let m2 = a.y.mul_spec(b.x);
+        let m3 = a.z.mul_spec(b.w);
+        let d2 = a.y.mul_spec(b.x.neg_spec());
+        Scalar::lemma_mul_neg_right(a.y, b.x);
+        assert(d2 == m2.neg_spec());
+        let z0 = m0.add_spec(m1);
+        Scalar::lemma_sub_is_add_neg(z0, m2);
+        let z1 = z0.add_spec(m2.neg_spec());
+        assert(z0.sub_spec(m2) == z1);
+        let z2 = z1.add_spec(m3);
+        assert(p.z == z2);
+        assert(av.dot_spec(row) == m0.add_spec(m1).add_spec(d2).add_spec(m3));
+        assert(z2 == m0.add_spec(m1).add_spec(d2).add_spec(m3));
+        assert(p.z == av.dot_spec(row));
     }
 
     pub proof fn lemma_add_commutative(a: Self, b: Self)
@@ -719,6 +964,186 @@ impl Quaternion {
         }
         assert(!ij.eqv_spec(ji));
         assert(!i.mul_spec(j).eqv_spec(j.mul_spec(i)));
+    }
+
+    pub proof fn lemma_mul_distributes_over_add_left(a: Self, b: Self, c: Self)
+        ensures
+            a.add_spec(b).mul_spec(c).eqv_spec(a.mul_spec(c).add_spec(b.mul_spec(c))),
+    {
+        let lhs = a.add_spec(b).mul_spec(c);
+        let rhs = a.mul_spec(c).add_spec(b.mul_spec(c));
+        let av = a.as_vec4_spec();
+        let bv = b.as_vec4_spec();
+        let abv = a.add_spec(b).as_vec4_spec();
+        let rw = Self::mul_row_w_spec(c);
+        let rx = Self::mul_row_x_spec(c);
+        let ry = Self::mul_row_y_spec(c);
+        let rz = Self::mul_row_z_spec(c);
+
+        Self::lemma_as_vec4_add(a, b);
+        assert(abv == av.add_spec(bv));
+
+        Self::lemma_mul_w_dot_row(a.add_spec(b), c);
+        Self::lemma_mul_w_dot_row(a, c);
+        Self::lemma_mul_w_dot_row(b, c);
+        Vec4::lemma_dot_linear_left(av, bv, rw);
+        assert(lhs.w == abv.dot_spec(rw));
+        assert(abv.dot_spec(rw) == av.add_spec(bv).dot_spec(rw));
+        assert(av.add_spec(bv).dot_spec(rw).eqv_spec(av.dot_spec(rw).add_spec(bv.dot_spec(rw))));
+        assert(lhs.w.eqv_spec(av.dot_spec(rw).add_spec(bv.dot_spec(rw))));
+        assert(a.mul_spec(c).w == av.dot_spec(rw));
+        assert(b.mul_spec(c).w == bv.dot_spec(rw));
+        assert(rhs.w == a.mul_spec(c).w.add_spec(b.mul_spec(c).w));
+        assert(rhs.w == av.dot_spec(rw).add_spec(bv.dot_spec(rw)));
+        Scalar::lemma_eqv_reflexive(rhs.w);
+        assert(lhs.w.eqv_spec(rhs.w));
+
+        Self::lemma_mul_x_dot_row(a.add_spec(b), c);
+        Self::lemma_mul_x_dot_row(a, c);
+        Self::lemma_mul_x_dot_row(b, c);
+        Vec4::lemma_dot_linear_left(av, bv, rx);
+        assert(lhs.x == abv.dot_spec(rx));
+        assert(abv.dot_spec(rx) == av.add_spec(bv).dot_spec(rx));
+        assert(av.add_spec(bv).dot_spec(rx).eqv_spec(av.dot_spec(rx).add_spec(bv.dot_spec(rx))));
+        assert(lhs.x.eqv_spec(av.dot_spec(rx).add_spec(bv.dot_spec(rx))));
+        assert(a.mul_spec(c).x == av.dot_spec(rx));
+        assert(b.mul_spec(c).x == bv.dot_spec(rx));
+        assert(rhs.x == a.mul_spec(c).x.add_spec(b.mul_spec(c).x));
+        assert(rhs.x == av.dot_spec(rx).add_spec(bv.dot_spec(rx)));
+        Scalar::lemma_eqv_reflexive(rhs.x);
+        assert(lhs.x.eqv_spec(rhs.x));
+
+        Self::lemma_mul_y_dot_row(a.add_spec(b), c);
+        Self::lemma_mul_y_dot_row(a, c);
+        Self::lemma_mul_y_dot_row(b, c);
+        Vec4::lemma_dot_linear_left(av, bv, ry);
+        assert(lhs.y == abv.dot_spec(ry));
+        assert(abv.dot_spec(ry) == av.add_spec(bv).dot_spec(ry));
+        assert(av.add_spec(bv).dot_spec(ry).eqv_spec(av.dot_spec(ry).add_spec(bv.dot_spec(ry))));
+        assert(lhs.y.eqv_spec(av.dot_spec(ry).add_spec(bv.dot_spec(ry))));
+        assert(a.mul_spec(c).y == av.dot_spec(ry));
+        assert(b.mul_spec(c).y == bv.dot_spec(ry));
+        assert(rhs.y == a.mul_spec(c).y.add_spec(b.mul_spec(c).y));
+        assert(rhs.y == av.dot_spec(ry).add_spec(bv.dot_spec(ry)));
+        Scalar::lemma_eqv_reflexive(rhs.y);
+        assert(lhs.y.eqv_spec(rhs.y));
+
+        Self::lemma_mul_z_dot_row(a.add_spec(b), c);
+        Self::lemma_mul_z_dot_row(a, c);
+        Self::lemma_mul_z_dot_row(b, c);
+        Vec4::lemma_dot_linear_left(av, bv, rz);
+        assert(lhs.z == abv.dot_spec(rz));
+        assert(abv.dot_spec(rz) == av.add_spec(bv).dot_spec(rz));
+        assert(av.add_spec(bv).dot_spec(rz).eqv_spec(av.dot_spec(rz).add_spec(bv.dot_spec(rz))));
+        assert(lhs.z.eqv_spec(av.dot_spec(rz).add_spec(bv.dot_spec(rz))));
+        assert(a.mul_spec(c).z == av.dot_spec(rz));
+        assert(b.mul_spec(c).z == bv.dot_spec(rz));
+        assert(rhs.z == a.mul_spec(c).z.add_spec(b.mul_spec(c).z));
+        assert(rhs.z == av.dot_spec(rz).add_spec(bv.dot_spec(rz)));
+        Scalar::lemma_eqv_reflexive(rhs.z);
+        assert(lhs.z.eqv_spec(rhs.z));
+
+        Self::lemma_eqv_from_components(lhs, rhs);
+        assert(lhs.eqv_spec(rhs));
+    }
+
+    pub proof fn lemma_mul_distributes_over_add_right(a: Self, b: Self, c: Self)
+        ensures
+            a.mul_spec(b.add_spec(c)).eqv_spec(a.mul_spec(b).add_spec(a.mul_spec(c))),
+    {
+        let lhs = a.mul_spec(b.add_spec(c));
+        let rhs = a.mul_spec(b).add_spec(a.mul_spec(c));
+        let av = a.as_vec4_spec();
+        let bv = b.as_vec4_spec();
+        let cv = c.as_vec4_spec();
+        let bcv = b.add_spec(c).as_vec4_spec();
+        let rw_bc = Self::mul_row_w_spec(b.add_spec(c));
+        let rx_bc = Self::mul_row_x_spec(b.add_spec(c));
+        let ry_bc = Self::mul_row_y_spec(b.add_spec(c));
+        let rz_bc = Self::mul_row_z_spec(b.add_spec(c));
+        let rw_b = Self::mul_row_w_spec(b);
+        let rx_b = Self::mul_row_x_spec(b);
+        let ry_b = Self::mul_row_y_spec(b);
+        let rz_b = Self::mul_row_z_spec(b);
+        let rw_c = Self::mul_row_w_spec(c);
+        let rx_c = Self::mul_row_x_spec(c);
+        let ry_c = Self::mul_row_y_spec(c);
+        let rz_c = Self::mul_row_z_spec(c);
+
+        Self::lemma_as_vec4_add(b, c);
+        assert(bcv == bv.add_spec(cv));
+
+        Self::lemma_mul_row_w_additive(b, c);
+        Self::lemma_mul_row_x_additive(b, c);
+        Self::lemma_mul_row_y_additive(b, c);
+        Self::lemma_mul_row_z_additive(b, c);
+        assert(rw_bc == rw_b.add_spec(rw_c));
+        assert(rx_bc == rx_b.add_spec(rx_c));
+        assert(ry_bc == ry_b.add_spec(ry_c));
+        assert(rz_bc == rz_b.add_spec(rz_c));
+
+        Self::lemma_mul_w_dot_row(a, b.add_spec(c));
+        Self::lemma_mul_w_dot_row(a, b);
+        Self::lemma_mul_w_dot_row(a, c);
+        Vec4::lemma_dot_linear_right(av, rw_b, rw_c);
+        assert(lhs.w == av.dot_spec(rw_bc));
+        assert(av.dot_spec(rw_bc) == av.dot_spec(rw_b.add_spec(rw_c)));
+        assert(av.dot_spec(rw_b.add_spec(rw_c)).eqv_spec(av.dot_spec(rw_b).add_spec(av.dot_spec(rw_c))));
+        assert(lhs.w.eqv_spec(av.dot_spec(rw_b).add_spec(av.dot_spec(rw_c))));
+        assert(a.mul_spec(b).w == av.dot_spec(rw_b));
+        assert(a.mul_spec(c).w == av.dot_spec(rw_c));
+        assert(rhs.w == a.mul_spec(b).w.add_spec(a.mul_spec(c).w));
+        assert(rhs.w == av.dot_spec(rw_b).add_spec(av.dot_spec(rw_c)));
+        Scalar::lemma_eqv_reflexive(rhs.w);
+        assert(lhs.w.eqv_spec(rhs.w));
+
+        Self::lemma_mul_x_dot_row(a, b.add_spec(c));
+        Self::lemma_mul_x_dot_row(a, b);
+        Self::lemma_mul_x_dot_row(a, c);
+        Vec4::lemma_dot_linear_right(av, rx_b, rx_c);
+        assert(lhs.x == av.dot_spec(rx_bc));
+        assert(av.dot_spec(rx_bc) == av.dot_spec(rx_b.add_spec(rx_c)));
+        assert(av.dot_spec(rx_b.add_spec(rx_c)).eqv_spec(av.dot_spec(rx_b).add_spec(av.dot_spec(rx_c))));
+        assert(lhs.x.eqv_spec(av.dot_spec(rx_b).add_spec(av.dot_spec(rx_c))));
+        assert(a.mul_spec(b).x == av.dot_spec(rx_b));
+        assert(a.mul_spec(c).x == av.dot_spec(rx_c));
+        assert(rhs.x == a.mul_spec(b).x.add_spec(a.mul_spec(c).x));
+        assert(rhs.x == av.dot_spec(rx_b).add_spec(av.dot_spec(rx_c)));
+        Scalar::lemma_eqv_reflexive(rhs.x);
+        assert(lhs.x.eqv_spec(rhs.x));
+
+        Self::lemma_mul_y_dot_row(a, b.add_spec(c));
+        Self::lemma_mul_y_dot_row(a, b);
+        Self::lemma_mul_y_dot_row(a, c);
+        Vec4::lemma_dot_linear_right(av, ry_b, ry_c);
+        assert(lhs.y == av.dot_spec(ry_bc));
+        assert(av.dot_spec(ry_bc) == av.dot_spec(ry_b.add_spec(ry_c)));
+        assert(av.dot_spec(ry_b.add_spec(ry_c)).eqv_spec(av.dot_spec(ry_b).add_spec(av.dot_spec(ry_c))));
+        assert(lhs.y.eqv_spec(av.dot_spec(ry_b).add_spec(av.dot_spec(ry_c))));
+        assert(a.mul_spec(b).y == av.dot_spec(ry_b));
+        assert(a.mul_spec(c).y == av.dot_spec(ry_c));
+        assert(rhs.y == a.mul_spec(b).y.add_spec(a.mul_spec(c).y));
+        assert(rhs.y == av.dot_spec(ry_b).add_spec(av.dot_spec(ry_c)));
+        Scalar::lemma_eqv_reflexive(rhs.y);
+        assert(lhs.y.eqv_spec(rhs.y));
+
+        Self::lemma_mul_z_dot_row(a, b.add_spec(c));
+        Self::lemma_mul_z_dot_row(a, b);
+        Self::lemma_mul_z_dot_row(a, c);
+        Vec4::lemma_dot_linear_right(av, rz_b, rz_c);
+        assert(lhs.z == av.dot_spec(rz_bc));
+        assert(av.dot_spec(rz_bc) == av.dot_spec(rz_b.add_spec(rz_c)));
+        assert(av.dot_spec(rz_b.add_spec(rz_c)).eqv_spec(av.dot_spec(rz_b).add_spec(av.dot_spec(rz_c))));
+        assert(lhs.z.eqv_spec(av.dot_spec(rz_b).add_spec(av.dot_spec(rz_c))));
+        assert(a.mul_spec(b).z == av.dot_spec(rz_b));
+        assert(a.mul_spec(c).z == av.dot_spec(rz_c));
+        assert(rhs.z == a.mul_spec(b).z.add_spec(a.mul_spec(c).z));
+        assert(rhs.z == av.dot_spec(rz_b).add_spec(av.dot_spec(rz_c)));
+        Scalar::lemma_eqv_reflexive(rhs.z);
+        assert(lhs.z.eqv_spec(rhs.z));
+
+        Self::lemma_eqv_from_components(lhs, rhs);
+        assert(lhs.eqv_spec(rhs));
     }
 
     pub proof fn lemma_mul_scale_right(a: Self, b: Self, k: Scalar)

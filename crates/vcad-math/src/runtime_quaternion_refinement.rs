@@ -202,6 +202,54 @@ pub fn runtime_quaternion_mul_one_identity(a: &RuntimeQuaternion) -> (pair: (Run
 }
 
 #[allow(dead_code)]
+pub fn runtime_quaternion_mul_distributes_over_add_left(
+    a: &RuntimeQuaternion,
+    b: &RuntimeQuaternion,
+    c: &RuntimeQuaternion,
+) -> (pair: (RuntimeQuaternion, RuntimeQuaternion))
+    ensures
+        pair.0@ == a@.add_spec(b@).mul_spec(c@),
+        pair.1@ == a@.mul_spec(c@).add_spec(b@.mul_spec(c@)),
+        pair.0@.eqv_spec(pair.1@),
+{
+    let apb = a.add(b);
+    let lhs = apb.mul(c);
+    let ac = a.mul(c);
+    let bc = b.mul(c);
+    let rhs = ac.add(&bc);
+    proof {
+        Quaternion::lemma_mul_distributes_over_add_left(a@, b@, c@);
+        assert(a@.add_spec(b@).mul_spec(c@).eqv_spec(a@.mul_spec(c@).add_spec(b@.mul_spec(c@))));
+        assert(lhs@.eqv_spec(rhs@));
+    }
+    (lhs, rhs)
+}
+
+#[allow(dead_code)]
+pub fn runtime_quaternion_mul_distributes_over_add_right(
+    a: &RuntimeQuaternion,
+    b: &RuntimeQuaternion,
+    c: &RuntimeQuaternion,
+) -> (pair: (RuntimeQuaternion, RuntimeQuaternion))
+    ensures
+        pair.0@ == a@.mul_spec(b@.add_spec(c@)),
+        pair.1@ == a@.mul_spec(b@).add_spec(a@.mul_spec(c@)),
+        pair.0@.eqv_spec(pair.1@),
+{
+    let bpc = b.add(c);
+    let lhs = a.mul(&bpc);
+    let ab = a.mul(b);
+    let ac = a.mul(c);
+    let rhs = ab.add(&ac);
+    proof {
+        Quaternion::lemma_mul_distributes_over_add_right(a@, b@, c@);
+        assert(a@.mul_spec(b@.add_spec(c@)).eqv_spec(a@.mul_spec(b@).add_spec(a@.mul_spec(c@))));
+        assert(lhs@.eqv_spec(rhs@));
+    }
+    (lhs, rhs)
+}
+
+#[allow(dead_code)]
 pub fn runtime_quaternion_noncommutative_witness() -> (pair: (RuntimeQuaternion, RuntimeQuaternion))
     ensures
         {
