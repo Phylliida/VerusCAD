@@ -401,6 +401,29 @@ pub fn runtime_quaternion_norm2_scale(
 }
 
 #[allow(dead_code)]
+pub fn runtime_quaternion_norm2_mul(
+    a: &RuntimeQuaternion,
+    b: &RuntimeQuaternion,
+) -> (pair: (RuntimeScalar, RuntimeScalar))
+    ensures
+        pair.0@ == a@.mul_spec(b@).norm2_spec(),
+        pair.1@ == a@.norm2_spec().mul_spec(b@.norm2_spec()),
+        pair.0@.eqv_spec(pair.1@),
+{
+    let ab = a.mul(b);
+    let lhs = ab.norm2();
+    let na = a.norm2();
+    let nb = b.norm2();
+    let rhs = na.mul(&nb);
+    proof {
+        Quaternion::lemma_norm2_mul(a@, b@);
+        assert(a@.mul_spec(b@).norm2_spec().eqv_spec(a@.norm2_spec().mul_spec(b@.norm2_spec())));
+        assert(lhs@.eqv_spec(rhs@));
+    }
+    (lhs, rhs)
+}
+
+#[allow(dead_code)]
 pub fn runtime_quaternion_norm2_conjugate_invariant(q: &RuntimeQuaternion) -> (pair: (
     RuntimeScalar,
     RuntimeScalar,

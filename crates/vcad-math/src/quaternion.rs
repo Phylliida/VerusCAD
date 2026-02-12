@@ -1277,6 +1277,342 @@ impl Quaternion {
         a.mul_spec(b).mul_spec(c).eqv_spec(a.mul_spec(b.mul_spec(c)))
     }
 
+    pub open spec fn conjugate_mul_reverse_instance_spec(a: Self, b: Self) -> bool {
+        a.mul_spec(b).conjugate_spec().eqv_spec(b.conjugate_spec().mul_spec(a.conjugate_spec()))
+    }
+
+    pub proof fn lemma_conjugate_mul_reverse_linear_left_add(a1: Self, a2: Self, b: Self)
+        requires
+            Self::conjugate_mul_reverse_instance_spec(a1, b),
+            Self::conjugate_mul_reverse_instance_spec(a2, b),
+        ensures
+            Self::conjugate_mul_reverse_instance_spec(a1.add_spec(a2), b),
+    {
+        let lhs = a1.add_spec(a2).mul_spec(b).conjugate_spec();
+        let rhs = b.conjugate_spec().mul_spec(a1.add_spec(a2).conjugate_spec());
+
+        let lsplit = a1.mul_spec(b).add_spec(a2.mul_spec(b));
+        let lsplit_c = lsplit.conjugate_spec();
+        let ltarget = a1.mul_spec(b).conjugate_spec().add_spec(a2.mul_spec(b).conjugate_spec());
+
+        let rtarget = b.conjugate_spec().mul_spec(a1.conjugate_spec()).add_spec(
+            b.conjugate_spec().mul_spec(a2.conjugate_spec()),
+        );
+
+        Self::lemma_mul_distributes_over_add_left(a1, a2, b);
+        Self::lemma_conjugate_eqv_congruence(a1.add_spec(a2).mul_spec(b), lsplit);
+        assert(lhs.eqv_spec(lsplit_c));
+        Self::lemma_conjugate_add(a1.mul_spec(b), a2.mul_spec(b));
+        assert(lsplit_c == ltarget);
+
+        Self::lemma_conjugate_add(a1, a2);
+        assert(a1.add_spec(a2).conjugate_spec() == a1.conjugate_spec().add_spec(a2.conjugate_spec()));
+        Self::lemma_mul_distributes_over_add_right(b.conjugate_spec(), a1.conjugate_spec(), a2.conjugate_spec());
+        assert(rhs.eqv_spec(rtarget));
+
+        Self::lemma_add_eqv_congruence(
+            a1.mul_spec(b).conjugate_spec(),
+            b.conjugate_spec().mul_spec(a1.conjugate_spec()),
+            a2.mul_spec(b).conjugate_spec(),
+            b.conjugate_spec().mul_spec(a2.conjugate_spec()),
+        );
+        assert(ltarget.eqv_spec(rtarget));
+
+        Self::lemma_eqv_transitive(lhs, lsplit_c, ltarget);
+        Self::lemma_eqv_transitive(lhs, ltarget, rtarget);
+        Self::lemma_eqv_symmetric(rhs, rtarget);
+        Self::lemma_eqv_transitive(lhs, rtarget, rhs);
+        assert(lhs.eqv_spec(rhs));
+    }
+
+    pub proof fn lemma_conjugate_mul_reverse_linear_left_scale(a: Self, b: Self, k: Scalar)
+        requires
+            Self::conjugate_mul_reverse_instance_spec(a, b),
+        ensures
+            Self::conjugate_mul_reverse_instance_spec(a.scale_spec(k), b),
+    {
+        let lhs = a.scale_spec(k).mul_spec(b).conjugate_spec();
+        let rhs = b.conjugate_spec().mul_spec(a.scale_spec(k).conjugate_spec());
+
+        let lscaled = a.mul_spec(b).scale_spec(k);
+        let ltarget = a.mul_spec(b).conjugate_spec().scale_spec(k);
+
+        let rmid = b.conjugate_spec().mul_spec(a.conjugate_spec().scale_spec(k));
+        let rtarget = b.conjugate_spec().mul_spec(a.conjugate_spec()).scale_spec(k);
+
+        Self::lemma_mul_scale_left(a, b, k);
+        Self::lemma_conjugate_eqv_congruence(a.scale_spec(k).mul_spec(b), lscaled);
+        assert(lhs.eqv_spec(lscaled.conjugate_spec()));
+        Self::lemma_conjugate_scale(a.mul_spec(b), k);
+        assert(lscaled.conjugate_spec() == ltarget);
+
+        Self::lemma_conjugate_scale(a, k);
+        assert(a.scale_spec(k).conjugate_spec() == a.conjugate_spec().scale_spec(k));
+        assert(rmid == rhs);
+        Self::lemma_mul_scale_right(b.conjugate_spec(), a.conjugate_spec(), k);
+        assert(rmid.eqv_spec(rtarget));
+
+        Self::lemma_scale_eqv_congruence(a.mul_spec(b).conjugate_spec(), b.conjugate_spec().mul_spec(a.conjugate_spec()), k);
+        assert(ltarget.eqv_spec(rtarget));
+
+        Self::lemma_eqv_transitive(lhs, lscaled.conjugate_spec(), ltarget);
+        Self::lemma_eqv_transitive(lhs, ltarget, rtarget);
+        Self::lemma_eqv_symmetric(rmid, rtarget);
+        Self::lemma_eqv_symmetric(rhs, rmid);
+        Self::lemma_eqv_transitive(lhs, rtarget, rmid);
+        Self::lemma_eqv_transitive(lhs, rmid, rhs);
+        assert(lhs.eqv_spec(rhs));
+    }
+
+    pub proof fn lemma_conjugate_mul_reverse_linear_right_add(a: Self, b1: Self, b2: Self)
+        requires
+            Self::conjugate_mul_reverse_instance_spec(a, b1),
+            Self::conjugate_mul_reverse_instance_spec(a, b2),
+        ensures
+            Self::conjugate_mul_reverse_instance_spec(a, b1.add_spec(b2)),
+    {
+        let lhs = a.mul_spec(b1.add_spec(b2)).conjugate_spec();
+        let rhs = b1.add_spec(b2).conjugate_spec().mul_spec(a.conjugate_spec());
+
+        let lsplit = a.mul_spec(b1).add_spec(a.mul_spec(b2));
+        let lsplit_c = lsplit.conjugate_spec();
+        let ltarget = a.mul_spec(b1).conjugate_spec().add_spec(a.mul_spec(b2).conjugate_spec());
+
+        let rtarget = b1.conjugate_spec().mul_spec(a.conjugate_spec()).add_spec(
+            b2.conjugate_spec().mul_spec(a.conjugate_spec()),
+        );
+
+        Self::lemma_mul_distributes_over_add_right(a, b1, b2);
+        Self::lemma_conjugate_eqv_congruence(a.mul_spec(b1.add_spec(b2)), lsplit);
+        assert(lhs.eqv_spec(lsplit_c));
+        Self::lemma_conjugate_add(a.mul_spec(b1), a.mul_spec(b2));
+        assert(lsplit_c == ltarget);
+
+        Self::lemma_conjugate_add(b1, b2);
+        assert(b1.add_spec(b2).conjugate_spec() == b1.conjugate_spec().add_spec(b2.conjugate_spec()));
+        Self::lemma_mul_distributes_over_add_left(b1.conjugate_spec(), b2.conjugate_spec(), a.conjugate_spec());
+        assert(rhs.eqv_spec(rtarget));
+
+        Self::lemma_add_eqv_congruence(
+            a.mul_spec(b1).conjugate_spec(),
+            b1.conjugate_spec().mul_spec(a.conjugate_spec()),
+            a.mul_spec(b2).conjugate_spec(),
+            b2.conjugate_spec().mul_spec(a.conjugate_spec()),
+        );
+        assert(ltarget.eqv_spec(rtarget));
+
+        Self::lemma_eqv_transitive(lhs, lsplit_c, ltarget);
+        Self::lemma_eqv_transitive(lhs, ltarget, rtarget);
+        Self::lemma_eqv_symmetric(rhs, rtarget);
+        Self::lemma_eqv_transitive(lhs, rtarget, rhs);
+        assert(lhs.eqv_spec(rhs));
+    }
+
+    pub proof fn lemma_conjugate_mul_reverse_linear_right_scale(a: Self, b: Self, k: Scalar)
+        requires
+            Self::conjugate_mul_reverse_instance_spec(a, b),
+        ensures
+            Self::conjugate_mul_reverse_instance_spec(a, b.scale_spec(k)),
+    {
+        let lhs = a.mul_spec(b.scale_spec(k)).conjugate_spec();
+        let rhs = b.scale_spec(k).conjugate_spec().mul_spec(a.conjugate_spec());
+
+        let lscaled = a.mul_spec(b).scale_spec(k);
+        let ltarget = a.mul_spec(b).conjugate_spec().scale_spec(k);
+
+        let rmid = b.conjugate_spec().scale_spec(k).mul_spec(a.conjugate_spec());
+        let rtarget = b.conjugate_spec().mul_spec(a.conjugate_spec()).scale_spec(k);
+
+        Self::lemma_mul_scale_right(a, b, k);
+        Self::lemma_conjugate_eqv_congruence(a.mul_spec(b.scale_spec(k)), lscaled);
+        assert(lhs.eqv_spec(lscaled.conjugate_spec()));
+        Self::lemma_conjugate_scale(a.mul_spec(b), k);
+        assert(lscaled.conjugate_spec() == ltarget);
+
+        Self::lemma_conjugate_scale(b, k);
+        assert(b.scale_spec(k).conjugate_spec() == b.conjugate_spec().scale_spec(k));
+        assert(rmid == rhs);
+        Self::lemma_mul_scale_left(b.conjugate_spec(), a.conjugate_spec(), k);
+        assert(rmid.eqv_spec(rtarget));
+
+        Self::lemma_scale_eqv_congruence(a.mul_spec(b).conjugate_spec(), b.conjugate_spec().mul_spec(a.conjugate_spec()), k);
+        assert(ltarget.eqv_spec(rtarget));
+
+        Self::lemma_eqv_transitive(lhs, lscaled.conjugate_spec(), ltarget);
+        Self::lemma_eqv_transitive(lhs, ltarget, rtarget);
+        Self::lemma_eqv_symmetric(rmid, rtarget);
+        Self::lemma_eqv_symmetric(rhs, rmid);
+        Self::lemma_eqv_transitive(lhs, rtarget, rmid);
+        Self::lemma_eqv_transitive(lhs, rmid, rhs);
+        assert(lhs.eqv_spec(rhs));
+    }
+
+    pub proof fn lemma_conjugate_mul_reverse_eqv_right(a: Self, b1: Self, b2: Self)
+        requires
+            Self::conjugate_mul_reverse_instance_spec(a, b1),
+            b1.eqv_spec(b2),
+        ensures
+            Self::conjugate_mul_reverse_instance_spec(a, b2),
+    {
+        let lhs1 = a.mul_spec(b1).conjugate_spec();
+        let lhs2 = a.mul_spec(b2).conjugate_spec();
+        let rhs1 = b1.conjugate_spec().mul_spec(a.conjugate_spec());
+        let rhs2 = b2.conjugate_spec().mul_spec(a.conjugate_spec());
+
+        Self::lemma_mul_eqv_congruence_right(a, b1, b2);
+        Self::lemma_conjugate_eqv_congruence(a.mul_spec(b1), a.mul_spec(b2));
+        assert(lhs1.eqv_spec(lhs2));
+
+        Self::lemma_conjugate_eqv_congruence(b1, b2);
+        Self::lemma_mul_eqv_congruence_left(b1.conjugate_spec(), b2.conjugate_spec(), a.conjugate_spec());
+        assert(rhs1.eqv_spec(rhs2));
+
+        Self::lemma_eqv_symmetric(lhs1, lhs2);
+        Self::lemma_eqv_transitive(lhs2, lhs1, rhs1);
+        Self::lemma_eqv_transitive(lhs2, rhs1, rhs2);
+        assert(lhs2.eqv_spec(rhs2));
+    }
+
+    pub proof fn lemma_conjugate_mul_reverse_eqv_left(a1: Self, a2: Self, b: Self)
+        requires
+            Self::conjugate_mul_reverse_instance_spec(a1, b),
+            a1.eqv_spec(a2),
+        ensures
+            Self::conjugate_mul_reverse_instance_spec(a2, b),
+    {
+        let lhs1 = a1.mul_spec(b).conjugate_spec();
+        let lhs2 = a2.mul_spec(b).conjugate_spec();
+        let rhs1 = b.conjugate_spec().mul_spec(a1.conjugate_spec());
+        let rhs2 = b.conjugate_spec().mul_spec(a2.conjugate_spec());
+
+        Self::lemma_mul_eqv_congruence_left(a1, a2, b);
+        Self::lemma_conjugate_eqv_congruence(a1.mul_spec(b), a2.mul_spec(b));
+        assert(lhs1.eqv_spec(lhs2));
+
+        Self::lemma_conjugate_eqv_congruence(a1, a2);
+        Self::lemma_mul_eqv_congruence_right(b.conjugate_spec(), a1.conjugate_spec(), a2.conjugate_spec());
+        assert(rhs1.eqv_spec(rhs2));
+
+        Self::lemma_eqv_symmetric(lhs1, lhs2);
+        Self::lemma_eqv_transitive(lhs2, lhs1, rhs1);
+        Self::lemma_eqv_transitive(lhs2, rhs1, rhs2);
+        assert(lhs2.eqv_spec(rhs2));
+    }
+
+    pub proof fn lemma_conjugate_mul_reverse_basis_indices(i: int, j: int)
+        requires
+            0 <= i < 4,
+            0 <= j < 4,
+        ensures
+            Self::conjugate_mul_reverse_instance_spec(Self::basis_spec(i), Self::basis_spec(j)),
+    {
+        if i == 0 {
+            if j == 0 {
+                assert(Self::conjugate_mul_reverse_instance_spec(Self::basis_spec(0), Self::basis_spec(0))) by (compute);
+            } else if j == 1 {
+                assert(Self::conjugate_mul_reverse_instance_spec(Self::basis_spec(0), Self::basis_spec(1))) by (compute);
+            } else if j == 2 {
+                assert(Self::conjugate_mul_reverse_instance_spec(Self::basis_spec(0), Self::basis_spec(2))) by (compute);
+            } else {
+                assert(Self::conjugate_mul_reverse_instance_spec(Self::basis_spec(0), Self::basis_spec(3))) by (compute);
+            }
+        } else if i == 1 {
+            if j == 0 {
+                assert(Self::conjugate_mul_reverse_instance_spec(Self::basis_spec(1), Self::basis_spec(0))) by (compute);
+            } else if j == 1 {
+                assert(Self::conjugate_mul_reverse_instance_spec(Self::basis_spec(1), Self::basis_spec(1))) by (compute);
+            } else if j == 2 {
+                assert(Self::conjugate_mul_reverse_instance_spec(Self::basis_spec(1), Self::basis_spec(2))) by (compute);
+            } else {
+                assert(Self::conjugate_mul_reverse_instance_spec(Self::basis_spec(1), Self::basis_spec(3))) by (compute);
+            }
+        } else if i == 2 {
+            if j == 0 {
+                assert(Self::conjugate_mul_reverse_instance_spec(Self::basis_spec(2), Self::basis_spec(0))) by (compute);
+            } else if j == 1 {
+                assert(Self::conjugate_mul_reverse_instance_spec(Self::basis_spec(2), Self::basis_spec(1))) by (compute);
+            } else if j == 2 {
+                assert(Self::conjugate_mul_reverse_instance_spec(Self::basis_spec(2), Self::basis_spec(2))) by (compute);
+            } else {
+                assert(Self::conjugate_mul_reverse_instance_spec(Self::basis_spec(2), Self::basis_spec(3))) by (compute);
+            }
+        } else {
+            if j == 0 {
+                assert(Self::conjugate_mul_reverse_instance_spec(Self::basis_spec(3), Self::basis_spec(0))) by (compute);
+            } else if j == 1 {
+                assert(Self::conjugate_mul_reverse_instance_spec(Self::basis_spec(3), Self::basis_spec(1))) by (compute);
+            } else if j == 2 {
+                assert(Self::conjugate_mul_reverse_instance_spec(Self::basis_spec(3), Self::basis_spec(2))) by (compute);
+            } else {
+                assert(Self::conjugate_mul_reverse_instance_spec(Self::basis_spec(3), Self::basis_spec(3))) by (compute);
+            }
+        }
+
+        assert(Self::conjugate_mul_reverse_instance_spec(Self::basis_spec(i), Self::basis_spec(j)));
+    }
+
+    pub proof fn lemma_conjugate_mul_reverse_basis_any(i: int, b: Self)
+        requires
+            0 <= i < 4,
+        ensures
+            Self::conjugate_mul_reverse_instance_spec(Self::basis_spec(i), b),
+    {
+        let a = Self::basis_spec(i);
+
+        let b0 = Self::basis_spec(0).scale_spec(b.w);
+        let b1 = Self::basis_spec(1).scale_spec(b.x);
+        let b2 = Self::basis_spec(2).scale_spec(b.y);
+        let b3 = Self::basis_spec(3).scale_spec(b.z);
+        let bsum = Self::basis_decompose_spec(b);
+
+        Self::lemma_conjugate_mul_reverse_basis_indices(i, 0);
+        Self::lemma_conjugate_mul_reverse_linear_right_scale(a, Self::basis_spec(0), b.w);
+        Self::lemma_conjugate_mul_reverse_basis_indices(i, 1);
+        Self::lemma_conjugate_mul_reverse_linear_right_scale(a, Self::basis_spec(1), b.x);
+        Self::lemma_conjugate_mul_reverse_basis_indices(i, 2);
+        Self::lemma_conjugate_mul_reverse_linear_right_scale(a, Self::basis_spec(2), b.y);
+        Self::lemma_conjugate_mul_reverse_basis_indices(i, 3);
+        Self::lemma_conjugate_mul_reverse_linear_right_scale(a, Self::basis_spec(3), b.z);
+        Self::lemma_conjugate_mul_reverse_linear_right_add(a, b0, b1);
+        Self::lemma_conjugate_mul_reverse_linear_right_add(a, b0.add_spec(b1), b2);
+        Self::lemma_conjugate_mul_reverse_linear_right_add(a, b0.add_spec(b1).add_spec(b2), b3);
+
+        Self::lemma_basis_decompose_eqv(b);
+        Self::lemma_eqv_symmetric(b, bsum);
+        Self::lemma_conjugate_mul_reverse_eqv_right(a, bsum, b);
+        assert(Self::conjugate_mul_reverse_instance_spec(a, b));
+    }
+
+    #[verifier::rlimit(1200)]
+    pub proof fn lemma_conjugate_mul_reverse(a: Self, b: Self)
+        ensures
+            Self::conjugate_mul_reverse_instance_spec(a, b),
+    {
+        let a0 = Self::basis_spec(0).scale_spec(a.w);
+        let a1 = Self::basis_spec(1).scale_spec(a.x);
+        let a2 = Self::basis_spec(2).scale_spec(a.y);
+        let a3 = Self::basis_spec(3).scale_spec(a.z);
+        let asum = Self::basis_decompose_spec(a);
+
+        Self::lemma_conjugate_mul_reverse_basis_any(0, b);
+        Self::lemma_conjugate_mul_reverse_linear_left_scale(Self::basis_spec(0), b, a.w);
+        Self::lemma_conjugate_mul_reverse_basis_any(1, b);
+        Self::lemma_conjugate_mul_reverse_linear_left_scale(Self::basis_spec(1), b, a.x);
+        Self::lemma_conjugate_mul_reverse_basis_any(2, b);
+        Self::lemma_conjugate_mul_reverse_linear_left_scale(Self::basis_spec(2), b, a.y);
+        Self::lemma_conjugate_mul_reverse_basis_any(3, b);
+        Self::lemma_conjugate_mul_reverse_linear_left_scale(Self::basis_spec(3), b, a.z);
+
+        Self::lemma_conjugate_mul_reverse_linear_left_add(a0, a1, b);
+        Self::lemma_conjugate_mul_reverse_linear_left_add(a0.add_spec(a1), a2, b);
+        Self::lemma_conjugate_mul_reverse_linear_left_add(a0.add_spec(a1).add_spec(a2), a3, b);
+
+        Self::lemma_basis_decompose_eqv(a);
+        Self::lemma_eqv_symmetric(a, asum);
+        Self::lemma_conjugate_mul_reverse_eqv_left(asum, a, b);
+        assert(Self::conjugate_mul_reverse_instance_spec(a, b));
+    }
+
     pub proof fn lemma_add_eqv_congruence(a1: Self, a2: Self, b1: Self, b2: Self)
         requires
             a1.eqv_spec(a2),
@@ -3161,6 +3497,31 @@ impl Quaternion {
         assert(lhs.eqv_spec(rhs));
     }
 
+    pub proof fn lemma_real_scale(s: Scalar, k: Scalar)
+        ensures
+            Self::real_spec(s).scale_spec(k).eqv_spec(Self::real_spec(s.mul_spec(k))),
+    {
+        let lhs = Self::real_spec(s).scale_spec(k);
+        let one_s = Self::one_spec().scale_spec(s);
+        let one_sk = Self::one_spec().scale_spec(s.mul_spec(k));
+        let rhs = Self::real_spec(s.mul_spec(k));
+
+        Self::lemma_real_from_one_scale(s);
+        Self::lemma_eqv_symmetric(one_s, Self::real_spec(s));
+        Self::lemma_scale_eqv_congruence(Self::real_spec(s), one_s, k);
+        assert(lhs.eqv_spec(one_s.scale_spec(k)));
+
+        Self::lemma_scale_associative(Self::one_spec(), s, k);
+        assert(one_s.scale_spec(k).eqv_spec(one_sk));
+
+        Self::lemma_real_from_one_scale(s.mul_spec(k));
+        assert(one_sk.eqv_spec(rhs));
+
+        Self::lemma_eqv_transitive(lhs, one_s.scale_spec(k), one_sk);
+        Self::lemma_eqv_transitive(lhs, one_sk, rhs);
+        assert(lhs.eqv_spec(rhs));
+    }
+
     pub proof fn lemma_mul_real_right(q: Self, s: Scalar)
         ensures
             q.mul_spec(Self::real_spec(s)).eqv_spec(q.scale_spec(s)),
@@ -3316,6 +3677,98 @@ impl Quaternion {
         assert(rhs_v.eqv_spec(rhs_q));
         Scalar::lemma_eqv_transitive(lhs, rhs_v, rhs_q);
         assert(lhs.eqv_spec(rhs_q));
+    }
+
+    #[verifier::rlimit(1200)]
+    pub proof fn lemma_norm2_mul(a: Self, b: Self)
+        ensures
+            a.mul_spec(b).norm2_spec().eqv_spec(a.norm2_spec().mul_spec(b.norm2_spec())),
+    {
+        let ab = a.mul_spec(b);
+        let ac = a.conjugate_spec();
+        let bc = b.conjugate_spec();
+
+        let n_ab = ab.norm2_spec();
+        let n_a = a.norm2_spec();
+        let n_b = b.norm2_spec();
+        let n_ab_expected = n_a.mul_spec(n_b);
+
+        let q0 = ab.mul_spec(ab.conjugate_spec());
+        let q1 = ab.mul_spec(bc.mul_spec(ac));
+        let q2 = a.mul_spec(b.mul_spec(bc.mul_spec(ac)));
+        let q3 = a.mul_spec(b.mul_spec(bc).mul_spec(ac));
+        let q4 = a.mul_spec(b.mul_spec(bc)).mul_spec(ac);
+        let q5 = a.mul_spec(Self::real_spec(n_b)).mul_spec(ac);
+        let q6 = a.scale_spec(n_b).mul_spec(ac);
+        let q7 = a.mul_spec(ac).scale_spec(n_b);
+        let q8 = Self::real_spec(n_a).scale_spec(n_b);
+        let q9 = Self::real_spec(n_ab_expected);
+
+        let lhs_real = Self::real_spec(n_ab);
+        let rhs_real = Self::real_spec(n_ab_expected);
+
+        Self::lemma_mul_conjugate_right_real_norm2(ab);
+        assert(q0.eqv_spec(lhs_real));
+
+        Self::lemma_conjugate_mul_reverse(a, b);
+        assert(Self::conjugate_mul_reverse_instance_spec(a, b));
+        Self::lemma_mul_eqv_congruence_right(ab, ab.conjugate_spec(), bc.mul_spec(ac));
+        assert(q0.eqv_spec(q1));
+
+        Self::lemma_mul_associative(a, b, bc.mul_spec(ac));
+        assert(q1.eqv_spec(q2));
+
+        Self::lemma_mul_associative(b, bc, ac);
+        assert(b.mul_spec(bc).mul_spec(ac).eqv_spec(b.mul_spec(bc.mul_spec(ac))));
+        Self::lemma_eqv_symmetric(b.mul_spec(bc).mul_spec(ac), b.mul_spec(bc.mul_spec(ac)));
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(bc.mul_spec(ac)), b.mul_spec(bc).mul_spec(ac));
+        assert(q2.eqv_spec(q3));
+
+        Self::lemma_mul_associative(a, b.mul_spec(bc), ac);
+        assert(q4.eqv_spec(q3));
+        Self::lemma_eqv_symmetric(q4, q3);
+        assert(q3.eqv_spec(q4));
+
+        Self::lemma_mul_conjugate_right_real_norm2(b);
+        assert(b.mul_spec(bc).eqv_spec(Self::real_spec(n_b)));
+        Self::lemma_mul_eqv_congruence_right(a, b.mul_spec(bc), Self::real_spec(n_b));
+        assert(a.mul_spec(b.mul_spec(bc)).eqv_spec(a.mul_spec(Self::real_spec(n_b))));
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(b.mul_spec(bc)), a.mul_spec(Self::real_spec(n_b)), ac);
+        assert(q4.eqv_spec(q5));
+
+        Self::lemma_mul_real_right(a, n_b);
+        assert(a.mul_spec(Self::real_spec(n_b)).eqv_spec(a.scale_spec(n_b)));
+        Self::lemma_mul_eqv_congruence_left(a.mul_spec(Self::real_spec(n_b)), a.scale_spec(n_b), ac);
+        assert(q5.eqv_spec(q6));
+
+        Self::lemma_mul_scale_left(a, ac, n_b);
+        assert(q6.eqv_spec(q7));
+
+        Self::lemma_mul_conjugate_right_real_norm2(a);
+        assert(a.mul_spec(ac).eqv_spec(Self::real_spec(n_a)));
+        Self::lemma_scale_eqv_congruence(a.mul_spec(ac), Self::real_spec(n_a), n_b);
+        assert(q7.eqv_spec(q8));
+
+        Self::lemma_real_scale(n_a, n_b);
+        assert(q8.eqv_spec(q9));
+
+        Self::lemma_eqv_symmetric(q0, lhs_real);
+        assert(lhs_real.eqv_spec(q0));
+        Self::lemma_eqv_transitive(lhs_real, q0, q1);
+        Self::lemma_eqv_transitive(lhs_real, q1, q2);
+        Self::lemma_eqv_transitive(lhs_real, q2, q3);
+        Self::lemma_eqv_transitive(lhs_real, q3, q4);
+        Self::lemma_eqv_transitive(lhs_real, q4, q5);
+        Self::lemma_eqv_transitive(lhs_real, q5, q6);
+        Self::lemma_eqv_transitive(lhs_real, q6, q7);
+        Self::lemma_eqv_transitive(lhs_real, q7, q8);
+        Self::lemma_eqv_transitive(lhs_real, q8, q9);
+        assert(lhs_real.eqv_spec(rhs_real));
+
+        assert(lhs_real.w == n_ab);
+        assert(rhs_real.w == n_ab_expected);
+        assert(lhs_real.w.eqv_spec(rhs_real.w));
+        assert(n_ab.eqv_spec(n_ab_expected));
     }
 
     pub proof fn lemma_norm2_positive_if_nonzero(q: Self)
