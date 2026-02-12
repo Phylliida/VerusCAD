@@ -156,6 +156,14 @@ impl Scalar {
         self.num * rhs.denom() == rhs.num * self.denom()
     }
 
+    pub open spec fn le_spec(self, rhs: Self) -> bool {
+        self.num * rhs.denom() <= rhs.num * self.denom()
+    }
+
+    pub open spec fn lt_spec(self, rhs: Self) -> bool {
+        self.num * rhs.denom() < rhs.num * self.denom()
+    }
+
     pub proof fn lemma_denom_positive(a: Self)
         ensures
             a.denom_nat() > 0,
@@ -164,6 +172,21 @@ impl Scalar {
         assert(a.denom_nat() > 0);
         assert(a.denom() == a.denom_nat() as int);
         assert(a.denom() > 0);
+    }
+
+    pub proof fn lemma_eqv_zero_iff_num_zero(a: Self)
+        ensures
+            a.eqv_spec(Self::from_int_spec(0)) == (a.num == 0),
+    {
+        let z = Self::from_int_spec(0);
+        assert(z.num == 0);
+        assert(z.denom() == 1);
+        assert(a.eqv_spec(z) == (a.num * z.denom() == z.num * a.denom()));
+        assert(a.eqv_spec(z) == (a.num * 1 == 0 * a.denom()));
+        lemma_mul_by_zero_is_zero(a.denom());
+        assert(0 * a.denom() == 0);
+        assert(a.eqv_spec(z) == (a.num * 1 == 0));
+        assert((a.num * 1 == 0) == (a.num == 0)) by (nonlinear_arith);
     }
 
     pub proof fn lemma_add_denom_product(a: Self, b: Self)
@@ -282,6 +305,18 @@ impl Scalar {
             a.sub_spec(b) == a.add_spec(b.neg_spec()),
     {
         assert(a.sub_spec(b) == a.add_spec(b.neg_spec()));
+    }
+
+    pub proof fn lemma_neg_involution(a: Self)
+        ensures
+            a.neg_spec().neg_spec() == a,
+    {
+        let n = a.neg_spec().neg_spec();
+        assert(n.num == -(-a.num));
+        assert(-(-a.num) == a.num);
+        assert(n.num == a.num);
+        assert(n.den == a.den);
+        assert(n == a);
     }
 
     pub proof fn lemma_add_commutative(a: Self, b: Self)
@@ -442,6 +477,130 @@ impl Scalar {
         Self::lemma_eqv_transitive(e0, e6, e7);
         Self::lemma_eqv_transitive(e0, e7, e8);
         assert(e0.eqv_spec(e8));
+    }
+
+    pub proof fn lemma_neg_add(a: Self, b: Self)
+        ensures
+            a.add_spec(b).neg_spec() == a.neg_spec().add_spec(b.neg_spec()),
+    {
+        let lhs = a.add_spec(b).neg_spec();
+        let rhs = a.neg_spec().add_spec(b.neg_spec());
+        assert(lhs.num == -(a.num * b.denom() + b.num * a.denom()));
+        assert(rhs.num == (-a.num) * b.neg_spec().denom() + b.neg_spec().num * a.neg_spec().denom());
+        assert(b.neg_spec().denom() == b.denom());
+        assert(a.neg_spec().denom() == a.denom());
+        assert(b.neg_spec().num == -b.num);
+        assert(rhs.num == (-a.num) * b.denom() + (-b.num) * a.denom());
+        assert(-(a.num * b.denom() + b.num * a.denom())
+            == (-a.num) * b.denom() + (-b.num) * a.denom()) by (nonlinear_arith);
+        assert(lhs.num == rhs.num);
+        assert(lhs.den == a.add_spec(b).den);
+        assert(a.add_spec(b).den == a.den * b.den + a.den + b.den);
+        assert(rhs.den == a.neg_spec().den * b.neg_spec().den + a.neg_spec().den + b.neg_spec().den);
+        assert(a.neg_spec().den == a.den);
+        assert(b.neg_spec().den == b.den);
+        assert(rhs.den == a.den * b.den + a.den + b.den);
+        assert(lhs.den == rhs.den);
+    }
+
+    pub proof fn lemma_sub_add_distributes(a: Self, b: Self, c: Self, d: Self)
+        ensures
+            a.add_spec(b).sub_spec(c.add_spec(d)).eqv_spec(a.sub_spec(c).add_spec(b.sub_spec(d))),
+    {
+        let lhs = a.add_spec(b).sub_spec(c.add_spec(d));
+        let t1 = a.add_spec(b).sub_spec(c);
+        let t2 = c.sub_spec(c.add_spec(d));
+        let t3 = t1.add_spec(t2);
+        let u1 = a.add_spec(b).sub_spec(a);
+        let u2 = a.sub_spec(c);
+        let u3 = u1.add_spec(u2);
+        let u4 = b.add_spec(u2);
+        let u5 = u2.add_spec(b);
+        let v1 = c.add_spec(d).sub_spec(c);
+        let v2 = v1.neg_spec();
+        let v3 = d.neg_spec();
+        let w1 = u5.add_spec(v2);
+        let w2 = u5.add_spec(v3);
+        let rhs = a.sub_spec(c).add_spec(b.sub_spec(d));
+
+        Self::lemma_eqv_sub_chain(a.add_spec(b), c, c.add_spec(d));
+        assert(lhs.eqv_spec(t3));
+
+        Self::lemma_eqv_sub_chain(a.add_spec(b), a, c);
+        assert(t1.eqv_spec(u3));
+        Self::lemma_add_then_sub_cancel(a, b);
+        assert(u1.eqv_spec(b));
+        Self::lemma_eqv_reflexive(u2);
+        Self::lemma_eqv_add_congruence(u1, b, u2, u2);
+        assert(u3.eqv_spec(u4));
+        Self::lemma_add_commutative(b, u2);
+        assert(u4.eqv_spec(u5));
+        Self::lemma_eqv_transitive(t1, u3, u4);
+        Self::lemma_eqv_transitive(t1, u4, u5);
+        assert(t1.eqv_spec(u5));
+
+        Self::lemma_sub_antisymmetric(c, c.add_spec(d));
+        assert(t2 == v1.neg_spec());
+        Self::lemma_add_then_sub_cancel(c, d);
+        assert(v1.eqv_spec(d));
+        Self::lemma_eqv_neg_congruence(v1, d);
+        assert(v2.eqv_spec(v3));
+        Self::lemma_eqv_reflexive(u5);
+        Self::lemma_eqv_add_congruence(u5, u5, v2, v3);
+        assert(w1.eqv_spec(w2));
+        Self::lemma_eqv_sub_chain(b, d, Self::from_int_spec(0));
+        Self::lemma_sub_is_add_neg(b, d);
+        assert(b.sub_spec(d) == b.add_spec(d.neg_spec()));
+        assert(w2 == u2.add_spec(b).add_spec(d.neg_spec()));
+        Self::lemma_add_associative(u2, b, d.neg_spec());
+        assert(w2.eqv_spec(u2.add_spec(b.add_spec(d.neg_spec()))));
+        assert(u2.add_spec(b.add_spec(d.neg_spec())) == u2.add_spec(b.sub_spec(d)));
+        assert(rhs == u2.add_spec(b.sub_spec(d)));
+        assert(w2.eqv_spec(rhs));
+
+        Self::lemma_eqv_add_congruence(t1, u5, t2, v2);
+        assert(t3.eqv_spec(w1));
+        Self::lemma_eqv_transitive(t3, w1, w2);
+        Self::lemma_eqv_transitive(t3, w2, rhs);
+        Self::lemma_eqv_transitive(lhs, t3, rhs);
+        assert(lhs.eqv_spec(rhs));
+    }
+
+    pub proof fn lemma_sub_mul_right(a: Self, b: Self, k: Self)
+        ensures
+            a.sub_spec(b).mul_spec(k).eqv_spec(a.mul_spec(k).sub_spec(b.mul_spec(k))),
+    {
+        let lhs = a.sub_spec(b).mul_spec(k);
+        let rhs = a.mul_spec(k).sub_spec(b.mul_spec(k));
+        let s = a.sub_spec(b);
+        let ks = k.mul_spec(s);
+        let ka = k.mul_spec(a);
+        let kbn = k.mul_spec(b.neg_spec());
+        let kb = k.mul_spec(b);
+        let mid = ka.add_spec(kbn);
+
+        Self::lemma_sub_is_add_neg(a, b);
+        assert(s == a.add_spec(b.neg_spec()));
+        assert(lhs == s.mul_spec(k));
+        Self::lemma_mul_commutative(s, k);
+        assert(s.mul_spec(k) == ks);
+        assert(lhs == ks);
+
+        Self::lemma_eqv_mul_distributive_left(k, a, b.neg_spec());
+        assert(ks.eqv_spec(ka.add_spec(kbn)));
+        assert(lhs.eqv_spec(mid));
+
+        Self::lemma_mul_neg_right(k, b);
+        assert(kbn == kb.neg_spec());
+        assert(mid == ka.add_spec(kb.neg_spec()));
+        assert(rhs == a.mul_spec(k).add_spec(b.mul_spec(k).neg_spec()));
+        assert(ka == a.mul_spec(k));
+        assert(kb == b.mul_spec(k));
+        assert(mid == rhs);
+        Self::lemma_eqv_reflexive(rhs);
+        assert(mid.eqv_spec(rhs));
+        Self::lemma_eqv_transitive(lhs, mid, rhs);
+        assert(lhs.eqv_spec(rhs));
     }
 
     pub proof fn lemma_add_zero_identity(a: Self)
@@ -685,6 +844,95 @@ impl Scalar {
         assert(a.num == 0 || b.num == 0);
     }
 
+    pub proof fn lemma_le_add_monotone_strong(a: Self, b: Self, c: Self)
+        requires
+            a.le_spec(b),
+        ensures
+            a.add_spec(c).le_spec(b.add_spec(c)),
+    {
+        let ac = a.add_spec(c);
+        let bc = b.add_spec(c);
+        Self::lemma_add_denom_product_int(a, c);
+        Self::lemma_add_denom_product_int(b, c);
+        assert(ac.num == a.num * c.denom() + c.num * a.denom());
+        assert(bc.num == b.num * c.denom() + c.num * b.denom());
+        assert(ac.denom() == a.denom() * c.denom());
+        assert(bc.denom() == b.denom() * c.denom());
+        assert(ac.le_spec(bc) == (ac.num * bc.denom() <= bc.num * ac.denom()));
+        assert(a.le_spec(b) == (a.num * b.denom() <= b.num * a.denom()));
+        assert(a.num * b.denom() <= b.num * a.denom());
+        assert((a.num * b.denom() <= b.num * a.denom())
+            ==> ((a.num * c.denom() + c.num * a.denom()) * (b.denom() * c.denom())
+                <= (b.num * c.denom() + c.num * b.denom()) * (a.denom() * c.denom())))
+            by (nonlinear_arith);
+        assert((a.num * c.denom() + c.num * a.denom()) * (b.denom() * c.denom())
+            <= (b.num * c.denom() + c.num * b.denom()) * (a.denom() * c.denom()));
+        assert(ac.num * bc.denom() == (a.num * c.denom() + c.num * a.denom()) * (b.denom() * c.denom()));
+        assert(bc.num * ac.denom() == (b.num * c.denom() + c.num * b.denom()) * (a.denom() * c.denom()));
+        assert(ac.num * bc.denom() <= bc.num * ac.denom());
+        assert(ac.le_spec(bc));
+    }
+
+    pub proof fn lemma_le_add_monotone(a: Self, b: Self, c: Self)
+        ensures
+            a.le_spec(b) ==> a.add_spec(c).le_spec(b.add_spec(c)),
+    {
+        if a.le_spec(b) {
+            Self::lemma_le_add_monotone_strong(a, b, c);
+            assert(a.add_spec(c).le_spec(b.add_spec(c)));
+        }
+    }
+
+    pub proof fn lemma_le_mul_monotone_nonnegative_strong(a: Self, b: Self, c: Self)
+        requires
+            a.le_spec(b),
+            Self::from_int_spec(0).le_spec(c),
+        ensures
+            a.mul_spec(c).le_spec(b.mul_spec(c)),
+    {
+        let z = Self::from_int_spec(0);
+        let ac = a.mul_spec(c);
+        let bc = b.mul_spec(c);
+        Self::lemma_mul_denom_product_int(a, c);
+        Self::lemma_mul_denom_product_int(b, c);
+        assert(ac.num == a.num * c.num);
+        assert(bc.num == b.num * c.num);
+        assert(ac.denom() == a.denom() * c.denom());
+        assert(bc.denom() == b.denom() * c.denom());
+        assert(ac.le_spec(bc) == (ac.num * bc.denom() <= bc.num * ac.denom()));
+        assert(a.le_spec(b) == (a.num * b.denom() <= b.num * a.denom()));
+        assert(a.num * b.denom() <= b.num * a.denom());
+        assert(z.le_spec(c) == (z.num * c.denom() <= c.num * z.denom()));
+        assert(z.num == 0);
+        assert(z.denom() == 1);
+        assert(z.le_spec(c) == (0 * c.denom() <= c.num * 1));
+        lemma_mul_by_zero_is_zero(c.denom());
+        assert(0 * c.denom() == 0);
+        assert(0 <= c.num * 1);
+        assert((0 <= c.num * 1) ==> (0 <= c.num)) by (nonlinear_arith);
+        assert(c.num >= 0);
+        assert((a.num * b.denom() <= b.num * a.denom() && c.num >= 0 && c.denom() > 0)
+            ==> ((a.num * c.num) * (b.denom() * c.denom())
+                <= (b.num * c.num) * (a.denom() * c.denom())))
+            by (nonlinear_arith);
+        assert((a.num * c.num) * (b.denom() * c.denom())
+            <= (b.num * c.num) * (a.denom() * c.denom()));
+        assert(ac.num * bc.denom() == (a.num * c.num) * (b.denom() * c.denom()));
+        assert(bc.num * ac.denom() == (b.num * c.num) * (a.denom() * c.denom()));
+        assert(ac.num * bc.denom() <= bc.num * ac.denom());
+        assert(ac.le_spec(bc));
+    }
+
+    pub proof fn lemma_le_mul_monotone_nonnegative(a: Self, b: Self, c: Self)
+        ensures
+            (a.le_spec(b) && Self::from_int_spec(0).le_spec(c)) ==> a.mul_spec(c).le_spec(b.mul_spec(c)),
+    {
+        if a.le_spec(b) && Self::from_int_spec(0).le_spec(c) {
+            Self::lemma_le_mul_monotone_nonnegative_strong(a, b, c);
+            assert(a.mul_spec(c).le_spec(b.mul_spec(c)));
+        }
+    }
+
     pub proof fn lemma_add_right_cancel_strong(a: Self, b: Self, k: Self)
         requires
             a.add_spec(k).eqv_spec(b.add_spec(k)),
@@ -883,6 +1131,47 @@ impl Scalar {
 
         Self::lemma_add_right_cancel_strong(lhs, rhs, k);
         assert(lhs.eqv_spec(rhs));
+    }
+
+    pub proof fn lemma_sub_eqv_zero_iff_eqv(a: Self, b: Self)
+        ensures
+            a.sub_spec(b).eqv_spec(Self::from_int_spec(0)) == a.eqv_spec(b),
+    {
+        let s = a.sub_spec(b);
+        let z = Self::from_int_spec(0);
+
+        if s.eqv_spec(z) {
+            let bs = b.add_spec(s);
+            Self::lemma_sub_then_add_cancel(a, b);
+            assert(bs.eqv_spec(a));
+            Self::lemma_eqv_reflexive(b);
+            Self::lemma_eqv_add_congruence(b, b, s, z);
+            assert(bs.eqv_spec(b.add_spec(z)));
+            Self::lemma_add_zero_identity(b);
+            assert(b.add_spec(z) == b);
+            Self::lemma_eqv_reflexive(b);
+            assert(bs.eqv_spec(b));
+            Self::lemma_eqv_symmetric(bs, b);
+            assert(b.eqv_spec(bs));
+            Self::lemma_eqv_transitive(b, bs, a);
+            assert(b.eqv_spec(a));
+            Self::lemma_eqv_symmetric(b, a);
+            assert(a.eqv_spec(b));
+        }
+
+        if a.eqv_spec(b) {
+            Self::lemma_eqv_reflexive(b);
+            Self::lemma_eqv_sub_congruence(a, b, b, b);
+            assert(a.sub_spec(b).eqv_spec(b.sub_spec(b)));
+            Self::lemma_sub_self_zero_num(b);
+            assert(b.sub_spec(b).num == 0);
+            Self::lemma_eqv_zero_iff_num_zero(b.sub_spec(b));
+            assert(b.sub_spec(b).eqv_spec(z) == (b.sub_spec(b).num == 0));
+            assert(b.sub_spec(b).eqv_spec(z));
+            Self::lemma_eqv_transitive(a.sub_spec(b), b.sub_spec(b), z);
+            assert(a.sub_spec(b).eqv_spec(z));
+        }
+        assert((a.sub_spec(b).eqv_spec(z)) == a.eqv_spec(b));
     }
 
     pub proof fn lemma_sub_antisymmetric(a: Self, b: Self)
@@ -1637,6 +1926,57 @@ impl Scalar {
             == lhs.num * ((a.denom() * b.denom()) * (b.denom() * c.denom()))) by (nonlinear_arith);
         assert(lhs.num * rhs.denom() == rhs.num * lhs.denom());
         assert(lhs.eqv_spec(rhs));
+    }
+
+    pub proof fn lemma_eqv_signum(a: Self, b: Self)
+        requires
+            a.eqv_spec(b),
+        ensures
+            a.signum() == b.signum(),
+    {
+        Self::lemma_denom_positive(a);
+        Self::lemma_denom_positive(b);
+        assert(a.eqv_spec(b) == (a.num * b.denom() == b.num * a.denom()));
+        assert(a.num * b.denom() == b.num * a.denom());
+
+        if a.num == 0 {
+            assert(b.num * a.denom() == 0);
+            assert((a.denom() != 0 && b.num * a.denom() == 0) ==> (b.num == 0)) by (nonlinear_arith);
+            assert(a.denom() != 0);
+            assert(b.num == 0);
+            Self::lemma_signum_zero_iff(a);
+            Self::lemma_signum_zero_iff(b);
+            assert((a.signum() == 0) == (a.num == 0));
+            assert((b.signum() == 0) == (b.num == 0));
+            assert(a.signum() == 0);
+            assert(b.signum() == 0);
+        } else if a.num > 0 {
+            assert((a.num > 0 && b.denom() > 0) ==> a.num * b.denom() > 0) by (nonlinear_arith);
+            assert(a.num * b.denom() > 0);
+            assert(b.num * a.denom() > 0);
+            assert((a.denom() > 0 && b.num * a.denom() > 0) ==> b.num > 0) by (nonlinear_arith);
+            assert(b.num > 0);
+            Self::lemma_signum_positive_iff(a);
+            Self::lemma_signum_positive_iff(b);
+            assert((a.signum() == 1) == (a.num > 0));
+            assert((b.signum() == 1) == (b.num > 0));
+            assert(a.signum() == 1);
+            assert(b.signum() == 1);
+        } else {
+            assert(a.num < 0);
+            assert((a.num < 0 && b.denom() > 0) ==> a.num * b.denom() < 0) by (nonlinear_arith);
+            assert(a.num * b.denom() < 0);
+            assert(b.num * a.denom() < 0);
+            assert((a.denom() > 0 && b.num * a.denom() < 0) ==> b.num < 0) by (nonlinear_arith);
+            assert(b.num < 0);
+            Self::lemma_signum_negative_iff(a);
+            Self::lemma_signum_negative_iff(b);
+            assert((a.signum() == -1) == (a.num < 0));
+            assert((b.signum() == -1) == (b.num < 0));
+            assert(a.signum() == -1);
+            assert(b.signum() == -1);
+        }
+        assert(a.signum() == b.signum());
     }
 
     pub proof fn lemma_signum_positive_iff(a: Self)

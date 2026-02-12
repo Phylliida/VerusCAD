@@ -1,17 +1,17 @@
 # vcad-math Proof TODO
-Focused list of proof work still needed in `vcad-math`.
+Focused list of proof work and migration closure notes for `vcad-math`.
 
 This list assumes the current baseline (orientation classification, scale, norm2, dist2, signum) is already verified.
 
 ## Agent Execution Loop (Requested 2026-02-12)
-- [ ] Sync this TODO to reality before each implementation pass:
+- [x] Sync this TODO to reality before each implementation pass:
   - add any missing required work items discovered during code/proof audits.
   - do not mark items complete unless they are verified in current rational branch.
-- [ ] Execute all unchecked TODO items in priority order within `vcad-math`.
-- [ ] After finishing all TODO items, run an anti-cheating audit:
+- [x] Execute all unchecked TODO items in priority order within `vcad-math`.
+- [x] After finishing all TODO items, run an anti-cheating audit:
   - identify lemmas that prove weaker/irrelevant properties than their contracts suggest.
   - strengthen/fix contracts and proofs accordingly.
-- [ ] Keep work strictly scoped to `vcad-math` until the list is exhausted.
+- [x] Keep work strictly scoped to `vcad-math` until the list is exhausted.
 
 ## Rational Re-Port Backlog (Reality Audit 2026-02-12)
 Derived from diff against:
@@ -29,12 +29,12 @@ Derived from diff against:
   - `lemma_mul_zero`
   - `lemma_mul_distributes_over_add`
   - `lemma_signum_mul`
-- [ ] Reintroduce scalar cancellation/order lemmas under rational semantics:
-  - [ ] Define/order-stabilize scalar comparison contract for rationals (`le_spec`/`lt_spec` or equivalent) so monotonicity lemmas have a canonical target.
+- [x] Reintroduce scalar cancellation/order lemmas under rational semantics:
+  - [x] Define/order-stabilize scalar comparison contract for rationals (`le_spec`/`lt_spec` or equivalent) so monotonicity lemmas have a canonical target.
   - `lemma_add_left_cancel` (+ strong variant, done)
   - `lemma_add_right_cancel` (+ strong variant, done)
-  - `lemma_le_add_monotone` (+ strong variant)
-  - `lemma_le_mul_monotone_nonnegative` (+ strong variant)
+  - `lemma_le_add_monotone` (+ strong variant, done)
+  - `lemma_le_mul_monotone_nonnegative` (+ strong variant, done)
   - `lemma_mul_zero_implies_factor_zero` (done)
 
 ### Vec2
@@ -54,20 +54,20 @@ Derived from diff against:
   - `lemma_scale_distributes_over_scalar_add`
   - `lemma_scale_neg_vector`
   - `lemma_scale_neg_scalar`
-- [ ] Reintroduce dot/cross algebraic laws:
+- [x] Reintroduce dot/cross algebraic laws:
   - `lemma_dot_symmetric` (done)
   - `lemma_dot_linear_left` (done)
   - `lemma_dot_linear_right` (done)
   - `lemma_dot_scale_extract_left` (done)
-  - `lemma_cross_linear_left`
-  - `lemma_cross_linear_right`
+  - `lemma_cross_linear_left` (done)
+  - `lemma_cross_linear_right` (done)
   - `lemma_cross_scale_extract_left` (done)
   - `lemma_cross_scale_extract_right` (done)
   - `lemma_cross_self_zero` (non-signum form, done)
-- [ ] Reintroduce norm laws:
-  - `lemma_norm2_nonnegative`
-  - `lemma_norm2_zero_iff_zero`
-  - `lemma_norm2_scale`
+- [x] Reintroduce norm laws:
+  - `lemma_norm2_nonnegative` (done)
+  - `lemma_norm2_zero_iff_zero` (done)
+  - `lemma_norm2_scale` (done)
 
 ### Point2
 - [x] Reintroduce point/vector cancellation + action laws:
@@ -76,29 +76,29 @@ Derived from diff against:
   - `lemma_sub_then_add_cancel` (done)
   - `lemma_add_then_sub_cancel` (done)
   - `lemma_add_vec_unique` (done)
-- [ ] Reintroduce distance laws:
+- [x] Reintroduce distance laws:
   - `lemma_dist2_is_sub_norm2` (done)
-  - `lemma_dist2_symmetric`
-  - `lemma_dist2_nonnegative`
+  - `lemma_dist2_symmetric` (done)
+  - `lemma_dist2_nonnegative` (done)
   - `lemma_dist2_self_zero` (done, semantic-equality form)
-  - `lemma_dist2_zero_iff_equal_points`
-  - `lemma_dist2_translation_invariant`
-  - `lemma_sub_translation_invariant`
+  - `lemma_dist2_zero_iff_equal_points` (done)
+  - `lemma_dist2_translation_invariant` (done)
+  - `lemma_sub_translation_invariant` (done)
 - [x] Reintroduce point equality bridge equivalent to prior `lemma_eq_from_component_ints` (done via `Point2::eqv_spec` + `lemma_eqv_from_components`).
 
 ### Orientation
-- [ ] Reintroduce determinant/value lemmas missing after migration:
+- [x] Reintroduce determinant/value lemmas missing after migration:
   - `lemma_orient2d_collinear` (done)
-  - `lemma_orient2d_unit_ccw`
-  - `lemma_orient2d_translation_invariant`
-  - `lemma_orient2d_scale_from_origin`
-- [ ] Reintroduce full orientation enum/class laws:
+  - `lemma_orient2d_unit_ccw` (done)
+  - `lemma_orient2d_translation_invariant` (done)
+  - `lemma_orient2d_scale_from_origin` (done)
+- [x] Reintroduce full orientation enum/class laws:
   - `lemma_orientation_spec_exclusive` (done)
-  - `lemma_orientation_spec_translation_invariant`
-  - `lemma_orientation_spec_scale_nonzero_preserves`
-  - `lemma_orientation_spec_scale_nonzero_preserves_strong`
-  - `lemma_orientation_spec_scale_zero_collinear`
-  - `lemma_orientation_spec_scale_zero_collinear_strong`
+  - `lemma_orientation_spec_translation_invariant` (done)
+  - `lemma_orientation_spec_scale_nonzero_preserves` (done)
+  - `lemma_orientation_spec_scale_nonzero_preserves_strong` (done)
+  - `lemma_orientation_spec_scale_zero_collinear` (done)
+  - `lemma_orientation_spec_scale_zero_collinear_strong` (done)
 - [x] Reintroduce canonical permutation lemmas by legacy names:
   - `lemma_orient2d_cyclic_invariant` (alias/wrapper over `lemma_orient2d_cyclic_eqv`)
   - `lemma_orient2d_permutation_table` (classical sign/same-or-neg form)
@@ -107,10 +107,10 @@ Derived from diff against:
 - [x] Choose active baseline for next edits:
   - `crates/vcad-math/backups/2026-02-12-rational-migration-pause/pre-rational-head/src/` (full integer-proof baseline),
   - or `crates/vcad-math/backups/2026-02-12-rational-migration-pause/current-in-progress/src/` (partial rational rewrite, selected).
-- [ ] Keep both snapshots immutable; only copy out of backup directories when restoring files.
+- [x] Keep both snapshots immutable; only copy out of backup directories when restoring files.
 - [x] Bring the active rational branch back to green verification (`./scripts/verify-vcad-math.sh`).
-- [ ] Reintroduce the full theorem surface on top of the rational branch.
-- [ ] Rebuild `Scalar` law surface for rational arithmetic with explicit semantic-equality contracts (`as_real`/`eqv_spec`) where structural equality is no longer canonical.
+- [x] Reintroduce the full theorem surface on top of the rational branch.
+- [x] Rebuild `Scalar` law surface for rational arithmetic with explicit semantic-equality contracts (`as_real`/`eqv_spec`) where structural equality is no longer canonical.
   - [x] Rational scalar core is re-established (`num/den` model, `add/sub/mul/neg`, signum cases, denominator-product lemmas).
   - [x] Added first semantic-equivalence seed lemmas (`eqv_spec` reflexive/symmetric).
   - [x] Added second-wave semantic-equivalence helpers:
@@ -132,8 +132,8 @@ Derived from diff against:
     - `lemma_mul_left_zero_num`
     - `lemma_mul_right_zero_num`
     - `lemma_sub_both_zero_num`
-  - [ ] Reintroduce strong arithmetic semantic lemmas (add/mul/sub over semantic equality, cancellation/order laws).
-- [ ] Re-add vector/point/orientation theorem layers that were temporarily dropped during migration:
+  - [x] Reintroduce strong arithmetic semantic lemmas (add/mul/sub over semantic equality, cancellation/order laws).
+- [x] Re-add vector/point/orientation theorem layers that were temporarily dropped during migration:
   - `Vec2`: bilinearity, symmetry/antisymmetry, scaling laws, norm laws,
   - `Point2`: cancellation/translation/dist2 laws,
   - `orientation`: permutation, translation, and scale behavior theorems.
@@ -163,10 +163,11 @@ Derived from diff against:
   - [x] Added full orientation permutation determinant table on rational semantics:
     - `lemma_orient2d_permutation_table_eqv`
     - even permutations are `eqv` to `orient2d_spec(a,b,c)` and odd permutations are `eqv` to its negation.
-- [ ] Decide normalization strategy for rational representation:
+- [x] Decide normalization strategy for rational representation:
   - temporary non-normalized representation + semantic equality,
   - then canonical normalization proofs (gcd/sign placement/uniqueness).
-- [ ] Update crate docs to state exact migration status and which theorem set is currently guaranteed.
+  - decision: keep non-normalized runtime representation for now; treat `eqv_spec` as the semantic contract until roadmap normalization milestones land.
+- [x] Update crate docs to state exact migration status and which theorem set is currently guaranteed.
 
 ## P0: Core algebra and order
 - [x] Prove additive cancellation:
@@ -263,6 +264,10 @@ Derived from diff against:
   - root `src/lib.rs` now just wires modules/exports
 
 ## Status
-Core first-wave proof lemmas, contract-strengthening pass, and major-hole follow-up are complete.
+All currently tracked `vcad-math` proof TODO items are complete and green-verified on the rational branch.
 
-Long-horizon architecture milestones (rational migration, exec/spec dual-mode APIs, proof regression harness) now live in `docs/vcad-math-roadmap.md`.
+Anti-cheating follow-up notes:
+- legacy compatibility wrappers restored where needed (`lemma_ccw_swap_to_cw`, `lemma_eq_from_component_ints` in `Vec2`/`Point2`) using rational semantic equality.
+- contradiction-style branch in orientation collinearity swap proof was removed in favor of direct arithmetic implication proof.
+
+Long-horizon milestones (canonical rational normalization, exec/spec dual-mode APIs, proof regression harness) now live in `docs/vcad-math-roadmap.md`.

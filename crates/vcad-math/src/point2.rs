@@ -64,6 +64,17 @@ impl Point2 {
         assert(p.eqv_spec(q));
     }
 
+    pub proof fn lemma_eq_from_component_ints(p: Self, q: Self)
+        requires
+            p.x.eqv_spec(q.x),
+            p.y.eqv_spec(q.y),
+        ensures
+            p.eqv_spec(q),
+    {
+        Self::lemma_eqv_from_components(p, q);
+        assert(p.eqv_spec(q));
+    }
+
     pub proof fn lemma_add_vec_zero_identity(p: Self)
         ensures
             p.add_vec_spec(Vec2::zero_spec()) == p,
@@ -224,6 +235,102 @@ pub proof fn lemma_dist2_is_sub_norm2(p: Point2, q: Point2)
         dist2_spec(p, q) == p.sub_spec(q).norm2_spec(),
 {
     assert(dist2_spec(p, q) == p.sub_spec(q).norm2_spec());
+}
+
+pub proof fn lemma_sub_translation_invariant(p: Point2, q: Point2, t: Vec2)
+    ensures
+        p.add_vec_spec(t).sub_spec(q.add_vec_spec(t)).eqv_spec(p.sub_spec(q)),
+{
+    let lhs = p.add_vec_spec(t).sub_spec(q.add_vec_spec(t));
+    let rhs = p.sub_spec(q);
+    Scalar::lemma_eqv_sub_cancel_right(p.x, q.x, t.x);
+    Scalar::lemma_eqv_sub_cancel_right(p.y, q.y, t.y);
+    assert(lhs.x == p.x.add_spec(t.x).sub_spec(q.x.add_spec(t.x)));
+    assert(lhs.y == p.y.add_spec(t.y).sub_spec(q.y.add_spec(t.y)));
+    assert(rhs.x == p.x.sub_spec(q.x));
+    assert(rhs.y == p.y.sub_spec(q.y));
+    assert(lhs.x.eqv_spec(rhs.x));
+    assert(lhs.y.eqv_spec(rhs.y));
+    assert(lhs.eqv_spec(rhs));
+}
+
+pub proof fn lemma_dist2_translation_invariant(p: Point2, q: Point2, t: Vec2)
+    ensures
+        dist2_spec(p.add_vec_spec(t), q.add_vec_spec(t)).eqv_spec(dist2_spec(p, q)),
+{
+    let lp = p.add_vec_spec(t);
+    let lq = q.add_vec_spec(t);
+    let lsub = lp.sub_spec(lq);
+    let rsub = p.sub_spec(q);
+    let lhs = dist2_spec(lp, lq);
+    let rhs = dist2_spec(p, q);
+    lemma_sub_translation_invariant(p, q, t);
+    assert(lsub.eqv_spec(rsub));
+    Vec2::lemma_norm2_eqv_congruence(lsub, rsub);
+    assert(lsub.norm2_spec().eqv_spec(rsub.norm2_spec()));
+    assert(lhs == lsub.norm2_spec());
+    assert(rhs == rsub.norm2_spec());
+    assert(lhs.eqv_spec(rhs));
+}
+
+pub proof fn lemma_dist2_symmetric(p: Point2, q: Point2)
+    ensures
+        dist2_spec(p, q).eqv_spec(dist2_spec(q, p)),
+{
+    let d = p.sub_spec(q);
+    let dq = q.sub_spec(p);
+    let lhs = dist2_spec(p, q);
+    let rhs = dist2_spec(q, p);
+    Point2::lemma_sub_antisymmetric(q, p);
+    assert(dq == d.neg_spec());
+    Vec2::lemma_norm2_neg_invariant(d);
+    assert(d.neg_spec().norm2_spec().eqv_spec(d.norm2_spec()));
+    assert(rhs == dq.norm2_spec());
+    assert(rhs == d.neg_spec().norm2_spec());
+    assert(lhs == d.norm2_spec());
+    assert(rhs.eqv_spec(lhs));
+    Scalar::lemma_eqv_symmetric(rhs, lhs);
+    assert(lhs.eqv_spec(rhs));
+}
+
+pub proof fn lemma_dist2_nonnegative(p: Point2, q: Point2)
+    ensures
+        Scalar::from_int_spec(0).le_spec(dist2_spec(p, q)),
+{
+    let d = p.sub_spec(q);
+    let n = dist2_spec(p, q);
+    Vec2::lemma_norm2_nonnegative(d);
+    assert(n == d.norm2_spec());
+    assert(Scalar::from_int_spec(0).le_spec(d.norm2_spec()));
+    assert(Scalar::from_int_spec(0).le_spec(n));
+}
+
+pub proof fn lemma_dist2_zero_iff_equal_points(p: Point2, q: Point2)
+    ensures
+        dist2_spec(p, q).eqv_spec(Scalar::from_int_spec(0)) == p.eqv_spec(q),
+{
+    let d = p.sub_spec(q);
+    let n = dist2_spec(p, q);
+    let z = Scalar::from_int_spec(0);
+    let zv = Vec2::zero_spec();
+
+    Vec2::lemma_norm2_zero_iff_zero(d);
+    assert(n == d.norm2_spec());
+    assert(d.norm2_spec().eqv_spec(z) == d.eqv_spec(zv));
+    assert(n.eqv_spec(z) == d.eqv_spec(zv));
+
+    assert(zv.x == z);
+    assert(zv.y == z);
+    assert(d.eqv_spec(zv) == (d.x.eqv_spec(z) && d.y.eqv_spec(z)));
+    assert(d.x == p.x.sub_spec(q.x));
+    assert(d.y == p.y.sub_spec(q.y));
+    Scalar::lemma_sub_eqv_zero_iff_eqv(p.x, q.x);
+    Scalar::lemma_sub_eqv_zero_iff_eqv(p.y, q.y);
+    assert(d.x.eqv_spec(z) == p.x.eqv_spec(q.x));
+    assert(d.y.eqv_spec(z) == p.y.eqv_spec(q.y));
+    assert(d.eqv_spec(zv) == (p.x.eqv_spec(q.x) && p.y.eqv_spec(q.y)));
+    assert(p.eqv_spec(q) == (p.x.eqv_spec(q.x) && p.y.eqv_spec(q.y)));
+    assert(n.eqv_spec(z) == p.eqv_spec(q));
 }
 
 pub proof fn lemma_dist2_self_zero(p: Point2)
