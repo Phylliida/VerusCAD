@@ -126,4 +126,10 @@ impl RuntimeQuaternion {
         let zz = self.z.mul(&self.z);
         ww.add(&xx).add(&yy).add(&zz)
     }
+
+    pub fn inverse(&self) -> Option<Self> {
+        let n = self.norm2();
+        let inv_n = n.recip()?;
+        Some(self.conjugate().scale(&inv_n))
+    }
 }

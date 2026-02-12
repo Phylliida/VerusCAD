@@ -43,6 +43,13 @@ impl RuntimeScalar {
         Self { value: out }
     }
 
+    pub fn recip(&self) -> Option<Self> {
+        if self.value == 0 {
+            return None;
+        }
+        Some(Self { value: Rational::from(1) / self.value.clone() })
+    }
+
     pub fn neg(&self) -> Self {
         Self { value: -self.value.clone() }
     }

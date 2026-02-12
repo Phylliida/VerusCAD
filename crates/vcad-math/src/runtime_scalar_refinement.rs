@@ -72,6 +72,19 @@ pub assume_specification[ RuntimeScalar::mul ](
         out@ == this@.mul_spec(rhs@),
 ;
 
+pub assume_specification[ RuntimeScalar::recip ](this: &RuntimeScalar) -> (out: Option<RuntimeScalar>)
+    ensures
+        out.is_none() == (this@.num == 0),
+        match out {
+            Option::None => true,
+            Option::Some(r) => {
+                &&& this@.num != 0
+                &&& this@.mul_spec(r@).eqv_spec(ScalarModel::from_int_spec(1))
+                &&& r@.mul_spec(this@).eqv_spec(ScalarModel::from_int_spec(1))
+            },
+        },
+;
+
 pub assume_specification[ RuntimeScalar::neg ](this: &RuntimeScalar) -> (out: RuntimeScalar)
     ensures
         out@ == this@.neg_spec(),

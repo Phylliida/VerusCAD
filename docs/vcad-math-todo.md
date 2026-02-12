@@ -323,10 +323,10 @@ Long-horizon milestones (canonical rational normalization, exec/spec dual-mode A
   - progress: complete model theorem surface + expanded runtime regression wrappers (`dot/cross` bilinearity, scale extraction, norm laws).
 - [x] Execute `P4.2 Point3 + orientation3d` checklist from `docs/vcad-math-higher-dim-todo.md`.
   - progress: `Point3` affine/metric theorem surface is complete (including `dist2` nonnegative/self-zero/zero-iff); `orientation3d` theorem surface is complete for current scope (swap-sign behavior, repeated-point degeneracy, and sign-aware zero/nonzero uniform scaling).
-- [ ] Execute `P4.3 Vec4/Point4` checklist from `docs/vcad-math-higher-dim-todo.md`.
-  - progress: `src/vec4.rs` and `src/point4.rs` model APIs + runtime/refinement wrappers are in place.
+- [x] Execute `P4.3 Vec4/Point4` checklist from `docs/vcad-math-higher-dim-todo.md`.
+  - progress: complete for current scope (Vec4 vector-space/dot/norm theorem surface + Point4 affine/metric theorem surface, with matching runtime regression wrappers).
 - [ ] Execute `P4.4 Quaternion` checklist from `docs/vcad-math-higher-dim-todo.md`.
-  - progress: `src/quaternion.rs` model API + runtime/refinement wrappers are in place (inverse/rotation-facing theorem work remains).
+  - progress: model API now includes partial `inverse_spec`; ring-law coverage now includes additive/multiplicative identities and non-commutativity witness; norm/conjugation coverage now includes conjugate-product characterization plus nonnegative + zero-iff-zero + conjugate-invariance + inverse-correctness (`q*inv(q)` and `inv(q)*q`), with associativity/distributivity and norm multiplicativity still pending.
 - [ ] Execute `P4.5 Runtime + refinement rollout` checklist from `docs/vcad-math-higher-dim-todo.md`.
   - progress: all planned runtime families and refinement modules now exist; wrapper theorem coverage still needs expansion.
 - [ ] Execute `P4.6 Anti-cheating + quality gates` checklist from `docs/vcad-math-higher-dim-todo.md`.

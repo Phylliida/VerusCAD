@@ -846,6 +846,57 @@ impl Scalar {
         assert(a.num == 0 || b.num == 0);
     }
 
+    pub proof fn lemma_mul_reciprocal_positive_num(a: Self)
+        requires
+            a.num > 0,
+        ensures
+            {
+                let an = a.num as nat;
+                let inv = Scalar { num: a.denom(), den: (an - 1) as nat };
+                a.mul_spec(inv).eqv_spec(Self::from_int_spec(1))
+            },
+            {
+                let an = a.num as nat;
+                let inv = Scalar { num: a.denom(), den: (an - 1) as nat };
+                inv.mul_spec(a).eqv_spec(Self::from_int_spec(1))
+            },
+    {
+        let one = Self::from_int_spec(1);
+        let an = a.num as nat;
+        assert(an > 0);
+        assert((a.num as nat) as int == a.num);
+        let inv = Scalar { num: a.denom(), den: (an - 1) as nat };
+        let prod = a.mul_spec(inv);
+        let rprod = inv.mul_spec(a);
+        Self::lemma_mul_denom_product_int(a, inv);
+        assert(inv.denom_nat() == (an - 1) + 1);
+        assert((an - 1) + 1 == an) by (nonlinear_arith);
+        assert(inv.denom_nat() == an);
+        assert(inv.denom() == inv.denom_nat() as int);
+        assert(inv.denom() == an as int);
+        assert(inv.denom() == a.num);
+        assert(prod.num == a.num * inv.num);
+        assert(inv.num == a.denom());
+        assert(prod.num == a.num * a.denom());
+        assert(prod.denom() == a.denom() * inv.denom());
+        assert(prod.denom() == a.denom() * a.num);
+        assert(prod.eqv_spec(one) == (prod.num * one.denom() == one.num * prod.denom()));
+        assert(one.denom() == 1);
+        assert(one.num == 1);
+        assert((prod.num * 1 == 1 * prod.denom()) == (prod.num == prod.denom())) by (nonlinear_arith);
+        assert(prod.eqv_spec(one) == (prod.num == prod.denom()));
+        assert(a.num * a.denom() == a.denom() * a.num) by (nonlinear_arith);
+        assert(prod.num == prod.denom());
+        assert(prod.eqv_spec(one));
+
+        Self::lemma_mul_commutative(inv, a);
+        assert(rprod == prod);
+        Self::lemma_eqv_reflexive(prod);
+        assert(rprod.eqv_spec(prod));
+        Self::lemma_eqv_transitive(rprod, prod, one);
+        assert(rprod.eqv_spec(one));
+    }
+
     pub proof fn lemma_le_add_monotone_strong(a: Self, b: Self, c: Self)
         requires
             a.le_spec(b),
@@ -2069,6 +2120,34 @@ impl Scalar {
                 * (a.denom() * (b.denom() * c.denom()))
         ) by (nonlinear_arith);
         assert(lhs.num * rhs.denom() == rhs.num * lhs.denom());
+        assert(lhs.eqv_spec(rhs));
+    }
+
+    pub proof fn lemma_eqv_mul_distributive_right(a: Self, b: Self, c: Self)
+        ensures
+            a.add_spec(b).mul_spec(c).eqv_spec(a.mul_spec(c).add_spec(b.mul_spec(c))),
+    {
+        let lhs = a.add_spec(b).mul_spec(c);
+        let mid = c.mul_spec(a.add_spec(b));
+        let mid_rhs = c.mul_spec(a).add_spec(c.mul_spec(b));
+        let rhs = a.mul_spec(c).add_spec(b.mul_spec(c));
+
+        Self::lemma_mul_commutative(a.add_spec(b), c);
+        assert(lhs == mid);
+        Self::lemma_eqv_reflexive(lhs);
+        assert(lhs.eqv_spec(mid));
+
+        Self::lemma_eqv_mul_distributive_left(c, a, b);
+        assert(mid.eqv_spec(mid_rhs));
+
+        Self::lemma_mul_commutative(c, a);
+        Self::lemma_mul_commutative(c, b);
+        assert(mid_rhs == rhs);
+        Self::lemma_eqv_reflexive(mid_rhs);
+        assert(mid_rhs.eqv_spec(rhs));
+
+        Self::lemma_eqv_transitive(lhs, mid, mid_rhs);
+        Self::lemma_eqv_transitive(lhs, mid_rhs, rhs);
         assert(lhs.eqv_spec(rhs));
     }
 
