@@ -3,8 +3,9 @@ Lowest-level verified math crate.
 
 Core contents:
 1. `Scalar` (exact rational).
-2. `Vec2` and `Point2`.
-3. Predicates like `orient2d`.
+2. `RuntimeScalar` (exec rational backed by `rug::Rational`).
+3. `Vec2` and `Point2`.
+4. Predicates like `orient2d`.
 
 This crate should have no dependency on higher CAD concepts.
 
@@ -16,7 +17,9 @@ Current code is modular:
 2. `src/vec2.rs`
 3. `src/point2.rs`
 4. `src/orientation.rs`
-5. `src/lib.rs` module/export entrypoint.
+5. `src/runtime_scalar.rs`
+6. `src/runtime_scalar_refinement.rs`
+7. `src/lib.rs` module/export entrypoint.
 
 Verified theorem surface:
 1. `Scalar` algebra/order/sign laws:
@@ -41,7 +44,11 @@ Verified theorem surface:
    - `lemma_ccw_swap_to_cw`,
    - `Vec2::lemma_eq_from_component_ints`,
    - `Point2::lemma_eq_from_component_ints`.
-
+6. Runtime backend:
+   - `RuntimeScalar` uses `rug::Rational` for arbitrary-precision executable arithmetic.
+   - equivalent values compare equal and hash equal via canonical rational form.
+   - Verus refinement contracts are provided for `from_int`, `add`, `sub`, `mul`, and `neg` via `RuntimeScalar`'s model `view`.
+   - refinement contracts are trusted specs at the external backend boundary (`rug` implementation).
 Verification status:
 1. End-to-end crate verification via `./scripts/verify-vcad-math.sh` is green (`262 verified, 0 errors` in the latest run).
 
@@ -53,3 +60,4 @@ Backups and migration checkpoints:
 1. `crates/vcad-math/backups/2026-02-12-rational-migration-pause/`
 2. `docs/vcad-math-todo.md`
 3. `docs/vcad-math-roadmap.md`
+4. `docs/scalar-unification-todo.md`

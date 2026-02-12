@@ -1,5 +1,9 @@
 pub mod scalar;
-pub use scalar::Scalar;
+pub use scalar::{Scalar, ScalarModel};
+
+pub mod runtime_scalar;
+pub use runtime_scalar::RuntimeScalar;
+mod runtime_scalar_refinement;
 
 pub mod vec2;
 pub use vec2::Vec2;

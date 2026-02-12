@@ -393,6 +393,8 @@ impl Scalar {
         assert((a.num * db) * dc == a.num * (db * dc));
         lemma_mul_is_associative(b.num, da, dc);
         assert((b.num * da) * dc == b.num * (da * dc));
+        lemma_mul_is_commutative(da, db);
+        assert(da * db == db * da);
         assert(c.num * (da * db) == c.num * (db * da));
         assert(b.num * (da * dc) == (b.num * dc) * da) by (nonlinear_arith);
         assert(c.num * (db * da) == (c.num * db) * da) by (nonlinear_arith);
@@ -2145,5 +2147,12 @@ impl Scalar {
         assert(p.signum() == a.signum() * b.signum());
     }
 }
+
+/// Explicit name for the proof/spec scalar model.
+///
+/// This alias is the first step toward the "single runtime Scalar + model view"
+/// refactor: proof-heavy modules can migrate to `ScalarModel` naming without
+/// changing semantics.
+pub type ScalarModel = Scalar;
 
 } // verus!
