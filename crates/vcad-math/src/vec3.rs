@@ -179,6 +179,24 @@ impl Vec3 {
         assert(a.eqv_spec(a));
     }
 
+    pub proof fn lemma_scale_eqv_congruence(u: Self, v: Self, k: Scalar)
+        requires
+            u.eqv_spec(v),
+        ensures
+            u.scale_spec(k).eqv_spec(v.scale_spec(k)),
+    {
+        let us = u.scale_spec(k);
+        let vs = v.scale_spec(k);
+        assert(u.eqv_spec(v));
+        Scalar::lemma_eqv_mul_congruence_left(u.x, v.x, k);
+        Scalar::lemma_eqv_mul_congruence_left(u.y, v.y, k);
+        Scalar::lemma_eqv_mul_congruence_left(u.z, v.z, k);
+        assert(us.x.eqv_spec(vs.x));
+        assert(us.y.eqv_spec(vs.y));
+        assert(us.z.eqv_spec(vs.z));
+        assert(us.eqv_spec(vs));
+    }
+
     pub proof fn lemma_norm2_eqv_congruence(u: Self, v: Self)
         requires
             u.eqv_spec(v),
@@ -590,6 +608,90 @@ impl Vec3 {
         assert(lhs == rhs);
         Scalar::lemma_eqv_reflexive(lhs);
         assert(lhs.eqv_spec(rhs));
+    }
+
+    pub proof fn lemma_dot_neg_right(u: Self, v: Self)
+        ensures
+            u.dot_spec(v.neg_spec()).eqv_spec(u.dot_spec(v).neg_spec()),
+    {
+        let lhs = u.dot_spec(v.neg_spec());
+        let rhs = u.dot_spec(v).neg_spec();
+        let ax = u.x.mul_spec(v.x);
+        let ay = u.y.mul_spec(v.y);
+        let az = u.z.mul_spec(v.z);
+        let axn = u.x.mul_spec(v.x.neg_spec());
+        let ayn = u.y.mul_spec(v.y.neg_spec());
+        let azn = u.z.mul_spec(v.z.neg_spec());
+
+        Scalar::lemma_mul_neg_right(u.x, v.x);
+        Scalar::lemma_mul_neg_right(u.y, v.y);
+        Scalar::lemma_mul_neg_right(u.z, v.z);
+        assert(axn == ax.neg_spec());
+        assert(ayn == ay.neg_spec());
+        assert(azn == az.neg_spec());
+
+        assert(lhs == axn.add_spec(ayn).add_spec(azn));
+        assert(lhs == ax.neg_spec().add_spec(ay.neg_spec()).add_spec(az.neg_spec()));
+
+        Scalar::lemma_neg_add(ax, ay);
+        Scalar::lemma_neg_add(ax.add_spec(ay), az);
+        assert(rhs == ax.add_spec(ay).add_spec(az).neg_spec());
+        assert(rhs == ax.add_spec(ay).neg_spec().add_spec(az.neg_spec()));
+        assert(ax.add_spec(ay).neg_spec() == ax.neg_spec().add_spec(ay.neg_spec()));
+        assert(rhs == ax.neg_spec().add_spec(ay.neg_spec()).add_spec(az.neg_spec()));
+        assert(lhs == rhs);
+        Scalar::lemma_eqv_reflexive(rhs);
+        assert(lhs.eqv_spec(rhs));
+    }
+
+    pub proof fn lemma_dot_right_zero(v: Self)
+        ensures
+            v.dot_spec(Self::zero_spec()).eqv_spec(Scalar::from_int_spec(0)),
+    {
+        let z = Scalar::from_int_spec(0);
+        let zv = Self::zero_spec();
+        let lhs = v.dot_spec(zv);
+        let ax = v.x.mul_spec(zv.x);
+        let ay = v.y.mul_spec(zv.y);
+        let az = v.z.mul_spec(zv.z);
+
+        assert(zv.x == z);
+        assert(zv.y == z);
+        assert(zv.z == z);
+        assert(lhs == ax.add_spec(ay).add_spec(az));
+
+        Scalar::lemma_mul_zero(v.x);
+        Scalar::lemma_mul_zero(v.y);
+        Scalar::lemma_mul_zero(v.z);
+        assert(ax.eqv_spec(z));
+        assert(ay.eqv_spec(z));
+        assert(az.eqv_spec(z));
+
+        Scalar::lemma_eqv_add_congruence(ax, z, ay, z);
+        assert(ax.add_spec(ay).eqv_spec(z.add_spec(z)));
+        Scalar::lemma_eqv_add_congruence(ax.add_spec(ay), z.add_spec(z), az, z);
+        assert(lhs.eqv_spec(z.add_spec(z).add_spec(z)));
+        Scalar::lemma_add_zero_identity(z);
+        assert(z.add_spec(z) == z);
+        assert(z.add_spec(z).add_spec(z) == z.add_spec(z));
+        assert(z.add_spec(z).add_spec(z) == z);
+        Scalar::lemma_eqv_reflexive(z);
+        assert(z.add_spec(z).add_spec(z).eqv_spec(z));
+        Scalar::lemma_eqv_transitive(lhs, z.add_spec(z).add_spec(z), z);
+        assert(lhs.eqv_spec(z));
+    }
+
+    pub proof fn lemma_dot_left_zero(v: Self)
+        ensures
+            Self::zero_spec().dot_spec(v).eqv_spec(Scalar::from_int_spec(0)),
+    {
+        let z = Self::zero_spec();
+        Self::lemma_dot_symmetric(z, v);
+        assert(z.dot_spec(v).eqv_spec(v.dot_spec(z)));
+        Self::lemma_dot_right_zero(v);
+        assert(v.dot_spec(z).eqv_spec(Scalar::from_int_spec(0)));
+        Scalar::lemma_eqv_transitive(z.dot_spec(v), v.dot_spec(z), Scalar::from_int_spec(0));
+        assert(z.dot_spec(v).eqv_spec(Scalar::from_int_spec(0)));
     }
 
     pub proof fn lemma_dot_linear_right(u: Self, v: Self, w: Self)

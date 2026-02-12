@@ -54,7 +54,7 @@ This backlog follows the same pattern used for 2D:
   - translation invariance
   - uniform-scale behavior
   - degeneracy lemmas for repeated/coplanar points
-  - progress: class exclusivity/exhaustiveness and translation invariance are implemented; permutation/scale/degeneracy theorem surface is pending.
+  - progress: class exclusivity/exhaustiveness, translation invariance, swap-sign behavior (`c`/`d`), repeated-point degeneracy, and zero-scale coplanarity are implemented; full uniform-scale (nonzero) theorem surface is still pending.
 
 ## P4.3 Vec4 / Point4 (model + proofs)
 - [x] Add `src/vec4.rs` model API:
@@ -111,7 +111,7 @@ This backlog follows the same pattern used for 2D:
   - `runtime_quaternion_refinement.rs`
 - [x] Add `View` mappings and contracts (`assume_specification` initially at backend boundary) for all runtime APIs.
 - [ ] Add regression wrappers proving runtime composition recovers key model laws for each new type.
-  - progress: initial regression wrappers are implemented for all newly added runtime families; theorem coverage still needs expansion to match full model law surface.
+  - progress: initial regression wrappers are implemented for all newly added runtime families; orientation3 wrappers now include swap, zero-scale coplanarity, and repeated-point degeneracy, but full theorem coverage still needs expansion.
 
 ## P4.6 Anti-cheating + quality gates
 - [ ] Anti-cheating pass on all new lemmas:

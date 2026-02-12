@@ -322,7 +322,7 @@ Long-horizon milestones (canonical rational normalization, exec/spec dual-mode A
 - [x] Execute `P4.1 Vec3` checklist from `docs/vcad-math-higher-dim-todo.md`.
   - progress: complete model theorem surface + expanded runtime regression wrappers (`dot/cross` bilinearity, scale extraction, norm laws).
 - [ ] Execute `P4.2 Point3 + orientation3d` checklist from `docs/vcad-math-higher-dim-todo.md`.
-  - progress: `Point3` affine/metric theorem surface is complete (including `dist2` nonnegative/self-zero/zero-iff); `orientation3d` permutation/scale/degeneracy laws remain.
+  - progress: `Point3` affine/metric theorem surface is complete (including `dist2` nonnegative/self-zero/zero-iff); `orientation3d` now has swap-sign behavior, repeated-point degeneracy, and zero-scale coplanarity, with full nonzero uniform-scale law surface still pending.
 - [ ] Execute `P4.3 Vec4/Point4` checklist from `docs/vcad-math-higher-dim-todo.md`.
   - progress: `src/vec4.rs` and `src/point4.rs` model APIs + runtime/refinement wrappers are in place.
 - [ ] Execute `P4.4 Quaternion` checklist from `docs/vcad-math-higher-dim-todo.md`.
