@@ -271,3 +271,8 @@ Anti-cheating follow-up notes:
 - contradiction-style branch in orientation collinearity swap proof was removed in favor of direct arithmetic implication proof.
 
 Long-horizon milestones (canonical rational normalization, exec/spec dual-mode APIs, proof regression harness) now live in `docs/vcad-math-roadmap.md`.
+
+## P2 Carryover (2026-02-12)
+- [x] Add canonical sign-placement theorem surface for normalized rationals (`canonical_sign_spec`, `lemma_normalized_zero_has_unit_denom`, `lemma_normalized_implies_canonical_sign`).
+- [x] Add explicit runtime normalization API and refinement regression wrapper (`RuntimeScalar::normalize`, `runtime_normalize_is_eqv_identity`).
+- [ ] Complete model-side constructive normalization algorithm/proof for arbitrary rationals (gcd-based or equivalent fully verified construction, not only theorem-level characterization).

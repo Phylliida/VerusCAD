@@ -46,6 +46,14 @@ impl RuntimeScalar {
     pub fn neg(&self) -> Self {
         Self { value: -self.value.clone() }
     }
+
+    /// Returns the canonical normalized runtime representation.
+    ///
+    /// `rug::Rational` maintains canonical form internally, so this is a
+    /// semantic no-op that provides an explicit API boundary.
+    pub fn normalize(&self) -> Self {
+        Self { value: self.value.clone() }
+    }
 }
 
 impl Hash for RuntimeScalar {

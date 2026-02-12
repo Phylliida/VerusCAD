@@ -1432,6 +1432,127 @@ impl Scalar {
         assert(a.num * c.denom() == c.num * a.denom());
     }
 
+    /// Canonical normalization predicate for the model:
+    /// among semantically-equivalent representations, this value has a
+    /// minimal denominator.
+    pub open spec fn normalized_spec(self) -> bool {
+        forall|other: Self| #[trigger] self.eqv_spec(other) ==> self.denom_nat() <= other.denom_nat()
+    }
+
+    pub proof fn lemma_from_int_is_normalized(value: int)
+        ensures
+            Self::from_int_spec(value).normalized_spec(),
+    {
+        let s = Self::from_int_spec(value);
+        assert(s.denom_nat() == 1);
+        assert forall|other: Self| #![auto] s.eqv_spec(other) implies s.denom_nat() <= other.denom_nat() by {
+            Self::lemma_denom_positive(other);
+            assert(other.denom_nat() > 0);
+            assert(1 <= other.denom_nat());
+        };
+    }
+
+    pub proof fn lemma_normalized_eqv_implies_equal_denom(a: Self, b: Self)
+        requires
+            a.normalized_spec(),
+            b.normalized_spec(),
+            a.eqv_spec(b),
+        ensures
+            a.denom_nat() == b.denom_nat(),
+    {
+        Self::lemma_eqv_symmetric(a, b);
+        assert(a.eqv_spec(b) == b.eqv_spec(a));
+        assert(b.eqv_spec(a));
+
+        assert(a.denom_nat() <= b.denom_nat());
+        assert(b.denom_nat() <= a.denom_nat());
+        assert((a.denom_nat() <= b.denom_nat() && b.denom_nat() <= a.denom_nat())
+            ==> a.denom_nat() == b.denom_nat()) by (nonlinear_arith);
+        assert(a.denom_nat() == b.denom_nat());
+    }
+
+    pub proof fn lemma_eqv_and_equal_denom_implies_equal_num(a: Self, b: Self)
+        requires
+            a.eqv_spec(b),
+            a.denom_nat() == b.denom_nat(),
+        ensures
+            a.num == b.num,
+    {
+        Self::lemma_denom_positive(a);
+        assert(a.denom() > 0);
+        assert(a.denom() != 0);
+
+        assert(a.denom() == a.denom_nat() as int);
+        assert(b.denom() == b.denom_nat() as int);
+        assert((a.denom_nat() as int) == (b.denom_nat() as int));
+        assert(a.denom() == b.denom());
+
+        assert(a.eqv_spec(b) == (a.num * b.denom() == b.num * a.denom()));
+        assert(a.num * b.denom() == b.num * a.denom());
+        assert(a.num * a.denom() == b.num * a.denom());
+        assert((a.denom() != 0 && a.num * a.denom() == b.num * a.denom()) ==> (a.num == b.num))
+            by (nonlinear_arith);
+        assert(a.num == b.num);
+    }
+
+    /// Strongest normalization bridge currently available:
+    /// normalized semantic-equality implies structural equality.
+    pub proof fn lemma_normalized_eqv_implies_equal(a: Self, b: Self)
+        requires
+            a.normalized_spec(),
+            b.normalized_spec(),
+            a.eqv_spec(b),
+        ensures
+            a == b,
+    {
+        Self::lemma_normalized_eqv_implies_equal_denom(a, b);
+        Self::lemma_eqv_and_equal_denom_implies_equal_num(a, b);
+        assert(a.den + 1 == b.den + 1);
+        assert((a.den + 1 == b.den + 1) ==> a.den == b.den) by (nonlinear_arith);
+        assert(a.den == b.den);
+        assert(a.num == b.num);
+        assert(a == b);
+    }
+
+    /// Normalized values use canonical zero representation.
+    pub proof fn lemma_normalized_zero_has_unit_denom(a: Self)
+        requires
+            a.normalized_spec(),
+            a.num == 0,
+        ensures
+            a.denom_nat() == 1,
+    {
+        let z = Self::from_int_spec(0);
+        Self::lemma_eqv_zero_iff_num_zero(a);
+        assert(a.eqv_spec(z) == (a.num == 0));
+        assert(a.eqv_spec(z));
+        assert(a.denom_nat() <= z.denom_nat());
+        assert(z.denom_nat() == 1);
+        Self::lemma_denom_positive(a);
+        assert(a.denom_nat() > 0);
+        assert((a.denom_nat() > 0 && a.denom_nat() <= 1) ==> a.denom_nat() == 1) by (nonlinear_arith);
+        assert(a.denom_nat() == 1);
+    }
+
+    /// Canonical sign placement for rationals:
+    /// denominator positive, and zero has denominator `1`.
+    pub open spec fn canonical_sign_spec(self) -> bool {
+        &&& self.denom_nat() > 0
+        &&& (self.num == 0 ==> self.denom_nat() == 1)
+    }
+
+    pub proof fn lemma_normalized_implies_canonical_sign(a: Self)
+        requires
+            a.normalized_spec(),
+        ensures
+            a.canonical_sign_spec(),
+    {
+        Self::lemma_denom_positive(a);
+        if a.num == 0 {
+            Self::lemma_normalized_zero_has_unit_denom(a);
+        }
+    }
+
     pub proof fn lemma_eqv_neg_congruence(a: Self, b: Self)
         requires
             a.eqv_spec(b),

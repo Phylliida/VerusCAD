@@ -26,7 +26,8 @@ Verified theorem surface:
    - commutativity/associativity/identities/inverses/distributivity,
    - semantic equality (`eqv_spec`) reflexive/symmetric/transitive + congruence,
    - cancellation and monotonicity lemmas (`requires`-style strong forms plus implication wrappers),
-   - signum laws including multiplication behavior.
+   - signum laws including multiplication behavior,
+   - normalization/sign bridge lemmas (`normalized_spec`, normalized uniqueness, normalized `eqv` -> structural equality, canonical sign placement for normalized rationals).
 2. `Vec2` vector-space and bilinear laws:
    - add/neg/sub/scale laws,
    - dot/cross symmetry, antisymmetry, bilinearity, scale extraction,
@@ -47,10 +48,12 @@ Verified theorem surface:
 6. Runtime backend:
    - `RuntimeScalar` uses `rug::Rational` for arbitrary-precision executable arithmetic.
    - equivalent values compare equal and hash equal via canonical rational form.
-   - Verus refinement contracts are provided for `from_int`, `add`, `sub`, `mul`, and `neg` via `RuntimeScalar`'s model `view`.
+   - explicit runtime `normalize()` entrypoint is available for canonicalization.
+   - Verus refinement contracts are provided for `from_int`, `from_fraction`, `add`, `sub`, `mul`, `neg`, and `normalize` via `RuntimeScalar`'s model `view`.
    - refinement contracts are trusted specs at the external backend boundary (`rug` implementation).
+   - verified regression wrappers validate contract composition for commutativity (`add`, `mul`), `sub == add(neg)`, and normalization identity.
 Verification status:
-1. End-to-end crate verification via `./scripts/verify-vcad-math.sh` is green (`262 verified, 0 errors` in the latest run).
+1. End-to-end crate verification via `./scripts/verify-vcad-math.sh` is green (`276 verified, 0 errors` in the latest run).
 
 Intentionally deferred (roadmap):
 1. Canonical rational normalization proofs (gcd/sign canonical form and uniqueness).

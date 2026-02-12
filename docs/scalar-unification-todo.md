@@ -19,10 +19,9 @@ This TODO is complete for the current decision (`ScalarModel` proof type + `Runt
 Follow-up completed:
 - [x] Added `RuntimeScalar` refinement bridge (`src/runtime_scalar_refinement.rs`) with Verus `view` and operation-level contracts for:
   - `from_int`
+  - `from_fraction`
   - `add`
   - `sub`
   - `mul`
   - `neg`
-
-Remaining future hardening:
-- [ ] Add refinement coverage for additional constructors/utilities as needed (for example `from_fraction`).
+  - `normalize`
