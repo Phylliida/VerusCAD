@@ -1,0 +1,3 @@
+[workspace]
+members = ["crates/vcad-math"]
+resolver = "2"
