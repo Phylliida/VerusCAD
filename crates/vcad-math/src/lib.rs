@@ -67,3 +67,4 @@ pub use point4::Point4;
 
 pub mod quaternion;
 pub use quaternion::Quaternion;
+mod quaternion_assoc_cases;

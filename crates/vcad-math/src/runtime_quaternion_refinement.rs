@@ -378,6 +378,29 @@ pub fn runtime_quaternion_norm2_zero_iff_zero(q: &RuntimeQuaternion) -> (out: Ru
 }
 
 #[allow(dead_code)]
+pub fn runtime_quaternion_norm2_scale(
+    q: &RuntimeQuaternion,
+    k: &RuntimeScalar,
+) -> (pair: (RuntimeScalar, RuntimeScalar))
+    ensures
+        pair.0@ == q@.scale_spec(k@).norm2_spec(),
+        pair.1@ == k@.mul_spec(k@).mul_spec(q@.norm2_spec()),
+        pair.0@.eqv_spec(pair.1@),
+{
+    let qs = q.scale(k);
+    let lhs = qs.norm2();
+    let n = q.norm2();
+    let kk = k.mul(k);
+    let rhs = kk.mul(&n);
+    proof {
+        Quaternion::lemma_norm2_scale(q@, k@);
+        assert(q@.scale_spec(k@).norm2_spec().eqv_spec(k@.mul_spec(k@).mul_spec(q@.norm2_spec())));
+        assert(lhs@.eqv_spec(rhs@));
+    }
+    (lhs, rhs)
+}
+
+#[allow(dead_code)]
 pub fn runtime_quaternion_norm2_conjugate_invariant(q: &RuntimeQuaternion) -> (pair: (
     RuntimeScalar,
     RuntimeScalar,

@@ -11,4 +11,7 @@ Requested workflow (2026-02-12):
 5. Only report vcad-math complete when TODO + cheating audit are both complete and verified.
 
 Operational rule:
-- Every proof change must end with `./scripts/verify-vcad-math.sh` green.
+- During active editing, use focused checks first:
+  - `./scripts/verify-vcad-math-fast.sh [module] [function_pattern]`
+- Before closing a pass, always run the full gate:
+  - `./scripts/verify-vcad-math.sh`

@@ -90,7 +90,16 @@ Verified theorem surface:
      - 4D vector/point law fragments,
      - quaternion add/conjugation law fragments.
 Verification status:
-1. End-to-end crate verification via `./scripts/verify-vcad-math.sh` is green (`404 verified, 0 errors` in the latest run).
+1. End-to-end crate verification via `./scripts/verify-vcad-math.sh` is green (`683 verified, 0 errors` in the latest run).
+
+## Verification Workflow
+Use a staged loop for faster iteration:
+1. Fast focused check (module or function):
+   - `./scripts/verify-vcad-math-fast.sh`
+   - `./scripts/verify-vcad-math-fast.sh quaternion`
+   - `./scripts/verify-vcad-math-fast.sh quaternion lemma_assoc_basis_any`
+2. Full soundness gate before merging:
+   - `./scripts/verify-vcad-math.sh`
 
 Intentionally deferred (roadmap):
 1. Eliminate trusted `assume_specification` wrappers at the `rug` boundary by introducing a verified arithmetic boundary strategy.
