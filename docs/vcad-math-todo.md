@@ -328,5 +328,5 @@ Long-horizon milestones (canonical rational normalization, exec/spec dual-mode A
 - [ ] Execute `P4.4 Quaternion` checklist from `docs/vcad-math-higher-dim-todo.md`.
   - progress: model API now includes partial `inverse_spec`; ring-law coverage now includes additive/multiplicative identities and non-commutativity witness; norm/conjugation coverage now includes conjugate-product characterization plus nonnegative + zero-iff-zero + conjugate-invariance + inverse-correctness (`q*inv(q)` and `inv(q)*q`), with associativity/distributivity and norm multiplicativity still pending.
 - [ ] Execute `P4.5 Runtime + refinement rollout` checklist from `docs/vcad-math-higher-dim-todo.md`.
-  - progress: all planned runtime families and refinement modules now exist; wrapper theorem coverage still needs expansion.
+  - progress: all planned runtime families and refinement modules now exist; wrapper theorem coverage has been expanded through quaternion inverse-identity recovery, but broader regression-law coverage is still pending.
 - [ ] Execute `P4.6 Anti-cheating + quality gates` checklist from `docs/vcad-math-higher-dim-todo.md`.
