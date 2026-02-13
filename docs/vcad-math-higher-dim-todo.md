@@ -119,5 +119,6 @@ This backlog follows the same pattern used for 2D:
   - strengthen weak implication contracts into strongest `requires`-style forms where applicable
   - avoid representation leaks in public law contracts
   - ensure contracts target abstract semantic equality where canonical representation is not guaranteed
+  - progress: quaternion inverse-related contracts were tightened to semantic nonzero form (`!norm2.eqv_spec(0)`) instead of representation-level `.num` checks, and the prior weak implication norm-positivity lemma was strengthened to a requires-style semantic statement (`0 < norm2` under nonzero norm).
 - [ ] Keep theorem naming consistent with existing `vcad-math` style (`lemma_*` law surface).
 - [ ] Ensure `./scripts/verify-vcad-math.sh` remains green after each sub-phase.

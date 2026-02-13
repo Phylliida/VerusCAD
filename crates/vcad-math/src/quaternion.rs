@@ -1171,7 +1171,7 @@ impl Quaternion {
 
     pub open spec fn inverse_spec(self) -> Self
         recommends
-            self.norm2_spec().num > 0,
+            !self.norm2_spec().eqv_spec(Scalar::from_int_spec(0)),
     {
         let n = self.norm2_spec();
         let inv_n = Scalar { num: n.denom(), den: (n.num - 1) as nat };
@@ -3746,12 +3746,19 @@ impl Quaternion {
     }
 
     pub proof fn lemma_norm2_positive_if_nonzero(q: Self)
+        requires
+            !q.norm2_spec().eqv_spec(Scalar::from_int_spec(0)),
         ensures
-            q.norm2_spec().num != 0 ==> q.norm2_spec().num > 0,
+            Scalar::from_int_spec(0).lt_spec(q.norm2_spec()),
     {
         let n = q.norm2_spec();
         let z = Scalar::from_int_spec(0);
         Self::lemma_norm2_nonnegative(q);
+        Scalar::lemma_eqv_zero_iff_num_zero(n);
+        assert(n.eqv_spec(z) == (n.num == 0));
+        assert(!n.eqv_spec(z));
+        assert(!(n.num == 0));
+        assert(n.num != 0);
         assert(z.le_spec(n));
         assert(z.le_spec(n) == (z.num * n.denom() <= n.num * z.denom()));
         assert(z.num == 0);
@@ -3760,25 +3767,12 @@ impl Quaternion {
         assert(0 * n.denom() == 0);
         assert(n.num * 1 == n.num);
         assert(0 <= n.num);
-        if n.num != 0 {
-            Scalar::lemma_signum_cases(n);
-            Scalar::lemma_signum_zero_iff(n);
-            assert((n.signum() == 0) == (n.num == 0));
-            assert(n.signum() != 0);
-            if n.signum() == 1 {
-                Scalar::lemma_signum_positive_iff(n);
-                assert((n.signum() == 1) == (n.num > 0));
-                assert(n.num > 0);
-            } else {
-                assert(n.signum() == -1);
-                Scalar::lemma_signum_negative_iff(n);
-                assert((n.signum() == -1) == (n.num < 0));
-                assert(n.num < 0);
-                assert((0 <= n.num) ==> !(n.num < 0)) by (nonlinear_arith);
-                assert(!(n.num < 0));
-                assert(false);
-            }
-        }
+        assert((0 <= n.num && n.num != 0) ==> 0 < n.num) by (nonlinear_arith);
+        assert(0 < n.num);
+        assert(z.lt_spec(n) == (z.num * n.denom() < n.num * z.denom()));
+        assert(z.lt_spec(n) == (0 * n.denom() < n.num * 1));
+        assert(z.lt_spec(n) == (0 < n.num));
+        assert(z.lt_spec(n));
     }
 
     pub proof fn lemma_mul_conjugate_right_real_norm2_components(q: Self)
@@ -4080,7 +4074,7 @@ impl Quaternion {
 
     pub proof fn lemma_inverse_right(q: Self)
         requires
-            q.norm2_spec().num > 0,
+            !q.norm2_spec().eqv_spec(Scalar::from_int_spec(0)),
         ensures
             q.mul_spec(q.inverse_spec()).eqv_spec(Self::one_spec()),
     {
@@ -4094,6 +4088,16 @@ impl Quaternion {
         let rs = r.scale_spec(inv_n);
         let one = Self::one_spec();
         let z = Scalar::from_int_spec(0);
+
+        Self::lemma_norm2_positive_if_nonzero(q);
+        assert(z.lt_spec(n));
+        assert(z.lt_spec(n) == (z.num * n.denom() < n.num * z.denom()));
+        assert(z.num == 0);
+        assert(z.denom() == 1);
+        assert(z.lt_spec(n) == (0 * n.denom() < n.num * 1));
+        assert(0 * n.denom() == 0);
+        assert(n.num * 1 == n.num);
+        assert(0 < n.num);
 
         assert(inv == qc.scale_spec(inv_n));
         assert(lhs == q.mul_spec(qc.scale_spec(inv_n)));
@@ -4133,7 +4137,7 @@ impl Quaternion {
 
     pub proof fn lemma_inverse_left(q: Self)
         requires
-            q.norm2_spec().num > 0,
+            !q.norm2_spec().eqv_spec(Scalar::from_int_spec(0)),
         ensures
             q.inverse_spec().mul_spec(q).eqv_spec(Self::one_spec()),
     {
@@ -4147,6 +4151,16 @@ impl Quaternion {
         let rs = r.scale_spec(inv_n);
         let one = Self::one_spec();
         let z = Scalar::from_int_spec(0);
+
+        Self::lemma_norm2_positive_if_nonzero(q);
+        assert(z.lt_spec(n));
+        assert(z.lt_spec(n) == (z.num * n.denom() < n.num * z.denom()));
+        assert(z.num == 0);
+        assert(z.denom() == 1);
+        assert(z.lt_spec(n) == (0 * n.denom() < n.num * 1));
+        assert(0 * n.denom() == 0);
+        assert(n.num * 1 == n.num);
+        assert(0 < n.num);
 
         assert(inv == qc.scale_spec(inv_n));
         assert(lhs == qc.scale_spec(inv_n).mul_spec(q));

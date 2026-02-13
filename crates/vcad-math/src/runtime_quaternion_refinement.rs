@@ -97,7 +97,7 @@ pub assume_specification[ RuntimeQuaternion::norm2 ](this: &RuntimeQuaternion) -
 
 pub assume_specification[ RuntimeQuaternion::inverse ](this: &RuntimeQuaternion) -> (out: Option<RuntimeQuaternion>)
     ensures
-        out.is_some() == (this@.norm2_spec().num > 0),
+        out.is_some() == !this@.norm2_spec().eqv_spec(Scalar::from_int_spec(0)),
         match out {
             Option::None => true,
             Option::Some(inv) => inv@ == this@.inverse_spec(),
@@ -634,7 +634,7 @@ pub fn runtime_quaternion_inverse_identities(
 ) -> (out: Option<(RuntimeQuaternion, RuntimeQuaternion, RuntimeQuaternion)>)
     ensures
         match out {
-            Option::None => q@.norm2_spec().num <= 0,
+            Option::None => q@.norm2_spec().eqv_spec(Scalar::from_int_spec(0)),
             Option::Some(t) => {
                 &&& t.0@ == q@.inverse_spec()
                 &&& t.1@ == q@.mul_spec(t.0@)
@@ -649,8 +649,8 @@ pub fn runtime_quaternion_inverse_identities(
         Option::None => {
             proof {
                 assert(!inv_opt.is_some());
-                assert(!(q@.norm2_spec().num > 0));
-                assert(q@.norm2_spec().num <= 0);
+                assert(!(!q@.norm2_spec().eqv_spec(Scalar::from_int_spec(0))));
+                assert(q@.norm2_spec().eqv_spec(Scalar::from_int_spec(0)));
             }
             Option::None
         },
@@ -658,6 +658,8 @@ pub fn runtime_quaternion_inverse_identities(
             let right = q.mul(&inv);
             let left = inv.mul(q);
             proof {
+                assert(inv_opt.is_some());
+                assert(!q@.norm2_spec().eqv_spec(Scalar::from_int_spec(0)));
                 assert(inv@ == q@.inverse_spec());
                 Quaternion::lemma_inverse_right(q@);
                 Quaternion::lemma_inverse_left(q@);
