@@ -3,12 +3,13 @@ Goal: remove trusted runtime proof boundaries so `vcad-math` runtime behavior is
 
 ## Baseline Snapshot (2026-02-13)
 - [x] Full crate verifies: `./scripts/verify-vcad-math.sh`.
-- [ ] Trusted runtime assumptions remain (`assume_specification[...]`).
-- [ ] Trust surface reduced to zero runtime assumptions in `crates/vcad-math/src`.
-- [x] Current assumption count: `9`.
+- [x] No runtime assumptions remain (`assume_specification[...]`).
+- [x] Trust surface reduced to zero runtime assumptions in `crates/vcad-math/src`.
+- [x] Current assumption count: `0`.
+- [ ] Residual trusted `external_body` bridges are eliminated.
 
 ## Assumption Inventory (Current)
-- [ ] `src/runtime_scalar_refinement.rs` (`9`)
+- [x] `src/runtime_scalar_refinement.rs` (`0`)
 - [x] `src/runtime_vec2_refinement.rs` (`0`)
 - [x] `src/runtime_point2_refinement.rs` (`0`)
 - [x] `src/runtime_orientation_refinement.rs` (`0`)
@@ -25,8 +26,8 @@ Goal: remove trusted runtime proof boundaries so `vcad-math` runtime behavior is
 - [x] 3) Vec/Point 3D runtime boundary.
 - [x] 4) Vec/Point 4D runtime boundary.
 - [x] 5) Quaternion runtime boundary.
-- [ ] 6) Scalar runtime boundary (likely hardest due backend/runtime representation).
-- [ ] 7) Final de-trusting + verification gate.
+- [x] 6) Scalar runtime boundary (likely hardest due backend/runtime representation).
+- [ ] 7) Final de-trusting + verification gate (remove remaining `external_body` items).
 
 ## A. runtime_orientation_refinement.rs (0)
 - [x] `runtime_orientation::orient2d`
@@ -109,18 +110,23 @@ Goal: remove trusted runtime proof boundaries so `vcad-math` runtime behavior is
 - [x] `RuntimeQuaternion::inverse`
 - [x] `RuntimeQuaternion::rotate_vec3`
 
-## J. runtime_scalar_refinement.rs (9)
-- [ ] `RuntimeScalar::from_int`
-- [ ] `RuntimeScalar::from_fraction`
-- [ ] `RuntimeScalar::add`
-- [ ] `RuntimeScalar::sub`
-- [ ] `RuntimeScalar::mul`
-- [ ] `RuntimeScalar::recip`
-- [ ] `RuntimeScalar::neg`
-- [ ] `RuntimeScalar::normalize`
-- [ ] `RuntimeScalar::signum_i8`
+## J. runtime_scalar_refinement.rs (0 assumptions)
+- [x] `RuntimeScalar::from_int`
+- [x] `RuntimeScalar::from_fraction` (minimal ghost contract)
+- [x] `RuntimeScalar::add`
+- [x] `RuntimeScalar::sub`
+- [x] `RuntimeScalar::mul`
+- [ ] `RuntimeScalar::recip` (still `external_body`)
+- [x] `RuntimeScalar::neg`
+- [x] `RuntimeScalar::normalize`
+- [ ] `RuntimeScalar::signum_i8` (still `external_body`)
+
+## Residual Trusted Items
+- [ ] `src/runtime_scalar.rs`: `RuntimeScalar::recip` (`#[verifier::external_body]`)
+- [ ] `src/runtime_scalar.rs`: `RuntimeScalar::signum_i8` (`#[verifier::external_body]`)
+- [ ] `src/runtime_scalar_refinement.rs`: `ExRugInteger` (`#[verifier::external_body]`)
 
 ## Completion Gates
-- [ ] `rg -n "assume_specification\\[" crates/vcad-math/src` returns no matches.
-- [ ] `./scripts/verify-vcad-math.sh` succeeds after each milestone.
-- [ ] Proof quality pass: no unnecessary trigger warnings in newly touched modules.
+- [x] `rg -n "assume_specification\\[" crates/vcad-math/src` returns no matches.
+- [x] `./scripts/verify-vcad-math.sh` succeeds after each milestone.
+- [x] Proof quality pass: no unnecessary trigger warnings in newly touched modules.

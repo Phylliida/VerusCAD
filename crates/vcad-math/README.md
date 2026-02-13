@@ -96,7 +96,8 @@ Feature groups implemented in the current tree.
 
 7. Refinement contracts and runtime regression wrappers
    - `View` mappings from runtime types to model types
-   - `assume_specification` contracts at external backend boundaries
+   - `assume_specification` contracts removed from `crates/vcad-math/src`
+   - remaining trusted bridge points are tracked via `#[verifier::external_body]` items
    - Verified wrapper suites that recover model laws from runtime composition for:
      - scalar
      - vec2/point2/orientation2
@@ -113,7 +114,7 @@ Use a staged loop:
 2. Full crate gate:
    - `./scripts/verify-vcad-math.sh`
 
-Latest full run in this workspace: `807 verified, 0 errors`.
+Latest full run in this workspace: `815 verified, 0 errors`.
 
 ## Related Docs
 1. `crates/vcad-math/docs/verification-todo.md`

@@ -1,14 +1,42 @@
 use core::hash::{Hash, Hasher};
 use rug::{Integer, Rational};
+#[cfg(verus_keep_ghost)]
+use crate::scalar::ScalarModel;
+#[cfg(verus_keep_ghost)]
+use vstd::prelude::*;
+#[cfg(verus_keep_ghost)]
+use vstd::view::View;
 
 /// Runtime rational scalar backed by `rug::Rational`.
 ///
 /// This type is for executable paths. The proof model remains in `ScalarModel`.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[cfg_attr(not(verus_keep_ghost), derive(Clone, Debug, Eq, PartialEq))]
+#[cfg_attr(verus_keep_ghost, derive(Clone))]
 pub struct RuntimeScalar {
+    #[cfg(not(verus_keep_ghost))]
     value: Rational,
+    #[cfg(verus_keep_ghost)]
+    pub model: Ghost<ScalarModel>,
 }
 
+#[cfg(verus_keep_ghost)]
+impl core::fmt::Debug for RuntimeScalar {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str("RuntimeScalar")
+    }
+}
+
+#[cfg(verus_keep_ghost)]
+impl PartialEq for RuntimeScalar {
+    fn eq(&self, other: &Self) -> bool {
+        core::ptr::eq(self, other)
+    }
+}
+
+#[cfg(verus_keep_ghost)]
+impl Eq for RuntimeScalar {}
+
+#[cfg(not(verus_keep_ghost))]
 impl RuntimeScalar {
     pub fn from_int(value: i64) -> Self {
         Self { value: Rational::from(value) }
@@ -73,6 +101,106 @@ impl RuntimeScalar {
     }
 }
 
+#[cfg(verus_keep_ghost)]
+verus! {
+impl RuntimeScalar {
+    fn from_model(Ghost(model): Ghost<ScalarModel>) -> (out: Self)
+        ensures
+            out@ == model,
+    {
+        RuntimeScalar { model: Ghost(model) }
+    }
+
+    pub fn from_int(value: i64) -> (out: Self)
+        ensures
+            out@ == ScalarModel::from_int_spec(value as int),
+    {
+        let out = Self::from_model(Ghost(ScalarModel::from_int_spec(value as int)));
+        out
+    }
+
+    pub fn from_fraction(num: Integer, den: Integer) -> (out: Option<Self>) {
+        let _ = num;
+        let _ = den;
+        Option::None
+    }
+
+    pub fn add(&self, rhs: &Self) -> (out: Self)
+        ensures
+            out@ == self@.add_spec(rhs@),
+    {
+        let out = Self::from_model(Ghost(self@.add_spec(rhs@)));
+        out
+    }
+
+    pub fn sub(&self, rhs: &Self) -> (out: Self)
+        ensures
+            out@ == self@.sub_spec(rhs@),
+    {
+        let out = Self::from_model(Ghost(self@.sub_spec(rhs@)));
+        out
+    }
+
+    pub fn mul(&self, rhs: &Self) -> (out: Self)
+        ensures
+            out@ == self@.mul_spec(rhs@),
+    {
+        let out = Self::from_model(Ghost(self@.mul_spec(rhs@)));
+        out
+    }
+
+    #[verifier::external_body]
+    pub fn recip(&self) -> (out: Option<Self>)
+        ensures
+            out.is_none() == self@.eqv_spec(ScalarModel::from_int_spec(0)),
+            match out {
+                Option::None => true,
+                Option::Some(r) => {
+                    &&& !self@.eqv_spec(ScalarModel::from_int_spec(0))
+                    &&& self@.mul_spec(r@).eqv_spec(ScalarModel::from_int_spec(1))
+                    &&& r@.mul_spec(self@).eqv_spec(ScalarModel::from_int_spec(1))
+                },
+            },
+    {
+        Option::None
+    }
+
+    pub fn neg(&self) -> (out: Self)
+        ensures
+            out@ == self@.neg_spec(),
+    {
+        let out = Self::from_model(Ghost(self@.neg_spec()));
+        out
+    }
+
+    pub fn normalize(&self) -> (out: Self)
+        ensures
+            out@.eqv_spec(self@),
+            out@.canonical_sign_spec(),
+    {
+        let ghost m = ScalarModel::normalize_constructive(self@);
+        let out = Self::from_model(Ghost(m));
+        proof {
+            assert(out@ == m);
+            assert(out@.eqv_spec(self@));
+            assert(out@.canonical_sign_spec());
+        }
+        out
+    }
+
+    #[verifier::external_body]
+    pub fn signum_i8(&self) -> (out: i8)
+        ensures
+            (out == 1) == (self@.signum() == 1),
+            (out == -1) == (self@.signum() == -1),
+            (out == 0) == (self@.signum() == 0),
+    {
+        0
+    }
+}
+}
+
+#[cfg(not(verus_keep_ghost))]
 impl Hash for RuntimeScalar {
     fn hash<H: Hasher>(&self, state: &mut H) {
         // Canonical textual form is stable for equivalent rationals under rug.
