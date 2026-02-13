@@ -149,8 +149,9 @@ Status check against requested geometry primitives/helper-expression milestones.
   - no matrix type, direct polynomial expression
   - plus bridge lemma showing equivalence with `orient3d_spec`.
 - [x] 2D antisymmetry under swaps is covered at orient-level (full permutation/sign table).
-- [ ] Extend 3D antisymmetry from current `c<->d` swap to any transposition (or provide full permutation/sign table).
-  - progress: explicit signed-volume helper now has `c<->d` antisymmetry via `lemma_signed_volume3_poly_swap_cd_eqv_neg`; full transposition/permutation surface is still pending.
-- [ ] Introduce explicit linear-dependence predicates for edge vectors and prove:
+- [x] Extend 3D antisymmetry from current `c<->d` swap to any transposition (or provide full permutation/sign table).
+  - implemented: orient-level transposition antisymmetry is now covered for all six swaps (`ab/ac/ad/bc/bd/cd`) via `lemma_orient3d_swap_*_eqv_neg`, and the explicit signed-volume helper has matching coverage via `lemma_signed_volume3_poly_swap_*_eqv_neg`.
+- [x] Introduce explicit linear-dependence predicates for edge vectors and prove:
   - signed-area `== 0` iff edge vectors are linearly dependent (collinear characterization)
   - signed-volume `== 0` iff edge vectors are linearly dependent (coplanar characterization)
+  - implemented: `vec2_linear_dependent_spec` / `edge_vectors2_linear_dependent_spec` + `lemma_signed_area2_zero_iff_edge_vectors_linear_dependent` and `lemma_is_collinear_iff_edge_vectors_linear_dependent`; `vec3_linear_dependent_spec` / `edge_vectors3_linear_dependent_spec` + `lemma_signed_volume3_zero_iff_edge_vectors_linear_dependent` and `lemma_is_coplanar_iff_edge_vectors_linear_dependent`.

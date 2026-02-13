@@ -29,6 +29,14 @@ pub open spec fn signed_volume3_poly_spec(a: Point3, b: Point3, c: Point3, d: Po
     signed_volume3_det_expanded_spec(b.sub_spec(a), c.sub_spec(a), d.sub_spec(a))
 }
 
+pub open spec fn vec3_linear_dependent_spec(u: Vec3, v: Vec3, w: Vec3) -> bool {
+    u.dot_spec(v.cross_spec(w)).eqv_spec(Scalar::from_int_spec(0))
+}
+
+pub open spec fn edge_vectors3_linear_dependent_spec(a: Point3, b: Point3, c: Point3, d: Point3) -> bool {
+    vec3_linear_dependent_spec(b.sub_spec(a), c.sub_spec(a), d.sub_spec(a))
+}
+
 pub open spec fn is_positive(a: Point3, b: Point3, c: Point3, d: Point3) -> bool {
     orient3d_spec(a, b, c, d).signum() == 1
 }
@@ -109,6 +117,49 @@ pub proof fn lemma_signed_volume3_poly_matches_orient3d(a: Point3, b: Point3, c:
     assert(signed_volume3_det_expanded_spec(ba, ca, da) == ba.dot_spec(ca.cross_spec(da)));
     assert(orient3d_spec(a, b, c, d) == ba.dot_spec(ca.cross_spec(da)));
     assert(signed_volume3_poly_spec(a, b, c, d) == orient3d_spec(a, b, c, d));
+}
+
+pub proof fn lemma_orient3d_zero_iff_edge_vectors_linear_dependent(a: Point3, b: Point3, c: Point3, d: Point3)
+    ensures
+        orient3d_spec(a, b, c, d).eqv_spec(Scalar::from_int_spec(0)) == edge_vectors3_linear_dependent_spec(a, b, c, d),
+{
+    let z = Scalar::from_int_spec(0);
+    assert(orient3d_spec(a, b, c, d) == b.sub_spec(a).dot_spec(c.sub_spec(a).cross_spec(d.sub_spec(a))));
+    assert(
+        edge_vectors3_linear_dependent_spec(a, b, c, d)
+            == b.sub_spec(a).dot_spec(c.sub_spec(a).cross_spec(d.sub_spec(a))).eqv_spec(z)
+    );
+    assert(orient3d_spec(a, b, c, d).eqv_spec(z) == edge_vectors3_linear_dependent_spec(a, b, c, d));
+}
+
+pub proof fn lemma_signed_volume3_zero_iff_edge_vectors_linear_dependent(a: Point3, b: Point3, c: Point3, d: Point3)
+    ensures
+        signed_volume3_poly_spec(a, b, c, d).eqv_spec(Scalar::from_int_spec(0))
+            == edge_vectors3_linear_dependent_spec(a, b, c, d),
+{
+    let z = Scalar::from_int_spec(0);
+    lemma_signed_volume3_poly_matches_orient3d(a, b, c, d);
+    assert(signed_volume3_poly_spec(a, b, c, d) == orient3d_spec(a, b, c, d));
+    lemma_orient3d_zero_iff_edge_vectors_linear_dependent(a, b, c, d);
+    assert(orient3d_spec(a, b, c, d).eqv_spec(z) == edge_vectors3_linear_dependent_spec(a, b, c, d));
+    assert(signed_volume3_poly_spec(a, b, c, d).eqv_spec(z) == edge_vectors3_linear_dependent_spec(a, b, c, d));
+}
+
+pub proof fn lemma_is_coplanar_iff_edge_vectors_linear_dependent(a: Point3, b: Point3, c: Point3, d: Point3)
+    ensures
+        is_coplanar(a, b, c, d) == edge_vectors3_linear_dependent_spec(a, b, c, d),
+{
+    let det = orient3d_spec(a, b, c, d);
+    let z = Scalar::from_int_spec(0);
+    Scalar::lemma_signum_zero_iff(det);
+    Scalar::lemma_eqv_zero_iff_num_zero(det);
+    assert((det.signum() == 0) == (det.num == 0));
+    assert(det.eqv_spec(z) == (det.num == 0));
+    assert((det.signum() == 0) == det.eqv_spec(z));
+    assert(is_coplanar(a, b, c, d) == (det.signum() == 0));
+    lemma_orient3d_zero_iff_edge_vectors_linear_dependent(a, b, c, d);
+    assert(det.eqv_spec(z) == edge_vectors3_linear_dependent_spec(a, b, c, d));
+    assert(is_coplanar(a, b, c, d) == edge_vectors3_linear_dependent_spec(a, b, c, d));
 }
 
 pub proof fn lemma_orientation3_classes_exhaustive(a: Point3, b: Point3, c: Point3, d: Point3)
@@ -307,6 +358,280 @@ pub proof fn lemma_orient3d_swap_cd_eqv_neg(a: Point3, b: Point3, c: Point3, d: 
     assert(os.eqv_spec(o.neg_spec()));
 }
 
+pub proof fn lemma_orient3d_cycle_bcd_eqv(a: Point3, b: Point3, c: Point3, d: Point3)
+    ensures
+        orient3d_spec(a, b, c, d).eqv_spec(orient3d_spec(a, c, d, b)),
+        orient3d_spec(a, b, c, d).eqv_spec(orient3d_spec(a, d, b, c)),
+{
+    let ba = b.sub_spec(a);
+    let ca = c.sub_spec(a);
+    let da = d.sub_spec(a);
+    let o0 = orient3d_spec(a, b, c, d);
+    let o1 = orient3d_spec(a, c, d, b);
+    let o2 = orient3d_spec(a, d, b, c);
+
+    Vec3::lemma_dot_cross_cyclic(ba, ca, da);
+    assert(o0 == ba.dot_spec(ca.cross_spec(da)));
+    assert(o1 == ca.dot_spec(da.cross_spec(ba)));
+    assert(o0.eqv_spec(o1));
+
+    Vec3::lemma_dot_cross_cyclic(ca, da, ba);
+    assert(o2 == da.dot_spec(ba.cross_spec(ca)));
+    assert(o1.eqv_spec(o2));
+
+    Scalar::lemma_eqv_transitive(o0, o1, o2);
+    assert(o0.eqv_spec(o2));
+}
+
+pub proof fn lemma_orient3d_swap_bc_eqv_neg(a: Point3, b: Point3, c: Point3, d: Point3)
+    ensures
+        orient3d_spec(a, c, b, d).eqv_spec(orient3d_spec(a, b, c, d).neg_spec()),
+{
+    let ba = b.sub_spec(a);
+    let ca = c.sub_spec(a);
+    let da = d.sub_spec(a);
+    let o = orient3d_spec(a, b, c, d);
+    let os = orient3d_spec(a, c, b, d);
+
+    Vec3::lemma_dot_cross_swap_first_two(ca, ba, da);
+    assert(os == ca.dot_spec(ba.cross_spec(da)));
+    assert(o == ba.dot_spec(ca.cross_spec(da)));
+    assert(os.eqv_spec(ba.dot_spec(ca.cross_spec(da)).neg_spec()));
+    assert(os.eqv_spec(o.neg_spec()));
+}
+
+proof fn lemma_dot_cross_shift_by_neg_base(u: Vec3, v: Vec3, w: Vec3)
+    ensures
+        u.neg_spec().dot_spec(v.add_spec(u.neg_spec()).cross_spec(w.add_spec(u.neg_spec())))
+            .eqv_spec(u.dot_spec(v.cross_spec(w)).neg_spec()),
+{
+    let z = Scalar::from_int_spec(0);
+    let un = u.neg_spec();
+    let vcw = v.cross_spec(w);
+    let c_shift = v.add_spec(un).cross_spec(w.add_spec(un));
+    let c0 = v.add_spec(un).cross_spec(w);
+    let c1 = v.add_spec(un).cross_spec(un);
+    let d0 = un.dot_spec(c0);
+    let d1 = un.dot_spec(c1);
+    let t00 = un.dot_spec(vcw);
+    let t01 = un.dot_spec(un.cross_spec(w));
+    let t10 = un.dot_spec(v.cross_spec(un));
+    let t11 = un.dot_spec(un.cross_spec(un));
+
+    Vec3::lemma_cross_linear_right(v.add_spec(un), w, un);
+    assert(c_shift.eqv_spec(c0.add_spec(c1)));
+    Vec3::lemma_dot_eqv_congruence(un, un, c_shift, c0.add_spec(c1));
+    assert(un.dot_spec(c_shift).eqv_spec(un.dot_spec(c0.add_spec(c1))));
+    Vec3::lemma_dot_linear_right(un, c0, c1);
+    assert(un.dot_spec(c0.add_spec(c1)).eqv_spec(d0.add_spec(d1)));
+    Scalar::lemma_eqv_transitive(un.dot_spec(c_shift), un.dot_spec(c0.add_spec(c1)), d0.add_spec(d1));
+    assert(un.dot_spec(c_shift).eqv_spec(d0.add_spec(d1)));
+
+    Vec3::lemma_cross_linear_left(v, un, w);
+    assert(c0.eqv_spec(vcw.add_spec(un.cross_spec(w))));
+    Vec3::lemma_dot_eqv_congruence(un, un, c0, vcw.add_spec(un.cross_spec(w)));
+    assert(d0.eqv_spec(un.dot_spec(vcw.add_spec(un.cross_spec(w)))));
+    Vec3::lemma_dot_linear_right(un, vcw, un.cross_spec(w));
+    assert(un.dot_spec(vcw.add_spec(un.cross_spec(w))).eqv_spec(t00.add_spec(t01)));
+    Scalar::lemma_eqv_transitive(d0, un.dot_spec(vcw.add_spec(un.cross_spec(w))), t00.add_spec(t01));
+    assert(d0.eqv_spec(t00.add_spec(t01)));
+
+    Vec3::lemma_dot_cross_left_orthogonal(un, w);
+    assert(t01.eqv_spec(z));
+    Scalar::lemma_eqv_add_congruence(t00, t00, t01, z);
+    assert(t00.add_spec(t01).eqv_spec(t00.add_spec(z)));
+    Scalar::lemma_add_zero_identity(t00);
+    assert(t00.add_spec(z) == t00);
+    Scalar::lemma_eqv_reflexive(t00);
+    Scalar::lemma_eqv_transitive(t00.add_spec(t01), t00.add_spec(z), t00);
+    assert(t00.add_spec(t01).eqv_spec(t00));
+    Scalar::lemma_eqv_transitive(d0, t00.add_spec(t01), t00);
+    assert(d0.eqv_spec(t00));
+
+    Vec3::lemma_cross_linear_left(v, un, un);
+    assert(c1.eqv_spec(v.cross_spec(un).add_spec(un.cross_spec(un))));
+    Vec3::lemma_dot_eqv_congruence(un, un, c1, v.cross_spec(un).add_spec(un.cross_spec(un)));
+    assert(d1.eqv_spec(un.dot_spec(v.cross_spec(un).add_spec(un.cross_spec(un)))));
+    Vec3::lemma_dot_linear_right(un, v.cross_spec(un), un.cross_spec(un));
+    assert(un.dot_spec(v.cross_spec(un).add_spec(un.cross_spec(un))).eqv_spec(t10.add_spec(t11)));
+    Scalar::lemma_eqv_transitive(d1, un.dot_spec(v.cross_spec(un).add_spec(un.cross_spec(un))), t10.add_spec(t11));
+    assert(d1.eqv_spec(t10.add_spec(t11)));
+
+    Vec3::lemma_dot_cross_cyclic(un, v, un);
+    assert(t10.eqv_spec(v.dot_spec(un.cross_spec(un))));
+    Vec3::lemma_cross_self_zero(un);
+    assert(un.cross_spec(un).eqv_spec(Vec3::zero_spec()));
+    Vec3::lemma_dot_eqv_congruence(v, v, un.cross_spec(un), Vec3::zero_spec());
+    assert(v.dot_spec(un.cross_spec(un)).eqv_spec(v.dot_spec(Vec3::zero_spec())));
+    Vec3::lemma_dot_right_zero(v);
+    assert(v.dot_spec(Vec3::zero_spec()).eqv_spec(z));
+    Scalar::lemma_eqv_transitive(t10, v.dot_spec(un.cross_spec(un)), v.dot_spec(Vec3::zero_spec()));
+    Scalar::lemma_eqv_transitive(t10, v.dot_spec(Vec3::zero_spec()), z);
+    assert(t10.eqv_spec(z));
+
+    Vec3::lemma_dot_cross_left_orthogonal(un, un);
+    assert(t11.eqv_spec(z));
+    Scalar::lemma_eqv_add_congruence(t10, z, t11, z);
+    assert(t10.add_spec(t11).eqv_spec(z.add_spec(z)));
+    Scalar::lemma_add_zero_identity(z);
+    assert(z.add_spec(z) == z);
+    Scalar::lemma_eqv_reflexive(z);
+    Scalar::lemma_eqv_transitive(t10.add_spec(t11), z.add_spec(z), z);
+    assert(t10.add_spec(t11).eqv_spec(z));
+    Scalar::lemma_eqv_transitive(d1, t10.add_spec(t11), z);
+    assert(d1.eqv_spec(z));
+
+    Scalar::lemma_eqv_add_congruence(d0, t00, d1, z);
+    assert(d0.add_spec(d1).eqv_spec(t00.add_spec(z)));
+    Scalar::lemma_add_zero_identity(t00);
+    assert(t00.add_spec(z) == t00);
+    Scalar::lemma_eqv_reflexive(t00);
+    Scalar::lemma_eqv_transitive(d0.add_spec(d1), t00.add_spec(z), t00);
+    assert(d0.add_spec(d1).eqv_spec(t00));
+    Scalar::lemma_eqv_transitive(un.dot_spec(c_shift), d0.add_spec(d1), t00);
+    assert(un.dot_spec(c_shift).eqv_spec(t00));
+
+    Vec3::lemma_dot_symmetric(un, vcw);
+    assert(t00.eqv_spec(vcw.dot_spec(un)));
+    Vec3::lemma_dot_neg_right(vcw, u);
+    assert(vcw.dot_spec(un).eqv_spec(vcw.dot_spec(u).neg_spec()));
+    Vec3::lemma_dot_symmetric(vcw, u);
+    assert(vcw.dot_spec(u).eqv_spec(u.dot_spec(vcw)));
+    Scalar::lemma_eqv_neg_congruence(vcw.dot_spec(u), u.dot_spec(vcw));
+    assert(vcw.dot_spec(u).neg_spec().eqv_spec(u.dot_spec(vcw).neg_spec()));
+    Scalar::lemma_eqv_transitive(t00, vcw.dot_spec(un), vcw.dot_spec(u).neg_spec());
+    Scalar::lemma_eqv_transitive(t00, vcw.dot_spec(u).neg_spec(), u.dot_spec(vcw).neg_spec());
+    assert(t00.eqv_spec(u.dot_spec(vcw).neg_spec()));
+    Scalar::lemma_eqv_transitive(un.dot_spec(c_shift), t00, u.dot_spec(vcw).neg_spec());
+    assert(un.dot_spec(c_shift).eqv_spec(u.dot_spec(vcw).neg_spec()));
+}
+
+pub proof fn lemma_orient3d_swap_ab_eqv_neg(a: Point3, b: Point3, c: Point3, d: Point3)
+    ensures
+        orient3d_spec(b, a, c, d).eqv_spec(orient3d_spec(a, b, c, d).neg_spec()),
+{
+    let ba = b.sub_spec(a);
+    let ca = c.sub_spec(a);
+    let da = d.sub_spec(a);
+    let ab = a.sub_spec(b);
+    let cb = c.sub_spec(b);
+    let db = d.sub_spec(b);
+
+    Point3::lemma_sub_antisymmetric(a, b);
+    assert(ab == ba.neg_spec());
+
+    Point3::lemma_sub_chain_eqv(c, a, b);
+    assert(cb.x.eqv_spec(ca.add_spec(ab).x));
+    assert(cb.y.eqv_spec(ca.add_spec(ab).y));
+    assert(cb.z.eqv_spec(ca.add_spec(ab).z));
+    Vec3::lemma_eqv_from_components(cb, ca.add_spec(ab));
+    assert(cb.eqv_spec(ca.add_spec(ab)));
+
+    Point3::lemma_sub_chain_eqv(d, a, b);
+    assert(db.x.eqv_spec(da.add_spec(ab).x));
+    assert(db.y.eqv_spec(da.add_spec(ab).y));
+    assert(db.z.eqv_spec(da.add_spec(ab).z));
+    Vec3::lemma_eqv_from_components(db, da.add_spec(ab));
+    assert(db.eqv_spec(da.add_spec(ab)));
+
+    assert(ca.add_spec(ab) == ca.add_spec(ba.neg_spec()));
+    assert(da.add_spec(ab) == da.add_spec(ba.neg_spec()));
+    Vec3::lemma_cross_eqv_congruence(cb, ca.add_spec(ba.neg_spec()), db, da.add_spec(ba.neg_spec()));
+    assert(cb.cross_spec(db).eqv_spec(ca.add_spec(ba.neg_spec()).cross_spec(da.add_spec(ba.neg_spec()))));
+
+    Vec3::lemma_dot_eqv_congruence(ab, ba.neg_spec(), cb.cross_spec(db), ca.add_spec(ba.neg_spec()).cross_spec(da.add_spec(ba.neg_spec())));
+    assert(ab.dot_spec(cb.cross_spec(db)).eqv_spec(
+        ba.neg_spec().dot_spec(ca.add_spec(ba.neg_spec()).cross_spec(da.add_spec(ba.neg_spec())))
+    ));
+
+    lemma_dot_cross_shift_by_neg_base(ba, ca, da);
+    assert(
+        ba.neg_spec().dot_spec(ca.add_spec(ba.neg_spec()).cross_spec(da.add_spec(ba.neg_spec())))
+            .eqv_spec(ba.dot_spec(ca.cross_spec(da)).neg_spec())
+    );
+
+    assert(orient3d_spec(b, a, c, d) == ab.dot_spec(cb.cross_spec(db)));
+    assert(orient3d_spec(a, b, c, d) == ba.dot_spec(ca.cross_spec(da)));
+    Scalar::lemma_eqv_transitive(
+        orient3d_spec(b, a, c, d),
+        ba.neg_spec().dot_spec(ca.add_spec(ba.neg_spec()).cross_spec(da.add_spec(ba.neg_spec()))),
+        orient3d_spec(a, b, c, d).neg_spec(),
+    );
+    assert(orient3d_spec(b, a, c, d).eqv_spec(orient3d_spec(a, b, c, d).neg_spec()));
+}
+
+pub proof fn lemma_orient3d_swap_ac_eqv_neg(a: Point3, b: Point3, c: Point3, d: Point3)
+    ensures
+        orient3d_spec(c, b, a, d).eqv_spec(orient3d_spec(a, b, c, d).neg_spec()),
+{
+    let o = orient3d_spec(a, b, c, d);
+    let oc = orient3d_spec(a, c, d, b);
+    let osc = orient3d_spec(c, a, d, b);
+    let os = orient3d_spec(c, b, a, d);
+
+    lemma_orient3d_cycle_bcd_eqv(a, b, c, d);
+    assert(o.eqv_spec(oc));
+
+    lemma_orient3d_swap_ab_eqv_neg(a, c, d, b);
+    assert(osc.eqv_spec(oc.neg_spec()));
+    Scalar::lemma_eqv_neg_congruence(oc, o);
+    assert(oc.neg_spec().eqv_spec(o.neg_spec()));
+    Scalar::lemma_eqv_transitive(osc, oc.neg_spec(), o.neg_spec());
+    assert(osc.eqv_spec(o.neg_spec()));
+
+    lemma_orient3d_cycle_bcd_eqv(c, b, a, d);
+    assert(os.eqv_spec(osc));
+    Scalar::lemma_eqv_transitive(os, osc, o.neg_spec());
+    assert(os.eqv_spec(o.neg_spec()));
+}
+
+pub proof fn lemma_orient3d_swap_ad_eqv_neg(a: Point3, b: Point3, c: Point3, d: Point3)
+    ensures
+        orient3d_spec(d, b, c, a).eqv_spec(orient3d_spec(a, b, c, d).neg_spec()),
+{
+    let o = orient3d_spec(a, b, c, d);
+    let oc = orient3d_spec(a, d, b, c);
+    let os1 = orient3d_spec(d, a, b, c);
+    let os = orient3d_spec(d, b, c, a);
+
+    lemma_orient3d_cycle_bcd_eqv(a, b, c, d);
+    assert(o.eqv_spec(oc));
+
+    lemma_orient3d_swap_ab_eqv_neg(a, d, b, c);
+    assert(os1.eqv_spec(oc.neg_spec()));
+    Scalar::lemma_eqv_neg_congruence(oc, o);
+    assert(oc.neg_spec().eqv_spec(o.neg_spec()));
+    Scalar::lemma_eqv_transitive(os1, oc.neg_spec(), o.neg_spec());
+    assert(os1.eqv_spec(o.neg_spec()));
+
+    lemma_orient3d_cycle_bcd_eqv(d, b, c, a);
+    assert(os.eqv_spec(os1));
+    Scalar::lemma_eqv_transitive(os, os1, o.neg_spec());
+    assert(os.eqv_spec(o.neg_spec()));
+}
+
+pub proof fn lemma_orient3d_swap_bd_eqv_neg(a: Point3, b: Point3, c: Point3, d: Point3)
+    ensures
+        orient3d_spec(a, d, c, b).eqv_spec(orient3d_spec(a, b, c, d).neg_spec()),
+{
+    let ba = b.sub_spec(a);
+    let ca = c.sub_spec(a);
+    let da = d.sub_spec(a);
+    let o = orient3d_spec(a, b, c, d);
+    let os = orient3d_spec(a, d, c, b);
+    let mid = orient3d_spec(a, c, b, d);
+
+    Vec3::lemma_dot_cross_cyclic(da, ca, ba);
+    assert(os == da.dot_spec(ca.cross_spec(ba)));
+    assert(mid == ca.dot_spec(ba.cross_spec(da)));
+    assert(os.eqv_spec(mid));
+
+    lemma_orient3d_swap_bc_eqv_neg(a, b, c, d);
+    assert(mid.eqv_spec(o.neg_spec()));
+    Scalar::lemma_eqv_transitive(os, mid, o.neg_spec());
+    assert(os.eqv_spec(o.neg_spec()));
+}
+
 pub proof fn lemma_signed_volume3_poly_swap_cd_eqv_neg(a: Point3, b: Point3, c: Point3, d: Point3)
     ensures
         signed_volume3_poly_spec(a, b, d, c).eqv_spec(signed_volume3_poly_spec(a, b, c, d).neg_spec()),
@@ -318,6 +643,71 @@ pub proof fn lemma_signed_volume3_poly_swap_cd_eqv_neg(a: Point3, b: Point3, c: 
     assert(signed_volume3_poly_spec(a, b, c, d) == orient3d_spec(a, b, c, d));
     assert(orient3d_spec(a, b, d, c).eqv_spec(orient3d_spec(a, b, c, d).neg_spec()));
     assert(signed_volume3_poly_spec(a, b, d, c).eqv_spec(signed_volume3_poly_spec(a, b, c, d).neg_spec()));
+}
+
+pub proof fn lemma_signed_volume3_poly_swap_bc_eqv_neg(a: Point3, b: Point3, c: Point3, d: Point3)
+    ensures
+        signed_volume3_poly_spec(a, c, b, d).eqv_spec(signed_volume3_poly_spec(a, b, c, d).neg_spec()),
+{
+    lemma_signed_volume3_poly_matches_orient3d(a, c, b, d);
+    lemma_signed_volume3_poly_matches_orient3d(a, b, c, d);
+    lemma_orient3d_swap_bc_eqv_neg(a, b, c, d);
+    assert(signed_volume3_poly_spec(a, c, b, d) == orient3d_spec(a, c, b, d));
+    assert(signed_volume3_poly_spec(a, b, c, d) == orient3d_spec(a, b, c, d));
+    assert(orient3d_spec(a, c, b, d).eqv_spec(orient3d_spec(a, b, c, d).neg_spec()));
+    assert(signed_volume3_poly_spec(a, c, b, d).eqv_spec(signed_volume3_poly_spec(a, b, c, d).neg_spec()));
+}
+
+pub proof fn lemma_signed_volume3_poly_swap_bd_eqv_neg(a: Point3, b: Point3, c: Point3, d: Point3)
+    ensures
+        signed_volume3_poly_spec(a, d, c, b).eqv_spec(signed_volume3_poly_spec(a, b, c, d).neg_spec()),
+{
+    lemma_signed_volume3_poly_matches_orient3d(a, d, c, b);
+    lemma_signed_volume3_poly_matches_orient3d(a, b, c, d);
+    lemma_orient3d_swap_bd_eqv_neg(a, b, c, d);
+    assert(signed_volume3_poly_spec(a, d, c, b) == orient3d_spec(a, d, c, b));
+    assert(signed_volume3_poly_spec(a, b, c, d) == orient3d_spec(a, b, c, d));
+    assert(orient3d_spec(a, d, c, b).eqv_spec(orient3d_spec(a, b, c, d).neg_spec()));
+    assert(signed_volume3_poly_spec(a, d, c, b).eqv_spec(signed_volume3_poly_spec(a, b, c, d).neg_spec()));
+}
+
+pub proof fn lemma_signed_volume3_poly_swap_ab_eqv_neg(a: Point3, b: Point3, c: Point3, d: Point3)
+    ensures
+        signed_volume3_poly_spec(b, a, c, d).eqv_spec(signed_volume3_poly_spec(a, b, c, d).neg_spec()),
+{
+    lemma_signed_volume3_poly_matches_orient3d(b, a, c, d);
+    lemma_signed_volume3_poly_matches_orient3d(a, b, c, d);
+    lemma_orient3d_swap_ab_eqv_neg(a, b, c, d);
+    assert(signed_volume3_poly_spec(b, a, c, d) == orient3d_spec(b, a, c, d));
+    assert(signed_volume3_poly_spec(a, b, c, d) == orient3d_spec(a, b, c, d));
+    assert(orient3d_spec(b, a, c, d).eqv_spec(orient3d_spec(a, b, c, d).neg_spec()));
+    assert(signed_volume3_poly_spec(b, a, c, d).eqv_spec(signed_volume3_poly_spec(a, b, c, d).neg_spec()));
+}
+
+pub proof fn lemma_signed_volume3_poly_swap_ac_eqv_neg(a: Point3, b: Point3, c: Point3, d: Point3)
+    ensures
+        signed_volume3_poly_spec(c, b, a, d).eqv_spec(signed_volume3_poly_spec(a, b, c, d).neg_spec()),
+{
+    lemma_signed_volume3_poly_matches_orient3d(c, b, a, d);
+    lemma_signed_volume3_poly_matches_orient3d(a, b, c, d);
+    lemma_orient3d_swap_ac_eqv_neg(a, b, c, d);
+    assert(signed_volume3_poly_spec(c, b, a, d) == orient3d_spec(c, b, a, d));
+    assert(signed_volume3_poly_spec(a, b, c, d) == orient3d_spec(a, b, c, d));
+    assert(orient3d_spec(c, b, a, d).eqv_spec(orient3d_spec(a, b, c, d).neg_spec()));
+    assert(signed_volume3_poly_spec(c, b, a, d).eqv_spec(signed_volume3_poly_spec(a, b, c, d).neg_spec()));
+}
+
+pub proof fn lemma_signed_volume3_poly_swap_ad_eqv_neg(a: Point3, b: Point3, c: Point3, d: Point3)
+    ensures
+        signed_volume3_poly_spec(d, b, c, a).eqv_spec(signed_volume3_poly_spec(a, b, c, d).neg_spec()),
+{
+    lemma_signed_volume3_poly_matches_orient3d(d, b, c, a);
+    lemma_signed_volume3_poly_matches_orient3d(a, b, c, d);
+    lemma_orient3d_swap_ad_eqv_neg(a, b, c, d);
+    assert(signed_volume3_poly_spec(d, b, c, a) == orient3d_spec(d, b, c, a));
+    assert(signed_volume3_poly_spec(a, b, c, d) == orient3d_spec(a, b, c, d));
+    assert(orient3d_spec(d, b, c, a).eqv_spec(orient3d_spec(a, b, c, d).neg_spec()));
+    assert(signed_volume3_poly_spec(d, b, c, a).eqv_spec(signed_volume3_poly_spec(a, b, c, d).neg_spec()));
 }
 
 pub proof fn lemma_orientation3_spec_swap_cd(a: Point3, b: Point3, c: Point3, d: Point3)

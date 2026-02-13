@@ -22,6 +22,14 @@ pub open spec fn signed_area2_poly_spec(a: Point2, b: Point2, c: Point2) -> Scal
     )
 }
 
+pub open spec fn vec2_linear_dependent_spec(u: Vec2, v: Vec2) -> bool {
+    u.cross_spec(v).eqv_spec(Scalar::from_int_spec(0))
+}
+
+pub open spec fn edge_vectors2_linear_dependent_spec(a: Point2, b: Point2, c: Point2) -> bool {
+    vec2_linear_dependent_spec(b.sub_spec(a), c.sub_spec(a))
+}
+
 pub open spec fn is_ccw(a: Point2, b: Point2, c: Point2) -> bool {
     orient2d_spec(a, b, c).signum() == 1
 }
@@ -90,6 +98,45 @@ pub proof fn lemma_signed_area2_poly_matches_orient2d(a: Point2, b: Point2, c: P
         ));
     assert(orient2d_spec(a, b, c) == ba.cross_spec(ca));
     assert(orient2d_spec(a, b, c) == signed_area2_poly_spec(a, b, c));
+}
+
+pub proof fn lemma_orient2d_zero_iff_edge_vectors_linear_dependent(a: Point2, b: Point2, c: Point2)
+    ensures
+        orient2d_spec(a, b, c).eqv_spec(Scalar::from_int_spec(0)) == edge_vectors2_linear_dependent_spec(a, b, c),
+{
+    let z = Scalar::from_int_spec(0);
+    assert(orient2d_spec(a, b, c) == b.sub_spec(a).cross_spec(c.sub_spec(a)));
+    assert(edge_vectors2_linear_dependent_spec(a, b, c) == b.sub_spec(a).cross_spec(c.sub_spec(a)).eqv_spec(z));
+    assert(orient2d_spec(a, b, c).eqv_spec(z) == edge_vectors2_linear_dependent_spec(a, b, c));
+}
+
+pub proof fn lemma_signed_area2_zero_iff_edge_vectors_linear_dependent(a: Point2, b: Point2, c: Point2)
+    ensures
+        signed_area2_poly_spec(a, b, c).eqv_spec(Scalar::from_int_spec(0)) == edge_vectors2_linear_dependent_spec(a, b, c),
+{
+    let z = Scalar::from_int_spec(0);
+    lemma_signed_area2_poly_matches_orient2d(a, b, c);
+    assert(signed_area2_poly_spec(a, b, c) == orient2d_spec(a, b, c));
+    lemma_orient2d_zero_iff_edge_vectors_linear_dependent(a, b, c);
+    assert(orient2d_spec(a, b, c).eqv_spec(z) == edge_vectors2_linear_dependent_spec(a, b, c));
+    assert(signed_area2_poly_spec(a, b, c).eqv_spec(z) == edge_vectors2_linear_dependent_spec(a, b, c));
+}
+
+pub proof fn lemma_is_collinear_iff_edge_vectors_linear_dependent(a: Point2, b: Point2, c: Point2)
+    ensures
+        is_collinear(a, b, c) == edge_vectors2_linear_dependent_spec(a, b, c),
+{
+    let d = orient2d_spec(a, b, c);
+    let z = Scalar::from_int_spec(0);
+    Scalar::lemma_signum_zero_iff(d);
+    Scalar::lemma_eqv_zero_iff_num_zero(d);
+    assert((d.signum() == 0) == (d.num == 0));
+    assert(d.eqv_spec(z) == (d.num == 0));
+    assert((d.signum() == 0) == d.eqv_spec(z));
+    assert(is_collinear(a, b, c) == (d.signum() == 0));
+    lemma_orient2d_zero_iff_edge_vectors_linear_dependent(a, b, c);
+    assert(d.eqv_spec(z) == edge_vectors2_linear_dependent_spec(a, b, c));
+    assert(is_collinear(a, b, c) == edge_vectors2_linear_dependent_spec(a, b, c));
 }
 
 pub proof fn lemma_is_ccw_iff_positive(a: Point2, b: Point2, c: Point2)

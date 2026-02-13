@@ -1788,6 +1788,120 @@ impl Vec3 {
         Scalar::lemma_eqv_transitive(lhs, dd, z);
         assert(lhs.eqv_spec(z));
     }
+
+    pub proof fn lemma_dot_cross_swap_first_two(u: Self, v: Self, w: Self)
+        ensures
+            u.dot_spec(v.cross_spec(w)).eqv_spec(v.dot_spec(u.cross_spec(w)).neg_spec()),
+    {
+        let z = Scalar::from_int_spec(0);
+        let uv = u.dot_spec(v.cross_spec(w));
+        let vu = v.dot_spec(u.cross_spec(w));
+        let uu = u.dot_spec(u.cross_spec(w));
+        let vv = v.dot_spec(v.cross_spec(w));
+
+        let s = u.add_spec(v);
+        let sc = s.cross_spec(w);
+        let ss = s.dot_spec(sc);
+        let sc_split = u.cross_spec(w).add_spec(v.cross_spec(w));
+        let s_left = s.dot_spec(u.cross_spec(w));
+        let s_right = s.dot_spec(v.cross_spec(w));
+        let e_left = uu.add_spec(vu);
+        let e_right = uv.add_spec(vv);
+        let e_sum = e_left.add_spec(e_right);
+
+        Self::lemma_dot_cross_left_orthogonal(s, w);
+        Self::lemma_dot_cross_left_orthogonal(u, w);
+        Self::lemma_dot_cross_left_orthogonal(v, w);
+        assert(ss.eqv_spec(z));
+        assert(uu.eqv_spec(z));
+        assert(vv.eqv_spec(z));
+
+        Self::lemma_cross_linear_left(u, v, w);
+        assert(sc.eqv_spec(sc_split));
+        Self::lemma_dot_eqv_congruence(s, s, sc, sc_split);
+        assert(ss.eqv_spec(s.dot_spec(sc_split)));
+
+        Self::lemma_dot_linear_right(s, u.cross_spec(w), v.cross_spec(w));
+        assert(s.dot_spec(sc_split).eqv_spec(s_left.add_spec(s_right)));
+
+        Self::lemma_dot_linear_left(u, v, u.cross_spec(w));
+        Self::lemma_dot_linear_left(u, v, v.cross_spec(w));
+        assert(s_left.eqv_spec(e_left));
+        assert(s_right.eqv_spec(e_right));
+
+        Scalar::lemma_eqv_add_congruence(s_left, e_left, s_right, e_right);
+        assert(s_left.add_spec(s_right).eqv_spec(e_sum));
+
+        Scalar::lemma_eqv_transitive(ss, s.dot_spec(sc_split), s_left.add_spec(s_right));
+        Scalar::lemma_eqv_transitive(ss, s_left.add_spec(s_right), e_sum);
+        assert(ss.eqv_spec(e_sum));
+
+        Scalar::lemma_eqv_add_congruence(uu, z, vu, vu);
+        assert(e_left.eqv_spec(z.add_spec(vu)));
+        Scalar::lemma_eqv_add_congruence(uv, uv, vv, z);
+        assert(e_right.eqv_spec(uv.add_spec(z)));
+        Scalar::lemma_add_zero_identity(vu);
+        Scalar::lemma_add_zero_identity(uv);
+        assert(z.add_spec(vu) == vu);
+        assert(uv.add_spec(z) == uv);
+        Scalar::lemma_eqv_reflexive(vu);
+        Scalar::lemma_eqv_reflexive(uv);
+        Scalar::lemma_eqv_transitive(e_left, z.add_spec(vu), vu);
+        Scalar::lemma_eqv_transitive(e_right, uv.add_spec(z), uv);
+        Scalar::lemma_eqv_add_congruence(e_left, vu, e_right, uv);
+        assert(e_sum.eqv_spec(vu.add_spec(uv)));
+
+        Scalar::lemma_add_commutative(vu, uv);
+        assert(vu.add_spec(uv).eqv_spec(uv.add_spec(vu)));
+        Scalar::lemma_eqv_transitive(e_sum, vu.add_spec(uv), uv.add_spec(vu));
+        assert(e_sum.eqv_spec(uv.add_spec(vu)));
+
+        Scalar::lemma_eqv_transitive(e_sum, ss, z);
+        assert(e_sum.eqv_spec(z));
+        Scalar::lemma_eqv_transitive(uv.add_spec(vu), e_sum, z);
+        assert(uv.add_spec(vu).eqv_spec(z));
+
+        Scalar::lemma_add_inverse(vu);
+        assert(vu.neg_spec().add_spec(vu).eqv_spec(z));
+        Scalar::lemma_eqv_symmetric(vu.neg_spec().add_spec(vu), z);
+        assert(z.eqv_spec(vu.neg_spec().add_spec(vu)));
+        Scalar::lemma_eqv_transitive(uv.add_spec(vu), z, vu.neg_spec().add_spec(vu));
+        assert(uv.add_spec(vu).eqv_spec(vu.neg_spec().add_spec(vu)));
+
+        Scalar::lemma_add_right_cancel_strong(uv, vu.neg_spec(), vu);
+        assert(uv.eqv_spec(vu.neg_spec()));
+    }
+
+    pub proof fn lemma_dot_cross_cyclic(u: Self, v: Self, w: Self)
+        ensures
+            u.dot_spec(v.cross_spec(w)).eqv_spec(v.dot_spec(w.cross_spec(u))),
+    {
+        let uvw = u.dot_spec(v.cross_spec(w));
+        let x = v.dot_spec(u.cross_spec(w));
+        let vwu = v.dot_spec(w.cross_spec(u));
+
+        Self::lemma_dot_cross_swap_first_two(u, v, w);
+        assert(uvw.eqv_spec(x.neg_spec()));
+
+        Self::lemma_cross_antisymmetric(u, w);
+        assert(u.cross_spec(w) == w.cross_spec(u).neg_spec());
+        Self::lemma_dot_eqv_congruence(v, v, u.cross_spec(w), w.cross_spec(u).neg_spec());
+        assert(x.eqv_spec(v.dot_spec(w.cross_spec(u).neg_spec())));
+        Vec3::lemma_dot_neg_right(v, w.cross_spec(u));
+        assert(v.dot_spec(w.cross_spec(u).neg_spec()).eqv_spec(vwu.neg_spec()));
+        Scalar::lemma_eqv_transitive(x, v.dot_spec(w.cross_spec(u).neg_spec()), vwu.neg_spec());
+        assert(x.eqv_spec(vwu.neg_spec()));
+
+        Scalar::lemma_eqv_neg_congruence(x, vwu.neg_spec());
+        assert(x.neg_spec().eqv_spec(vwu.neg_spec().neg_spec()));
+        Scalar::lemma_neg_involution(vwu);
+        assert(vwu.neg_spec().neg_spec() == vwu);
+        Scalar::lemma_eqv_reflexive(vwu);
+        Scalar::lemma_eqv_transitive(x.neg_spec(), vwu.neg_spec().neg_spec(), vwu);
+        assert(x.neg_spec().eqv_spec(vwu));
+        Scalar::lemma_eqv_transitive(uvw, x.neg_spec(), vwu);
+        assert(uvw.eqv_spec(vwu));
+    }
 }
 
 } // verus!
