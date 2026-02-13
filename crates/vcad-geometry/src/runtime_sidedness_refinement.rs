@@ -1,7 +1,7 @@
 #![cfg(feature = "verus-proofs")]
 
 use crate::sidedness;
-use vcad_math::orientation3::{orientation3_spec, Orientation3};
+use vcad_math::orientation3::{orient3d_spec, orientation3_spec, Orientation3};
 use vcad_math::point3::Point3;
 use vcad_math::runtime_point3::RuntimePoint3;
 use vcad_math::runtime_scalar::RuntimeScalar;
@@ -130,7 +130,7 @@ pub assume_specification[ sidedness::point_above_plane ](
     c: &RuntimePoint3,
 ) -> (out: bool)
     ensures
-        out == (orientation3_spec(a@, b@, c@, p@) is Positive),
+        out == (orient3d_spec(a@, b@, c@, p@).signum() == 1),
 ;
 
 pub assume_specification[ sidedness::point_below_plane ](
@@ -140,7 +140,7 @@ pub assume_specification[ sidedness::point_below_plane ](
     c: &RuntimePoint3,
 ) -> (out: bool)
     ensures
-        out == (orientation3_spec(a@, b@, c@, p@) is Negative),
+        out == (orient3d_spec(a@, b@, c@, p@).signum() == -1),
 ;
 
 pub assume_specification[ sidedness::point_on_plane ](
@@ -150,7 +150,7 @@ pub assume_specification[ sidedness::point_on_plane ](
     c: &RuntimePoint3,
 ) -> (out: bool)
     ensures
-        out == (orientation3_spec(a@, b@, c@, p@) is Coplanar),
+        out == (orient3d_spec(a@, b@, c@, p@).signum() == 0),
 ;
 
 pub assume_specification[ sidedness::segment_crosses_plane_strict ](
@@ -417,6 +417,16 @@ pub fn runtime_plane_side_partition(
     let below = sidedness::point_below_plane(p, a, b, c);
     let on = sidedness::point_on_plane(p, a, b, c);
     proof {
+        vcad_math::orientation3::lemma_orientation3_spec_matches_predicates(a@, b@, c@, p@);
+        assert(above == (orient3d_spec(a@, b@, c@, p@).signum() == 1));
+        assert(below == (orient3d_spec(a@, b@, c@, p@).signum() == -1));
+        assert(on == (orient3d_spec(a@, b@, c@, p@).signum() == 0));
+        assert((orientation3_spec(a@, b@, c@, p@) is Positive) == (orient3d_spec(a@, b@, c@, p@).signum() == 1));
+        assert((orientation3_spec(a@, b@, c@, p@) is Negative) == (orient3d_spec(a@, b@, c@, p@).signum() == -1));
+        assert((orientation3_spec(a@, b@, c@, p@) is Coplanar) == (orient3d_spec(a@, b@, c@, p@).signum() == 0));
+        assert(above == (orientation3_spec(a@, b@, c@, p@) is Positive));
+        assert(below == (orientation3_spec(a@, b@, c@, p@) is Negative));
+        assert(on == (orientation3_spec(a@, b@, c@, p@) is Coplanar));
         vcad_math::orientation3::lemma_orientation3_spec_exclusive(a@, b@, c@, p@);
     }
     (above, below, on)
@@ -438,18 +448,12 @@ pub fn runtime_orient3d_positive_iff_point_above_noncollinear(
 {
     let out = sidedness::point_above_plane(d, a, b, c);
     proof {
+        let det = vcad_math::orientation3::orient3d_spec(a@, b@, c@, d@);
         lemma_orient3d_positive_iff_positive_side_noncollinear(a@, b@, c@, d@);
-        assert(out == (orientation3_spec(a@, b@, c@, d@) is Positive));
-        lemma_scalar_gt_zero_iff_signum_one(vcad_math::orientation3::orient3d_spec(a@, b@, c@, d@));
-        assert(
-            Scalar::from_int_spec(0).lt_spec(vcad_math::orientation3::orient3d_spec(a@, b@, c@, d@))
-                == (orientation3_spec(a@, b@, c@, d@) is Positive)
-        );
-        assert(base_plane_noncollinear3_spec(a@, b@, c@));
-        assert(
-            point_on_positive_side_of_plane_spec(a@, b@, c@, d@)
-                == Scalar::from_int_spec(0).lt_spec(vcad_math::orientation3::orient3d_spec(a@, b@, c@, d@))
-        );
+        assert(out == (det.signum() == 1));
+        lemma_scalar_gt_zero_iff_signum_one(det);
+        assert(out == Scalar::from_int_spec(0).lt_spec(det));
+        assert(point_on_positive_side_of_plane_spec(a@, b@, c@, d@) == Scalar::from_int_spec(0).lt_spec(det));
         assert(out == point_on_positive_side_of_plane_spec(a@, b@, c@, d@));
     }
     out
@@ -516,6 +520,14 @@ pub fn runtime_segment_crossing_implies_not_on_plane_endpoints(
     let d_on = sidedness::point_on_plane(d, a, b, c);
     let e_on = sidedness::point_on_plane(e, a, b, c);
     proof {
+        vcad_math::orientation3::lemma_orientation3_spec_matches_predicates(a@, b@, c@, d@);
+        vcad_math::orientation3::lemma_orientation3_spec_matches_predicates(a@, b@, c@, e@);
+        assert(d_on == (orient3d_spec(a@, b@, c@, d@).signum() == 0));
+        assert(e_on == (orient3d_spec(a@, b@, c@, e@).signum() == 0));
+        assert((orientation3_spec(a@, b@, c@, d@) is Coplanar) == (orient3d_spec(a@, b@, c@, d@).signum() == 0));
+        assert((orientation3_spec(a@, b@, c@, e@) is Coplanar) == (orient3d_spec(a@, b@, c@, e@).signum() == 0));
+        assert(d_on == (orientation3_spec(a@, b@, c@, d@) is Coplanar));
+        assert(e_on == (orientation3_spec(a@, b@, c@, e@) is Coplanar));
         if crosses {
             assert((orientation3_spec(a@, b@, c@, d@) is Positive) || (orientation3_spec(a@, b@, c@, d@) is Negative));
             assert((orientation3_spec(a@, b@, c@, e@) is Positive) || (orientation3_spec(a@, b@, c@, e@) is Negative));

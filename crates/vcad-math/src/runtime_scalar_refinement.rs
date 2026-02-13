@@ -96,6 +96,13 @@ pub assume_specification[ RuntimeScalar::normalize ](this: &RuntimeScalar) -> (o
         out@.canonical_sign_spec(),
 ;
 
+pub assume_specification[ RuntimeScalar::signum_i8 ](this: &RuntimeScalar) -> (out: i8)
+    ensures
+        (out == 1) == (this@.signum() == 1),
+        (out == -1) == (this@.signum() == -1),
+        (out == 0) == (this@.signum() == 0),
+;
+
 /// Regression wrapper: verifies runtime `add` contracts are strong enough
 /// to recover commutativity in model space.
 #[allow(dead_code)]
