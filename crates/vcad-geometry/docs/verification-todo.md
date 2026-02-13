@@ -49,3 +49,11 @@ File: `src/runtime_convex_polygon_refinement.rs`
 - [x] Full crate verification succeeds:
   - `cargo verus verify --manifest-path crates/vcad-geometry/Cargo.toml -p vcad-geometry --features verus-proofs -- --triggers-mode silent`
 - [x] Keep/extend runtime unit tests for representative geometric cases while proofs are being migrated.
+
+## F. Proof Quality Hardening
+- [x] Remove termination waivers from `vcad-geometry` proof code:
+  - `rg -n "exec_allows_no_decreases_clause" crates/vcad-geometry/src` returns no matches.
+  - Loop termination is justified with explicit `decreases` clauses in convex polygon proofs.
+- [x] Reduce witness-proof duplication and make quantifier instantiation explicit:
+  - Reuse helper lemmas for existential witness construction in sidedness refinements.
+  - Keep explicit `#[trigger]` terms on witness point-parameter predicates.

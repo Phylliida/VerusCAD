@@ -134,6 +134,36 @@ proof fn lemma_sidedness_segment_plane_point_at_parameter_spec_equiv(p: Point3, 
 {
 }
 
+proof fn lemma_local_segment_plane_point_witness_from_sidedness(
+    p: Point3,
+    t: Scalar,
+    a: Point3,
+    b: Point3,
+    c: Point3,
+    d: Point3,
+    e: Point3,
+)
+    requires
+        sidedness::segment_plane_t_valid_spec(t, a, b, c, d, e),
+        sidedness::segment_plane_point_at_parameter_spec(p, t, d, e),
+    ensures
+        exists|tt: Scalar| {
+            &&& segment_plane_t_valid_spec(tt, a, b, c, d, e)
+            &&& #[trigger] segment_plane_point_at_parameter_spec(p, tt, d, e)
+        },
+{
+    lemma_sidedness_segment_plane_t_valid_spec_equiv(t, a, b, c, d, e);
+    lemma_sidedness_segment_plane_point_at_parameter_spec_equiv(p, t, d, e);
+    assert(segment_plane_t_valid_spec(t, a, b, c, d, e));
+    assert(segment_plane_point_at_parameter_spec(p, t, d, e));
+    assert(exists|tt: Scalar| {
+        &&& segment_plane_t_valid_spec(tt, a, b, c, d, e)
+        &&& #[trigger] segment_plane_point_at_parameter_spec(p, tt, d, e)
+    }) by {
+        let tt = t;
+    }
+}
+
 proof fn lemma_signum_one_implies_num_positive(s: Scalar)
     requires
         s.signum() == 1,
@@ -530,7 +560,7 @@ pub fn runtime_crossing_implies_intersection_point_has_parameter(
             Option::None => true,
             Option::Some(p) => exists|t: Scalar| {
                 &&& segment_plane_t_valid_spec(t, a@, b@, c@, d@, e@)
-                &&& segment_plane_point_at_parameter_spec(p@, t, d@, e@)
+                &&& #[trigger] segment_plane_point_at_parameter_spec(p@, t, d@, e@)
             },
         },
 {
@@ -543,22 +573,13 @@ pub fn runtime_crossing_implies_intersection_point_has_parameter(
             Option::Some(p) => {
                 assert(exists|t: Scalar| {
                     &&& sidedness::segment_plane_t_valid_spec(t, a@, b@, c@, d@, e@)
-                    &&& sidedness::segment_plane_point_at_parameter_spec(p@, t, d@, e@)
+                    &&& #[trigger] sidedness::segment_plane_point_at_parameter_spec(p@, t, d@, e@)
                 });
                 let t = choose|t: Scalar| {
                     &&& sidedness::segment_plane_t_valid_spec(t, a@, b@, c@, d@, e@)
-                    &&& sidedness::segment_plane_point_at_parameter_spec(p@, t, d@, e@)
+                    &&& #[trigger] sidedness::segment_plane_point_at_parameter_spec(p@, t, d@, e@)
                 };
-                lemma_sidedness_segment_plane_t_valid_spec_equiv(t, a@, b@, c@, d@, e@);
-                lemma_sidedness_segment_plane_point_at_parameter_spec_equiv(p@, t, d@, e@);
-                assert(segment_plane_t_valid_spec(t, a@, b@, c@, d@, e@));
-                assert(segment_plane_point_at_parameter_spec(p@, t, d@, e@));
-                assert(exists|tt: Scalar| {
-                    &&& segment_plane_t_valid_spec(tt, a@, b@, c@, d@, e@)
-                    &&& segment_plane_point_at_parameter_spec(p@, tt, d@, e@)
-                }) by {
-                    let tt = t;
-                }
+                lemma_local_segment_plane_point_witness_from_sidedness(p@, t, a@, b@, c@, d@, e@);
             }
         }
     }

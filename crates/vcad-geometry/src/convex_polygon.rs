@@ -213,7 +213,6 @@ pub fn point_in_convex_polygon_2d(p: &RuntimePoint2, polygon: &[RuntimePoint2]) 
 
 #[cfg(verus_keep_ghost)]
 verus! {
-#[verifier::exec_allows_no_decreases_clause]
 pub fn point_in_convex_polygon_2d(p: &RuntimePoint2, polygon: &[RuntimePoint2]) -> (out: bool)
     ensures
         out == point_in_convex_polygon_boundary_inclusive_spec(p@, polygon@),
@@ -234,6 +233,7 @@ pub fn point_in_convex_polygon_2d(p: &RuntimePoint2, polygon: &[RuntimePoint2]) 
             0 <= i <= n,
             saw_pos == polygon_prefix_has_positive_edge_sign_spec(p@, polygon@, i as int),
             saw_neg == polygon_prefix_has_negative_edge_sign_spec(p@, polygon@, i as int),
+        decreases n as int - i as int,
     {
         let a = &polygon[i];
         let next = if i + 1 < n { i + 1 } else { 0 };
@@ -331,7 +331,6 @@ pub fn point_strictly_in_convex_polygon_2d(p: &RuntimePoint2, polygon: &[Runtime
 
 #[cfg(verus_keep_ghost)]
 verus! {
-#[verifier::exec_allows_no_decreases_clause]
 pub fn point_strictly_in_convex_polygon_2d(p: &RuntimePoint2, polygon: &[RuntimePoint2]) -> (out: bool)
     ensures
         out == point_strictly_in_convex_polygon_edge_sign_consistent_spec(p@, polygon@),
@@ -354,6 +353,7 @@ pub fn point_strictly_in_convex_polygon_2d(p: &RuntimePoint2, polygon: &[Runtime
             saw_pos == polygon_prefix_has_positive_edge_sign_spec(p@, polygon@, i as int),
             saw_neg == polygon_prefix_has_negative_edge_sign_spec(p@, polygon@, i as int),
             saw_zero == polygon_prefix_has_zero_edge_sign_spec(p@, polygon@, i as int),
+        decreases n as int - i as int,
     {
         let a = &polygon[i];
         let next = if i + 1 < n { i + 1 } else { 0 };

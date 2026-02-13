@@ -327,6 +327,32 @@ pub open spec fn segment_plane_point_at_parameter_spec(p: Point3, t: Scalar, d: 
     p.eqv_spec(d.add_vec_spec(e.sub_spec(d).scale_spec(t)))
 }
 
+proof fn lemma_segment_plane_point_witness_from_t(
+    p: Point3,
+    t: Scalar,
+    a: Point3,
+    b: Point3,
+    c: Point3,
+    d: Point3,
+    e: Point3,
+)
+    requires
+        segment_plane_t_valid_spec(t, a, b, c, d, e),
+        segment_plane_point_at_parameter_spec(p, t, d, e),
+    ensures
+        exists|tt: Scalar| {
+            &&& segment_plane_t_valid_spec(tt, a, b, c, d, e)
+            &&& #[trigger] segment_plane_point_at_parameter_spec(p, tt, d, e)
+        },
+{
+    assert(exists|tt: Scalar| {
+        &&& segment_plane_t_valid_spec(tt, a, b, c, d, e)
+        &&& #[trigger] segment_plane_point_at_parameter_spec(p, tt, d, e)
+    }) by {
+        let tt = t;
+    }
+}
+
 pub fn segment_plane_intersection_point_strict(
     d: &RuntimePoint3,
     e: &RuntimePoint3,
@@ -341,7 +367,7 @@ pub fn segment_plane_intersection_point_strict(
             Option::None => true,
             Option::Some(p) => exists|t: Scalar| {
                 &&& segment_plane_t_valid_spec(t, a@, b@, c@, d@, e@)
-                &&& segment_plane_point_at_parameter_spec(p@, t, d@, e@)
+                &&& #[trigger] segment_plane_point_at_parameter_spec(p@, t, d@, e@)
             },
         },
 {
@@ -372,18 +398,13 @@ pub fn segment_plane_intersection_point_strict(
                 assert(p@ == d@.add_vec_spec(step@));
                 assert(p@ == d@.add_vec_spec(e@.sub_spec(d@).scale_spec(t@)));
                 assert(segment_plane_point_at_parameter_spec(p@, t@, d@, e@));
-                assert(exists|tt: Scalar| {
-                    &&& segment_plane_t_valid_spec(tt, a@, b@, c@, d@, e@)
-                    &&& segment_plane_point_at_parameter_spec(p@, tt, d@, e@)
-                }) by {
-                    let tt = t@;
-                }
+                lemma_segment_plane_point_witness_from_t(p@, t@, a@, b@, c@, d@, e@);
                 assert(out == Option::Some(p));
                 assert(match out {
                     Option::None => true,
                     Option::Some(pp) => exists|tt: Scalar| {
                         &&& segment_plane_t_valid_spec(tt, a@, b@, c@, d@, e@)
-                        &&& segment_plane_point_at_parameter_spec(pp@, tt, d@, e@)
+                        &&& #[trigger] segment_plane_point_at_parameter_spec(pp@, tt, d@, e@)
                     },
                 }) by {
                     match out {
@@ -392,12 +413,7 @@ pub fn segment_plane_intersection_point_strict(
                         }
                         Option::Some(pp) => {
                             assert(pp == p);
-                            assert(exists|tt: Scalar| {
-                                &&& segment_plane_t_valid_spec(tt, a@, b@, c@, d@, e@)
-                                &&& segment_plane_point_at_parameter_spec(pp@, tt, d@, e@)
-                            }) by {
-                                let tt = t@;
-                            }
+                            lemma_segment_plane_point_witness_from_t(pp@, t@, a@, b@, c@, d@, e@);
                         }
                     }
                 }

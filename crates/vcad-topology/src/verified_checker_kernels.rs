@@ -122,6 +122,106 @@ pub open spec fn kernel_edge_exactly_two_half_edges_total_spec(m: &KernelMesh) -
     kernel_index_bounds_spec(m) && kernel_edge_exactly_two_half_edges_spec(m)
 }
 
+pub open spec fn kernel_next_or_self_spec(m: &KernelMesh, h: int) -> int {
+    let hcnt = kernel_half_edge_count_spec(m);
+    if 0 <= h < hcnt {
+        let n = m.half_edges@[h].next as int;
+        if 0 <= n < hcnt {
+            n
+        } else {
+            h
+        }
+    } else {
+        h
+    }
+}
+
+pub open spec fn kernel_vertex_ring_succ_or_self_spec(m: &KernelMesh, h: int) -> int {
+    let hcnt = kernel_half_edge_count_spec(m);
+    if 0 <= h < hcnt {
+        let t = m.half_edges@[h].twin as int;
+        if 0 <= t < hcnt {
+            let n = m.half_edges@[t].next as int;
+            if 0 <= n < hcnt {
+                n
+            } else {
+                h
+            }
+        } else {
+            h
+        }
+    } else {
+        h
+    }
+}
+
+pub open spec fn kernel_next_iter_spec(m: &KernelMesh, h: int, n: nat) -> int
+    decreases n
+{
+    if n == 0 {
+        h
+    } else {
+        kernel_next_or_self_spec(m, kernel_next_iter_spec(m, h, (n - 1) as nat))
+    }
+}
+
+pub open spec fn kernel_vertex_ring_iter_spec(m: &KernelMesh, h: int, n: nat) -> int
+    decreases n
+{
+    if n == 0 {
+        h
+    } else {
+        kernel_vertex_ring_succ_or_self_spec(m, kernel_vertex_ring_iter_spec(m, h, (n - 1) as nat))
+    }
+}
+
+pub open spec fn kernel_face_representative_cycle_witness_spec(m: &KernelMesh, f: int, k: int) -> bool {
+    let hcnt = kernel_half_edge_count_spec(m);
+    let start = m.face_half_edges@[f] as int;
+    &&& 3 <= k <= hcnt
+    &&& kernel_next_iter_spec(m, start, k as nat) == start
+    &&& forall|i: int|
+        0 <= i < k ==> {
+            let h = kernel_next_iter_spec(m, start, i as nat);
+            &&& 0 <= h < hcnt
+            &&& #[trigger] m.half_edges@[kernel_next_iter_spec(m, start, i as nat)].face as int == f
+        }
+}
+
+pub open spec fn kernel_face_representative_cycles_spec(m: &KernelMesh) -> bool {
+    forall|f: int|
+        #![trigger m.face_half_edges@[f]]
+        0 <= f < kernel_face_count_spec(m) ==> exists|k: int| kernel_face_representative_cycle_witness_spec(m, f, k)
+}
+
+pub open spec fn kernel_face_representative_cycles_total_spec(m: &KernelMesh) -> bool {
+    kernel_index_bounds_spec(m) && kernel_face_representative_cycles_spec(m)
+}
+
+pub open spec fn kernel_vertex_representative_cycle_witness_spec(m: &KernelMesh, v: int, k: int) -> bool {
+    let hcnt = kernel_half_edge_count_spec(m);
+    let start = m.vertex_half_edges@[v] as int;
+    &&& 1 <= k <= hcnt
+    &&& kernel_vertex_ring_iter_spec(m, start, k as nat) == start
+    &&& forall|i: int|
+        0 <= i < k ==> {
+            let h = kernel_vertex_ring_iter_spec(m, start, i as nat);
+            &&& 0 <= h < hcnt
+            &&& #[trigger] m.half_edges@[kernel_vertex_ring_iter_spec(m, start, i as nat)].vertex as int == v
+        }
+}
+
+pub open spec fn kernel_vertex_manifold_single_cycle_basic_spec(m: &KernelMesh) -> bool {
+    forall|v: int|
+        #![trigger m.vertex_half_edges@[v]]
+        0 <= v < kernel_vertex_count_spec(m)
+            ==> exists|k: int| kernel_vertex_representative_cycle_witness_spec(m, v, k)
+}
+
+pub open spec fn kernel_vertex_manifold_single_cycle_total_spec(m: &KernelMesh) -> bool {
+    kernel_index_bounds_spec(m) && kernel_vertex_manifold_single_cycle_basic_spec(m)
+}
+
 pub open spec fn kernel_next_prev_inverse_at_spec(m: &KernelMesh, h: int) -> bool {
     let hcnt = kernel_half_edge_count_spec(m);
     if 0 <= h < hcnt {
@@ -435,6 +535,297 @@ pub fn kernel_check_no_degenerate_edges(m: &KernelMesh) -> (out: bool)
     proof {
         assert(bounds_ok);
         assert(kernel_no_degenerate_edges_total_spec(m) == (kernel_index_bounds_spec(m) && kernel_no_degenerate_edges_spec(m)));
+    }
+    ok
+}
+
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(unused_variables, unused_assignments)]
+pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
+    ensures
+        out ==> kernel_face_representative_cycles_total_spec(m),
+{
+    let bounds_ok = kernel_check_index_bounds(m);
+    if !bounds_ok {
+        return false;
+    }
+
+    let hcnt = m.half_edges.len();
+    let fcnt = m.face_half_edges.len();
+
+    let mut ok = true;
+    let mut f: usize = 0;
+    while f < fcnt
+        invariant
+            kernel_index_bounds_spec(m),
+            hcnt == m.half_edges.len(),
+            fcnt == m.face_half_edges.len(),
+            0 <= f <= fcnt,
+            ok ==> forall|fp: int|
+                0 <= fp < f as int ==> exists|k: int| kernel_face_representative_cycle_witness_spec(m, fp, k),
+    {
+        let start = m.face_half_edges[f];
+        let mut local_seen: Vec<bool> = vec![false; hcnt];
+        let mut h = start;
+        let mut steps: usize = 0;
+        let mut face_ok = true;
+
+        while steps < hcnt
+            invariant
+                kernel_index_bounds_spec(m),
+                hcnt == m.half_edges.len(),
+                0 <= steps <= hcnt,
+                local_seen@.len() == hcnt as int,
+                0 <= h < hcnt,
+                h as int == kernel_next_iter_spec(m, start as int, steps as nat),
+                face_ok ==> forall|i: int|
+                    0 <= i < steps as int ==> {
+                        let hi = kernel_next_iter_spec(m, start as int, i as nat);
+                        &&& 0 <= hi < hcnt as int
+                        &&& #[trigger] m.half_edges@[kernel_next_iter_spec(m, start as int, i as nat)].face as int == f as int
+                    },
+        {
+            if steps > 0 && h == start {
+                break;
+            }
+            if local_seen[h] {
+                face_ok = false;
+                break;
+            }
+            local_seen[h] = true;
+            if m.half_edges[h].face != f {
+                face_ok = false;
+                break;
+            }
+
+            let h_old = h;
+            let steps_old = steps;
+            h = m.half_edges[h].next;
+            steps += 1;
+
+            proof {
+                assert(h_old as int == kernel_next_iter_spec(m, start as int, steps_old as nat));
+                assert(h as int == m.half_edges@[h_old as int].next as int);
+                assert(h as int == kernel_next_or_self_spec(m, kernel_next_iter_spec(m, start as int, steps_old as nat)));
+                assert(h as int == kernel_next_iter_spec(m, start as int, steps as nat));
+                if face_ok {
+                    assert(forall|i: int|
+                        0 <= i < steps as int ==> {
+                            let hi = kernel_next_iter_spec(m, start as int, i as nat);
+                            &&& 0 <= hi < hcnt as int
+                            &&& m.half_edges@[kernel_next_iter_spec(m, start as int, i as nat)].face as int == f as int
+                        }) by {
+                        if i < steps_old as int {
+                            assert(0 <= i < steps_old as int);
+                        } else {
+                            assert(i == steps_old as int);
+                            assert(kernel_next_iter_spec(m, start as int, i as nat) == h_old as int);
+                            assert(0 <= h_old as int && (h_old as int) < (hcnt as int));
+                            assert(m.half_edges@[h_old as int].face as int == f as int);
+                        }
+                    }
+                }
+            }
+        }
+
+        if face_ok {
+            if !(steps > 0 && h == start) {
+                face_ok = false;
+            }
+            if steps < 3 {
+                face_ok = false;
+            }
+        }
+
+        if ok && face_ok {
+            proof {
+                assert(exists|k: int| kernel_face_representative_cycle_witness_spec(m, f as int, k)) by {
+                    let k = steps as int;
+                    let s = start as int;
+                    assert(3 <= k <= hcnt as int);
+                    assert(h as int == s);
+                    assert(h as int == kernel_next_iter_spec(m, s, steps as nat));
+                    assert(kernel_next_iter_spec(m, s, k as nat) == s);
+                    assert(forall|i: int|
+                        0 <= i < k ==> {
+                            let hi = kernel_next_iter_spec(m, s, i as nat);
+                            &&& 0 <= hi < hcnt as int
+                            &&& m.half_edges@[kernel_next_iter_spec(m, s, i as nat)].face as int == f as int
+                        });
+                }
+            }
+        } else {
+            ok = false;
+        }
+
+        proof {
+            if ok {
+                assert(forall|fp: int|
+                    0 <= fp < (f + 1) as int ==> exists|k: int| kernel_face_representative_cycle_witness_spec(m, fp, k)) by {
+                    if fp < f as int {
+                        assert(0 <= fp < f as int);
+                    } else {
+                        assert(fp == f as int);
+                        assert(exists|k: int| kernel_face_representative_cycle_witness_spec(m, f as int, k));
+                    }
+                }
+            }
+        }
+        f += 1;
+    }
+
+    proof {
+        if ok {
+            assert(forall|fp: int| 0 <= fp < fcnt as int ==> exists|k: int| kernel_face_representative_cycle_witness_spec(m, fp, k));
+            assert(kernel_face_representative_cycles_spec(m));
+            assert(kernel_face_representative_cycles_total_spec(m));
+        }
+    }
+    ok
+}
+
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(unused_variables, unused_assignments)]
+pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
+    ensures
+        out ==> kernel_vertex_manifold_single_cycle_total_spec(m),
+{
+    let bounds_ok = kernel_check_index_bounds(m);
+    if !bounds_ok {
+        return false;
+    }
+
+    let hcnt = m.half_edges.len();
+    let vcnt = m.vertex_half_edges.len();
+
+    let mut ok = true;
+    let mut v: usize = 0;
+    while v < vcnt
+        invariant
+            kernel_index_bounds_spec(m),
+            hcnt == m.half_edges.len(),
+            vcnt == m.vertex_half_edges.len(),
+            0 <= v <= vcnt,
+            ok ==> forall|vp: int|
+                0 <= vp < v as int ==> exists|k: int| kernel_vertex_representative_cycle_witness_spec(m, vp, k),
+    {
+        let start = m.vertex_half_edges[v];
+        let mut local_seen: Vec<bool> = vec![false; hcnt];
+        let mut h = start;
+        let mut steps: usize = 0;
+        let mut vertex_ok = true;
+
+        if m.half_edges[start].vertex != v {
+            vertex_ok = false;
+        }
+
+        while vertex_ok && steps < hcnt
+            invariant
+                kernel_index_bounds_spec(m),
+                hcnt == m.half_edges.len(),
+                0 <= steps <= hcnt,
+                local_seen@.len() == hcnt as int,
+                0 <= h < hcnt,
+                h as int == kernel_vertex_ring_iter_spec(m, start as int, steps as nat),
+                vertex_ok ==> forall|i: int|
+                    0 <= i < steps as int ==> {
+                        let hi = kernel_vertex_ring_iter_spec(m, start as int, i as nat);
+                        &&& 0 <= hi < hcnt as int
+                        &&& #[trigger] m.half_edges@[kernel_vertex_ring_iter_spec(m, start as int, i as nat)].vertex as int == v as int
+                    },
+        {
+            if steps > 0 && h == start {
+                break;
+            }
+            if local_seen[h] {
+                vertex_ok = false;
+                break;
+            }
+            local_seen[h] = true;
+            if m.half_edges[h].vertex != v {
+                vertex_ok = false;
+                break;
+            }
+
+            let h_old = h;
+            let steps_old = steps;
+            h = m.half_edges[m.half_edges[h].twin].next;
+            steps += 1;
+
+            proof {
+                assert(h_old as int == kernel_vertex_ring_iter_spec(m, start as int, steps_old as nat));
+                assert(h as int == m.half_edges@[m.half_edges@[h_old as int].twin as int].next as int);
+                assert(h as int == kernel_vertex_ring_succ_or_self_spec(m, kernel_vertex_ring_iter_spec(m, start as int, steps_old as nat)));
+                assert(h as int == kernel_vertex_ring_iter_spec(m, start as int, steps as nat));
+                if vertex_ok {
+                    assert(forall|i: int|
+                        0 <= i < steps as int ==> {
+                            let hi = kernel_vertex_ring_iter_spec(m, start as int, i as nat);
+                            &&& 0 <= hi < hcnt as int
+                            &&& m.half_edges@[kernel_vertex_ring_iter_spec(m, start as int, i as nat)].vertex as int == v as int
+                        }) by {
+                        if i < steps_old as int {
+                            assert(0 <= i < steps_old as int);
+                        } else {
+                            assert(i == steps_old as int);
+                            assert(kernel_vertex_ring_iter_spec(m, start as int, i as nat) == h_old as int);
+                            assert(0 <= h_old as int && (h_old as int) < (hcnt as int));
+                            assert(m.half_edges@[h_old as int].vertex as int == v as int);
+                        }
+                    }
+                }
+            }
+        }
+
+        if vertex_ok {
+            if !(steps > 0 && h == start) {
+                vertex_ok = false;
+            }
+        }
+
+        if ok && vertex_ok {
+            proof {
+                assert(exists|k: int| kernel_vertex_representative_cycle_witness_spec(m, v as int, k)) by {
+                    let k = steps as int;
+                    let s = start as int;
+                    assert(1 <= k <= hcnt as int);
+                    assert(h as int == s);
+                    assert(h as int == kernel_vertex_ring_iter_spec(m, s, steps as nat));
+                    assert(kernel_vertex_ring_iter_spec(m, s, k as nat) == s);
+                    assert(forall|i: int|
+                        0 <= i < k ==> {
+                            let hi = kernel_vertex_ring_iter_spec(m, s, i as nat);
+                            &&& 0 <= hi < hcnt as int
+                            &&& m.half_edges@[kernel_vertex_ring_iter_spec(m, s, i as nat)].vertex as int == v as int
+                        });
+                }
+            }
+        } else {
+            ok = false;
+        }
+
+        proof {
+            if ok {
+                assert(forall|vp: int|
+                    0 <= vp < (v + 1) as int ==> exists|k: int| kernel_vertex_representative_cycle_witness_spec(m, vp, k)) by {
+                    if vp < v as int {
+                        assert(0 <= vp < v as int);
+                    } else {
+                        assert(vp == v as int);
+                        assert(exists|k: int| kernel_vertex_representative_cycle_witness_spec(m, v as int, k));
+                    }
+                }
+            }
+        }
+        v += 1;
+    }
+
+    proof {
+        if ok {
+            assert(forall|vp: int| 0 <= vp < vcnt as int ==> exists|k: int| kernel_vertex_representative_cycle_witness_spec(m, vp, k));
+            assert(kernel_vertex_manifold_single_cycle_basic_spec(m));
+            assert(kernel_vertex_manifold_single_cycle_total_spec(m));
+        }
     }
     ok
 }
