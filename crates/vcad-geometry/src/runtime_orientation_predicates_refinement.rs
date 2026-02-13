@@ -1,3 +1,5 @@
+#![cfg(feature = "verus-proofs")]
+
 use crate::orientation_predicates;
 use vcad_math::orientation::{orient2d_spec, orientation_spec, signed_area2_poly_spec, Orientation};
 use vcad_math::orientation3::{orient3d_spec, orientation3_spec, signed_volume3_poly_spec, Orientation3};

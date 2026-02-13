@@ -21,7 +21,7 @@ Do not reprove determinant expansion or vector-space identities in `vcad-geometr
   - `orient3d_spec(a,b,c,d)` equals the signed six-volume polynomial from `vcad-math` (`signed_volume3_poly_spec`).
 - [x] Prove plane-side wrapper meaning:
   - `point_above_plane(p, a, b, c)` is equivalent to `(orientation3_spec(a,b,c,p) is Positive)`.
-- [ ] Prove full plane-side geometric meaning:
+- [x] Prove full plane-side geometric meaning:
   - with `a,b,c` non-collinear, `orient3d(a,b,c,d) > 0` iff `d` is on the positive side of plane `(a,b,c)`.
 
 vcad-math reuse targets:
@@ -36,7 +36,7 @@ vcad-math reuse targets:
 - [x] Prove strict opposite-side crossing criterion:
   - if `orient3d(a,b,c,d) > 0` and `orient3d(a,b,c,e) < 0`, then segment `de` crosses plane `(a,b,c)`.
 - [x] Define exact rational segment-plane parameter `t` for `x(t) = d + t (e-d)` (runtime implemented).
-- [ ] Prove `0 < t < 1` under strict crossing preconditions.
+- [x] Prove `0 < t < 1` under strict crossing preconditions (for strict opposite sides).
 
 vcad-math reuse targets:
 1. `orientation3` sign/exclusivity lemmas.
@@ -49,7 +49,10 @@ vcad-math reuse targets:
 - [x] `collinear3d(a,b,c)` wrapper via edge-cross zero vector criterion.
 - [x] `coplanar(a,b,c,d)` wrapper via `orient3d = 0`.
 - [x] Prove wrapper equivalences against underlying orient/cross criteria (2D collinearity + 3D coplanarity).
-- [ ] Prove coplanarity extension lemma:
+- [x] Formalize 5-point coplanarity with fixed base plane `(a,b,c)`:
+  - `coplanar5_wrt_base_spec(a,b,c,d,e) := coplanar(a,b,c,d) && coplanar(a,b,c,e)`.
+  - runtime refinement theorem `runtime_coplanarity_extension_wrt_base` proved under explicit non-collinear base precondition.
+- [x] Prove coplanarity extension lemma (set-level formulation via any non-collinear base triple in the 5-point set):
   - if `{a,b,c,d}` coplanar and `{a,b,c,e}` coplanar and `a,b,c` non-collinear, then `{a,b,c,d,e}` lie in one plane.
 
 vcad-math reuse targets:
@@ -59,10 +62,21 @@ vcad-math reuse targets:
 4. `vec3` cross/dot law surface for dependence rewrites.
 
 ### P3.4 Point in Convex Polygon (2D)
-- [ ] Implement `point_in_convex_polygon_2d` using edge-wise `orient2d` sign tests.
-- [ ] Define clear boundary policy: points on edges/vertices count as inside.
-- [ ] Prove soundness/completeness with convexity precondition:
-  - returns `true` iff point is inside or on boundary.
+- [x] Implement `point_in_convex_polygon_2d` using edge-wise `orient2d` sign tests.
+- [x] Define clear boundary policy: points on edges/vertices count as inside.
+- [x] Add runtime-refinement model for the current algorithm:
+  - edge-sign consistency (`no mixed positive/negative edge orientations`) with `len >= 3`
+  - explicit boundary-inclusive spec surface for `point_in_convex_polygon_2d`
+- [x] Prove soundness/completeness with convexity precondition:
+  - formalized `polygon_convex_consistent_order_spec` (weak convex + consistent order).
+  - formalized geometric inside/boundary as edge-halfspace characterization (`all edge signs >= 0` OR `all edge signs <= 0`).
+  - proved runtime equivalence theorem under convexity precondition:
+    `runtime_point_in_convex_polygon_convex_geometric_iff`.
+- [x] Add strict-inside variant:
+  - runtime API `point_strictly_in_convex_polygon_2d` (boundary excluded).
+  - strict convex precondition/spec surface `polygon_strict_convex_consistent_order_spec`.
+  - strict geometric iff theorem:
+    `runtime_point_strictly_in_convex_polygon_convex_geometric_iff`.
 
 vcad-math reuse targets:
 1. `orientation` swap/cyclic/permutation/sign lemmas.
