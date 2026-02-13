@@ -2808,13 +2808,14 @@ impl Quaternion {
         assert(one.eqv_spec(neg_one) == (1 * 1 == (-1) * 1));
         assert(!(1 * 1 == (-1) * 1)) by (nonlinear_arith);
         assert(!one.eqv_spec(neg_one));
-        if ij.eqv_spec(ji) {
-            assert(ij.z.eqv_spec(ji.z));
-            Scalar::lemma_eqv_transitive(one, ij.z, ji.z);
-            Scalar::lemma_eqv_transitive(one, ji.z, neg_one);
-            assert(one.eqv_spec(neg_one));
-            assert(false);
-        }
+        assert(ij.eqv_spec(ji) ==> one.eqv_spec(neg_one)) by {
+            if ij.eqv_spec(ji) {
+                assert(ij.z.eqv_spec(ji.z));
+                Scalar::lemma_eqv_transitive(one, ij.z, ji.z);
+                Scalar::lemma_eqv_transitive(one, ji.z, neg_one);
+                assert(one.eqv_spec(neg_one));
+            }
+        };
         assert(!ij.eqv_spec(ji));
         assert(!i.mul_spec(j).eqv_spec(j.mul_spec(i)));
     }

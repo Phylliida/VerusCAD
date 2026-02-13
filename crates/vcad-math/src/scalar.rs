@@ -927,13 +927,13 @@ impl Scalar {
     }
 
     pub proof fn lemma_le_add_monotone(a: Self, b: Self, c: Self)
+        requires
+            a.le_spec(b),
         ensures
-            a.le_spec(b) ==> a.add_spec(c).le_spec(b.add_spec(c)),
+            a.add_spec(c).le_spec(b.add_spec(c)),
     {
-        if a.le_spec(b) {
-            Self::lemma_le_add_monotone_strong(a, b, c);
-            assert(a.add_spec(c).le_spec(b.add_spec(c)));
-        }
+        Self::lemma_le_add_monotone_strong(a, b, c);
+        assert(a.add_spec(c).le_spec(b.add_spec(c)));
     }
 
     pub proof fn lemma_le_mul_monotone_nonnegative_strong(a: Self, b: Self, c: Self)
@@ -977,13 +977,14 @@ impl Scalar {
     }
 
     pub proof fn lemma_le_mul_monotone_nonnegative(a: Self, b: Self, c: Self)
+        requires
+            a.le_spec(b),
+            Self::from_int_spec(0).le_spec(c),
         ensures
-            (a.le_spec(b) && Self::from_int_spec(0).le_spec(c)) ==> a.mul_spec(c).le_spec(b.mul_spec(c)),
+            a.mul_spec(c).le_spec(b.mul_spec(c)),
     {
-        if a.le_spec(b) && Self::from_int_spec(0).le_spec(c) {
-            Self::lemma_le_mul_monotone_nonnegative_strong(a, b, c);
-            assert(a.mul_spec(c).le_spec(b.mul_spec(c)));
-        }
+        Self::lemma_le_mul_monotone_nonnegative_strong(a, b, c);
+        assert(a.mul_spec(c).le_spec(b.mul_spec(c)));
     }
 
     pub proof fn lemma_add_right_cancel_strong(a: Self, b: Self, k: Self)
@@ -1044,13 +1045,13 @@ impl Scalar {
     }
 
     pub proof fn lemma_add_right_cancel(a: Self, b: Self, k: Self)
+        requires
+            a.add_spec(k).eqv_spec(b.add_spec(k)),
         ensures
-            a.add_spec(k).eqv_spec(b.add_spec(k)) ==> a.eqv_spec(b),
+            a.eqv_spec(b),
     {
-        if a.add_spec(k).eqv_spec(b.add_spec(k)) {
-            Self::lemma_add_right_cancel_strong(a, b, k);
-            assert(a.eqv_spec(b));
-        }
+        Self::lemma_add_right_cancel_strong(a, b, k);
+        assert(a.eqv_spec(b));
     }
 
     pub proof fn lemma_add_left_cancel_strong(a: Self, b: Self, k: Self)
@@ -1080,13 +1081,13 @@ impl Scalar {
     }
 
     pub proof fn lemma_add_left_cancel(a: Self, b: Self, k: Self)
+        requires
+            k.add_spec(a).eqv_spec(k.add_spec(b)),
         ensures
-            k.add_spec(a).eqv_spec(k.add_spec(b)) ==> a.eqv_spec(b),
+            a.eqv_spec(b),
     {
-        if k.add_spec(a).eqv_spec(k.add_spec(b)) {
-            Self::lemma_add_left_cancel_strong(a, b, k);
-            assert(a.eqv_spec(b));
-        }
+        Self::lemma_add_left_cancel_strong(a, b, k);
+        assert(a.eqv_spec(b));
     }
 
     pub proof fn lemma_add_then_sub_cancel(a: Self, b: Self)

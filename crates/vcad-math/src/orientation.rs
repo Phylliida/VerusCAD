@@ -200,25 +200,25 @@ pub proof fn lemma_orient2d_degenerate_repeated_points(a: Point2, b: Point2)
 }
 
 pub proof fn lemma_orient2d_collinear(a: Point2, b: Point2, c: Point2)
+    requires
+        is_collinear(a, b, c),
     ensures
-        is_collinear(a, b, c) ==> orient2d_spec(a, b, c).eqv_spec(Scalar::from_int_spec(0)),
+        orient2d_spec(a, b, c).eqv_spec(Scalar::from_int_spec(0)),
 {
     let z = Scalar::from_int_spec(0);
-    if is_collinear(a, b, c) {
-        let det = orient2d_spec(a, b, c);
-        lemma_is_collinear_iff_zero(a, b, c);
-        assert(is_collinear(a, b, c) == (det.num == 0));
-        assert(det.num == 0);
-        assert(z.num == 0);
-        assert(det.eqv_spec(z) == (det.num * z.denom() == z.num * det.denom()));
-        assert(det.num * z.denom() == 0 * z.denom());
-        assert(z.num * det.denom() == 0 * det.denom());
-        lemma_mul_by_zero_is_zero(z.denom());
-        lemma_mul_by_zero_is_zero(det.denom());
-        assert(0 * z.denom() == 0);
-        assert(0 * det.denom() == 0);
-        assert(det.eqv_spec(z));
-    }
+    let det = orient2d_spec(a, b, c);
+    lemma_is_collinear_iff_zero(a, b, c);
+    assert(is_collinear(a, b, c) == (det.num == 0));
+    assert(det.num == 0);
+    assert(z.num == 0);
+    assert(det.eqv_spec(z) == (det.num * z.denom() == z.num * det.denom()));
+    assert(det.num * z.denom() == 0 * z.denom());
+    assert(z.num * det.denom() == 0 * det.denom());
+    lemma_mul_by_zero_is_zero(z.denom());
+    lemma_mul_by_zero_is_zero(det.denom());
+    assert(0 * z.denom() == 0);
+    assert(0 * det.denom() == 0);
+    assert(det.eqv_spec(z));
 }
 
 pub proof fn lemma_orient2d_unit_ccw()
@@ -405,25 +405,23 @@ pub proof fn lemma_orient2d_scale_from_origin(a: Point2, b: Point2, c: Point2, k
 }
 
 pub proof fn lemma_orientation_spec_scale_nonzero_preserves(a: Point2, b: Point2, c: Point2, k: Scalar)
+    requires
+        !k.eqv_spec(Scalar::from_int_spec(0)),
     ensures
-        !k.eqv_spec(Scalar::from_int_spec(0)) ==> (
-            orientation_spec(
-                scale_point_from_origin_spec(a, k),
-                scale_point_from_origin_spec(b, k),
-                scale_point_from_origin_spec(c, k),
-            ) == orientation_spec(a, b, c)
-        ),
+        orientation_spec(
+            scale_point_from_origin_spec(a, k),
+            scale_point_from_origin_spec(b, k),
+            scale_point_from_origin_spec(c, k),
+        ) == orientation_spec(a, b, c),
 {
-    if !k.eqv_spec(Scalar::from_int_spec(0)) {
-        lemma_orientation_spec_scale_nonzero_preserves_strong(a, b, c, k);
-        assert(
-            orientation_spec(
-                scale_point_from_origin_spec(a, k),
-                scale_point_from_origin_spec(b, k),
-                scale_point_from_origin_spec(c, k),
-            ) == orientation_spec(a, b, c)
-        );
-    }
+    lemma_orientation_spec_scale_nonzero_preserves_strong(a, b, c, k);
+    assert(
+        orientation_spec(
+            scale_point_from_origin_spec(a, k),
+            scale_point_from_origin_spec(b, k),
+            scale_point_from_origin_spec(c, k),
+        ) == orientation_spec(a, b, c)
+    );
 }
 
 pub proof fn lemma_orientation_spec_scale_nonzero_preserves_strong(a: Point2, b: Point2, c: Point2, k: Scalar)
@@ -488,23 +486,21 @@ pub proof fn lemma_orientation_spec_scale_nonzero_preserves_strong(a: Point2, b:
 }
 
 pub proof fn lemma_orientation_spec_scale_zero_collinear(a: Point2, b: Point2, c: Point2, k: Scalar)
+    requires
+        k.eqv_spec(Scalar::from_int_spec(0)),
     ensures
-        k.eqv_spec(Scalar::from_int_spec(0)) ==> (
-            orientation_spec(
-                scale_point_from_origin_spec(a, k),
-                scale_point_from_origin_spec(b, k),
-                scale_point_from_origin_spec(c, k),
-            ) is Collinear
-        ),
-{
-    if k.eqv_spec(Scalar::from_int_spec(0)) {
-        lemma_orientation_spec_scale_zero_collinear_strong(a, b, c, k);
-        assert(orientation_spec(
+        orientation_spec(
             scale_point_from_origin_spec(a, k),
             scale_point_from_origin_spec(b, k),
             scale_point_from_origin_spec(c, k),
-        ) is Collinear);
-    }
+        ) is Collinear,
+{
+    lemma_orientation_spec_scale_zero_collinear_strong(a, b, c, k);
+    assert(orientation_spec(
+        scale_point_from_origin_spec(a, k),
+        scale_point_from_origin_spec(b, k),
+        scale_point_from_origin_spec(c, k),
+    ) is Collinear);
 }
 
 pub proof fn lemma_orientation_spec_scale_zero_collinear_strong(a: Point2, b: Point2, c: Point2, k: Scalar)

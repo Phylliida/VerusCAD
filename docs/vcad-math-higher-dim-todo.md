@@ -120,5 +120,14 @@ This backlog follows the same pattern used for 2D:
   - avoid representation leaks in public law contracts
   - ensure contracts target abstract semantic equality where canonical representation is not guaranteed
   - progress: quaternion inverse-related contracts were tightened to semantic nonzero form (`!norm2.eqv_spec(0)`) instead of representation-level `.num` checks, and the prior weak implication norm-positivity lemma was strengthened to a requires-style semantic statement (`0 < norm2` under nonzero norm). Runtime refinement contracts were also hardened to semantic zero/nonzero checks for scalar reciprocal and orientation scale wrappers (2D/3D), with local proof bridges to legacy `.num`-based model lemmas. Model orientation scale law contracts (`orientation` and `orientation3`, weak + strong forms) now also use semantic zero/nonzero preconditions/antecedents instead of direct `k.num` exposure.
+- [ ] P4.6 backlog: shrink trusted runtime boundary surface.
+  - inventory remaining `assume_specification[...]` usage by module and prioritize high-risk arithmetic/orientation/quaternion boundaries first.
+  - replace selected trusted contracts with proved refinement wrappers where practical, and keep explicit rationale for remaining trusted assumptions.
+- [ ] P4.6 backlog: convert remaining implication-style public lemma contracts to strong `requires` forms (or thin wrapper + strong core pattern).
+  - progress: initial scalar targets are completed (`lemma_le_add_monotone`, `lemma_le_mul_monotone_nonnegative`, `lemma_add_right_cancel`, `lemma_add_left_cancel` now use strong `requires` contracts). Orientation wrapper lemmas were also hardened (`lemma_orient2d_collinear`, `lemma_orientation_spec_scale_nonzero_preserves`, `lemma_orientation_spec_scale_zero_collinear`, `lemma_orientation3_spec_scale_nonzero_behavior`, `lemma_orientation3_spec_scale_zero_coplanar` now use strong preconditions instead of outer implication antecedents).
+- [ ] P4.6 backlog: eliminate remaining representation leaks from public law contracts.
+  - constrain `.num`/`.den` reasoning to proof-local bridges only.
+- [ ] P4.6 backlog: remove contradiction-endings where a direct semantic conclusion is available.
+  - progress: initial target in the non-commutativity witness proof path (`src/quaternion.rs`) is completed; continue scanning for remaining contradiction-endings that can be replaced by direct semantic negation arguments.
 - [ ] Keep theorem naming consistent with existing `vcad-math` style (`lemma_*` law surface).
 - [ ] Ensure `./scripts/verify-vcad-math.sh` remains green after each sub-phase.
