@@ -20,10 +20,32 @@ pub open spec fn base_plane_noncollinear3_spec(a: Point3, b: Point3, c: Point3) 
     !(n.x.signum() == 0 && n.y.signum() == 0 && n.z.signum() == 0)
 }
 
+/// Signed side value of `d` with respect to oriented plane `(a,b,c)`,
+/// using the plane normal `n = (b-a) x (c-a)`.
+pub open spec fn signed_plane_side_value_spec(a: Point3, b: Point3, c: Point3, d: Point3) -> Scalar {
+    d.sub_spec(a).dot_spec(b.sub_spec(a).cross_spec(c.sub_spec(a)))
+}
+
 /// Geometric "positive side of plane (a,b,c)" meaning, under non-collinear base.
 pub open spec fn point_on_positive_side_of_plane_spec(a: Point3, b: Point3, c: Point3, d: Point3) -> bool {
-    &&& base_plane_noncollinear3_spec(a, b, c)
-    &&& (orientation3_spec(a, b, c, d) is Positive)
+    Scalar::from_int_spec(0).lt_spec(signed_plane_side_value_spec(a, b, c, d))
+}
+
+proof fn lemma_orient3d_matches_signed_plane_side_value(a: Point3, b: Point3, c: Point3, d: Point3)
+    ensures
+        vcad_math::orientation3::orient3d_spec(a, b, c, d).eqv_spec(signed_plane_side_value_spec(a, b, c, d)),
+{
+    let ba = b.sub_spec(a);
+    let ca = c.sub_spec(a);
+    let da = d.sub_spec(a);
+    let det = vcad_math::orientation3::orient3d_spec(a, b, c, d);
+    let side = signed_plane_side_value_spec(a, b, c, d);
+
+    assert(det == ba.dot_spec(ca.cross_spec(da)));
+    assert(side == da.dot_spec(ba.cross_spec(ca)));
+    vcad_math::vec3::Vec3::lemma_dot_cross_cyclic(da, ba, ca);
+    assert(da.dot_spec(ba.cross_spec(ca)).eqv_spec(ba.dot_spec(ca.cross_spec(da))));
+    assert(side.eqv_spec(det));
 }
 
 proof fn lemma_scalar_gt_zero_iff_signum_one(s: Scalar)
@@ -59,12 +81,19 @@ proof fn lemma_orient3d_positive_iff_positive_side_noncollinear(a: Point3, b: Po
             == point_on_positive_side_of_plane_spec(a, b, c, d),
 {
     let det = vcad_math::orientation3::orient3d_spec(a, b, c, d);
+    let side = signed_plane_side_value_spec(a, b, c, d);
     vcad_math::orientation3::lemma_orientation3_spec_matches_predicates(a, b, c, d);
+    lemma_orient3d_matches_signed_plane_side_value(a, b, c, d);
+    Scalar::lemma_eqv_signum(det, side);
     lemma_scalar_gt_zero_iff_signum_one(det);
+    lemma_scalar_gt_zero_iff_signum_one(side);
     assert((orientation3_spec(a, b, c, d) is Positive) == (det.signum() == 1));
     assert(Scalar::from_int_spec(0).lt_spec(det) == (det.signum() == 1));
+    assert((det.signum() == 1) == (side.signum() == 1));
+    assert(Scalar::from_int_spec(0).lt_spec(side) == (side.signum() == 1));
+    assert(Scalar::from_int_spec(0).lt_spec(det) == Scalar::from_int_spec(0).lt_spec(side));
     assert(base_plane_noncollinear3_spec(a, b, c));
-    assert(point_on_positive_side_of_plane_spec(a, b, c, d) == (orientation3_spec(a, b, c, d) is Positive));
+    assert(point_on_positive_side_of_plane_spec(a, b, c, d) == Scalar::from_int_spec(0).lt_spec(side));
     assert(Scalar::from_int_spec(0).lt_spec(det) == point_on_positive_side_of_plane_spec(a, b, c, d));
 }
 
@@ -88,6 +117,10 @@ pub open spec fn segment_plane_t_valid_spec(t: Scalar, a: Point3, b: Point3, c: 
     &&& t.mul_spec(den).eqv_spec(od)
     &&& one.sub_spec(t).mul_spec(den).eqv_spec(oe.neg_spec())
     &&& den.signum() == od.signum()
+}
+
+pub open spec fn segment_plane_point_at_parameter_spec(p: Point3, t: Scalar, d: Point3, e: Point3) -> bool {
+    p.eqv_spec(d.add_vec_spec(e.sub_spec(d).scale_spec(t)))
 }
 
 pub assume_specification[ sidedness::point_above_plane ](
@@ -155,6 +188,13 @@ pub assume_specification[ sidedness::segment_plane_intersection_point_strict ](
 ) -> (out: Option<RuntimePoint3>)
     ensures
         out.is_some() == strict_opposite_sides_spec(a@, b@, c@, d@, e@),
+        match out {
+            Option::None => true,
+            Option::Some(p) => exists|t: Scalar| {
+                &&& segment_plane_t_valid_spec(t, a@, b@, c@, d@, e@)
+                &&& segment_plane_point_at_parameter_spec(p@, t, d@, e@)
+            },
+        },
 ;
 
 proof fn lemma_signum_one_implies_num_positive(s: Scalar)
@@ -400,8 +440,16 @@ pub fn runtime_orient3d_positive_iff_point_above_noncollinear(
     proof {
         lemma_orient3d_positive_iff_positive_side_noncollinear(a@, b@, c@, d@);
         assert(out == (orientation3_spec(a@, b@, c@, d@) is Positive));
+        lemma_scalar_gt_zero_iff_signum_one(vcad_math::orientation3::orient3d_spec(a@, b@, c@, d@));
+        assert(
+            Scalar::from_int_spec(0).lt_spec(vcad_math::orientation3::orient3d_spec(a@, b@, c@, d@))
+                == (orientation3_spec(a@, b@, c@, d@) is Positive)
+        );
         assert(base_plane_noncollinear3_spec(a@, b@, c@));
-        assert(point_on_positive_side_of_plane_spec(a@, b@, c@, d@) == (orientation3_spec(a@, b@, c@, d@) is Positive));
+        assert(
+            point_on_positive_side_of_plane_spec(a@, b@, c@, d@)
+                == Scalar::from_int_spec(0).lt_spec(vcad_math::orientation3::orient3d_spec(a@, b@, c@, d@))
+        );
         assert(out == point_on_positive_side_of_plane_spec(a@, b@, c@, d@));
     }
     out
@@ -527,6 +575,30 @@ pub fn runtime_crossing_parameter_open_unit_interval(
             }
         }
     }
+    out
+}
+
+#[allow(dead_code)]
+pub fn runtime_crossing_implies_intersection_point_has_parameter(
+    d: &RuntimePoint3,
+    e: &RuntimePoint3,
+    a: &RuntimePoint3,
+    b: &RuntimePoint3,
+    c: &RuntimePoint3,
+) -> (out: Option<RuntimePoint3>)
+    requires
+        strict_opposite_sides_spec(a@, b@, c@, d@, e@),
+    ensures
+        out.is_some(),
+        match out {
+            Option::None => true,
+            Option::Some(p) => exists|t: Scalar| {
+                &&& segment_plane_t_valid_spec(t, a@, b@, c@, d@, e@)
+                &&& segment_plane_point_at_parameter_spec(p@, t, d@, e@)
+            },
+        },
+{
+    let out = sidedness::segment_plane_intersection_point_strict(d, e, a, b, c);
     out
 }
 
