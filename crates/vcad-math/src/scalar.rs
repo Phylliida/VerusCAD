@@ -164,7 +164,7 @@ impl Scalar {
         self.num * rhs.denom() < rhs.num * self.denom()
     }
 
-    pub proof fn lemma_denom_positive(a: Self)
+    pub(crate) proof fn lemma_denom_positive(a: Self)
         ensures
             a.denom_nat() > 0,
             a.denom() > 0,
@@ -174,7 +174,7 @@ impl Scalar {
         assert(a.denom() > 0);
     }
 
-    pub proof fn lemma_eqv_zero_iff_num_zero(a: Self)
+    pub(crate) proof fn lemma_eqv_zero_iff_num_zero(a: Self)
         ensures
             a.eqv_spec(Self::from_int_spec(0)) == (a.num == 0),
     {
@@ -189,7 +189,7 @@ impl Scalar {
         assert((a.num * 1 == 0) == (a.num == 0)) by (nonlinear_arith);
     }
 
-    pub proof fn lemma_add_denom_product(a: Self, b: Self)
+    pub(crate) proof fn lemma_add_denom_product(a: Self, b: Self)
         ensures
             a.add_spec(b).denom_nat() == a.denom_nat() * b.denom_nat(),
     {
@@ -203,7 +203,7 @@ impl Scalar {
             by (nonlinear_arith);
     }
 
-    pub proof fn lemma_add_denom_product_int(a: Self, b: Self)
+    pub(crate) proof fn lemma_add_denom_product_int(a: Self, b: Self)
         ensures
             a.add_spec(b).denom() == a.denom() * b.denom(),
     {
@@ -221,7 +221,7 @@ impl Scalar {
         assert(out.denom() == a.denom() * b.denom());
     }
 
-    pub proof fn lemma_mul_denom_product(a: Self, b: Self)
+    pub(crate) proof fn lemma_mul_denom_product(a: Self, b: Self)
         ensures
             a.mul_spec(b).denom_nat() == a.denom_nat() * b.denom_nat(),
     {
@@ -235,7 +235,7 @@ impl Scalar {
             by (nonlinear_arith);
     }
 
-    pub proof fn lemma_mul_denom_product_int(a: Self, b: Self)
+    pub(crate) proof fn lemma_mul_denom_product_int(a: Self, b: Self)
         ensures
             a.mul_spec(b).denom() == a.denom() * b.denom(),
     {
@@ -253,7 +253,7 @@ impl Scalar {
         assert(out.denom() == a.denom() * b.denom());
     }
 
-    pub proof fn lemma_sub_denom_product(a: Self, b: Self)
+    pub(crate) proof fn lemma_sub_denom_product(a: Self, b: Self)
         ensures
             a.sub_spec(b).denom_nat() == a.denom_nat() * b.denom_nat(),
     {
@@ -265,7 +265,7 @@ impl Scalar {
         assert(s.denom_nat() == a.denom_nat() * b.denom_nat());
     }
 
-    pub proof fn lemma_sub_denom_product_int(a: Self, b: Self)
+    pub(crate) proof fn lemma_sub_denom_product_int(a: Self, b: Self)
         ensures
             a.sub_spec(b).denom() == a.denom() * b.denom(),
     {
@@ -846,7 +846,7 @@ impl Scalar {
         assert(a.num == 0 || b.num == 0);
     }
 
-    pub proof fn lemma_mul_reciprocal_positive_num(a: Self)
+    pub(crate) proof fn lemma_mul_reciprocal_positive_num(a: Self)
         requires
             a.num > 0,
         ensures
@@ -1316,7 +1316,7 @@ impl Scalar {
         assert(lhs.den == rhs.den);
     }
 
-    pub proof fn lemma_sub_self_zero_num(a: Self)
+    pub(crate) proof fn lemma_sub_self_zero_num(a: Self)
         ensures
             a.sub_spec(a).num == 0,
     {
@@ -1341,7 +1341,7 @@ impl Scalar {
         assert(s.signum() == 0);
     }
 
-    pub proof fn lemma_mul_left_zero_num(a: Self, b: Self)
+    pub(crate) proof fn lemma_mul_left_zero_num(a: Self, b: Self)
         requires
             a.num == 0,
         ensures
@@ -1364,7 +1364,7 @@ impl Scalar {
         assert(p.num == 0);
     }
 
-    pub proof fn lemma_mul_right_zero_num(a: Self, b: Self)
+    pub(crate) proof fn lemma_mul_right_zero_num(a: Self, b: Self)
         requires
             b.num == 0,
         ensures
@@ -1387,7 +1387,7 @@ impl Scalar {
         assert(p.num == 0);
     }
 
-    pub proof fn lemma_sub_both_zero_num(a: Self, b: Self)
+    pub(crate) proof fn lemma_sub_both_zero_num(a: Self, b: Self)
         requires
             a.num == 0,
             b.num == 0,
@@ -1504,7 +1504,7 @@ impl Scalar {
         };
     }
 
-    pub proof fn lemma_normalized_eqv_implies_equal_denom(a: Self, b: Self)
+    pub(crate) proof fn lemma_normalized_eqv_implies_equal_denom(a: Self, b: Self)
         requires
             a.normalized_spec(),
             b.normalized_spec(),
@@ -1523,7 +1523,7 @@ impl Scalar {
         assert(a.denom_nat() == b.denom_nat());
     }
 
-    pub proof fn lemma_eqv_and_equal_denom_implies_equal_num(a: Self, b: Self)
+    pub(crate) proof fn lemma_eqv_and_equal_denom_implies_equal_num(a: Self, b: Self)
         requires
             a.eqv_spec(b),
             a.denom_nat() == b.denom_nat(),
@@ -1567,7 +1567,7 @@ impl Scalar {
     }
 
     /// Normalized values use canonical zero representation.
-    pub proof fn lemma_normalized_zero_has_unit_denom(a: Self)
+    pub(crate) proof fn lemma_normalized_zero_has_unit_denom(a: Self)
         requires
             a.normalized_spec(),
             a.num == 0,
@@ -2391,7 +2391,7 @@ impl Scalar {
         assert(a.signum() == b.signum());
     }
 
-    pub proof fn lemma_signum_positive_iff(a: Self)
+    pub(crate) proof fn lemma_signum_positive_iff(a: Self)
         ensures
             (a.signum() == 1) == (a.num > 0),
     {
@@ -2402,7 +2402,7 @@ impl Scalar {
         }
     }
 
-    pub proof fn lemma_signum_neg(a: Self)
+    pub(crate) proof fn lemma_signum_neg(a: Self)
         ensures
             a.neg_spec().num == -a.num,
     {
@@ -2450,7 +2450,7 @@ impl Scalar {
         assert(n.signum() == -a.signum());
     }
 
-    pub proof fn lemma_signum_negative_iff(a: Self)
+    pub(crate) proof fn lemma_signum_negative_iff(a: Self)
         ensures
             (a.signum() == -1) == (a.num < 0),
     {
@@ -2461,7 +2461,7 @@ impl Scalar {
         }
     }
 
-    pub proof fn lemma_signum_zero_iff(a: Self)
+    pub(crate) proof fn lemma_signum_zero_iff(a: Self)
         ensures
             (a.signum() == 0) == (a.num == 0),
     {

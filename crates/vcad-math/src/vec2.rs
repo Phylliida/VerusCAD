@@ -985,7 +985,7 @@ impl Vec2 {
         assert(c.eqv_spec(z));
     }
 
-    pub proof fn lemma_cross_self_zero_num(v: Self)
+    pub(crate) proof fn lemma_cross_self_zero_num(v: Self)
         ensures
             v.cross_spec(v).num == 0,
     {
@@ -1035,7 +1035,7 @@ impl Vec2 {
         assert(c.signum() == 0);
     }
 
-    pub proof fn lemma_cross_left_zero_num(u: Self, v: Self)
+    pub(crate) proof fn lemma_cross_left_zero_num(u: Self, v: Self)
         requires
             u.x.num == 0,
             u.y.num == 0,
@@ -1070,7 +1070,7 @@ impl Vec2 {
         assert(c.signum() == 0);
     }
 
-    pub proof fn lemma_cross_right_zero_num(u: Self, v: Self)
+    pub(crate) proof fn lemma_cross_right_zero_num(u: Self, v: Self)
         requires
             v.x.num == 0,
             v.y.num == 0,

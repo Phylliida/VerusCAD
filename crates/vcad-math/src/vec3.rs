@@ -1610,6 +1610,184 @@ impl Vec3 {
         assert(c.z.eqv_spec(z.z));
         assert(c.eqv_spec(z));
     }
+
+    pub proof fn lemma_dot_cross_left_orthogonal(a: Self, b: Self)
+        ensures
+            a.dot_spec(a.cross_spec(b)).eqv_spec(Scalar::from_int_spec(0)),
+    {
+        let z = Scalar::from_int_spec(0);
+        let c = a.cross_spec(b);
+        let lhs = a.dot_spec(c);
+
+        let p1 = a.y.mul_spec(b.z);
+        let q1 = a.z.mul_spec(b.y);
+        let p2 = a.z.mul_spec(b.x);
+        let q2 = a.x.mul_spec(b.z);
+        let p3 = a.x.mul_spec(b.y);
+        let q3 = a.y.mul_spec(b.x);
+
+        assert(c.x == p1.sub_spec(q1));
+        assert(c.y == p2.sub_spec(q2));
+        assert(c.z == p3.sub_spec(q3));
+
+        let t1 = a.x.mul_spec(c.x);
+        let t2 = a.y.mul_spec(c.y);
+        let t3 = a.z.mul_spec(c.z);
+        assert(lhs == t1.add_spec(t2).add_spec(t3));
+
+        let m1 = p1.mul_spec(a.x).sub_spec(q1.mul_spec(a.x));
+        let m2 = p2.mul_spec(a.y).sub_spec(q2.mul_spec(a.y));
+        let m3 = p3.mul_spec(a.z).sub_spec(q3.mul_spec(a.z));
+
+        Scalar::lemma_mul_commutative(a.x, c.x);
+        assert(t1 == c.x.mul_spec(a.x));
+        Scalar::lemma_sub_mul_right(p1, q1, a.x);
+        assert(c.x.mul_spec(a.x).eqv_spec(m1));
+        assert(t1.eqv_spec(m1));
+
+        Scalar::lemma_mul_commutative(a.y, c.y);
+        assert(t2 == c.y.mul_spec(a.y));
+        Scalar::lemma_sub_mul_right(p2, q2, a.y);
+        assert(c.y.mul_spec(a.y).eqv_spec(m2));
+        assert(t2.eqv_spec(m2));
+
+        Scalar::lemma_mul_commutative(a.z, c.z);
+        assert(t3 == c.z.mul_spec(a.z));
+        Scalar::lemma_sub_mul_right(p3, q3, a.z);
+        assert(c.z.mul_spec(a.z).eqv_spec(m3));
+        assert(t3.eqv_spec(m3));
+
+        Scalar::lemma_eqv_add_congruence(t1, m1, t2, m2);
+        assert(t1.add_spec(t2).eqv_spec(m1.add_spec(m2)));
+        Scalar::lemma_eqv_add_congruence(t1.add_spec(t2), m1.add_spec(m2), t3, m3);
+        assert(lhs.eqv_spec(m1.add_spec(m2).add_spec(m3)));
+
+        let a1 = p1.mul_spec(a.x);
+        let b1 = q1.mul_spec(a.x);
+        let c1 = p2.mul_spec(a.y);
+        let d1 = q2.mul_spec(a.y);
+        let e1 = p3.mul_spec(a.z);
+        let f1 = q3.mul_spec(a.z);
+        assert(m1 == a1.sub_spec(b1));
+        assert(m2 == c1.sub_spec(d1));
+        assert(m3 == e1.sub_spec(f1));
+
+        let ad_can = a.y.mul_spec(a.x.mul_spec(b.z));
+        Scalar::lemma_mul_associative(a.y, b.z, a.x);
+        assert(a1.eqv_spec(a.y.mul_spec(b.z.mul_spec(a.x))));
+        Scalar::lemma_mul_commutative(b.z, a.x);
+        assert(b.z.mul_spec(a.x) == a.x.mul_spec(b.z));
+        assert(a.y.mul_spec(b.z.mul_spec(a.x)) == ad_can);
+        Scalar::lemma_eqv_reflexive(ad_can);
+        Scalar::lemma_eqv_transitive(a1, a.y.mul_spec(b.z.mul_spec(a.x)), ad_can);
+        assert(a1.eqv_spec(ad_can));
+        Scalar::lemma_mul_commutative(q2, a.y);
+        assert(d1 == a.y.mul_spec(q2));
+        assert(q2 == a.x.mul_spec(b.z));
+        assert(d1 == ad_can);
+        Scalar::lemma_eqv_reflexive(ad_can);
+        assert(ad_can.eqv_spec(d1));
+        Scalar::lemma_eqv_transitive(a1, ad_can, d1);
+        assert(a1.eqv_spec(d1));
+
+        let be_can = a.z.mul_spec(a.x.mul_spec(b.y));
+        Scalar::lemma_mul_associative(a.z, b.y, a.x);
+        assert(b1.eqv_spec(a.z.mul_spec(b.y.mul_spec(a.x))));
+        Scalar::lemma_mul_commutative(b.y, a.x);
+        assert(b.y.mul_spec(a.x) == a.x.mul_spec(b.y));
+        assert(a.z.mul_spec(b.y.mul_spec(a.x)) == be_can);
+        Scalar::lemma_eqv_reflexive(be_can);
+        Scalar::lemma_eqv_transitive(b1, a.z.mul_spec(b.y.mul_spec(a.x)), be_can);
+        assert(b1.eqv_spec(be_can));
+        Scalar::lemma_mul_commutative(p3, a.z);
+        assert(e1 == a.z.mul_spec(p3));
+        assert(p3 == a.x.mul_spec(b.y));
+        assert(e1 == be_can);
+        Scalar::lemma_eqv_reflexive(be_can);
+        assert(be_can.eqv_spec(e1));
+        Scalar::lemma_eqv_transitive(b1, be_can, e1);
+        assert(b1.eqv_spec(e1));
+
+        let cf_can = a.z.mul_spec(a.y.mul_spec(b.x));
+        Scalar::lemma_mul_associative(a.z, b.x, a.y);
+        assert(c1.eqv_spec(a.z.mul_spec(b.x.mul_spec(a.y))));
+        Scalar::lemma_mul_commutative(b.x, a.y);
+        assert(b.x.mul_spec(a.y) == a.y.mul_spec(b.x));
+        assert(a.z.mul_spec(b.x.mul_spec(a.y)) == cf_can);
+        Scalar::lemma_eqv_reflexive(cf_can);
+        Scalar::lemma_eqv_transitive(c1, a.z.mul_spec(b.x.mul_spec(a.y)), cf_can);
+        assert(c1.eqv_spec(cf_can));
+        Scalar::lemma_mul_commutative(q3, a.z);
+        assert(f1 == a.z.mul_spec(q3));
+        assert(q3 == a.y.mul_spec(b.x));
+        assert(f1 == cf_can);
+        Scalar::lemma_eqv_reflexive(cf_can);
+        assert(cf_can.eqv_spec(f1));
+        Scalar::lemma_eqv_transitive(c1, cf_can, f1);
+        assert(c1.eqv_spec(f1));
+
+        let r1 = d1.sub_spec(b1);
+        let r2 = c1.sub_spec(d1);
+        let r3 = b1.sub_spec(c1);
+
+        Scalar::lemma_eqv_sub_congruence(a1, d1, b1, b1);
+        assert(m1.eqv_spec(r1));
+        Scalar::lemma_eqv_sub_congruence(e1, b1, f1, c1);
+        assert(m3.eqv_spec(r3));
+
+        Scalar::lemma_eqv_add_congruence(m1, r1, m2, r2);
+        assert(m1.add_spec(m2).eqv_spec(r1.add_spec(r2)));
+        Scalar::lemma_eqv_add_congruence(m1.add_spec(m2), r1.add_spec(r2), m3, r3);
+        assert(m1.add_spec(m2).add_spec(m3).eqv_spec(r1.add_spec(r2).add_spec(r3)));
+
+        let s0 = r1.add_spec(r2).add_spec(r3);
+        let s1 = r1.add_spec(r2.add_spec(r3));
+        let s2 = r1.add_spec(r3.add_spec(r2));
+        let s3 = r1.add_spec(r3).add_spec(r2);
+        Scalar::lemma_add_associative(r1, r2, r3);
+        assert(s0.eqv_spec(s1));
+        Scalar::lemma_add_commutative(r2, r3);
+        assert(r2.add_spec(r3).eqv_spec(r3.add_spec(r2)));
+        Scalar::lemma_eqv_reflexive(r1);
+        Scalar::lemma_eqv_add_congruence(r1, r1, r2.add_spec(r3), r3.add_spec(r2));
+        assert(s1.eqv_spec(s2));
+        Scalar::lemma_add_associative(r1, r3, r2);
+        assert(s3.eqv_spec(s2));
+        Scalar::lemma_eqv_symmetric(s3, s2);
+        assert(s2.eqv_spec(s3));
+        Scalar::lemma_eqv_transitive(s0, s1, s2);
+        Scalar::lemma_eqv_transitive(s0, s2, s3);
+        assert(s0.eqv_spec(s3));
+
+        let dc = d1.sub_spec(c1);
+        Scalar::lemma_eqv_sub_chain(d1, b1, c1);
+        assert(dc.eqv_spec(r1.add_spec(r3)));
+        Scalar::lemma_eqv_symmetric(dc, r1.add_spec(r3));
+        assert(r1.add_spec(r3).eqv_spec(dc));
+        Scalar::lemma_eqv_reflexive(r2);
+        Scalar::lemma_eqv_add_congruence(r1.add_spec(r3), dc, r2, r2);
+        assert(s3.eqv_spec(dc.add_spec(r2)));
+
+        let dd = d1.sub_spec(d1);
+        Scalar::lemma_eqv_sub_chain(d1, c1, d1);
+        assert(dd.eqv_spec(dc.add_spec(r2)));
+        Scalar::lemma_eqv_symmetric(dd, dc.add_spec(r2));
+        assert(dc.add_spec(r2).eqv_spec(dd));
+        Scalar::lemma_eqv_transitive(s3, dc.add_spec(r2), dd);
+        assert(s3.eqv_spec(dd));
+
+        Scalar::lemma_sub_self_zero_num(d1);
+        assert(dd.num == 0);
+        Scalar::lemma_eqv_zero_iff_num_zero(dd);
+        assert(dd.eqv_spec(z) == (dd.num == 0));
+        assert(dd.eqv_spec(z));
+
+        Scalar::lemma_eqv_transitive(lhs, m1.add_spec(m2).add_spec(m3), s0);
+        Scalar::lemma_eqv_transitive(lhs, s0, s3);
+        Scalar::lemma_eqv_transitive(lhs, s3, dd);
+        Scalar::lemma_eqv_transitive(lhs, dd, z);
+        assert(lhs.eqv_spec(z));
+    }
 }
 
 } // verus!

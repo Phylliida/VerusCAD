@@ -17,6 +17,18 @@ pub open spec fn orient3d_spec(a: Point3, b: Point3, c: Point3, d: Point3) -> Sc
     b.sub_spec(a).dot_spec(c.sub_spec(a).cross_spec(d.sub_spec(a)))
 }
 
+pub open spec fn signed_volume3_det_expanded_spec(u: Vec3, v: Vec3, w: Vec3) -> Scalar {
+    u.x.mul_spec(v.y.mul_spec(w.z).sub_spec(v.z.mul_spec(w.y))).add_spec(
+        u.y.mul_spec(v.z.mul_spec(w.x).sub_spec(v.x.mul_spec(w.z))),
+    ).add_spec(
+        u.z.mul_spec(v.x.mul_spec(w.y).sub_spec(v.y.mul_spec(w.x))),
+    )
+}
+
+pub open spec fn signed_volume3_poly_spec(a: Point3, b: Point3, c: Point3, d: Point3) -> Scalar {
+    signed_volume3_det_expanded_spec(b.sub_spec(a), c.sub_spec(a), d.sub_spec(a))
+}
+
 pub open spec fn is_positive(a: Point3, b: Point3, c: Point3, d: Point3) -> bool {
     orient3d_spec(a, b, c, d).signum() == 1
 }
@@ -71,6 +83,32 @@ pub proof fn orientation3(a: Point3, b: Point3, c: Point3, d: Point3) -> (o: Ori
     } else {
         Orientation3::Coplanar
     }
+}
+
+pub proof fn lemma_signed_volume3_det_expanded_matches_dot_cross(u: Vec3, v: Vec3, w: Vec3)
+    ensures
+        signed_volume3_det_expanded_spec(u, v, w) == u.dot_spec(v.cross_spec(w)),
+{
+    let c = v.cross_spec(w);
+    assert(c.x == v.y.mul_spec(w.z).sub_spec(v.z.mul_spec(w.y)));
+    assert(c.y == v.z.mul_spec(w.x).sub_spec(v.x.mul_spec(w.z)));
+    assert(c.z == v.x.mul_spec(w.y).sub_spec(v.y.mul_spec(w.x)));
+    assert(u.dot_spec(c) == u.x.mul_spec(c.x).add_spec(u.y.mul_spec(c.y)).add_spec(u.z.mul_spec(c.z)));
+    assert(u.dot_spec(c) == signed_volume3_det_expanded_spec(u, v, w));
+}
+
+pub proof fn lemma_signed_volume3_poly_matches_orient3d(a: Point3, b: Point3, c: Point3, d: Point3)
+    ensures
+        signed_volume3_poly_spec(a, b, c, d) == orient3d_spec(a, b, c, d),
+{
+    let ba = b.sub_spec(a);
+    let ca = c.sub_spec(a);
+    let da = d.sub_spec(a);
+    lemma_signed_volume3_det_expanded_matches_dot_cross(ba, ca, da);
+    assert(signed_volume3_poly_spec(a, b, c, d) == signed_volume3_det_expanded_spec(ba, ca, da));
+    assert(signed_volume3_det_expanded_spec(ba, ca, da) == ba.dot_spec(ca.cross_spec(da)));
+    assert(orient3d_spec(a, b, c, d) == ba.dot_spec(ca.cross_spec(da)));
+    assert(signed_volume3_poly_spec(a, b, c, d) == orient3d_spec(a, b, c, d));
 }
 
 pub proof fn lemma_orientation3_classes_exhaustive(a: Point3, b: Point3, c: Point3, d: Point3)
@@ -267,6 +305,19 @@ pub proof fn lemma_orient3d_swap_cd_eqv_neg(a: Point3, b: Point3, c: Point3, d: 
     assert(o == ba.dot_spec(ca.cross_spec(da)));
     assert(os == ba.dot_spec(ca.cross_spec(da).neg_spec()));
     assert(os.eqv_spec(o.neg_spec()));
+}
+
+pub proof fn lemma_signed_volume3_poly_swap_cd_eqv_neg(a: Point3, b: Point3, c: Point3, d: Point3)
+    ensures
+        signed_volume3_poly_spec(a, b, d, c).eqv_spec(signed_volume3_poly_spec(a, b, c, d).neg_spec()),
+{
+    lemma_signed_volume3_poly_matches_orient3d(a, b, d, c);
+    lemma_signed_volume3_poly_matches_orient3d(a, b, c, d);
+    lemma_orient3d_swap_cd_eqv_neg(a, b, c, d);
+    assert(signed_volume3_poly_spec(a, b, d, c) == orient3d_spec(a, b, d, c));
+    assert(signed_volume3_poly_spec(a, b, c, d) == orient3d_spec(a, b, c, d));
+    assert(orient3d_spec(a, b, d, c).eqv_spec(orient3d_spec(a, b, c, d).neg_spec()));
+    assert(signed_volume3_poly_spec(a, b, d, c).eqv_spec(signed_volume3_poly_spec(a, b, c, d).neg_spec()));
 }
 
 pub proof fn lemma_orientation3_spec_swap_cd(a: Point3, b: Point3, c: Point3, d: Point3)

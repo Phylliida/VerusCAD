@@ -127,7 +127,30 @@ This backlog follows the same pattern used for 2D:
   - progress: initial scalar targets are completed (`lemma_le_add_monotone`, `lemma_le_mul_monotone_nonnegative`, `lemma_add_right_cancel`, `lemma_add_left_cancel` now use strong `requires` contracts). Orientation wrapper lemmas were also hardened (`lemma_orient2d_collinear`, `lemma_orientation_spec_scale_nonzero_preserves`, `lemma_orientation_spec_scale_zero_collinear`, `lemma_orientation3_spec_scale_nonzero_behavior`, `lemma_orientation3_spec_scale_zero_coplanar` now use strong preconditions instead of outer implication antecedents).
 - [ ] P4.6 backlog: eliminate remaining representation leaks from public law contracts.
   - constrain `.num`/`.den` reasoning to proof-local bridges only.
+  - progress: orientation 2D class/swap law contracts were hardened to semantic signum forms (no `.num` exposure), and representation-oriented bridge lemmas in `Scalar`/`Vec2`/`Point2`/`Point3`/`Point4` (notably `*_num`/denominator/signum-iff bridge helpers) are now crate-internal (`pub(crate)`), reducing public API leakage while preserving proof-local usage.
 - [ ] P4.6 backlog: remove contradiction-endings where a direct semantic conclusion is available.
   - progress: initial target in the non-commutativity witness proof path (`src/quaternion.rs`) is completed; continue scanning for remaining contradiction-endings that can be replaced by direct semantic negation arguments.
 - [ ] Keep theorem naming consistent with existing `vcad-math` style (`lemma_*` law surface).
 - [ ] Ensure `./scripts/verify-vcad-math.sh` remains green after each sub-phase.
+
+## Requested Checklist Alignment (2026-02-13)
+Status check against requested geometry primitives/helper-expression milestones.
+
+- [x] `Point2`, `Point3`, `Vec2`, `Vec3` are defined over rational `Scalar`, with points/vectors as distinct types.
+- [x] Vector ops (`add/sub/scale`) and core linearity-family proofs are present for `Vec2` and `Vec3`.
+- [x] Dot-product bilinearity + commutativity are present (`Vec2`/`Vec3`).
+- [x] 3D cross anti-commutativity is present (`Vec3::lemma_cross_antisymmetric`).
+- [x] Add explicit 3D cross-orthogonality law(s), e.g. `a.dot(a.cross(b)) == 0` (semantic-equality form).
+  - implemented: `Vec3::lemma_dot_cross_left_orthogonal(a, b)` (`a.dot_spec(a.cross_spec(b)).eqv_spec(0)`).
+- [x] Add explicit 2D signed-area polynomial helper spec
+  - target form: `(bx-ax)(cy-ay) - (by-ay)(cx-ax)`
+  - plus bridge lemma showing equivalence with `orient2d_spec`.
+- [x] Add explicit 3D signed-volume polynomial helper spec (fully expanded 3x3 determinant over edge vectors)
+  - no matrix type, direct polynomial expression
+  - plus bridge lemma showing equivalence with `orient3d_spec`.
+- [x] 2D antisymmetry under swaps is covered at orient-level (full permutation/sign table).
+- [ ] Extend 3D antisymmetry from current `c<->d` swap to any transposition (or provide full permutation/sign table).
+  - progress: explicit signed-volume helper now has `c<->d` antisymmetry via `lemma_signed_volume3_poly_swap_cd_eqv_neg`; full transposition/permutation surface is still pending.
+- [ ] Introduce explicit linear-dependence predicates for edge vectors and prove:
+  - signed-area `== 0` iff edge vectors are linearly dependent (collinear characterization)
+  - signed-volume `== 0` iff edge vectors are linearly dependent (coplanar characterization)

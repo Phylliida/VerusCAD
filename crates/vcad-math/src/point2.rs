@@ -158,7 +158,7 @@ impl Point2 {
         assert(u.eqv_spec(v));
     }
 
-    pub proof fn lemma_sub_self_zero_num(p: Self)
+    pub(crate) proof fn lemma_sub_self_zero_num(p: Self)
         ensures
             p.sub_spec(p).x.num == 0,
             p.sub_spec(p).y.num == 0,

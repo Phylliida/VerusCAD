@@ -16,6 +16,12 @@ pub open spec fn orient2d_spec(a: Point2, b: Point2, c: Point2) -> Scalar {
     b.sub_spec(a).cross_spec(c.sub_spec(a))
 }
 
+pub open spec fn signed_area2_poly_spec(a: Point2, b: Point2, c: Point2) -> Scalar {
+    b.x.sub_spec(a.x).mul_spec(c.y.sub_spec(a.y)).sub_spec(
+        b.y.sub_spec(a.y).mul_spec(c.x.sub_spec(a.x)),
+    )
+}
+
 pub open spec fn is_ccw(a: Point2, b: Point2, c: Point2) -> bool {
     orient2d_spec(a, b, c).signum() == 1
 }
@@ -64,6 +70,26 @@ pub proof fn orientation(a: Point2, b: Point2, c: Point2) -> (o: Orientation)
     } else {
         Orientation::Collinear
     }
+}
+
+pub proof fn lemma_signed_area2_poly_matches_orient2d(a: Point2, b: Point2, c: Point2)
+    ensures
+        signed_area2_poly_spec(a, b, c) == orient2d_spec(a, b, c),
+{
+    let ba = b.sub_spec(a);
+    let ca = c.sub_spec(a);
+    assert(ba.x == b.x.sub_spec(a.x));
+    assert(ba.y == b.y.sub_spec(a.y));
+    assert(ca.x == c.x.sub_spec(a.x));
+    assert(ca.y == c.y.sub_spec(a.y));
+    assert(ba.cross_spec(ca)
+        == ba.x.mul_spec(ca.y).sub_spec(ba.y.mul_spec(ca.x)));
+    assert(ba.cross_spec(ca)
+        == b.x.sub_spec(a.x).mul_spec(c.y.sub_spec(a.y)).sub_spec(
+            b.y.sub_spec(a.y).mul_spec(c.x.sub_spec(a.x)),
+        ));
+    assert(orient2d_spec(a, b, c) == ba.cross_spec(ca));
+    assert(orient2d_spec(a, b, c) == signed_area2_poly_spec(a, b, c));
 }
 
 pub proof fn lemma_is_ccw_iff_positive(a: Point2, b: Point2, c: Point2)
@@ -571,6 +597,19 @@ pub proof fn lemma_orient2d_swap_antisymmetric_num(a: Point2, b: Point2, c: Poin
     assert(lhs == rhs.neg_spec());
     assert(lhs.signum() == rhs.neg_spec().signum());
     assert(lhs.signum() == -rhs.signum());
+}
+
+pub proof fn lemma_signed_area2_poly_swap_antisymmetric(a: Point2, b: Point2, c: Point2)
+    ensures
+        signed_area2_poly_spec(a, b, c) == signed_area2_poly_spec(a, c, b).neg_spec(),
+{
+    lemma_signed_area2_poly_matches_orient2d(a, b, c);
+    lemma_signed_area2_poly_matches_orient2d(a, c, b);
+    lemma_orient2d_swap_antisymmetric(a, b, c);
+    assert(signed_area2_poly_spec(a, b, c) == orient2d_spec(a, b, c));
+    assert(signed_area2_poly_spec(a, c, b) == orient2d_spec(a, c, b));
+    assert(orient2d_spec(a, b, c) == orient2d_spec(a, c, b).neg_spec());
+    assert(signed_area2_poly_spec(a, b, c) == signed_area2_poly_spec(a, c, b).neg_spec());
 }
 
 pub proof fn lemma_is_collinear_swap(a: Point2, b: Point2, c: Point2)
