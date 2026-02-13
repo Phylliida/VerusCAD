@@ -3,6 +3,7 @@ use crate::runtime_orientation3::{self, RuntimeOrientation3};
 use crate::runtime_point3::RuntimePoint3;
 use crate::runtime_scalar::RuntimeScalar;
 use crate::runtime_vec3::RuntimeVec3;
+use crate::scalar::Scalar;
 use vstd::prelude::*;
 use vstd::view::View;
 
@@ -143,7 +144,7 @@ pub fn runtime_orientation3_scale_zero_coplanar(
     k: &RuntimeScalar,
 ) -> (out: RuntimeOrientation3)
     requires
-        k@.num == 0,
+        k@.eqv_spec(Scalar::from_int_spec(0)),
     ensures
         out@ == orientation3_spec(
             scale_point_from_origin3_spec(a@, k@),
@@ -159,6 +160,9 @@ pub fn runtime_orientation3_scale_zero_coplanar(
     let sd = runtime_orientation3::scale_point_from_origin3(d, k);
     let out = runtime_orientation3::orientation3(&sa, &sb, &sc, &sd);
     proof {
+        Scalar::lemma_eqv_zero_iff_num_zero(k@);
+        assert(k@.eqv_spec(Scalar::from_int_spec(0)) == (k@.num == 0));
+        assert(k@.num == 0);
         crate::orientation3::lemma_orientation3_spec_scale_zero_coplanar_strong(a@, b@, c@, d@, k@);
         assert(orientation3_spec(
             scale_point_from_origin3_spec(a@, k@),
@@ -179,7 +183,7 @@ pub fn runtime_orientation3_scale_nonzero_behavior(
     k: &RuntimeScalar,
 ) -> (pair: (RuntimeOrientation3, RuntimeOrientation3))
     requires
-        k@.num != 0,
+        !k@.eqv_spec(Scalar::from_int_spec(0)),
     ensures
         pair.0@ == orientation3_spec(
             scale_point_from_origin3_spec(a@, k@),
@@ -201,6 +205,11 @@ pub fn runtime_orientation3_scale_nonzero_behavior(
     let lhs = runtime_orientation3::orientation3(&sa, &sb, &sc, &sd);
     let rhs = runtime_orientation3::orientation3(a, b, c, d);
     proof {
+        Scalar::lemma_eqv_zero_iff_num_zero(k@);
+        assert(k@.eqv_spec(Scalar::from_int_spec(0)) == (k@.num == 0));
+        assert(!k@.eqv_spec(Scalar::from_int_spec(0)));
+        assert(!(k@.num == 0));
+        assert(k@.num != 0);
         crate::orientation3::lemma_orientation3_spec_scale_nonzero_behavior_strong(a@, b@, c@, d@, k@);
         assert(
             (orientation3_spec(

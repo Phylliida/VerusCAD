@@ -3,6 +3,7 @@ use crate::runtime_orientation::{self, RuntimeOrientation};
 use crate::runtime_point2::RuntimePoint2;
 use crate::runtime_scalar::RuntimeScalar;
 use crate::runtime_vec2::RuntimeVec2;
+use crate::scalar::Scalar;
 use vstd::prelude::*;
 use vstd::view::View;
 
@@ -180,7 +181,7 @@ pub fn runtime_orientation_scale_nonzero_preserves(
     RuntimeOrientation,
 ))
     requires
-        k@.num != 0,
+        !k@.eqv_spec(Scalar::from_int_spec(0)),
     ensures
         pair.0@ == orientation_spec(
             scale_point_from_origin_spec(a@, k@),
@@ -196,6 +197,11 @@ pub fn runtime_orientation_scale_nonzero_preserves(
     let lhs = runtime_orientation::orientation(&sa, &sb, &sc);
     let rhs = runtime_orientation::orientation(a, b, c);
     proof {
+        Scalar::lemma_eqv_zero_iff_num_zero(k@);
+        assert(k@.eqv_spec(Scalar::from_int_spec(0)) == (k@.num == 0));
+        assert(!k@.eqv_spec(Scalar::from_int_spec(0)));
+        assert(!(k@.num == 0));
+        assert(k@.num != 0);
         crate::orientation::lemma_orientation_spec_scale_nonzero_preserves_strong(a@, b@, c@, k@);
         assert(
             orientation_spec(
@@ -217,7 +223,7 @@ pub fn runtime_orientation_scale_zero_collinear(
     k: &RuntimeScalar,
 ) -> (out: RuntimeOrientation)
     requires
-        k@.num == 0,
+        k@.eqv_spec(Scalar::from_int_spec(0)),
     ensures
         out@ == orientation_spec(
             scale_point_from_origin_spec(a@, k@),
@@ -231,6 +237,9 @@ pub fn runtime_orientation_scale_zero_collinear(
     let sc = runtime_orientation::scale_point_from_origin(c, k);
     let out = runtime_orientation::orientation(&sa, &sb, &sc);
     proof {
+        Scalar::lemma_eqv_zero_iff_num_zero(k@);
+        assert(k@.eqv_spec(Scalar::from_int_spec(0)) == (k@.num == 0));
+        assert(k@.num == 0);
         crate::orientation::lemma_orientation_spec_scale_zero_collinear_strong(a@, b@, c@, k@);
         assert(
             orientation_spec(
