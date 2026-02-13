@@ -1,6 +1,13 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 
 use vcad_math::runtime_point3::RuntimePoint3;
+#[cfg(feature = "verus-proofs")]
+use crate::verified_checker_kernels::{
+    kernel_check_edge_has_exactly_two_half_edges, kernel_check_index_bounds,
+    kernel_check_no_degenerate_edges,
+    kernel_check_prev_inverse_of_next, kernel_check_twin_involution,
+    KernelHalfEdge, KernelMesh,
+};
 
 pub type VertexId = usize;
 pub type EdgeId = usize;
@@ -279,65 +286,159 @@ impl Mesh {
         !chis.is_empty() && chis.into_iter().all(|chi| chi == 2)
     }
 
+    #[cfg(feature = "verus-proofs")]
+    pub(crate) fn to_kernel_mesh_for_verification(&self) -> KernelMesh {
+        let vertex_half_edges = self.vertices.iter().map(|v| v.half_edge).collect();
+        let edge_half_edges = self.edges.iter().map(|e| e.half_edge).collect();
+        let face_half_edges = self.faces.iter().map(|f| f.half_edge).collect();
+        let half_edges = self.half_edges.iter().map(|he| KernelHalfEdge {
+            twin: he.twin,
+            next: he.next,
+            prev: he.prev,
+            vertex: he.vertex,
+            edge: he.edge,
+            face: he.face,
+        }).collect();
+        KernelMesh {
+            vertex_half_edges,
+            edge_half_edges,
+            face_half_edges,
+            half_edges,
+        }
+    }
+
+    #[cfg(feature = "verus-proofs")]
+    pub(crate) fn check_index_bounds_via_kernel(&self) -> bool {
+        let km = self.to_kernel_mesh_for_verification();
+        kernel_check_index_bounds(&km)
+    }
+
+    #[cfg(feature = "verus-proofs")]
+    pub(crate) fn check_twin_involution_via_kernel(&self) -> bool {
+        let km = self.to_kernel_mesh_for_verification();
+        kernel_check_twin_involution(&km)
+    }
+
+    #[cfg(feature = "verus-proofs")]
+    pub(crate) fn check_prev_inverse_of_next_via_kernel(&self) -> bool {
+        let km = self.to_kernel_mesh_for_verification();
+        kernel_check_prev_inverse_of_next(&km)
+    }
+
+    #[cfg(feature = "verus-proofs")]
+    pub(crate) fn check_no_degenerate_edges_via_kernel(&self) -> bool {
+        let km = self.to_kernel_mesh_for_verification();
+        kernel_check_no_degenerate_edges(&km)
+    }
+
+    #[cfg(feature = "verus-proofs")]
+    pub(crate) fn check_edge_has_exactly_two_half_edges_via_kernel(&self) -> bool {
+        let km = self.to_kernel_mesh_for_verification();
+        kernel_check_edge_has_exactly_two_half_edges(&km)
+    }
+
+    #[cfg(feature = "verus-proofs")]
+    pub(crate) fn bridge_index_and_twin_checks_agree(&self) -> bool {
+        let runtime_index_ok = self.check_index_bounds();
+        let kernel_index_ok = self.check_index_bounds_via_kernel();
+        if runtime_index_ok != kernel_index_ok {
+            return false;
+        }
+        if !runtime_index_ok {
+            return true;
+        }
+
+        let runtime_twin_ok = self.check_twin_involution();
+        let kernel_twin_ok = self.check_twin_involution_via_kernel();
+        runtime_twin_ok == kernel_twin_ok
+    }
+
     fn check_index_bounds(&self) -> bool {
-        for v in &self.vertices {
-            if v.half_edge >= self.half_edges.len() {
-                return false;
-            }
+        #[cfg(feature = "verus-proofs")]
+        {
+            // In proof-enabled builds, delegate directly to the verified kernel checker.
+            return self.check_index_bounds_via_kernel();
         }
-        for e in &self.edges {
-            if e.half_edge >= self.half_edges.len() {
-                return false;
+
+        #[cfg(not(feature = "verus-proofs"))]
+        {
+            for v in &self.vertices {
+                if v.half_edge >= self.half_edges.len() {
+                    return false;
+                }
             }
+            for e in &self.edges {
+                if e.half_edge >= self.half_edges.len() {
+                    return false;
+                }
+            }
+            for f in &self.faces {
+                if f.half_edge >= self.half_edges.len() {
+                    return false;
+                }
+            }
+            for he in &self.half_edges {
+                if he.twin >= self.half_edges.len() {
+                    return false;
+                }
+                if he.next >= self.half_edges.len() {
+                    return false;
+                }
+                if he.prev >= self.half_edges.len() {
+                    return false;
+                }
+                if he.vertex >= self.vertices.len() {
+                    return false;
+                }
+                if he.edge >= self.edges.len() {
+                    return false;
+                }
+                if he.face >= self.faces.len() {
+                    return false;
+                }
+            }
+            true
         }
-        for f in &self.faces {
-            if f.half_edge >= self.half_edges.len() {
-                return false;
-            }
-        }
-        for he in &self.half_edges {
-            if he.twin >= self.half_edges.len() {
-                return false;
-            }
-            if he.next >= self.half_edges.len() {
-                return false;
-            }
-            if he.prev >= self.half_edges.len() {
-                return false;
-            }
-            if he.vertex >= self.vertices.len() {
-                return false;
-            }
-            if he.edge >= self.edges.len() {
-                return false;
-            }
-            if he.face >= self.faces.len() {
-                return false;
-            }
-        }
-        true
     }
 
     fn check_twin_involution(&self) -> bool {
-        for (h, he) in self.half_edges.iter().enumerate() {
-            let t = he.twin;
-            if self.half_edges[t].twin != h {
-                return false;
-            }
+        #[cfg(feature = "verus-proofs")]
+        {
+            // In proof-enabled builds, delegate directly to the verified kernel checker.
+            return self.check_twin_involution_via_kernel();
         }
-        true
+
+        #[cfg(not(feature = "verus-proofs"))]
+        {
+            for (h, he) in self.half_edges.iter().enumerate() {
+                let t = he.twin;
+                if self.half_edges[t].twin != h {
+                    return false;
+                }
+            }
+            true
+        }
     }
 
     fn check_prev_inverse_of_next(&self) -> bool {
-        for (h, he) in self.half_edges.iter().enumerate() {
-            if self.half_edges[he.next].prev != h {
-                return false;
-            }
-            if self.half_edges[he.prev].next != h {
-                return false;
-            }
+        #[cfg(feature = "verus-proofs")]
+        {
+            // In proof-enabled builds, delegate directly to the verified kernel checker.
+            return self.check_prev_inverse_of_next_via_kernel();
         }
-        true
+
+        #[cfg(not(feature = "verus-proofs"))]
+        {
+            for (h, he) in self.half_edges.iter().enumerate() {
+                if self.half_edges[he.next].prev != h {
+                    return false;
+                }
+                if self.half_edges[he.prev].next != h {
+                    return false;
+                }
+            }
+            true
+        }
     }
 
     fn check_face_cycles(&self) -> bool {
@@ -380,18 +481,27 @@ impl Mesh {
     }
 
     fn check_no_degenerate_edges(&self) -> bool {
-        for he in &self.half_edges {
-            let twin = &self.half_edges[he.twin];
-            if he.vertex == twin.vertex {
-                return false;
-            }
-
-            let to = self.half_edges[he.next].vertex;
-            if he.vertex == to {
-                return false;
-            }
+        #[cfg(feature = "verus-proofs")]
+        {
+            // In proof-enabled builds, delegate directly to the verified kernel checker.
+            return self.check_no_degenerate_edges_via_kernel();
         }
-        true
+
+        #[cfg(not(feature = "verus-proofs"))]
+        {
+            for he in &self.half_edges {
+                let twin = &self.half_edges[he.twin];
+                if he.vertex == twin.vertex {
+                    return false;
+                }
+
+                let to = self.half_edges[he.next].vertex;
+                if he.vertex == to {
+                    return false;
+                }
+            }
+            true
+        }
     }
 
     fn check_vertex_manifold_single_cycle(&self) -> bool {
@@ -441,38 +551,47 @@ impl Mesh {
     }
 
     fn check_edge_has_exactly_two_half_edges(&self) -> bool {
-        let mut first: Vec<Option<usize>> = vec![None; self.edges.len()];
-        let mut second: Vec<Option<usize>> = vec![None; self.edges.len()];
-
-        for (h, he) in self.half_edges.iter().enumerate() {
-            match first[he.edge] {
-                None => first[he.edge] = Some(h),
-                Some(_) => match second[he.edge] {
-                    None => second[he.edge] = Some(h),
-                    Some(_) => return false,
-                },
-            }
+        #[cfg(feature = "verus-proofs")]
+        {
+            // In proof-enabled builds, delegate directly to the verified kernel checker.
+            return self.check_edge_has_exactly_two_half_edges_via_kernel();
         }
 
-        for (edge_id, edge) in self.edges.iter().enumerate() {
-            let a = match first[edge_id] {
-                Some(a) => a,
-                None => return false,
-            };
-            let b = match second[edge_id] {
-                Some(b) => b,
-                None => return false,
-            };
+        #[cfg(not(feature = "verus-proofs"))]
+        {
+            let mut first: Vec<Option<usize>> = vec![None; self.edges.len()];
+            let mut second: Vec<Option<usize>> = vec![None; self.edges.len()];
 
-            if self.half_edges[a].twin != b || self.half_edges[b].twin != a {
-                return false;
+            for (h, he) in self.half_edges.iter().enumerate() {
+                match first[he.edge] {
+                    None => first[he.edge] = Some(h),
+                    Some(_) => match second[he.edge] {
+                        None => second[he.edge] = Some(h),
+                        Some(_) => return false,
+                    },
+                }
             }
-            if edge.half_edge != a && edge.half_edge != b {
-                return false;
+
+            for (edge_id, edge) in self.edges.iter().enumerate() {
+                let a = match first[edge_id] {
+                    Some(a) => a,
+                    None => return false,
+                };
+                let b = match second[edge_id] {
+                    Some(b) => b,
+                    None => return false,
+                };
+
+                if self.half_edges[a].twin != b || self.half_edges[b].twin != a {
+                    return false;
+                }
+                if edge.half_edge != a && edge.half_edge != b {
+                    return false;
+                }
             }
+
+            true
         }
-
-        true
     }
 
     fn half_edge_components(&self) -> Vec<Vec<usize>> {
@@ -552,5 +671,36 @@ mod tests {
         assert_eq!(mesh.half_edges.len(), 18);
         assert_eq!(mesh.component_count(), 1);
         assert_eq!(mesh.euler_characteristics_per_component(), vec![2]);
+    }
+
+    #[cfg(feature = "verus-proofs")]
+    #[test]
+    fn bridge_core_checks_agree_on_reference_meshes() {
+        let t = Mesh::tetrahedron();
+        assert!(t.bridge_index_and_twin_checks_agree());
+        assert_eq!(t.check_prev_inverse_of_next(), t.check_prev_inverse_of_next_via_kernel());
+        assert_eq!(t.check_no_degenerate_edges(), t.check_no_degenerate_edges_via_kernel());
+        assert_eq!(
+            t.check_edge_has_exactly_two_half_edges(),
+            t.check_edge_has_exactly_two_half_edges_via_kernel()
+        );
+
+        let c = Mesh::cube();
+        assert!(c.bridge_index_and_twin_checks_agree());
+        assert_eq!(c.check_prev_inverse_of_next(), c.check_prev_inverse_of_next_via_kernel());
+        assert_eq!(c.check_no_degenerate_edges(), c.check_no_degenerate_edges_via_kernel());
+        assert_eq!(
+            c.check_edge_has_exactly_two_half_edges(),
+            c.check_edge_has_exactly_two_half_edges_via_kernel()
+        );
+
+        let p = Mesh::triangular_prism();
+        assert!(p.bridge_index_and_twin_checks_agree());
+        assert_eq!(p.check_prev_inverse_of_next(), p.check_prev_inverse_of_next_via_kernel());
+        assert_eq!(p.check_no_degenerate_edges(), p.check_no_degenerate_edges_via_kernel());
+        assert_eq!(
+            p.check_edge_has_exactly_two_half_edges(),
+            p.check_edge_has_exactly_two_half_edges_via_kernel()
+        );
     }
 }

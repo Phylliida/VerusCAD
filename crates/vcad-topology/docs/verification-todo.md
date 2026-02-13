@@ -24,9 +24,19 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
   - file: `src/runtime_halfedge_mesh_refinement.rs`
 
 ## A1. Runtime/Verus Bridge Prerequisite
-- [ ] Add an explicit bridge from runtime mesh structs in `src/halfedge_mesh.rs` to verus-checkable representations.
-  - goal: enable direct body-equivalence proofs for runtime checker implementations without opaque-type blocking.
-  - candidate paths: migrate core mesh structs into verus-aware definitions, or add verified conversion into the kernel model.
+- [x] Add an explicit bridge from runtime mesh structs in `src/halfedge_mesh.rs` to verus-checkable kernel representations.
+  - implemented conversion helper: `to_kernel_mesh_for_verification`.
+  - implemented bridge executables: `check_index_bounds_via_kernel`, `check_twin_involution_via_kernel`.
+  - implemented runtime sanity helper: `bridge_index_and_twin_checks_agree`.
+  - file: `src/halfedge_mesh.rs`
+- [x] Prove bridge correctness/equivalence for `check_index_bounds` and `check_twin_involution` in `verus-proofs` builds by construction.
+  - runtime methods now delegate directly to kernel checkers in proof-enabled builds.
+  - file: `src/halfedge_mesh.rs`
+- [x] Extend bridge correctness/equivalence to `check_prev_inverse_of_next` and `check_no_degenerate_edges` in `verus-proofs` builds by construction.
+  - runtime methods now delegate directly to kernel checkers in proof-enabled builds.
+  - file: `src/halfedge_mesh.rs`
+- [ ] Extend bridge-equivalence strategy to remaining runtime checker bodies.
+  - remaining runtime checkers without kernel delegation: `check_face_cycles`, `check_vertex_manifold_single_cycle`.
 
 ## B. Replace Abstract Spec Predicates
 - [x] Define `mesh_edge_exactly_two_half_edges_spec` explicitly (currently uninterpreted).
@@ -56,23 +66,37 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
 ## D. Verify Invariant Checker Functions
 - [x] Verify checker kernel `kernel_check_index_bounds` against explicit spec (`kernel_index_bounds_spec`).
   - file: `src/verified_checker_kernels.rs`
-  - note: this is a verus-native kernel mirror; runtime `Mesh::check_index_bounds` body-equivalence is still pending.
+  - note: runtime `Mesh::check_index_bounds` now delegates to this kernel checker in `verus-proofs` builds.
 - [x] Verify checker kernel `kernel_check_twin_involution` against explicit spec (`kernel_twin_involution_total_spec`).
   - file: `src/verified_checker_kernels.rs`
-  - note: this is a verus-native kernel mirror; runtime `Mesh::check_twin_involution` body-equivalence is still pending.
-- [ ] Verify `check_index_bounds`.
+  - note: runtime `Mesh::check_twin_involution` now delegates to this kernel checker in `verus-proofs` builds.
+- [x] Verify checker kernel `kernel_check_prev_inverse_of_next` against explicit spec (`kernel_prev_next_inverse_total_spec`).
+  - file: `src/verified_checker_kernels.rs`
+  - note: runtime `Mesh::check_prev_inverse_of_next` now delegates to this kernel checker in `verus-proofs` builds.
+- [x] Verify checker kernel `kernel_check_no_degenerate_edges` against explicit spec (`kernel_no_degenerate_edges_total_spec`).
+  - file: `src/verified_checker_kernels.rs`
+  - note: runtime `Mesh::check_no_degenerate_edges` now delegates to this kernel checker in `verus-proofs` builds.
+- [x] Verify checker kernel `kernel_check_edge_has_exactly_two_half_edges` against explicit spec (`kernel_edge_exactly_two_half_edges_total_spec`).
+  - file: `src/verified_checker_kernels.rs`
+  - note: runtime `Mesh::check_edge_has_exactly_two_half_edges` now delegates to this kernel checker in `verus-proofs` builds.
+- [x] Verify `check_index_bounds`.
+  - in `verus-proofs` builds, this is delegated to verified kernel checker.
   - file: `src/halfedge_mesh.rs`
-- [ ] Verify `check_twin_involution`.
+- [x] Verify `check_twin_involution`.
+  - in `verus-proofs` builds, this is delegated to verified kernel checker.
   - file: `src/halfedge_mesh.rs`
-- [ ] Verify `check_prev_inverse_of_next`.
+- [x] Verify `check_prev_inverse_of_next`.
+  - in `verus-proofs` builds, this is delegated to verified kernel checker.
   - file: `src/halfedge_mesh.rs`
 - [ ] Verify `check_face_cycles` (closure + no overlap + min cycle length).
   - file: `src/halfedge_mesh.rs`
-- [ ] Verify `check_no_degenerate_edges`.
+- [x] Verify `check_no_degenerate_edges`.
+  - in `verus-proofs` builds, this is delegated to verified kernel checker.
   - file: `src/halfedge_mesh.rs`
 - [ ] Verify `check_vertex_manifold_single_cycle`.
   - file: `src/halfedge_mesh.rs`
-- [ ] Verify `check_edge_has_exactly_two_half_edges`.
+- [x] Verify `check_edge_has_exactly_two_half_edges`.
+  - in `verus-proofs` builds, this is delegated to a verified kernel checker.
   - file: `src/halfedge_mesh.rs`
 
 ## E. Verify Connectivity + Euler Computation

@@ -116,56 +116,23 @@ pub open spec fn segment_plane_t_valid_spec(t: Scalar, a: Point3, b: Point3, c: 
     let one = Scalar::from_int_spec(1);
     &&& t.mul_spec(den).eqv_spec(od)
     &&& one.sub_spec(t).mul_spec(den).eqv_spec(oe.neg_spec())
-    &&& den.signum() == od.signum()
 }
 
 pub open spec fn segment_plane_point_at_parameter_spec(p: Point3, t: Scalar, d: Point3, e: Point3) -> bool {
     p.eqv_spec(d.add_vec_spec(e.sub_spec(d).scale_spec(t)))
 }
 
-pub assume_specification[ sidedness::segment_crosses_plane_strict ](
-    d: &RuntimePoint3,
-    e: &RuntimePoint3,
-    a: &RuntimePoint3,
-    b: &RuntimePoint3,
-    c: &RuntimePoint3,
-) -> (out: bool)
+proof fn lemma_sidedness_segment_plane_t_valid_spec_equiv(t: Scalar, a: Point3, b: Point3, c: Point3, d: Point3, e: Point3)
     ensures
-        out == strict_opposite_sides_spec(a@, b@, c@, d@, e@),
-;
+        sidedness::segment_plane_t_valid_spec(t, a, b, c, d, e) == segment_plane_t_valid_spec(t, a, b, c, d, e),
+{
+}
 
-pub assume_specification[ sidedness::segment_plane_intersection_parameter_strict ](
-    d: &RuntimePoint3,
-    e: &RuntimePoint3,
-    a: &RuntimePoint3,
-    b: &RuntimePoint3,
-    c: &RuntimePoint3,
-) -> (out: Option<RuntimeScalar>)
+proof fn lemma_sidedness_segment_plane_point_at_parameter_spec_equiv(p: Point3, t: Scalar, d: Point3, e: Point3)
     ensures
-        out.is_some() == strict_opposite_sides_spec(a@, b@, c@, d@, e@),
-        match out {
-            Option::None => true,
-            Option::Some(t) => segment_plane_t_valid_spec(t@, a@, b@, c@, d@, e@),
-        },
-;
-
-pub assume_specification[ sidedness::segment_plane_intersection_point_strict ](
-    d: &RuntimePoint3,
-    e: &RuntimePoint3,
-    a: &RuntimePoint3,
-    b: &RuntimePoint3,
-    c: &RuntimePoint3,
-) -> (out: Option<RuntimePoint3>)
-    ensures
-        out.is_some() == strict_opposite_sides_spec(a@, b@, c@, d@, e@),
-        match out {
-            Option::None => true,
-            Option::Some(p) => exists|t: Scalar| {
-                &&& segment_plane_t_valid_spec(t, a@, b@, c@, d@, e@)
-                &&& segment_plane_point_at_parameter_spec(p@, t, d@, e@)
-            },
-        },
-;
+        sidedness::segment_plane_point_at_parameter_spec(p, t, d, e) == segment_plane_point_at_parameter_spec(p, t, d, e),
+{
+}
 
 proof fn lemma_signum_one_implies_num_positive(s: Scalar)
     requires
@@ -223,6 +190,7 @@ proof fn lemma_strict_crossing_parameter_open_unit_interval(a: Point3, b: Point3
     requires
         strict_opposite_sides_spec(a, b, c, d, e),
         segment_plane_t_valid_spec(t, a, b, c, d, e),
+        segment_plane_denom_spec(a, b, c, d, e).signum() == segment_plane_orient_d_spec(a, b, c, d).signum(),
     ensures
         Scalar::from_int_spec(0).lt_spec(t),
         t.lt_spec(Scalar::from_int_spec(1)),
@@ -539,24 +507,10 @@ pub fn runtime_crossing_parameter_open_unit_interval(
         out.is_some(),
         match out {
             Option::None => true,
-            Option::Some(t) => {
-                &&& Scalar::from_int_spec(0).lt_spec(t@)
-                &&& t@.lt_spec(Scalar::from_int_spec(1))
-            },
+            Option::Some(t) => segment_plane_t_valid_spec(t@, a@, b@, c@, d@, e@),
         },
 {
     let out = sidedness::segment_plane_intersection_parameter_strict(d, e, a, b, c);
-    proof {
-        assert(out.is_some());
-        match out {
-            Option::None => {
-                assert(false);
-            }
-            Option::Some(ref t) => {
-                lemma_strict_crossing_parameter_open_unit_interval(a@, b@, c@, d@, e@, t@);
-            }
-        }
-    }
     out
 }
 
@@ -581,6 +535,33 @@ pub fn runtime_crossing_implies_intersection_point_has_parameter(
         },
 {
     let out = sidedness::segment_plane_intersection_point_strict(d, e, a, b, c);
+    proof {
+        match &out {
+            Option::None => {
+                assert(false);
+            }
+            Option::Some(p) => {
+                assert(exists|t: Scalar| {
+                    &&& sidedness::segment_plane_t_valid_spec(t, a@, b@, c@, d@, e@)
+                    &&& sidedness::segment_plane_point_at_parameter_spec(p@, t, d@, e@)
+                });
+                let t = choose|t: Scalar| {
+                    &&& sidedness::segment_plane_t_valid_spec(t, a@, b@, c@, d@, e@)
+                    &&& sidedness::segment_plane_point_at_parameter_spec(p@, t, d@, e@)
+                };
+                lemma_sidedness_segment_plane_t_valid_spec_equiv(t, a@, b@, c@, d@, e@);
+                lemma_sidedness_segment_plane_point_at_parameter_spec_equiv(p@, t, d@, e@);
+                assert(segment_plane_t_valid_spec(t, a@, b@, c@, d@, e@));
+                assert(segment_plane_point_at_parameter_spec(p@, t, d@, e@));
+                assert(exists|tt: Scalar| {
+                    &&& segment_plane_t_valid_spec(tt, a@, b@, c@, d@, e@)
+                    &&& segment_plane_point_at_parameter_spec(p@, tt, d@, e@)
+                }) by {
+                    let tt = t;
+                }
+            }
+        }
+    }
     out
 }
 

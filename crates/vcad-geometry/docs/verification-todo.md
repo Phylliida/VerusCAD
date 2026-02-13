@@ -2,16 +2,16 @@
 Goal: remove trusted proof boundaries so all `vcad-geometry` runtime behavior is justified by explicit specs + proofs.
 
 ## Baseline Snapshot (2026-02-13)
-- [x] `vcad-geometry` verifies with `verus-proofs` enabled (`64 verified, 0 errors`).
-- [ ] Trusted refinement assumptions remain (`assume_specification[...]`).
-- [ ] Sign wrapper APIs are runtime-only and need explicit proof contracts.
+- [x] `vcad-geometry` verifies with `verus-proofs` enabled (`87 verified, 0 errors`).
+- [x] Trusted refinement assumptions removed (`assume_specification[...]` no longer present in `src/`).
+- [x] Sign wrapper APIs have explicit proof contracts.
 
 ## Recommended Work Order
 - [x] 1) Orientation runtime boundary.
 - [x] 2) Collinearity/coplanarity boundary.
-- [ ] 3) Sidedness boundary.
-- [ ] 4) Convex polygon boundary.
-- [ ] 5) Final de-trusting and verification gate.
+- [x] 3) Sidedness boundary.
+- [x] 4) Convex polygon boundary.
+- [x] 5) Final de-trusting and verification gate.
 
 ## A. Orientation Runtime Boundary
 File: `src/runtime_orientation_predicates_refinement.rs`
@@ -35,17 +35,17 @@ File: `src/runtime_sidedness_refinement.rs`
 - [x] Replace `assume_specification[ sidedness::point_above_plane ]` with proved refinement.
 - [x] Replace `assume_specification[ sidedness::point_below_plane ]` with proved refinement.
 - [x] Replace `assume_specification[ sidedness::point_on_plane ]` with proved refinement.
-- [ ] Replace `assume_specification[ sidedness::segment_crosses_plane_strict ]` with proved refinement.
-- [ ] Replace `assume_specification[ sidedness::segment_plane_intersection_parameter_strict ]` with proved refinement.
-- [ ] Replace `assume_specification[ sidedness::segment_plane_intersection_point_strict ]` with proved refinement.
+- [x] Replace `assume_specification[ sidedness::segment_crosses_plane_strict ]` with proved refinement.
+- [x] Replace `assume_specification[ sidedness::segment_plane_intersection_parameter_strict ]` with proved refinement.
+- [x] Replace `assume_specification[ sidedness::segment_plane_intersection_point_strict ]` with proved refinement.
 
 ## D. Convex Polygon Runtime Boundary
 File: `src/runtime_convex_polygon_refinement.rs`
-- [ ] Replace `assume_specification[ convex_polygon::point_in_convex_polygon_2d ]` with proved refinement.
-- [ ] Replace `assume_specification[ convex_polygon::point_strictly_in_convex_polygon_2d ]` with proved refinement.
+- [x] Replace `assume_specification[ convex_polygon::point_in_convex_polygon_2d ]` with proved refinement.
+- [x] Replace `assume_specification[ convex_polygon::point_strictly_in_convex_polygon_2d ]` with proved refinement.
 
 ## E. Completion Gates
-- [ ] `rg -n "assume_specification\\[" crates/vcad-geometry/src` shows no trusted assumptions for `vcad-geometry` runtime behavior.
-- [ ] Full crate verification succeeds:
+- [x] `rg -n "assume_specification\\[" crates/vcad-geometry/src` shows no trusted assumptions for `vcad-geometry` runtime behavior.
+- [x] Full crate verification succeeds:
   - `cargo verus verify --manifest-path crates/vcad-geometry/Cargo.toml -p vcad-geometry --features verus-proofs -- --triggers-mode silent`
-- [ ] Keep/extend runtime unit tests for representative geometric cases while proofs are being migrated.
+- [x] Keep/extend runtime unit tests for representative geometric cases while proofs are being migrated.
