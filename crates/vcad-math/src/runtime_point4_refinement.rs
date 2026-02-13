@@ -9,53 +9,15 @@ use vstd::view::View;
 verus! {
 
 #[verifier::external_type_specification]
-#[verifier::external_body]
 pub struct ExRuntimePoint4(RuntimePoint4);
 
 impl View for RuntimePoint4 {
     type V = Point4;
 
-    uninterp spec fn view(&self) -> Point4;
+    open spec fn view(&self) -> Point4 {
+        Point4 { x: self.x@, y: self.y@, z: self.z@, w: self.w@ }
+    }
 }
-
-pub assume_specification[ RuntimePoint4::new ](
-    x: RuntimeScalar,
-    y: RuntimeScalar,
-    z: RuntimeScalar,
-    w: RuntimeScalar,
-) -> (out: RuntimePoint4)
-    ensures
-        out@ == (Point4 { x: x@, y: y@, z: z@, w: w@ }),
-;
-
-pub assume_specification[ RuntimePoint4::from_ints ](x: i64, y: i64, z: i64, w: i64) -> (out: RuntimePoint4)
-    ensures
-        out@ == Point4::from_ints_spec(x as int, y as int, z as int, w as int),
-;
-
-pub assume_specification[ RuntimePoint4::add_vec ](
-    this: &RuntimePoint4,
-    v: &RuntimeVec4,
-) -> (out: RuntimePoint4)
-    ensures
-        out@ == this@.add_vec_spec(v@),
-;
-
-pub assume_specification[ RuntimePoint4::sub ](
-    this: &RuntimePoint4,
-    rhs: &RuntimePoint4,
-) -> (out: RuntimeVec4)
-    ensures
-        out@ == this@.sub_spec(rhs@),
-;
-
-pub assume_specification[ RuntimePoint4::dist2 ](
-    this: &RuntimePoint4,
-    rhs: &RuntimePoint4,
-) -> (out: RuntimeScalar)
-    ensures
-        out@ == dist2_spec(this@, rhs@),
-;
 
 #[allow(dead_code)]
 pub fn runtime_point4_dist2_is_sub_norm2(p: &RuntimePoint4, q: &RuntimePoint4) -> (pair: (

@@ -9,108 +9,15 @@ use vstd::view::View;
 verus! {
 
 #[verifier::external_type_specification]
-#[verifier::external_body]
 pub struct ExRuntimeQuaternion(RuntimeQuaternion);
 
 impl View for RuntimeQuaternion {
     type V = Quaternion;
 
-    uninterp spec fn view(&self) -> Quaternion;
+    open spec fn view(&self) -> Quaternion {
+        Quaternion { w: self.w@, x: self.x@, y: self.y@, z: self.z@ }
+    }
 }
-
-pub assume_specification[ RuntimeQuaternion::new ](
-    w: RuntimeScalar,
-    x: RuntimeScalar,
-    y: RuntimeScalar,
-    z: RuntimeScalar,
-) -> (out: RuntimeQuaternion)
-    ensures
-        out@ == (Quaternion { w: w@, x: x@, y: y@, z: z@ }),
-;
-
-pub assume_specification[ RuntimeQuaternion::from_ints ](
-    w: i64,
-    x: i64,
-    y: i64,
-    z: i64,
-) -> (out: RuntimeQuaternion)
-    ensures
-        out@ == Quaternion::from_ints_spec(w as int, x as int, y as int, z as int),
-;
-
-pub assume_specification[ RuntimeQuaternion::zero ]() -> (out: RuntimeQuaternion)
-    ensures
-        out@ == Quaternion::zero_spec(),
-;
-
-pub assume_specification[ RuntimeQuaternion::one ]() -> (out: RuntimeQuaternion)
-    ensures
-        out@ == Quaternion::one_spec(),
-;
-
-pub assume_specification[ RuntimeQuaternion::add ](
-    this: &RuntimeQuaternion,
-    rhs: &RuntimeQuaternion,
-) -> (out: RuntimeQuaternion)
-    ensures
-        out@ == this@.add_spec(rhs@),
-;
-
-pub assume_specification[ RuntimeQuaternion::sub ](
-    this: &RuntimeQuaternion,
-    rhs: &RuntimeQuaternion,
-) -> (out: RuntimeQuaternion)
-    ensures
-        out@ == this@.sub_spec(rhs@),
-;
-
-pub assume_specification[ RuntimeQuaternion::neg ](this: &RuntimeQuaternion) -> (out: RuntimeQuaternion)
-    ensures
-        out@ == this@.neg_spec(),
-;
-
-pub assume_specification[ RuntimeQuaternion::scale ](
-    this: &RuntimeQuaternion,
-    k: &RuntimeScalar,
-) -> (out: RuntimeQuaternion)
-    ensures
-        out@ == this@.scale_spec(k@),
-;
-
-pub assume_specification[ RuntimeQuaternion::mul ](
-    this: &RuntimeQuaternion,
-    rhs: &RuntimeQuaternion,
-) -> (out: RuntimeQuaternion)
-    ensures
-        out@ == this@.mul_spec(rhs@),
-;
-
-pub assume_specification[ RuntimeQuaternion::conjugate ](this: &RuntimeQuaternion) -> (out: RuntimeQuaternion)
-    ensures
-        out@ == this@.conjugate_spec(),
-;
-
-pub assume_specification[ RuntimeQuaternion::norm2 ](this: &RuntimeQuaternion) -> (out: RuntimeScalar)
-    ensures
-        out@ == this@.norm2_spec(),
-;
-
-pub assume_specification[ RuntimeQuaternion::inverse ](this: &RuntimeQuaternion) -> (out: Option<RuntimeQuaternion>)
-    ensures
-        out.is_some() == !this@.norm2_spec().eqv_spec(Scalar::from_int_spec(0)),
-        match out {
-            Option::None => true,
-            Option::Some(inv) => inv@ == this@.inverse_spec(),
-        },
-;
-
-pub assume_specification[ RuntimeQuaternion::rotate_vec3 ](
-    this: &RuntimeQuaternion,
-    v: &RuntimeVec3,
-) -> (out: RuntimeVec3)
-    ensures
-        out@ == Quaternion::rotate_vec3_spec(v@, this@),
-;
 
 #[allow(dead_code)]
 pub fn runtime_quaternion_add_pair_commutative(a: &RuntimeQuaternion, b: &RuntimeQuaternion) -> (pair: (
@@ -636,7 +543,7 @@ pub fn runtime_quaternion_inverse_identities(
         match out {
             Option::None => q@.norm2_spec().eqv_spec(Scalar::from_int_spec(0)),
             Option::Some(t) => {
-                &&& t.0@ == q@.inverse_spec()
+                &&& t.0@.eqv_spec(q@.inverse_spec())
                 &&& t.1@ == q@.mul_spec(t.0@)
                 &&& t.2@ == t.0@.mul_spec(q@)
                 &&& t.1@.eqv_spec(Quaternion::one_spec())
@@ -660,11 +567,21 @@ pub fn runtime_quaternion_inverse_identities(
             proof {
                 assert(inv_opt.is_some());
                 assert(!q@.norm2_spec().eqv_spec(Scalar::from_int_spec(0)));
-                assert(inv@ == q@.inverse_spec());
+                assert(inv@.eqv_spec(q@.inverse_spec()));
                 Quaternion::lemma_inverse_right(q@);
                 Quaternion::lemma_inverse_left(q@);
                 assert(q@.mul_spec(q@.inverse_spec()).eqv_spec(Quaternion::one_spec()));
                 assert(q@.inverse_spec().mul_spec(q@).eqv_spec(Quaternion::one_spec()));
+                Quaternion::lemma_mul_eqv_congruence_right(q@, inv@, q@.inverse_spec());
+                assert(q@.mul_spec(inv@).eqv_spec(q@.mul_spec(q@.inverse_spec())));
+                Quaternion::lemma_mul_eqv_congruence_left(inv@, q@.inverse_spec(), q@);
+                assert(inv@.mul_spec(q@).eqv_spec(q@.inverse_spec().mul_spec(q@)));
+                assert(right@ == q@.mul_spec(inv@));
+                assert(left@ == inv@.mul_spec(q@));
+                Quaternion::lemma_eqv_transitive(right@, q@.mul_spec(inv@), q@.mul_spec(q@.inverse_spec()));
+                Quaternion::lemma_eqv_transitive(right@, q@.mul_spec(q@.inverse_spec()), Quaternion::one_spec());
+                Quaternion::lemma_eqv_transitive(left@, inv@.mul_spec(q@), q@.inverse_spec().mul_spec(q@));
+                Quaternion::lemma_eqv_transitive(left@, q@.inverse_spec().mul_spec(q@), Quaternion::one_spec());
                 assert(right@.eqv_spec(Quaternion::one_spec()));
                 assert(left@.eqv_spec(Quaternion::one_spec()));
             }

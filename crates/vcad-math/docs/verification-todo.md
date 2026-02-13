@@ -5,7 +5,7 @@ Goal: remove trusted runtime proof boundaries so `vcad-math` runtime behavior is
 - [x] Full crate verifies: `./scripts/verify-vcad-math.sh`.
 - [ ] Trusted runtime assumptions remain (`assume_specification[...]`).
 - [ ] Trust surface reduced to zero runtime assumptions in `crates/vcad-math/src`.
-- [x] Current assumption count: `36`.
+- [x] Current assumption count: `9`.
 
 ## Assumption Inventory (Current)
 - [ ] `src/runtime_scalar_refinement.rs` (`9`)
@@ -15,16 +15,16 @@ Goal: remove trusted runtime proof boundaries so `vcad-math` runtime behavior is
 - [x] `src/runtime_vec3_refinement.rs` (`0`)
 - [x] `src/runtime_point3_refinement.rs` (`0`)
 - [x] `src/runtime_orientation3_refinement.rs` (`0`)
-- [ ] `src/runtime_vec4_refinement.rs` (`9`)
-- [ ] `src/runtime_point4_refinement.rs` (`5`)
-- [ ] `src/runtime_quaternion_refinement.rs` (`13`)
+- [x] `src/runtime_vec4_refinement.rs` (`0`)
+- [x] `src/runtime_point4_refinement.rs` (`0`)
+- [x] `src/runtime_quaternion_refinement.rs` (`0`)
 
 ## Recommended Work Order
 - [x] 1) Orientation wrappers (2D/3D): low count, good pattern warm-up.
 - [x] 2) Vec/Point 2D runtime boundary.
 - [x] 3) Vec/Point 3D runtime boundary.
-- [ ] 4) Vec/Point 4D runtime boundary.
-- [ ] 5) Quaternion runtime boundary.
+- [x] 4) Vec/Point 4D runtime boundary.
+- [x] 5) Quaternion runtime boundary.
 - [ ] 6) Scalar runtime boundary (likely hardest due backend/runtime representation).
 - [ ] 7) Final de-trusting + verification gate.
 
@@ -76,38 +76,38 @@ Goal: remove trusted runtime proof boundaries so `vcad-math` runtime behavior is
 - [x] `RuntimePoint3::sub`
 - [x] `RuntimePoint3::dist2`
 
-## G. runtime_vec4_refinement.rs (9)
-- [ ] `RuntimeVec4::new`
-- [ ] `RuntimeVec4::from_ints`
-- [ ] `RuntimeVec4::zero`
-- [ ] `RuntimeVec4::add`
-- [ ] `RuntimeVec4::sub`
-- [ ] `RuntimeVec4::neg`
-- [ ] `RuntimeVec4::scale`
-- [ ] `RuntimeVec4::dot`
-- [ ] `RuntimeVec4::norm2`
+## G. runtime_vec4_refinement.rs (0)
+- [x] `RuntimeVec4::new`
+- [x] `RuntimeVec4::from_ints`
+- [x] `RuntimeVec4::zero`
+- [x] `RuntimeVec4::add`
+- [x] `RuntimeVec4::sub`
+- [x] `RuntimeVec4::neg`
+- [x] `RuntimeVec4::scale`
+- [x] `RuntimeVec4::dot`
+- [x] `RuntimeVec4::norm2`
 
-## H. runtime_point4_refinement.rs (5)
-- [ ] `RuntimePoint4::new`
-- [ ] `RuntimePoint4::from_ints`
-- [ ] `RuntimePoint4::add_vec`
-- [ ] `RuntimePoint4::sub`
-- [ ] `RuntimePoint4::dist2`
+## H. runtime_point4_refinement.rs (0)
+- [x] `RuntimePoint4::new`
+- [x] `RuntimePoint4::from_ints`
+- [x] `RuntimePoint4::add_vec`
+- [x] `RuntimePoint4::sub`
+- [x] `RuntimePoint4::dist2`
 
-## I. runtime_quaternion_refinement.rs (13)
-- [ ] `RuntimeQuaternion::new`
-- [ ] `RuntimeQuaternion::from_ints`
-- [ ] `RuntimeQuaternion::zero`
-- [ ] `RuntimeQuaternion::one`
-- [ ] `RuntimeQuaternion::add`
-- [ ] `RuntimeQuaternion::sub`
-- [ ] `RuntimeQuaternion::neg`
-- [ ] `RuntimeQuaternion::scale`
-- [ ] `RuntimeQuaternion::mul`
-- [ ] `RuntimeQuaternion::conjugate`
-- [ ] `RuntimeQuaternion::norm2`
-- [ ] `RuntimeQuaternion::inverse`
-- [ ] `RuntimeQuaternion::rotate_vec3`
+## I. runtime_quaternion_refinement.rs (0)
+- [x] `RuntimeQuaternion::new`
+- [x] `RuntimeQuaternion::from_ints`
+- [x] `RuntimeQuaternion::zero`
+- [x] `RuntimeQuaternion::one`
+- [x] `RuntimeQuaternion::add`
+- [x] `RuntimeQuaternion::sub`
+- [x] `RuntimeQuaternion::neg`
+- [x] `RuntimeQuaternion::scale`
+- [x] `RuntimeQuaternion::mul`
+- [x] `RuntimeQuaternion::conjugate`
+- [x] `RuntimeQuaternion::norm2`
+- [x] `RuntimeQuaternion::inverse`
+- [x] `RuntimeQuaternion::rotate_vec3`
 
 ## J. runtime_scalar_refinement.rs (9)
 - [ ] `RuntimeScalar::from_int`
