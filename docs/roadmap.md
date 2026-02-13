@@ -30,7 +30,24 @@ Exit criteria:
 1. Segment and polygon validity checks verify.
 2. Area and intersection routines verify under documented preconditions.
 
-## Phase 3: Topology foundation (`vcad-topology`)
+## Phase 3: Geometric predicates (`vcad-geometry`)
+Deliverables:
+1. Orientation wrapper predicates and geometric-meaning lemmas:
+   - `orient2d`/`orient3d` sign wrappers,
+   - signed double-area / signed six-volume mapping statements.
+2. Sidedness and separation predicates:
+   - `point_above_plane`,
+   - opposite-side segment/plane crossing theorem,
+   - exact segment-plane intersection parameter theorem.
+3. Collinearity/coplanarity wrappers and extension lemmas.
+4. Point-in-convex-polygon predicate with soundness/completeness theorem.
+
+Exit criteria:
+1. Predicate APIs are implemented with explicit model specs.
+2. Proofs compose existing `vcad-math` theorem surfaces (no duplicated algebraic re-proofs).
+3. Crossing and containment theorems verify under documented preconditions.
+
+## Phase 4: Topology foundation (`vcad-topology`)
 Deliverables:
 1. IDs and incidence maps for vertex/edge/face.
 2. `Wire` and `Face` validity invariants.
@@ -39,7 +56,7 @@ Deliverables:
 Exit criteria:
 1. Topology construction API enforces consistency by proof.
 
-## Phase 4: Kernel operations (`vcad-kernel`)
+## Phase 5: Kernel operations (`vcad-kernel`)
 Deliverables:
 1. Minimal modeling operations built on verified primitives.
 2. First operation target: verified extrusion from `SimplePolygon2` to a prism-like solid model.
@@ -48,7 +65,7 @@ Exit criteria:
 1. Operation correctness statements are verified.
 2. Regression examples capture expected behavior.
 
-## Phase 5: Tooling (`vcad-cli`, tests, examples)
+## Phase 6: Tooling (`vcad-cli`, tests, examples)
 Deliverables:
 1. Command-line playground for sample operations.
 2. Proof regression checks in CI.

@@ -65,11 +65,12 @@ Long-horizon milestones for `vcad-math` beyond the current proof-lemma TODO.
   - model modules: `Vec3/Point3/orientation3`, `Vec4/Point4`, `Quaternion`
   - runtime modules + refinement wrappers: 3D/4D/quaternion families
 - [x] Implement `Vec3` / `Point3` theorem surface and runtime/refinement pairing.
-- [ ] Implement `orientation3d` theorem surface (signed-volume/coplanarity classification + invariance laws).
-- [ ] Implement `Vec4` / `Point4` theorem surface and runtime/refinement pairing.
-- [ ] Implement quaternion theorem surface:
+- [x] Implement `orientation3d` theorem surface (signed-volume/coplanarity classification + invariance laws).
+- [x] Implement `Vec4` / `Point4` theorem surface and runtime/refinement pairing.
+- [x] Implement quaternion theorem surface:
   - algebra laws,
   - conjugate/norm/inverse laws,
   - rotation-facing law surface for 3D vectors.
-- [ ] Add runtime regression wrappers for all new 3D/4D/quaternion APIs.
+- [x] Add runtime regression wrappers for all new 3D/4D/quaternion APIs.
 - [ ] Run anti-cheating pass and contract-strengthening pass across all new proof modules.
+  - progress: core contract hardening is in place for orientation and scalar hotspots; remaining anti-cheating backlog is tracked in `docs/vcad-math-higher-dim-todo.md` (P4.6 section).

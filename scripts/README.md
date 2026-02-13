@@ -8,6 +8,11 @@ Helper scripts for local Verus workflows.
      verifies `quaternion_assoc_cases`.
    - module: `./scripts/verify-vcad-math-fast.sh quaternion`
    - function: `./scripts/verify-vcad-math-fast.sh quaternion lemma_assoc_basis_any`
+4. `verify-vcad-geometry-fast.sh`: fast dev loop for `vcad-geometry` using focused verification.
+   - default: `./scripts/verify-vcad-geometry-fast.sh`
+     verifies `runtime_orientation_predicates_refinement`.
+   - module: `./scripts/verify-vcad-geometry-fast.sh runtime_sidedness_refinement`
+   - function: `./scripts/verify-vcad-geometry-fast.sh runtime_sidedness_refinement runtime_segment_crosses_plane_from_opposite_sides`
 
 Both scripts assume this repo layout:
 1. `VerusCAD` at `../VerusCAD` (current repo),

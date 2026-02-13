@@ -1,3 +1,3 @@
 [workspace]
-members = ["crates/vcad-math"]
+members = ["crates/vcad-math", "crates/vcad-geometry"]
 resolver = "2"

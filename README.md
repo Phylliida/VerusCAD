@@ -50,6 +50,8 @@ VerusCAD/
     README.md           # planned crate split
     vcad-math/
       README.md
+    vcad-geometry/
+      README.md
     vcad-sketch/
       README.md
     vcad-topology/
@@ -68,10 +70,11 @@ VerusCAD/
 
 ## Why this split
 1. `vcad-math` stays small and heavily proved. Everything else depends on it.
-2. `vcad-sketch` owns 2D entities and predicates.
-3. `vcad-topology` introduces IDs, incidence, and manifold-style constraints.
-4. `vcad-kernel` hosts modeling operations built on the verified lower layers.
-5. `vcad-cli` gives a simple executable surface for demos and regression checks.
+2. `vcad-geometry` centralizes geometric predicates and geometric-meaning theorems, reusing `vcad-math`.
+3. `vcad-sketch` owns 2D entities and sketch-level constraints.
+4. `vcad-topology` introduces IDs, incidence, and manifold-style constraints.
+5. `vcad-kernel` hosts modeling operations built on the verified lower layers.
+6. `vcad-cli` gives a simple executable surface for demos and regression checks.
 
 ## Next implementation target
 Start with `vcad-math` and prove:

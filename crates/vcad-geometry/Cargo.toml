@@ -1,0 +1,11 @@
+[package]
+name = "vcad-geometry"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+vcad-math = { path = "../vcad-math" }
+vstd = { path = "../../../verus/source/vstd" }
+
+[package.metadata.verus]
+verify = true

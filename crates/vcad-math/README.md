@@ -1,112 +1,122 @@
 # vcad-math
-Lowest-level verified math crate.
+Lowest-level verified math crate for VerusCAD.
 
-Core contents:
-1. `Scalar` (exact rational).
-2. `RuntimeScalar` (exec rational backed by `rug::Rational`).
-3. 2D/3D/4D vector and point model layers.
-4. Orientation predicates (`orient2d`, `orient3d`) and quaternion model layer.
+`vcad-math` contains the exact arithmetic model, geometric model layers, quaternion algebra/rotation model, executable runtime counterparts, and refinement contracts that connect runtime behavior to model specs.
 
-This crate should have no dependency on higher CAD concepts.
+This crate intentionally has no dependency on higher CAD/topology concepts.
 
-## Current Status (2026-02-12)
-`vcad-math` is now running on a rational-backed `Scalar` (`num: int`, `den: nat` with effective denominator `den + 1`), and the currently tracked theorem surface is restored and verified.
+## Public Module Surface
+Exported through `src/lib.rs`.
 
-Current code is modular:
-1. `src/scalar.rs`
-2. `src/vec2.rs`
-3. `src/point2.rs`
-4. `src/orientation.rs`
-5. `src/vec3.rs`
-6. `src/point3.rs`
-7. `src/orientation3.rs`
-8. `src/vec4.rs`
-9. `src/point4.rs`
-10. `src/quaternion.rs`
-11. `src/runtime_scalar.rs`
-12. `src/runtime_scalar_refinement.rs`
-13. `src/runtime_vec2.rs`
-14. `src/runtime_vec2_refinement.rs`
-15. `src/runtime_point2.rs`
-16. `src/runtime_point2_refinement.rs`
-17. `src/runtime_orientation.rs`
-18. `src/runtime_orientation_refinement.rs`
-19. `src/runtime_vec3.rs`
-20. `src/runtime_vec3_refinement.rs`
-21. `src/runtime_point3.rs`
-22. `src/runtime_point3_refinement.rs`
-23. `src/runtime_orientation3.rs`
-24. `src/runtime_orientation3_refinement.rs`
-25. `src/runtime_vec4.rs`
-26. `src/runtime_vec4_refinement.rs`
-27. `src/runtime_point4.rs`
-28. `src/runtime_point4_refinement.rs`
-29. `src/runtime_quaternion.rs`
-30. `src/runtime_quaternion_refinement.rs`
-31. `src/lib.rs` module/export entrypoint.
+Model/proof modules:
+1. `scalar` (`Scalar`, `ScalarModel`)
+2. `vec2`, `point2`, `orientation`
+3. `vec3`, `point3`, `orientation3`
+4. `vec4`, `point4`
+5. `quaternion`
 
-Verified theorem surface:
-1. `Scalar` algebra/order/sign laws:
-   - commutativity/associativity/identities/inverses/distributivity,
-   - semantic equality (`eqv_spec`) reflexive/symmetric/transitive + congruence,
-   - cancellation and monotonicity lemmas (`requires`-style strong forms plus implication wrappers),
-   - signum laws including multiplication behavior,
-   - normalization/sign bridge lemmas:
-     - `normalized_spec`, normalized uniqueness, normalized `eqv` -> structural equality,
-     - canonical sign placement for normalized rationals,
-     - constructive normalization proofs (`normalize_bounded`, `normalize_constructive`),
-     - direct gcd-style normalization theorem (`gcd_one_spec`, `lemma_normalized_implies_gcd_one`).
-2. `Vec2` vector-space and bilinear laws:
-   - add/neg/sub/scale laws,
-   - dot/cross symmetry, antisymmetry, bilinearity, scale extraction,
-   - `norm2` nonnegativity, scaling law, and zero-iff-zero.
-3. `Point2` affine and metric laws:
-   - add/sub cancellation and uniqueness,
-   - translation invariance,
-   - `dist2` symmetry/nonnegativity/self-zero/zero-iff-equality,
-   - `dist2(p, q) == norm2(p - q)` bridge.
-4. Orientation/determinant laws:
-   - predicate bridges and enum exclusivity,
-   - swap/cyclic/permutation theorems,
-   - translation and uniform-scale behavior theorems.
-5. Compatibility wrappers for common pre-rational names:
-   - `lemma_ccw_swap_to_cw`,
-   - `Vec2::lemma_eq_from_component_ints`,
-   - `Point2::lemma_eq_from_component_ints`.
-6. Runtime backend:
-   - `RuntimeScalar` uses `rug::Rational` for arbitrary-precision executable arithmetic.
-   - equivalent values compare equal and hash equal via canonical rational form.
-   - explicit runtime `normalize()` entrypoint is available for canonicalization.
-   - runtime geometry APIs now include:
-     - 2D: `RuntimeVec2`, `RuntimePoint2`, `RuntimeOrientation`,
-     - 3D: `RuntimeVec3`, `RuntimePoint3`, `RuntimeOrientation3`,
-     - 4D: `RuntimeVec4`, `RuntimePoint4`,
-     - rotations/algebra: `RuntimeQuaternion`.
-   - Verus refinement contracts are provided for all runtime scalar/vector/point/orientation/quaternion APIs via model `view` mappings.
-   - refinement contracts are trusted specs at the external backend boundary (`rug` implementation).
-   - verified regression wrappers validate runtime->model recovery of:
-     - scalar algebra composition + normalization identity,
-     - 2D and 3D vector/point/orientation law fragments,
-     - 4D vector/point law fragments,
-     - quaternion add/conjugation law fragments.
-Verification status:
-1. End-to-end crate verification via `./scripts/verify-vcad-math.sh` is green (`683 verified, 0 errors` in the latest run).
+Runtime executable modules:
+1. `runtime_scalar`
+2. `runtime_vec2`, `runtime_point2`, `runtime_orientation`
+3. `runtime_vec3`, `runtime_point3`, `runtime_orientation3`
+4. `runtime_vec4`, `runtime_point4`
+5. `runtime_quaternion`
+
+Internal-only support modules:
+1. `runtime_*_refinement` files (proof contracts + regression wrappers)
+2. `quaternion_assoc_cases` (finite-case associativity support)
+
+## Available Features
+Feature groups implemented in the current tree.
+
+1. Exact rational scalar model (`Scalar`)
+   - Rational representation: `num: int`, `den: nat` with effective denominator `den + 1`
+   - Arithmetic specs/exec: `add`, `sub`, `mul`, `neg`, comparisons/sign
+   - Law surface: commutativity, associativity, identities, inverse/distributivity, cancellation, monotonicity
+   - Semantic equality (`eqv_spec`) laws and congruence helpers
+   - Signum law surface (`signum` cases, multiplication behavior, negation behavior)
+   - Normalization/model canonicalization surface:
+     - `normalized_spec`, canonical sign, normalized uniqueness/equality bridges
+     - constructive normalization (`normalize_bounded`, `normalize_constructive`)
+     - gcd-oriented bridge (`gcd_one_spec`, `lemma_normalized_implies_gcd_one`)
+
+2. 2D geometry model (`Vec2`, `Point2`, `orientation`)
+   - `Vec2`: add/sub/neg/scale, dot/cross, norm
+   - Proven law families: vector-space laws, dot/cross bilinearity and symmetry/antisymmetry, norm laws
+   - `Point2`: affine/metric laws (`add_vec/sub`, distance laws, translation invariance)
+   - Orientation/classification:
+     - `orient2d_spec`, `orientation_spec`, class exclusivity/exhaustiveness
+     - explicit signed-area polynomial helper (`signed_area2_poly_spec`) with bridge to `orient2d_spec`
+     - swap/cyclic/permutation behavior, translation invariance, zero/nonzero scale behavior, degeneracy lemmas
+     - explicit edge-linear-dependence predicates:
+       - `vec2_linear_dependent_spec`
+       - `edge_vectors2_linear_dependent_spec`
+       - zero-characterization lemmas (`signed-area == 0` iff edge vectors are dependent)
+
+3. 3D geometry model (`Vec3`, `Point3`, `orientation3`)
+   - `Vec3`: add/sub/neg/scale, dot/cross, norm
+   - Proven law families: vector-space laws, dot/cross bilinearity/symmetry/antisymmetry, norm laws
+   - Triple-product helpers: orthogonality/cyclic/swap lemmas for dot-cross expressions
+   - `Point3`: affine/metric laws (`add_vec/sub`, distance laws, translation invariance)
+   - Orientation3/classification:
+     - `orient3d_spec`, `orientation3_spec`, class exclusivity/exhaustiveness
+     - explicit signed-volume helpers:
+       - `signed_volume3_det_expanded_spec`
+       - `signed_volume3_poly_spec`
+       - bridges to `orient3d_spec`
+     - transposition/permutation sign behavior, including all transpositions (`ab/ac/ad/bc/bd/cd`)
+     - translation invariance, zero/nonzero scale behavior, degeneracy lemmas
+     - explicit edge-linear-dependence predicates:
+       - `vec3_linear_dependent_spec`
+       - `edge_vectors3_linear_dependent_spec`
+       - zero-characterization lemmas (`signed-volume == 0` iff edge vectors are dependent)
+
+4. 4D geometry model (`Vec4`, `Point4`)
+   - `Vec4`: add/sub/neg/scale, dot, norm and theorem surface matching lower-dimensional style
+   - `Point4`: affine/metric laws and `dist2 == norm2(p - q)` bridge
+
+5. Quaternion model (`Quaternion`)
+   - Core operations: add/sub/neg/scale/mul, conjugate, norm2, inverse (partial), rotation-facing APIs
+   - Basis + finite-case infrastructure for multiplication associativity
+   - Law families:
+     - additive laws, multiplicative identity, distributivity, associativity
+     - non-commutativity witness
+     - conjugation laws (involution, reverse-over-mul)
+     - norm laws (nonnegative, zero-iff-zero, scale behavior, multiplicativity)
+     - inverse identities for nonzero quaternions
+     - rotation-facing laws (`rotate_vec3_spec` norm preservation and composition)
+
+6. Executable runtime APIs
+   - `RuntimeScalar` on `rug::Rational`: arithmetic, reciprocal, normalize, signum
+   - Runtime geometry families:
+     - 2D: `RuntimeVec2`, `RuntimePoint2`, `RuntimeOrientation`
+     - 3D: `RuntimeVec3`, `RuntimePoint3`, `RuntimeOrientation3`
+     - 4D: `RuntimeVec4`, `RuntimePoint4`
+     - quaternion: `RuntimeQuaternion` including `inverse` and `rotate_vec3`
+
+7. Refinement contracts and runtime regression wrappers
+   - `View` mappings from runtime types to model types
+   - `assume_specification` contracts at external backend boundaries
+   - Verified wrapper suites that recover model laws from runtime composition for:
+     - scalar
+     - vec2/point2/orientation2
+     - vec3/point3/orientation3
+     - vec4/point4
+     - quaternion (algebra, conjugation, norm/inverse, rotation)
 
 ## Verification Workflow
-Use a staged loop for faster iteration:
-1. Fast focused check (module or function):
+Use a staged loop:
+1. Fast focused verification:
    - `./scripts/verify-vcad-math-fast.sh`
+   - `./scripts/verify-vcad-math-fast.sh orientation3`
    - `./scripts/verify-vcad-math-fast.sh quaternion`
-   - `./scripts/verify-vcad-math-fast.sh quaternion lemma_assoc_basis_any`
-2. Full soundness gate before merging:
+2. Full crate gate:
    - `./scripts/verify-vcad-math.sh`
 
-Intentionally deferred (roadmap):
-1. Eliminate trusted `assume_specification` wrappers at the `rug` boundary by introducing a verified arithmetic boundary strategy.
-2. Optional additional exec/spec dual-mode API hardening and broader proof regression harness.
+Latest full run in this workspace: `744 verified, 0 errors`.
 
-Backups and migration checkpoints:
-1. `crates/vcad-math/backups/2026-02-12-rational-migration-pause/`
-2. `docs/vcad-math-todo.md`
+## Related Docs
+1. `docs/vcad-math-todo.md`
+2. `docs/vcad-math-higher-dim-todo.md`
 3. `docs/vcad-math-roadmap.md`
 4. `docs/scalar-unification-todo.md`
