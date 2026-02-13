@@ -10,32 +10,19 @@ use vstd::view::View;
 verus! {
 
 #[verifier::external_type_specification]
-#[verifier::external_body]
 pub struct ExRuntimeOrientation3(RuntimeOrientation3);
 
 impl View for RuntimeOrientation3 {
     type V = Orientation3;
 
-    uninterp spec fn view(&self) -> Orientation3;
+    open spec fn view(&self) -> Orientation3 {
+        match self {
+            RuntimeOrientation3::Negative => Orientation3::Negative,
+            RuntimeOrientation3::Coplanar => Orientation3::Coplanar,
+            RuntimeOrientation3::Positive => Orientation3::Positive,
+        }
+    }
 }
-
-pub assume_specification[ runtime_orientation3::orientation3 ](
-    a: &RuntimePoint3,
-    b: &RuntimePoint3,
-    c: &RuntimePoint3,
-    d: &RuntimePoint3,
-) -> (out: RuntimeOrientation3)
-    ensures
-        out@ == orientation3_spec(a@, b@, c@, d@),
-;
-
-pub assume_specification[ runtime_orientation3::scale_point_from_origin3 ](
-    p: &RuntimePoint3,
-    k: &RuntimeScalar,
-) -> (out: RuntimePoint3)
-    ensures
-        out@ == scale_point_from_origin3_spec(p@, k@),
-;
 
 #[allow(dead_code)]
 pub fn runtime_orientation3_translation_invariant(

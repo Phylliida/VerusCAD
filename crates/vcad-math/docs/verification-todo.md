@@ -5,22 +5,22 @@ Goal: remove trusted runtime proof boundaries so `vcad-math` runtime behavior is
 - [x] Full crate verifies: `./scripts/verify-vcad-math.sh`.
 - [ ] Trusted runtime assumptions remain (`assume_specification[...]`).
 - [ ] Trust surface reduced to zero runtime assumptions in `crates/vcad-math/src`.
-- [x] Current assumption count: `70`.
+- [x] Current assumption count: `66`.
 
 ## Assumption Inventory (Current)
 - [ ] `src/runtime_scalar_refinement.rs` (`9`)
 - [ ] `src/runtime_vec2_refinement.rs` (`10`)
 - [ ] `src/runtime_point2_refinement.rs` (`5`)
-- [ ] `src/runtime_orientation_refinement.rs` (`2`)
+- [x] `src/runtime_orientation_refinement.rs` (`0`)
 - [ ] `src/runtime_vec3_refinement.rs` (`10`)
 - [ ] `src/runtime_point3_refinement.rs` (`5`)
-- [ ] `src/runtime_orientation3_refinement.rs` (`2`)
+- [x] `src/runtime_orientation3_refinement.rs` (`0`)
 - [ ] `src/runtime_vec4_refinement.rs` (`9`)
 - [ ] `src/runtime_point4_refinement.rs` (`5`)
 - [ ] `src/runtime_quaternion_refinement.rs` (`13`)
 
 ## Recommended Work Order
-- [ ] 1) Orientation wrappers (2D/3D): low count, good pattern warm-up.
+- [x] 1) Orientation wrappers (2D/3D): low count, good pattern warm-up.
 - [ ] 2) Vec/Point 2D runtime boundary.
 - [ ] 3) Vec/Point 3D runtime boundary.
 - [ ] 4) Vec/Point 4D runtime boundary.
@@ -28,15 +28,15 @@ Goal: remove trusted runtime proof boundaries so `vcad-math` runtime behavior is
 - [ ] 6) Scalar runtime boundary (likely hardest due backend/runtime representation).
 - [ ] 7) Final de-trusting + verification gate.
 
-## A. runtime_orientation_refinement.rs (2)
+## A. runtime_orientation_refinement.rs (0)
 - [x] `runtime_orientation::orient2d`
-- [ ] `runtime_orientation::scale_point_from_origin`
-- [ ] `runtime_orientation::orientation`
+- [x] `runtime_orientation::scale_point_from_origin`
+- [x] `runtime_orientation::orientation`
 
-## B. runtime_orientation3_refinement.rs (2)
+## B. runtime_orientation3_refinement.rs (0)
 - [x] `runtime_orientation3::orient3d`
-- [ ] `runtime_orientation3::scale_point_from_origin3`
-- [ ] `runtime_orientation3::orientation3`
+- [x] `runtime_orientation3::scale_point_from_origin3`
+- [x] `runtime_orientation3::orientation3`
 
 ## C. runtime_vec2_refinement.rs (10)
 - [ ] `RuntimeVec2::new`
