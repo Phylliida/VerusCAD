@@ -1,5 +1,4 @@
 use vstd::prelude::*;
-use vstd::arithmetic::mul::lemma_mul_by_zero_is_zero;
 use crate::scalar::Scalar;
 use crate::point2::Point2;
 use crate::vec2::Vec2;
@@ -69,32 +68,26 @@ pub proof fn orientation(a: Point2, b: Point2, c: Point2) -> (o: Orientation)
 
 pub proof fn lemma_is_ccw_iff_positive(a: Point2, b: Point2, c: Point2)
     ensures
-        is_ccw(a, b, c) == (orient2d_spec(a, b, c).num > 0),
+        is_ccw(a, b, c) == (orient2d_spec(a, b, c).signum() == 1),
 {
     let det = orient2d_spec(a, b, c);
-    Scalar::lemma_signum_positive_iff(det);
     assert(is_ccw(a, b, c) == (det.signum() == 1));
-    assert((det.signum() == 1) == (det.num > 0));
 }
 
 pub proof fn lemma_is_cw_iff_negative(a: Point2, b: Point2, c: Point2)
     ensures
-        is_cw(a, b, c) == (orient2d_spec(a, b, c).num < 0),
+        is_cw(a, b, c) == (orient2d_spec(a, b, c).signum() == -1),
 {
     let det = orient2d_spec(a, b, c);
-    Scalar::lemma_signum_negative_iff(det);
     assert(is_cw(a, b, c) == (det.signum() == -1));
-    assert((det.signum() == -1) == (det.num < 0));
 }
 
 pub proof fn lemma_is_collinear_iff_zero(a: Point2, b: Point2, c: Point2)
     ensures
-        is_collinear(a, b, c) == (orient2d_spec(a, b, c).num == 0),
+        is_collinear(a, b, c) == (orient2d_spec(a, b, c).signum() == 0),
 {
     let det = orient2d_spec(a, b, c);
-    Scalar::lemma_signum_zero_iff(det);
     assert(is_collinear(a, b, c) == (det.signum() == 0));
-    assert((det.signum() == 0) == (det.num == 0));
 }
 
 pub proof fn lemma_orientation_classes_exhaustive(a: Point2, b: Point2, c: Point2)
@@ -208,16 +201,13 @@ pub proof fn lemma_orient2d_collinear(a: Point2, b: Point2, c: Point2)
     let z = Scalar::from_int_spec(0);
     let det = orient2d_spec(a, b, c);
     lemma_is_collinear_iff_zero(a, b, c);
-    assert(is_collinear(a, b, c) == (det.num == 0));
+    Scalar::lemma_signum_zero_iff(det);
+    assert(is_collinear(a, b, c) == (det.signum() == 0));
+    assert((det.signum() == 0) == (det.num == 0));
+    assert(det.signum() == 0);
     assert(det.num == 0);
-    assert(z.num == 0);
-    assert(det.eqv_spec(z) == (det.num * z.denom() == z.num * det.denom()));
-    assert(det.num * z.denom() == 0 * z.denom());
-    assert(z.num * det.denom() == 0 * det.denom());
-    lemma_mul_by_zero_is_zero(z.denom());
-    lemma_mul_by_zero_is_zero(det.denom());
-    assert(0 * z.denom() == 0);
-    assert(0 * det.denom() == 0);
+    Scalar::lemma_eqv_zero_iff_num_zero(det);
+    assert(det.eqv_spec(z) == (det.num == 0));
     assert(det.eqv_spec(z));
 }
 
@@ -263,9 +253,9 @@ pub proof fn lemma_orient2d_unit_ccw()
     assert(det.eqv_spec(one));
 
     lemma_is_ccw_iff_positive(a, b, c);
-    assert(det.num == 1);
-    assert(is_ccw(a, b, c) == (det.num > 0));
-    assert(det.num > 0);
+    assert(det.signum() == one.signum());
+    assert(one.signum() == 1);
+    assert(is_ccw(a, b, c) == (det.signum() == 1));
     assert(is_ccw(a, b, c));
 }
 
@@ -572,37 +562,45 @@ pub proof fn lemma_orient2d_swap_antisymmetric(a: Point2, b: Point2, c: Point2)
 
 pub proof fn lemma_orient2d_swap_antisymmetric_num(a: Point2, b: Point2, c: Point2)
     ensures
-        orient2d_spec(a, b, c).num == -orient2d_spec(a, c, b).num,
+        orient2d_spec(a, b, c).signum() == -orient2d_spec(a, c, b).signum(),
 {
+    let lhs = orient2d_spec(a, b, c);
+    let rhs = orient2d_spec(a, c, b);
     lemma_orient2d_swap_antisymmetric(a, b, c);
-    Scalar::lemma_signum_neg(orient2d_spec(a, c, b));
-    assert(orient2d_spec(a, b, c) == orient2d_spec(a, c, b).neg_spec());
-    assert(orient2d_spec(a, b, c).num == orient2d_spec(a, c, b).neg_spec().num);
-    assert(orient2d_spec(a, b, c).num == -orient2d_spec(a, c, b).num);
+    Scalar::lemma_signum_negate(rhs);
+    assert(lhs == rhs.neg_spec());
+    assert(lhs.signum() == rhs.neg_spec().signum());
+    assert(lhs.signum() == -rhs.signum());
 }
 
 pub proof fn lemma_is_collinear_swap(a: Point2, b: Point2, c: Point2)
     ensures
         is_collinear(a, b, c) == is_collinear(a, c, b),
 {
+    let rd = orient2d_spec(a, c, b);
     lemma_orient2d_swap_antisymmetric_num(a, b, c);
-    lemma_is_collinear_iff_zero(a, b, c);
-    lemma_is_collinear_iff_zero(a, c, b);
-
-    let l = orient2d_spec(a, b, c).num;
-    let r = orient2d_spec(a, c, b).num;
+    let l = orient2d_spec(a, b, c).signum();
+    let r = rd.signum();
     assert(l == -r);
-    if l == 0 {
-        assert(-r == l);
-        assert(-r == 0);
-        assert((-r == 0) ==> (r == 0)) by (nonlinear_arith);
+    Scalar::lemma_signum_cases(rd);
+    if r == 1 {
+        assert(-r == -(1));
+        assert(-(1) == -1);
+        assert(l == -r);
+        assert(l == -1);
+        assert((l == 0) == false);
+        assert((r == 0) == false);
+    } else if r == -1 {
+        assert(-r == -(-1));
+        assert(-(-1) == 1);
+        assert(l == -r);
+        assert(l == 1);
+        assert((l == 0) == false);
+        assert((r == 0) == false);
+    } else {
         assert(r == 0);
-    }
-    if r == 0 {
-        lemma_mul_by_zero_is_zero(-1);
-        assert((-1) * r == 0);
-        assert((-1) * r == -r) by (nonlinear_arith);
-        assert(-r == 0);
+        assert(-r == -(0));
+        assert(-(0) == 0);
         assert(l == -r);
         assert(l == 0);
     }
@@ -625,21 +623,40 @@ pub proof fn lemma_is_ccw_swap_to_cw(a: Point2, b: Point2, c: Point2)
     ensures
         is_ccw(a, b, c) == is_cw(a, c, b),
 {
-    lemma_is_ccw_iff_positive(a, b, c);
-    lemma_is_cw_iff_negative(a, c, b);
+    let rd = orient2d_spec(a, c, b);
     lemma_orient2d_swap_antisymmetric_num(a, b, c);
 
-    let l = orient2d_spec(a, b, c).num;
-    let r = orient2d_spec(a, c, b).num;
+    let l = orient2d_spec(a, b, c).signum();
+    let r = rd.signum();
     assert(l == -r);
-    assert(l + r == (-r) + r);
-    assert((-r) + r == 0) by (nonlinear_arith);
-    assert(l + r == 0);
-    assert((l + r == 0) ==> ((l > 0) == (r < 0))) by (nonlinear_arith);
-    assert((l > 0) == (r < 0));
+    Scalar::lemma_signum_cases(rd);
+    if r == 1 {
+        assert(-r == -(1));
+        assert(-(1) == -1);
+        assert(l == -r);
+        assert(l == -1);
+        assert((l == 1) == false);
+        assert((r == -1) == false);
+    } else if r == -1 {
+        assert(-r == -(-1));
+        assert(-(-1) == 1);
+        assert(l == -r);
+        assert(l == 1);
+        assert((l == 1) == true);
+        assert((r == -1) == true);
+    } else {
+        assert(r == 0);
+        assert(-r == -(0));
+        assert(-(0) == 0);
+        assert(l == -r);
+        assert(l == 0);
+        assert((l == 1) == false);
+        assert((r == -1) == false);
+    }
+    assert((l == 1) == (r == -1));
 
-    assert(is_ccw(a, b, c) == (l > 0));
-    assert(is_cw(a, c, b) == (r < 0));
+    assert(is_ccw(a, b, c) == (l == 1));
+    assert(is_cw(a, c, b) == (r == -1));
     assert(is_ccw(a, b, c) == is_cw(a, c, b));
 }
 
@@ -647,21 +664,40 @@ pub proof fn lemma_is_cw_swap_to_ccw(a: Point2, b: Point2, c: Point2)
     ensures
         is_cw(a, b, c) == is_ccw(a, c, b),
 {
-    lemma_is_cw_iff_negative(a, b, c);
-    lemma_is_ccw_iff_positive(a, c, b);
+    let rd = orient2d_spec(a, c, b);
     lemma_orient2d_swap_antisymmetric_num(a, b, c);
 
-    let l = orient2d_spec(a, b, c).num;
-    let r = orient2d_spec(a, c, b).num;
+    let l = orient2d_spec(a, b, c).signum();
+    let r = rd.signum();
     assert(l == -r);
-    assert(l + r == (-r) + r);
-    assert((-r) + r == 0) by (nonlinear_arith);
-    assert(l + r == 0);
-    assert((l + r == 0) ==> ((l < 0) == (r > 0))) by (nonlinear_arith);
-    assert((l < 0) == (r > 0));
+    Scalar::lemma_signum_cases(rd);
+    if r == 1 {
+        assert(-r == -(1));
+        assert(-(1) == -1);
+        assert(l == -r);
+        assert(l == -1);
+        assert((l == -1) == true);
+        assert((r == 1) == true);
+    } else if r == -1 {
+        assert(-r == -(-1));
+        assert(-(-1) == 1);
+        assert(l == -r);
+        assert(l == 1);
+        assert((l == -1) == false);
+        assert((r == 1) == false);
+    } else {
+        assert(r == 0);
+        assert(-r == -(0));
+        assert(-(0) == 0);
+        assert(l == -r);
+        assert(l == 0);
+        assert((l == -1) == false);
+        assert((r == 1) == false);
+    }
+    assert((l == -1) == (r == 1));
 
-    assert(is_cw(a, b, c) == (l < 0));
-    assert(is_ccw(a, c, b) == (r > 0));
+    assert(is_cw(a, b, c) == (l == -1));
+    assert(is_ccw(a, c, b) == (r == 1));
     assert(is_cw(a, b, c) == is_ccw(a, c, b));
 }
 

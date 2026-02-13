@@ -2410,6 +2410,46 @@ impl Scalar {
         assert(n.num == -a.num);
     }
 
+    pub proof fn lemma_signum_negate(a: Self)
+        ensures
+            a.neg_spec().signum() == -a.signum(),
+    {
+        let n = a.neg_spec();
+        Self::lemma_signum_neg(a);
+        if a.num > 0 {
+            assert(a.signum() == 1);
+            assert(n.num == -a.num);
+            assert((a.num > 0) ==> (0 - a.num < 0)) by (nonlinear_arith);
+            assert(0 - a.num < 0);
+            assert(-a.num == 0 - a.num);
+            assert(-a.num < 0);
+            assert(n.num < 0);
+            assert(n.signum() == -1);
+            assert(-a.signum() == -(1));
+            assert(-(1) == -1);
+        } else if a.num < 0 {
+            assert(a.signum() == -1);
+            assert(n.num == -a.num);
+            assert((a.num < 0) ==> (0 - a.num > 0)) by (nonlinear_arith);
+            assert(0 - a.num > 0);
+            assert(-a.num == 0 - a.num);
+            assert(-a.num > 0);
+            assert(n.num > 0);
+            assert(n.signum() == 1);
+            assert(-a.signum() == -(-1));
+            assert(-(-1) == 1);
+        } else {
+            assert(a.num == 0);
+            assert(a.signum() == 0);
+            assert(n.num == -a.num);
+            assert(n.num == 0);
+            assert(n.signum() == 0);
+            assert(-a.signum() == -(0));
+            assert(-(0) == 0);
+        }
+        assert(n.signum() == -a.signum());
+    }
+
     pub proof fn lemma_signum_negative_iff(a: Self)
         ensures
             (a.signum() == -1) == (a.num < 0),
