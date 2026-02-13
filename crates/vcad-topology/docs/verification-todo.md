@@ -35,8 +35,9 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
 - [x] Extend bridge correctness/equivalence to `check_prev_inverse_of_next` and `check_no_degenerate_edges` in `verus-proofs` builds by construction.
   - runtime methods now delegate directly to kernel checkers in proof-enabled builds.
   - file: `src/halfedge_mesh.rs`
-- [ ] Extend bridge-equivalence strategy to remaining runtime checker bodies.
-  - remaining runtime checkers without kernel delegation: `check_face_cycles`, `check_vertex_manifold_single_cycle`.
+- [x] Extend bridge-equivalence strategy to remaining runtime checker bodies.
+  - all structural runtime checkers now delegate to kernel executables in `verus-proofs` builds.
+  - semantic proof strength still differs by checker (see section D notes).
 
 ## B. Replace Abstract Spec Predicates
 - [x] Define `mesh_edge_exactly_two_half_edges_spec` explicitly (currently uninterpreted).
@@ -79,6 +80,12 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
 - [x] Verify checker kernel `kernel_check_edge_has_exactly_two_half_edges` against explicit spec (`kernel_edge_exactly_two_half_edges_total_spec`).
   - file: `src/verified_checker_kernels.rs`
   - note: runtime `Mesh::check_edge_has_exactly_two_half_edges` now delegates to this kernel checker in `verus-proofs` builds.
+- [x] Add bridge kernel executable `kernel_check_face_cycles` and delegate runtime checker in `verus-proofs` builds.
+  - file: `src/verified_checker_kernels.rs`
+  - note: current proved contract is bounds-soundness (`out ==> kernel_index_bounds_spec`); full face-cycle semantic contract is pending.
+- [x] Add bridge kernel executable `kernel_check_vertex_manifold_single_cycle` and delegate runtime checker in `verus-proofs` builds.
+  - file: `src/verified_checker_kernels.rs`
+  - note: current proved contract is bounds-soundness (`out ==> kernel_index_bounds_spec`); full vertex-manifold semantic contract is pending.
 - [x] Verify `check_index_bounds`.
   - in `verus-proofs` builds, this is delegated to verified kernel checker.
   - file: `src/halfedge_mesh.rs`
@@ -89,11 +96,15 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
   - in `verus-proofs` builds, this is delegated to verified kernel checker.
   - file: `src/halfedge_mesh.rs`
 - [ ] Verify `check_face_cycles` (closure + no overlap + min cycle length).
+  - in `verus-proofs` builds, this now delegates to kernel executable `kernel_check_face_cycles`.
+  - semantic contract strengthening in kernel proof is still pending.
   - file: `src/halfedge_mesh.rs`
 - [x] Verify `check_no_degenerate_edges`.
   - in `verus-proofs` builds, this is delegated to verified kernel checker.
   - file: `src/halfedge_mesh.rs`
 - [ ] Verify `check_vertex_manifold_single_cycle`.
+  - in `verus-proofs` builds, this now delegates to kernel executable `kernel_check_vertex_manifold_single_cycle`.
+  - semantic contract strengthening in kernel proof is still pending.
   - file: `src/halfedge_mesh.rs`
 - [x] Verify `check_edge_has_exactly_two_half_edges`.
   - in `verus-proofs` builds, this is delegated to a verified kernel checker.

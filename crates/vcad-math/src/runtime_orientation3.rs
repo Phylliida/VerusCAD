@@ -1,5 +1,11 @@
 use crate::runtime_point3::RuntimePoint3;
 use crate::runtime_scalar::RuntimeScalar;
+#[cfg(verus_keep_ghost)]
+use crate::orientation3::orient3d_spec;
+#[cfg(verus_keep_ghost)]
+use vstd::prelude::*;
+#[cfg(verus_keep_ghost)]
+use vstd::view::View;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RuntimeOrientation3 {
@@ -8,12 +14,36 @@ pub enum RuntimeOrientation3 {
     Positive,
 }
 
+#[cfg(not(verus_keep_ghost))]
 pub fn orient3d(a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3, d: &RuntimePoint3) -> RuntimeScalar {
     let ba = b.sub(a);
     let ca = c.sub(a);
     let da = d.sub(a);
     let cad = ca.cross(&da);
     ba.dot(&cad)
+}
+
+#[cfg(verus_keep_ghost)]
+verus! {
+pub fn orient3d(a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3, d: &RuntimePoint3) -> (out: RuntimeScalar)
+    ensures
+        out@ == orient3d_spec(a@, b@, c@, d@),
+{
+    let ba = b.sub(a);
+    let ca = c.sub(a);
+    let da = d.sub(a);
+    let cad = ca.cross(&da);
+    let out = ba.dot(&cad);
+    proof {
+        assert(ba@ == b@.sub_spec(a@));
+        assert(ca@ == c@.sub_spec(a@));
+        assert(da@ == d@.sub_spec(a@));
+        assert(cad@ == ca@.cross_spec(da@));
+        assert(out@ == ba@.dot_spec(cad@));
+        assert(out@ == orient3d_spec(a@, b@, c@, d@));
+    }
+    out
+}
 }
 
 pub fn scale_point_from_origin3(p: &RuntimePoint3, k: &RuntimeScalar) -> RuntimePoint3 {

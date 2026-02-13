@@ -3,9 +3,11 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use vcad_math::runtime_point3::RuntimePoint3;
 #[cfg(feature = "verus-proofs")]
 use crate::verified_checker_kernels::{
+    kernel_check_face_cycles,
     kernel_check_edge_has_exactly_two_half_edges, kernel_check_index_bounds,
     kernel_check_no_degenerate_edges,
     kernel_check_prev_inverse_of_next, kernel_check_twin_involution,
+    kernel_check_vertex_manifold_single_cycle,
     KernelHalfEdge, KernelMesh,
 };
 
@@ -338,6 +340,18 @@ impl Mesh {
     }
 
     #[cfg(feature = "verus-proofs")]
+    pub(crate) fn check_face_cycles_via_kernel(&self) -> bool {
+        let km = self.to_kernel_mesh_for_verification();
+        kernel_check_face_cycles(&km)
+    }
+
+    #[cfg(feature = "verus-proofs")]
+    pub(crate) fn check_vertex_manifold_single_cycle_via_kernel(&self) -> bool {
+        let km = self.to_kernel_mesh_for_verification();
+        kernel_check_vertex_manifold_single_cycle(&km)
+    }
+
+    #[cfg(feature = "verus-proofs")]
     pub(crate) fn bridge_index_and_twin_checks_agree(&self) -> bool {
         let runtime_index_ok = self.check_index_bounds();
         let kernel_index_ok = self.check_index_bounds_via_kernel();
@@ -442,6 +456,14 @@ impl Mesh {
     }
 
     fn check_face_cycles(&self) -> bool {
+        #[cfg(feature = "verus-proofs")]
+        {
+            // In proof-enabled builds, delegate directly to the kernel checker.
+            return self.check_face_cycles_via_kernel();
+        }
+
+        #[cfg(not(feature = "verus-proofs"))]
+        {
         let mut globally_seen = vec![false; self.half_edges.len()];
 
         for (face_id, face) in self.faces.iter().enumerate() {
@@ -478,6 +500,7 @@ impl Mesh {
         }
 
         globally_seen.into_iter().all(|seen| seen)
+        }
     }
 
     fn check_no_degenerate_edges(&self) -> bool {
@@ -505,6 +528,14 @@ impl Mesh {
     }
 
     fn check_vertex_manifold_single_cycle(&self) -> bool {
+        #[cfg(feature = "verus-proofs")]
+        {
+            // In proof-enabled builds, delegate directly to the kernel checker.
+            return self.check_vertex_manifold_single_cycle_via_kernel();
+        }
+
+        #[cfg(not(feature = "verus-proofs"))]
+        {
         let mut outgoing_by_vertex: Vec<Vec<usize>> = vec![Vec::new(); self.vertices.len()];
         for (h, he) in self.half_edges.iter().enumerate() {
             outgoing_by_vertex[he.vertex].push(h);
@@ -548,6 +579,7 @@ impl Mesh {
         }
 
         true
+        }
     }
 
     fn check_edge_has_exactly_two_half_edges(&self) -> bool {
@@ -680,6 +712,11 @@ mod tests {
         assert!(t.bridge_index_and_twin_checks_agree());
         assert_eq!(t.check_prev_inverse_of_next(), t.check_prev_inverse_of_next_via_kernel());
         assert_eq!(t.check_no_degenerate_edges(), t.check_no_degenerate_edges_via_kernel());
+        assert_eq!(t.check_face_cycles(), t.check_face_cycles_via_kernel());
+        assert_eq!(
+            t.check_vertex_manifold_single_cycle(),
+            t.check_vertex_manifold_single_cycle_via_kernel()
+        );
         assert_eq!(
             t.check_edge_has_exactly_two_half_edges(),
             t.check_edge_has_exactly_two_half_edges_via_kernel()
@@ -689,6 +726,11 @@ mod tests {
         assert!(c.bridge_index_and_twin_checks_agree());
         assert_eq!(c.check_prev_inverse_of_next(), c.check_prev_inverse_of_next_via_kernel());
         assert_eq!(c.check_no_degenerate_edges(), c.check_no_degenerate_edges_via_kernel());
+        assert_eq!(c.check_face_cycles(), c.check_face_cycles_via_kernel());
+        assert_eq!(
+            c.check_vertex_manifold_single_cycle(),
+            c.check_vertex_manifold_single_cycle_via_kernel()
+        );
         assert_eq!(
             c.check_edge_has_exactly_two_half_edges(),
             c.check_edge_has_exactly_two_half_edges_via_kernel()
@@ -698,6 +740,11 @@ mod tests {
         assert!(p.bridge_index_and_twin_checks_agree());
         assert_eq!(p.check_prev_inverse_of_next(), p.check_prev_inverse_of_next_via_kernel());
         assert_eq!(p.check_no_degenerate_edges(), p.check_no_degenerate_edges_via_kernel());
+        assert_eq!(p.check_face_cycles(), p.check_face_cycles_via_kernel());
+        assert_eq!(
+            p.check_vertex_manifold_single_cycle(),
+            p.check_vertex_manifold_single_cycle_via_kernel()
+        );
         assert_eq!(
             p.check_edge_has_exactly_two_half_edges(),
             p.check_edge_has_exactly_two_half_edges_via_kernel()

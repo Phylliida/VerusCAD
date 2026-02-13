@@ -19,24 +19,6 @@ impl View for RuntimeOrientation3 {
     uninterp spec fn view(&self) -> Orientation3;
 }
 
-pub assume_specification[ runtime_orientation3::orient3d ](
-    a: &RuntimePoint3,
-    b: &RuntimePoint3,
-    c: &RuntimePoint3,
-    d: &RuntimePoint3,
-) -> (out: RuntimeScalar)
-    ensures
-        out@ == orient3d_spec(a@, b@, c@, d@),
-;
-
-pub assume_specification[ runtime_orientation3::scale_point_from_origin3 ](
-    p: &RuntimePoint3,
-    k: &RuntimeScalar,
-) -> (out: RuntimePoint3)
-    ensures
-        out@ == scale_point_from_origin3_spec(p@, k@),
-;
-
 pub assume_specification[ runtime_orientation3::orientation3 ](
     a: &RuntimePoint3,
     b: &RuntimePoint3,
@@ -45,6 +27,14 @@ pub assume_specification[ runtime_orientation3::orientation3 ](
 ) -> (out: RuntimeOrientation3)
     ensures
         out@ == orientation3_spec(a@, b@, c@, d@),
+;
+
+pub assume_specification[ runtime_orientation3::scale_point_from_origin3 ](
+    p: &RuntimePoint3,
+    k: &RuntimeScalar,
+) -> (out: RuntimePoint3)
+    ensures
+        out@ == scale_point_from_origin3_spec(p@, k@),
 ;
 
 #[allow(dead_code)]

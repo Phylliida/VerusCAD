@@ -36,8 +36,9 @@ Validity API:
 - [x] `Mesh::is_structurally_valid()` for structural invariants.
 - [x] Verus refinement surface (`runtime_halfedge_mesh_refinement`) with explicit model predicates for structural validity, connectivity components, and Euler relation.
   - runtime-method semantic correctness is tracked in the backlog for direct body verification in `src/halfedge_mesh.rs`.
-  - verified checker kernels are staged in `src/verified_checker_kernels.rs` for `index_bounds`, `twin_involution`, `prev_inverse_of_next`, `no_degenerate_edges`, and `edge_has_exactly_two_half_edges`.
-  - runtime-to-kernel bridge helpers are implemented in `src/halfedge_mesh.rs` (`to_kernel_mesh_for_verification` + bridge check helpers), and these five runtime checkers delegate to kernels in `verus-proofs` builds.
+  - verified checker kernels are staged in `src/verified_checker_kernels.rs` for `index_bounds`, `twin_involution`, `prev_inverse_of_next`, `no_degenerate_edges`, `edge_has_exactly_two_half_edges`, `face_cycles`, and `vertex_manifold_single_cycle`.
+  - runtime-to-kernel bridge helpers are implemented in `src/halfedge_mesh.rs` (`to_kernel_mesh_for_verification` + bridge check helpers), and all seven structural runtime checkers delegate to kernels in `verus-proofs` builds.
+  - current proof strength is mixed: full semantic specs are proved for the first five; `face_cycles` and `vertex_manifold_single_cycle` are currently bridge kernels with bounds-soundness proofs, with semantic strengthening tracked in the verification backlog.
   - (`component_count` semantic correctness is tracked in the verification backlog for direct body verification).
   - (reference constructor correctness is tracked in the verification backlog for direct body verification).
 

@@ -19,13 +19,13 @@ impl View for RuntimeOrientation {
     uninterp spec fn view(&self) -> Orientation;
 }
 
-pub assume_specification[ runtime_orientation::orient2d ](
+pub assume_specification[ runtime_orientation::orientation ](
     a: &RuntimePoint2,
     b: &RuntimePoint2,
     c: &RuntimePoint2,
-) -> (out: RuntimeScalar)
+) -> (out: RuntimeOrientation)
     ensures
-        out@ == orient2d_spec(a@, b@, c@),
+        out@ == orientation_spec(a@, b@, c@),
 ;
 
 pub assume_specification[ runtime_orientation::scale_point_from_origin ](
@@ -34,15 +34,6 @@ pub assume_specification[ runtime_orientation::scale_point_from_origin ](
 ) -> (out: RuntimePoint2)
     ensures
         out@ == scale_point_from_origin_spec(p@, k@),
-;
-
-pub assume_specification[ runtime_orientation::orientation ](
-    a: &RuntimePoint2,
-    b: &RuntimePoint2,
-    c: &RuntimePoint2,
-) -> (out: RuntimeOrientation)
-    ensures
-        out@ == orientation_spec(a@, b@, c@),
 ;
 
 #[allow(dead_code)]

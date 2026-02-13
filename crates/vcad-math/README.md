@@ -113,10 +113,11 @@ Use a staged loop:
 2. Full crate gate:
    - `./scripts/verify-vcad-math.sh`
 
-Latest full run in this workspace: `744 verified, 0 errors`.
+Latest full run in this workspace: `746 verified, 0 errors`.
 
 ## Related Docs
-1. `docs/vcad-math-todo.md`
-2. `docs/vcad-math-higher-dim-todo.md`
-3. `docs/vcad-math-roadmap.md`
-4. `docs/scalar-unification-todo.md`
+1. `crates/vcad-math/docs/verification-todo.md`
+2. `docs/vcad-math-todo.md`
+3. `docs/vcad-math-higher-dim-todo.md`
+4. `docs/vcad-math-roadmap.md`
+5. `docs/scalar-unification-todo.md`
