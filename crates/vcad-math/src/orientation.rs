@@ -406,7 +406,7 @@ pub proof fn lemma_orient2d_scale_from_origin(a: Point2, b: Point2, c: Point2, k
 
 pub proof fn lemma_orientation_spec_scale_nonzero_preserves(a: Point2, b: Point2, c: Point2, k: Scalar)
     ensures
-        (k.num != 0) ==> (
+        !k.eqv_spec(Scalar::from_int_spec(0)) ==> (
             orientation_spec(
                 scale_point_from_origin_spec(a, k),
                 scale_point_from_origin_spec(b, k),
@@ -414,7 +414,7 @@ pub proof fn lemma_orientation_spec_scale_nonzero_preserves(a: Point2, b: Point2
             ) == orientation_spec(a, b, c)
         ),
 {
-    if k.num != 0 {
+    if !k.eqv_spec(Scalar::from_int_spec(0)) {
         lemma_orientation_spec_scale_nonzero_preserves_strong(a, b, c, k);
         assert(
             orientation_spec(
@@ -428,7 +428,7 @@ pub proof fn lemma_orientation_spec_scale_nonzero_preserves(a: Point2, b: Point2
 
 pub proof fn lemma_orientation_spec_scale_nonzero_preserves_strong(a: Point2, b: Point2, c: Point2, k: Scalar)
     requires
-        k.num != 0,
+        !k.eqv_spec(Scalar::from_int_spec(0)),
     ensures
         orientation_spec(
             scale_point_from_origin_spec(a, k),
@@ -436,6 +436,7 @@ pub proof fn lemma_orientation_spec_scale_nonzero_preserves_strong(a: Point2, b:
             scale_point_from_origin_spec(c, k),
         ) == orientation_spec(a, b, c),
 {
+    let z = Scalar::from_int_spec(0);
     let sa = scale_point_from_origin_spec(a, k);
     let sb = scale_point_from_origin_spec(b, k);
     let sc = scale_point_from_origin_spec(c, k);
@@ -449,6 +450,11 @@ pub proof fn lemma_orientation_spec_scale_nonzero_preserves_strong(a: Point2, b:
     Scalar::lemma_eqv_signum(ds, prod);
     Scalar::lemma_signum_mul(k, k);
     assert(kk.signum() == k.signum() * k.signum());
+    Scalar::lemma_eqv_zero_iff_num_zero(k);
+    assert(k.eqv_spec(z) == (k.num == 0));
+    assert(!k.eqv_spec(z));
+    assert(!(k.num == 0));
+    assert(k.num != 0);
     Scalar::lemma_signum_cases(k);
     Scalar::lemma_signum_zero_iff(k);
     assert((k.signum() == 0) == (k.num == 0));
@@ -483,7 +489,7 @@ pub proof fn lemma_orientation_spec_scale_nonzero_preserves_strong(a: Point2, b:
 
 pub proof fn lemma_orientation_spec_scale_zero_collinear(a: Point2, b: Point2, c: Point2, k: Scalar)
     ensures
-        (k.num == 0) ==> (
+        k.eqv_spec(Scalar::from_int_spec(0)) ==> (
             orientation_spec(
                 scale_point_from_origin_spec(a, k),
                 scale_point_from_origin_spec(b, k),
@@ -491,7 +497,7 @@ pub proof fn lemma_orientation_spec_scale_zero_collinear(a: Point2, b: Point2, c
             ) is Collinear
         ),
 {
-    if k.num == 0 {
+    if k.eqv_spec(Scalar::from_int_spec(0)) {
         lemma_orientation_spec_scale_zero_collinear_strong(a, b, c, k);
         assert(orientation_spec(
             scale_point_from_origin_spec(a, k),
@@ -503,7 +509,7 @@ pub proof fn lemma_orientation_spec_scale_zero_collinear(a: Point2, b: Point2, c
 
 pub proof fn lemma_orientation_spec_scale_zero_collinear_strong(a: Point2, b: Point2, c: Point2, k: Scalar)
     requires
-        k.num == 0,
+        k.eqv_spec(Scalar::from_int_spec(0)),
     ensures
         orientation_spec(
             scale_point_from_origin_spec(a, k),
@@ -518,9 +524,13 @@ pub proof fn lemma_orientation_spec_scale_zero_collinear_strong(a: Point2, b: Po
     let d = orient2d_spec(a, b, c);
     let kk = k.mul_spec(k);
     let prod = kk.mul_spec(d);
+    let z = Scalar::from_int_spec(0);
 
     lemma_orient2d_scale_from_origin(a, b, c, k);
     assert(ds.eqv_spec(prod));
+    Scalar::lemma_eqv_zero_iff_num_zero(k);
+    assert(k.eqv_spec(z) == (k.num == 0));
+    assert(k.num == 0);
     Scalar::lemma_mul_left_zero_num(k, k);
     assert(kk.num == 0);
     Scalar::lemma_mul_left_zero_num(kk, d);

@@ -524,7 +524,7 @@ pub proof fn lemma_orient3d_scale_from_origin(a: Point3, b: Point3, c: Point3, d
 
 pub proof fn lemma_orientation3_spec_scale_nonzero_behavior(a: Point3, b: Point3, c: Point3, d: Point3, k: Scalar)
     ensures
-        (k.num != 0) ==> (
+        !k.eqv_spec(Scalar::from_int_spec(0)) ==> (
             (orientation3_spec(
                 scale_point_from_origin3_spec(a, k),
                 scale_point_from_origin3_spec(b, k),
@@ -533,7 +533,7 @@ pub proof fn lemma_orientation3_spec_scale_nonzero_behavior(a: Point3, b: Point3
             ) is Coplanar)
                 == (orientation3_spec(a, b, c, d) is Coplanar)
         ),
-        (k.num != 0) ==> (
+        !k.eqv_spec(Scalar::from_int_spec(0)) ==> (
             (k.signum() == 1) ==> (
                 orientation3_spec(
                     scale_point_from_origin3_spec(a, k),
@@ -543,7 +543,7 @@ pub proof fn lemma_orientation3_spec_scale_nonzero_behavior(a: Point3, b: Point3
                 ) == orientation3_spec(a, b, c, d)
             )
         ),
-        (k.num != 0) ==> (
+        !k.eqv_spec(Scalar::from_int_spec(0)) ==> (
             (k.signum() == -1) ==> (
                 (orientation3_spec(
                     scale_point_from_origin3_spec(a, k),
@@ -553,7 +553,7 @@ pub proof fn lemma_orientation3_spec_scale_nonzero_behavior(a: Point3, b: Point3
                 ) is Positive) == (orientation3_spec(a, b, c, d) is Negative)
             )
         ),
-        (k.num != 0) ==> (
+        !k.eqv_spec(Scalar::from_int_spec(0)) ==> (
             (k.signum() == -1) ==> (
                 (orientation3_spec(
                     scale_point_from_origin3_spec(a, k),
@@ -563,7 +563,7 @@ pub proof fn lemma_orientation3_spec_scale_nonzero_behavior(a: Point3, b: Point3
                 ) is Negative) == (orientation3_spec(a, b, c, d) is Positive)
             )
         ),
-        (k.num != 0) ==> (
+        !k.eqv_spec(Scalar::from_int_spec(0)) ==> (
             (k.signum() == -1) ==> (
                 (orientation3_spec(
                     scale_point_from_origin3_spec(a, k),
@@ -574,7 +574,7 @@ pub proof fn lemma_orientation3_spec_scale_nonzero_behavior(a: Point3, b: Point3
             )
         ),
 {
-    if k.num != 0 {
+    if !k.eqv_spec(Scalar::from_int_spec(0)) {
         lemma_orientation3_spec_scale_nonzero_behavior_strong(a, b, c, d, k);
         assert(
             (orientation3_spec(
@@ -626,7 +626,7 @@ pub proof fn lemma_orientation3_spec_scale_nonzero_behavior(a: Point3, b: Point3
 
 pub proof fn lemma_orientation3_spec_scale_nonzero_behavior_strong(a: Point3, b: Point3, c: Point3, d: Point3, k: Scalar)
     requires
-        k.num != 0,
+        !k.eqv_spec(Scalar::from_int_spec(0)),
     ensures
         orient3d_spec(
             scale_point_from_origin3_spec(a, k),
@@ -684,6 +684,7 @@ pub proof fn lemma_orientation3_spec_scale_nonzero_behavior_strong(a: Point3, b:
     let prod = k3.mul_spec(d0);
     let os = orientation3_spec(sa, sb, sc, sd);
     let o0 = orientation3_spec(a, b, c, d);
+    let z = Scalar::from_int_spec(0);
 
     lemma_orient3d_scale_from_origin(a, b, c, d, k);
     assert(ds.eqv_spec(k.mul_spec(kk.mul_spec(d0))));
@@ -696,6 +697,11 @@ pub proof fn lemma_orientation3_spec_scale_nonzero_behavior_strong(a: Point3, b:
     Scalar::lemma_eqv_signum(ds, prod);
     assert(ds.signum() == prod.signum());
 
+    Scalar::lemma_eqv_zero_iff_num_zero(k);
+    assert(k.eqv_spec(z) == (k.num == 0));
+    assert(!k.eqv_spec(z));
+    assert(!(k.num == 0));
+    assert(k.num != 0);
     Scalar::lemma_signum_zero_iff(k);
     assert((k.signum() == 0) == (k.num == 0));
     assert(k.signum() != 0);
@@ -806,7 +812,7 @@ pub proof fn lemma_orientation3_spec_scale_nonzero_behavior_strong(a: Point3, b:
 
 pub proof fn lemma_orientation3_spec_scale_zero_coplanar(a: Point3, b: Point3, c: Point3, d: Point3, k: Scalar)
     ensures
-        (k.num == 0) ==> (
+        k.eqv_spec(Scalar::from_int_spec(0)) ==> (
             orientation3_spec(
                 scale_point_from_origin3_spec(a, k),
                 scale_point_from_origin3_spec(b, k),
@@ -815,7 +821,7 @@ pub proof fn lemma_orientation3_spec_scale_zero_coplanar(a: Point3, b: Point3, c
             ) is Coplanar
         ),
 {
-    if k.num == 0 {
+    if k.eqv_spec(Scalar::from_int_spec(0)) {
         lemma_orientation3_spec_scale_zero_coplanar_strong(a, b, c, d, k);
         assert(
             orientation3_spec(
@@ -830,7 +836,7 @@ pub proof fn lemma_orientation3_spec_scale_zero_coplanar(a: Point3, b: Point3, c
 
 pub proof fn lemma_orientation3_spec_scale_zero_coplanar_strong(a: Point3, b: Point3, c: Point3, d: Point3, k: Scalar)
     requires
-        k.num == 0,
+        k.eqv_spec(Scalar::from_int_spec(0)),
     ensures
         orientation3_spec(
             scale_point_from_origin3_spec(a, k),
@@ -849,6 +855,9 @@ pub proof fn lemma_orientation3_spec_scale_zero_coplanar_strong(a: Point3, b: Po
     let zv = Vec3::zero_spec();
     let o = orient3d_spec(sa, sb, sc, sd);
 
+    Scalar::lemma_eqv_zero_iff_num_zero(k);
+    assert(k.eqv_spec(z) == (k.num == 0));
+    assert(k.num == 0);
     lemma_scale_point_sub_eqv(b, a, k);
     assert(ba_s.eqv_spec(ba.scale_spec(k)));
     let bak = ba.scale_spec(k);
