@@ -75,12 +75,12 @@ This backlog follows the same pattern used for 2D:
   - progress: complete for this surface (cancellation/translation + distance symmetry/nonnegative/self-zero/zero-iff-equality and `dist2 == norm2(p-q)` bridge).
 
 ## P4.4 Quaternion (model + proofs)
-- [ ] Add `src/quaternion.rs` model API:
+- [x] Add `src/quaternion.rs` model API:
   - constructor(s), `zero_spec`, `one_spec`, `eqv_spec`
   - `add_spec`, `neg_spec`, `sub_spec`, `mul_spec`
   - `conjugate_spec`, `norm2_spec`, `inverse_spec` (partial with nonzero precondition)
   - progress: complete for this API surface (including partial `inverse_spec` with positivity precondition on `norm2`).
-- [ ] Prove quaternion ring-like laws:
+- [x] Prove quaternion ring-like laws:
   - add commutativity/associativity
   - additive identity/inverse
   - multiplication associativity
@@ -88,17 +88,18 @@ This backlog follows the same pattern used for 2D:
   - left/right distributivity
   - explicit non-commutativity witness lemma for multiplication
   - progress: add commutativity/associativity, additive identity/inverse, multiplicative identity, left/right distributivity, and a non-commutativity witness are implemented; multiplication associativity is now implemented (`lemma_mul_associative`). This was completed by adding basis-sign helper infrastructure (`basis_spec`, `signed_basis_spec`, table sign/index specs, signed-basis multiply helpers, quaternion scale-one/scale-associative), proving basis-associativity for all basis triples via finite-case coverage (`lemma_basis_assoc_indices` + 64 concrete cases), and then lifting through decomposition (`basis_decompose_spec` / `lemma_basis_decompose_eqv`) and congruence transport lemmas.
-- [ ] Prove conjugation/norm/inverse laws:
+- [x] Prove conjugation/norm/inverse laws:
   - conjugate involution
   - `q * conjugate(q)` and `conjugate(q) * q` are real-valued and equal to `norm2(q)`
   - `norm2(q) >= 0`, `norm2(q) == 0 <==> q == 0`
   - `norm2(q1*q2) == norm2(q1) * norm2(q2)`
   - inverse correctness for nonzero `q` (`q * inv(q) == 1`, `inv(q) * q == 1`)
   - progress: conjugate involution, conjugate-product characterization (`q*conj(q)` and `conj(q)*q` real-valued and equal to `norm2(q)` up to semantic equality), norm conjugate-invariance, norm nonnegative, norm zero-iff-zero, norm scale law (`norm2(q*k) = (k*k)*norm2(q)` up to semantic equality), norm multiplicativity (`norm2(q1*q2) = norm2(q1)*norm2(q2)` up to semantic equality), and inverse correctness (`q*inv(q)` and `inv(q)*q`) are implemented. Supporting helper lemmas for conjugate linearity/congruence, conjugate anti-homomorphism (`conj(a*b) = conj(b)*conj(a)` up to semantic equality), and real-scalar multiplication (`q*real(s)` / `real(s)*q`) are also in place.
-- [ ] Add rotation-facing API (if using quaternions for 3D rotations):
+- [x] Add rotation-facing API (if using quaternions for 3D rotations):
   - `rotate_vec3_spec(v, q)` with unit-quaternion precondition
   - proof that rotation preserves vector norm
   - proof that composition matches quaternion multiplication order
+  - progress: rotation-facing spec/model layer is implemented via `unit_spec`, `pure_vec3_spec`, `vector_part_spec`, `rotate_quat_spec`, and `rotate_vec3_spec`, with model proofs `lemma_rotate_vec3_norm_preserves` and `lemma_rotate_vec3_composition`.
 
 ## P4.5 Runtime + refinement rollout
 - [x] Add runtime types:
@@ -111,7 +112,7 @@ This backlog follows the same pattern used for 2D:
   - `runtime_quaternion_refinement.rs`
 - [x] Add `View` mappings and contracts (`assume_specification` initially at backend boundary) for all runtime APIs.
 - [ ] Add regression wrappers proving runtime composition recovers key model laws for each new type.
-  - progress: initial regression wrappers are implemented for all newly added runtime families; `RuntimeVec4/RuntimePoint4` now include cancellation/linearity/metric wrappers, `orientation3` wrappers include swap/zero-nonzero scale/repeated-point behavior, and `RuntimeQuaternion` wrappers now include add commutativity/associativity, add-zero identity, sub-via-add-neg, additive inverse, multiplicative identity, multiplication associativity, left/right distributivity, non-commutativity witness, norm laws (including `norm2` scale and multiplicativity behavior), conjugate-product recovery, and inverse-identity recovery via runtime `inverse()`.
+  - progress: initial regression wrappers are implemented for all newly added runtime families; `RuntimeVec4/RuntimePoint4` now include cancellation/linearity/metric wrappers, `orientation3` wrappers include swap/zero-nonzero scale/repeated-point behavior, and `RuntimeQuaternion` wrappers now include add commutativity/associativity, add-zero identity, sub-via-add-neg, additive inverse, multiplicative identity, multiplication associativity, left/right distributivity, non-commutativity witness, norm laws (including `norm2` scale and multiplicativity behavior), rotation wrappers (`rotate_vec3` norm preservation and composition), conjugate anti-homomorphism recovery, real-scalar multiplication recovery (`q*real(s)` and `real(s)*q` vs `scale`), conjugate-product recovery, and inverse-identity recovery via runtime `inverse()`.
 
 ## P4.6 Anti-cheating + quality gates
 - [ ] Anti-cheating pass on all new lemmas:

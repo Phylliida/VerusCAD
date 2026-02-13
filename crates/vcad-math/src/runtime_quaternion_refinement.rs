@@ -1,6 +1,7 @@
 use crate::quaternion::Quaternion;
 use crate::runtime_quaternion::RuntimeQuaternion;
 use crate::runtime_scalar::RuntimeScalar;
+use crate::runtime_vec3::RuntimeVec3;
 use crate::scalar::Scalar;
 use vstd::prelude::*;
 use vstd::view::View;
@@ -103,6 +104,14 @@ pub assume_specification[ RuntimeQuaternion::inverse ](this: &RuntimeQuaternion)
         },
 ;
 
+pub assume_specification[ RuntimeQuaternion::rotate_vec3 ](
+    this: &RuntimeQuaternion,
+    v: &RuntimeVec3,
+) -> (out: RuntimeVec3)
+    ensures
+        out@ == Quaternion::rotate_vec3_spec(v@, this@),
+;
+
 #[allow(dead_code)]
 pub fn runtime_quaternion_add_pair_commutative(a: &RuntimeQuaternion, b: &RuntimeQuaternion) -> (pair: (
     RuntimeQuaternion,
@@ -182,6 +191,30 @@ pub fn runtime_quaternion_conjugate_involution(q: &RuntimeQuaternion) -> (out: R
         assert(out@ == q@);
     }
     out
+}
+
+#[allow(dead_code)]
+pub fn runtime_quaternion_conjugate_mul_reverse(
+    a: &RuntimeQuaternion,
+    b: &RuntimeQuaternion,
+) -> (pair: (RuntimeQuaternion, RuntimeQuaternion))
+    ensures
+        pair.0@ == a@.mul_spec(b@).conjugate_spec(),
+        pair.1@ == b@.conjugate_spec().mul_spec(a@.conjugate_spec()),
+        pair.0@.eqv_spec(pair.1@),
+{
+    let ab = a.mul(b);
+    let lhs = ab.conjugate();
+    let bc = b.conjugate();
+    let ac = a.conjugate();
+    let rhs = bc.mul(&ac);
+    proof {
+        Quaternion::lemma_conjugate_mul_reverse(a@, b@);
+        assert(Quaternion::conjugate_mul_reverse_instance_spec(a@, b@));
+        assert(a@.mul_spec(b@).conjugate_spec().eqv_spec(b@.conjugate_spec().mul_spec(a@.conjugate_spec())));
+        assert(lhs@.eqv_spec(rhs@));
+    }
+    (lhs, rhs)
 }
 
 #[allow(dead_code)]
@@ -319,6 +352,60 @@ pub fn runtime_quaternion_mul_distributes_over_add_right(
 }
 
 #[allow(dead_code)]
+pub fn runtime_quaternion_mul_real_right_matches_scale(
+    q: &RuntimeQuaternion,
+    s: RuntimeScalar,
+) -> (pair: (RuntimeQuaternion, RuntimeQuaternion))
+    ensures
+        pair.0@ == q@.mul_spec(Quaternion::real_spec(s@)),
+        pair.1@ == q@.scale_spec(s@),
+        pair.0@.eqv_spec(pair.1@),
+{
+    let rhs = q.scale(&s);
+    let real_s = RuntimeQuaternion::new(
+        s,
+        RuntimeScalar::from_int(0),
+        RuntimeScalar::from_int(0),
+        RuntimeScalar::from_int(0),
+    );
+    let lhs = q.mul(&real_s);
+    proof {
+        Quaternion::lemma_mul_real_right(q@, s@);
+        assert(real_s@ == Quaternion::real_spec(s@));
+        assert(q@.mul_spec(Quaternion::real_spec(s@)).eqv_spec(q@.scale_spec(s@)));
+        assert(lhs@.eqv_spec(rhs@));
+    }
+    (lhs, rhs)
+}
+
+#[allow(dead_code)]
+pub fn runtime_quaternion_mul_real_left_matches_scale(
+    s: RuntimeScalar,
+    q: &RuntimeQuaternion,
+) -> (pair: (RuntimeQuaternion, RuntimeQuaternion))
+    ensures
+        pair.0@ == Quaternion::real_spec(s@).mul_spec(q@),
+        pair.1@ == q@.scale_spec(s@),
+        pair.0@.eqv_spec(pair.1@),
+{
+    let rhs = q.scale(&s);
+    let real_s = RuntimeQuaternion::new(
+        s,
+        RuntimeScalar::from_int(0),
+        RuntimeScalar::from_int(0),
+        RuntimeScalar::from_int(0),
+    );
+    let lhs = real_s.mul(q);
+    proof {
+        Quaternion::lemma_mul_real_left(s@, q@);
+        assert(real_s@ == Quaternion::real_spec(s@));
+        assert(Quaternion::real_spec(s@).mul_spec(q@).eqv_spec(q@.scale_spec(s@)));
+        assert(lhs@.eqv_spec(rhs@));
+    }
+    (lhs, rhs)
+}
+
+#[allow(dead_code)]
 pub fn runtime_quaternion_noncommutative_witness() -> (pair: (RuntimeQuaternion, RuntimeQuaternion))
     ensures
         {
@@ -418,6 +505,59 @@ pub fn runtime_quaternion_norm2_mul(
     proof {
         Quaternion::lemma_norm2_mul(a@, b@);
         assert(a@.mul_spec(b@).norm2_spec().eqv_spec(a@.norm2_spec().mul_spec(b@.norm2_spec())));
+        assert(lhs@.eqv_spec(rhs@));
+    }
+    (lhs, rhs)
+}
+
+#[allow(dead_code)]
+pub fn runtime_quaternion_rotate_vec3_norm_preserves(
+    v: &RuntimeVec3,
+    q: &RuntimeQuaternion,
+) -> (out: (RuntimeVec3, RuntimeScalar, RuntimeScalar))
+    requires
+        q@.unit_spec(),
+    ensures
+        out.0@ == Quaternion::rotate_vec3_spec(v@, q@),
+        out.1@ == out.0@.norm2_spec(),
+        out.2@ == v@.norm2_spec(),
+        out.1@.eqv_spec(out.2@),
+{
+    let rv = q.rotate_vec3(v);
+    let rn = rv.norm2();
+    let vn = v.norm2();
+    proof {
+        Quaternion::lemma_rotate_vec3_norm_preserves(v@, q@);
+        assert(Quaternion::rotate_vec3_spec(v@, q@).norm2_spec().eqv_spec(v@.norm2_spec()));
+        assert(rn@.eqv_spec(vn@));
+    }
+    (rv, rn, vn)
+}
+
+#[allow(dead_code)]
+pub fn runtime_quaternion_rotate_vec3_composition(
+    v: &RuntimeVec3,
+    q1: &RuntimeQuaternion,
+    q2: &RuntimeQuaternion,
+) -> (pair: (RuntimeVec3, RuntimeVec3))
+    requires
+        q1@.unit_spec(),
+        q2@.unit_spec(),
+    ensures
+        pair.0@ == Quaternion::rotate_vec3_spec(Quaternion::rotate_vec3_spec(v@, q2@), q1@),
+        pair.1@ == Quaternion::rotate_vec3_spec(v@, q1@.mul_spec(q2@)),
+        pair.0@.eqv_spec(pair.1@),
+{
+    let v2 = q2.rotate_vec3(v);
+    let lhs = q1.rotate_vec3(&v2);
+    let q12 = q1.mul(q2);
+    let rhs = q12.rotate_vec3(v);
+    proof {
+        assert(q12@ == q1@.mul_spec(q2@));
+        Quaternion::lemma_rotate_vec3_composition(v@, q1@, q2@);
+        assert(Quaternion::rotate_vec3_spec(Quaternion::rotate_vec3_spec(v@, q2@), q1@).eqv_spec(
+            Quaternion::rotate_vec3_spec(v@, q1@.mul_spec(q2@)),
+        ));
         assert(lhs@.eqv_spec(rhs@));
     }
     (lhs, rhs)

@@ -1,4 +1,5 @@
 use crate::runtime_scalar::RuntimeScalar;
+use crate::runtime_vec3::RuntimeVec3;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RuntimeQuaternion {
@@ -131,6 +132,19 @@ impl RuntimeQuaternion {
         let n = self.norm2();
         let inv_n = n.recip()?;
         Some(self.conjugate().scale(&inv_n))
+    }
+
+    pub fn rotate_vec3(&self, v: &RuntimeVec3) -> RuntimeVec3 {
+        let pure_v = RuntimeQuaternion::new(
+            RuntimeScalar::from_int(0),
+            v.x().clone(),
+            v.y().clone(),
+            v.z().clone(),
+        );
+        let qc = self.conjugate();
+        let tmp = self.mul(&pure_v);
+        let rotated = tmp.mul(&qc);
+        RuntimeVec3::new(rotated.x().clone(), rotated.y().clone(), rotated.z().clone())
     }
 }
 

@@ -1,4 +1,5 @@
 use crate::scalar::Scalar;
+use crate::vec3::Vec3;
 use crate::vec4::Vec4;
 use vstd::prelude::*;
 
@@ -134,48 +135,21 @@ impl Quaternion {
         ensures
             Self::k_spec().mul_spec(Self::i_spec()).eqv_spec(Self::j_spec()),
     {
-        let k = Self::k_spec();
-        let i = Self::i_spec();
-        let j = Self::j_spec();
-        let p = k.mul_spec(i);
-        assert(p.w.eqv_spec(j.w));
-        assert(p.x.eqv_spec(j.x));
-        assert(p.y.eqv_spec(j.y));
-        assert(p.z.eqv_spec(j.z));
-        Self::lemma_eqv_from_components(p, j);
-        assert(p.eqv_spec(j));
+        assert(Self::k_spec().mul_spec(Self::i_spec()).eqv_spec(Self::j_spec())) by (compute);
     }
 
     pub proof fn lemma_basis_j_mul_i()
         ensures
             Self::j_spec().mul_spec(Self::i_spec()).eqv_spec(Self::from_ints_spec(0, 0, 0, -1)),
     {
-        let j = Self::j_spec();
-        let i = Self::i_spec();
-        let minus_k = Self::from_ints_spec(0, 0, 0, -1);
-        let p = j.mul_spec(i);
-        assert(p.w.eqv_spec(minus_k.w));
-        assert(p.x.eqv_spec(minus_k.x));
-        assert(p.y.eqv_spec(minus_k.y));
-        assert(p.z.eqv_spec(minus_k.z));
-        Self::lemma_eqv_from_components(p, minus_k);
-        assert(p.eqv_spec(minus_k));
+        assert(Self::j_spec().mul_spec(Self::i_spec()).eqv_spec(Self::from_ints_spec(0, 0, 0, -1))) by (compute);
     }
 
     pub proof fn lemma_basis_k_mul_j()
         ensures
             Self::k_spec().mul_spec(Self::j_spec()).eqv_spec(Self::from_ints_spec(0, -1, 0, 0)),
     {
-        let k = Self::k_spec();
-        let j = Self::j_spec();
-        let minus_i = Self::from_ints_spec(0, -1, 0, 0);
-        let p = k.mul_spec(j);
-        assert(p.w.eqv_spec(minus_i.w));
-        assert(p.x.eqv_spec(minus_i.x));
-        assert(p.y.eqv_spec(minus_i.y));
-        assert(p.z.eqv_spec(minus_i.z));
-        Self::lemma_eqv_from_components(p, minus_i);
-        assert(p.eqv_spec(minus_i));
+        assert(Self::k_spec().mul_spec(Self::j_spec()).eqv_spec(Self::from_ints_spec(0, -1, 0, 0))) by (compute);
     }
 
     pub proof fn lemma_basis_i_mul_k()
@@ -4208,6 +4182,469 @@ impl Quaternion {
         Self::lemma_eqv_transitive(lhs, p.scale_spec(inv_n), rs);
         Self::lemma_eqv_transitive(lhs, rs, one);
         assert(lhs.eqv_spec(one));
+    }
+
+    pub open spec fn unit_spec(self) -> bool {
+        self.norm2_spec().eqv_spec(Scalar::from_int_spec(1))
+    }
+
+    pub open spec fn pure_vec3_spec(v: Vec3) -> Self {
+        Quaternion { w: Scalar::from_int_spec(0), x: v.x, y: v.y, z: v.z }
+    }
+
+    pub open spec fn vector_part_spec(self) -> Vec3 {
+        Vec3 { x: self.x, y: self.y, z: self.z }
+    }
+
+    pub open spec fn rotate_quat_spec(v: Vec3, q: Self) -> Self {
+        q.mul_spec(Self::pure_vec3_spec(v)).mul_spec(q.conjugate_spec())
+    }
+
+    pub open spec fn rotate_vec3_spec(v: Vec3, q: Self) -> Vec3 {
+        Self::rotate_quat_spec(v, q).vector_part_spec()
+    }
+
+    pub proof fn lemma_vector_part_eqv_congruence(a: Self, b: Self)
+        requires
+            a.eqv_spec(b),
+        ensures
+            a.vector_part_spec().eqv_spec(b.vector_part_spec()),
+    {
+        let av = a.vector_part_spec();
+        let bv = b.vector_part_spec();
+        assert(a.x.eqv_spec(b.x));
+        assert(a.y.eqv_spec(b.y));
+        assert(a.z.eqv_spec(b.z));
+        Vec3::lemma_eqv_from_components(av, bv);
+        assert(av.eqv_spec(bv));
+    }
+
+    pub proof fn lemma_pure_vec3_conjugate_neg(v: Vec3)
+        ensures
+            Self::pure_vec3_spec(v).conjugate_spec() == Self::pure_vec3_spec(v).neg_spec(),
+    {
+        let p = Self::pure_vec3_spec(v);
+        let c = p.conjugate_spec();
+        let n = p.neg_spec();
+        let z = Scalar::from_int_spec(0);
+        Scalar::lemma_neg_involution(v.x);
+        Scalar::lemma_neg_involution(v.y);
+        Scalar::lemma_neg_involution(v.z);
+        assert(p.w == z);
+        assert(c.w == z);
+        assert(n.w == z.neg_spec());
+        assert(z.neg_spec() == z);
+        assert(c.w == n.w);
+        assert(c.x == v.x.neg_spec());
+        assert(n.x == v.x.neg_spec());
+        assert(c.y == v.y.neg_spec());
+        assert(n.y == v.y.neg_spec());
+        assert(c.z == v.z.neg_spec());
+        assert(n.z == v.z.neg_spec());
+        assert(c == n);
+    }
+
+    pub proof fn lemma_neg_eqv_scale_minus_one(q: Self)
+        ensures
+            q.neg_spec().eqv_spec(q.scale_spec(Scalar::from_int_spec(-1))),
+    {
+        let n = q.neg_spec();
+        let one = Scalar::from_int_spec(1);
+        let m = one.neg_spec();
+        let s = q.scale_spec(m);
+        assert(m == Scalar::from_int_spec(-1));
+
+        Scalar::lemma_mul_neg_right(q.w, one);
+        Scalar::lemma_mul_one_identity(q.w);
+        assert(s.w == q.w.mul_spec(one.neg_spec()));
+        assert(s.w == q.w.mul_spec(one).neg_spec());
+        assert(s.w == q.w.neg_spec());
+        assert(n.w.eqv_spec(s.w));
+
+        Scalar::lemma_mul_neg_right(q.x, one);
+        Scalar::lemma_mul_one_identity(q.x);
+        assert(s.x == q.x.mul_spec(one.neg_spec()));
+        assert(s.x == q.x.mul_spec(one).neg_spec());
+        assert(s.x == q.x.neg_spec());
+        assert(n.x.eqv_spec(s.x));
+
+        Scalar::lemma_mul_neg_right(q.y, one);
+        Scalar::lemma_mul_one_identity(q.y);
+        assert(s.y == q.y.mul_spec(one.neg_spec()));
+        assert(s.y == q.y.mul_spec(one).neg_spec());
+        assert(s.y == q.y.neg_spec());
+        assert(n.y.eqv_spec(s.y));
+
+        Scalar::lemma_mul_neg_right(q.z, one);
+        Scalar::lemma_mul_one_identity(q.z);
+        assert(s.z == q.z.mul_spec(one.neg_spec()));
+        assert(s.z == q.z.mul_spec(one).neg_spec());
+        assert(s.z == q.z.neg_spec());
+        assert(n.z.eqv_spec(s.z));
+
+        Self::lemma_eqv_from_components(n, s);
+        assert(n.eqv_spec(s));
+    }
+
+    pub proof fn lemma_scalar_eqv_neg_implies_zero(a: Scalar)
+        requires
+            a.eqv_spec(a.neg_spec()),
+        ensures
+            a.eqv_spec(Scalar::from_int_spec(0)),
+    {
+        let z = Scalar::from_int_spec(0);
+        Scalar::lemma_denom_positive(a);
+        assert(a.eqv_spec(a.neg_spec()) == (a.num * a.neg_spec().denom() == a.neg_spec().num * a.denom()));
+        assert(a.neg_spec().denom() == a.denom());
+        assert(a.neg_spec().num == -a.num);
+        assert(a.num * a.denom() == (-a.num) * a.denom());
+        assert(a.denom() != 0);
+        assert((a.num * a.denom() == (-a.num) * a.denom() && a.denom() != 0) ==> a.num == 0)
+            by (nonlinear_arith);
+        assert(a.num == 0);
+        Scalar::lemma_eqv_zero_iff_num_zero(a);
+        assert(a.eqv_spec(z) == (a.num == 0));
+        assert(a.eqv_spec(z));
+    }
+
+    pub proof fn lemma_rotate_quat_conjugate_neg(v: Vec3, q: Self)
+        ensures
+            Self::rotate_quat_spec(v, q).conjugate_spec().eqv_spec(Self::rotate_quat_spec(v, q).neg_spec()),
+    {
+        let p = Self::pure_vec3_spec(v);
+        let qc = q.conjugate_spec();
+        let r = Self::rotate_quat_spec(v, q);
+        let rc = r.conjugate_spec();
+        let rneg = r.neg_spec();
+        let one = Scalar::from_int_spec(1);
+        let m = one.neg_spec();
+
+        let qp = q.mul_spec(p);
+        let qpn_assoc = q.mul_spec(p.neg_spec().mul_spec(qc));
+        let qpn = q.mul_spec(p.neg_spec()).mul_spec(qc);
+
+        Self::lemma_conjugate_mul_reverse(qp, qc);
+        assert(rc.eqv_spec(qc.conjugate_spec().mul_spec(qp.conjugate_spec())));
+
+        Self::lemma_conjugate_involution(q);
+        assert(qc.conjugate_spec() == q);
+
+        Self::lemma_conjugate_mul_reverse(q, p);
+        assert(qp.conjugate_spec().eqv_spec(p.conjugate_spec().mul_spec(q.conjugate_spec())));
+        assert(q.conjugate_spec() == qc);
+        Self::lemma_mul_eqv_congruence_right(qc.conjugate_spec(), qp.conjugate_spec(), p.conjugate_spec().mul_spec(qc));
+        assert(qc.conjugate_spec().mul_spec(qp.conjugate_spec()).eqv_spec(qc.conjugate_spec().mul_spec(p.conjugate_spec().mul_spec(qc))));
+
+        Self::lemma_pure_vec3_conjugate_neg(v);
+        assert(p.conjugate_spec() == p.neg_spec());
+        assert(qc.conjugate_spec().mul_spec(p.conjugate_spec().mul_spec(qc)) == qpn_assoc);
+        Self::lemma_eqv_transitive(rc, qc.conjugate_spec().mul_spec(qp.conjugate_spec()), qpn_assoc);
+
+        Self::lemma_mul_associative(q, p.neg_spec(), qc);
+        assert(qpn.eqv_spec(qpn_assoc));
+        Self::lemma_eqv_symmetric(qpn, qpn_assoc);
+        assert(qpn_assoc.eqv_spec(qpn));
+        Self::lemma_eqv_transitive(rc, qpn_assoc, qpn);
+
+        Self::lemma_neg_eqv_scale_minus_one(p);
+        assert(p.neg_spec().eqv_spec(p.scale_spec(m)));
+        Self::lemma_mul_eqv_congruence_right(q, p.neg_spec(), p.scale_spec(m));
+        assert(q.mul_spec(p.neg_spec()).eqv_spec(q.mul_spec(p.scale_spec(m))));
+        Self::lemma_mul_scale_right(q, p, m);
+        assert(q.mul_spec(p.scale_spec(m)).eqv_spec(q.mul_spec(p).scale_spec(m)));
+        Self::lemma_eqv_transitive(q.mul_spec(p.neg_spec()), q.mul_spec(p.scale_spec(m)), q.mul_spec(p).scale_spec(m));
+        Self::lemma_mul_eqv_congruence_left(q.mul_spec(p.neg_spec()), q.mul_spec(p).scale_spec(m), qc);
+        assert(qpn.eqv_spec(q.mul_spec(p).scale_spec(m).mul_spec(qc)));
+
+        Self::lemma_mul_scale_left(q.mul_spec(p), qc, m);
+        assert(q.mul_spec(p).scale_spec(m).mul_spec(qc).eqv_spec(r.scale_spec(m)));
+        Self::lemma_eqv_transitive(qpn, q.mul_spec(p).scale_spec(m).mul_spec(qc), r.scale_spec(m));
+
+        Self::lemma_neg_eqv_scale_minus_one(r);
+        assert(rneg.eqv_spec(r.scale_spec(m)));
+        Self::lemma_eqv_symmetric(rneg, r.scale_spec(m));
+        assert(r.scale_spec(m).eqv_spec(rneg));
+        Self::lemma_eqv_transitive(qpn, r.scale_spec(m), rneg);
+        Self::lemma_eqv_transitive(rc, qpn, rneg);
+        assert(rc.eqv_spec(rneg));
+    }
+
+    pub proof fn lemma_rotate_quat_scalar_zero(v: Vec3, q: Self)
+        ensures
+            Self::rotate_quat_spec(v, q).w.eqv_spec(Scalar::from_int_spec(0)),
+    {
+        let r = Self::rotate_quat_spec(v, q);
+        let rc = r.conjugate_spec();
+        let rn = r.neg_spec();
+        let z = Scalar::from_int_spec(0);
+        Self::lemma_rotate_quat_conjugate_neg(v, q);
+        assert(rc.eqv_spec(rn));
+        assert(rc.w.eqv_spec(rn.w));
+        assert(rc.w == r.w);
+        assert(rn.w == r.w.neg_spec());
+        assert(r.w.eqv_spec(r.w.neg_spec()));
+        Self::lemma_scalar_eqv_neg_implies_zero(r.w);
+        assert(r.w.eqv_spec(z));
+    }
+
+    pub proof fn lemma_pure_of_vector_part_if_pure(q: Self)
+        requires
+            q.w.eqv_spec(Scalar::from_int_spec(0)),
+        ensures
+            Self::pure_vec3_spec(q.vector_part_spec()).eqv_spec(q),
+    {
+        let z = Scalar::from_int_spec(0);
+        let p = Self::pure_vec3_spec(q.vector_part_spec());
+        Scalar::lemma_eqv_symmetric(q.w, z);
+        assert(q.w.eqv_spec(z) == z.eqv_spec(q.w));
+        assert(z.eqv_spec(q.w));
+        assert(p.w == z);
+        assert(p.x == q.x);
+        assert(p.y == q.y);
+        assert(p.z == q.z);
+        assert(p.w.eqv_spec(q.w));
+        Scalar::lemma_eqv_reflexive(q.x);
+        Scalar::lemma_eqv_reflexive(q.y);
+        Scalar::lemma_eqv_reflexive(q.z);
+        assert(p.x.eqv_spec(q.x));
+        assert(p.y.eqv_spec(q.y));
+        assert(p.z.eqv_spec(q.z));
+        Self::lemma_eqv_from_components(p, q);
+        assert(p.eqv_spec(q));
+    }
+
+    pub proof fn lemma_vector_part_norm2_if_pure(q: Self)
+        requires
+            q.w.eqv_spec(Scalar::from_int_spec(0)),
+        ensures
+            q.vector_part_spec().norm2_spec().eqv_spec(q.norm2_spec()),
+    {
+        let z = Scalar::from_int_spec(0);
+        let v = q.vector_part_spec();
+        let xx = q.x.mul_spec(q.x);
+        let yy = q.y.mul_spec(q.y);
+        let zz = q.z.mul_spec(q.z);
+        let vv = v.norm2_spec();
+        let ww = q.w.mul_spec(q.w);
+        let nq = q.norm2_spec();
+        let n1 = ww.add_spec(xx).add_spec(yy);
+        let n2 = ww.add_spec(xx.add_spec(yy));
+        let n3 = n2.add_spec(zz);
+        let n4 = ww.add_spec(xx.add_spec(yy).add_spec(zz));
+
+        assert(vv == xx.add_spec(yy).add_spec(zz));
+        assert(nq == ww.add_spec(xx).add_spec(yy).add_spec(zz));
+
+        Scalar::lemma_eqv_mul_congruence(q.w, z, q.w, z);
+        assert(ww.eqv_spec(z.mul_spec(z)));
+        Scalar::lemma_mul_zero(z);
+        assert(z.mul_spec(z).eqv_spec(z));
+        Scalar::lemma_eqv_transitive(ww, z.mul_spec(z), z);
+        assert(ww.eqv_spec(z));
+
+        Scalar::lemma_add_associative(ww, xx, yy);
+        assert(n1.eqv_spec(n2));
+        Scalar::lemma_eqv_add_congruence(n1, n2, zz, zz);
+        assert(nq.eqv_spec(n3));
+        Scalar::lemma_add_associative(ww, xx.add_spec(yy), zz);
+        assert(n3.eqv_spec(n4));
+        Scalar::lemma_eqv_transitive(nq, n3, n4);
+        assert(nq.eqv_spec(n4));
+
+        Scalar::lemma_eqv_add_congruence(ww, z, vv, vv);
+        assert(n4.eqv_spec(z.add_spec(vv)));
+        Scalar::lemma_eqv_transitive(nq, n4, z.add_spec(vv));
+        Scalar::lemma_add_zero_identity(vv);
+        assert(z.add_spec(vv) == vv);
+        assert(nq.eqv_spec(vv));
+        Scalar::lemma_eqv_symmetric(nq, vv);
+        assert(nq.eqv_spec(vv) == vv.eqv_spec(nq));
+        assert(vv.eqv_spec(nq));
+    }
+
+    pub proof fn lemma_pure_vec3_norm2(v: Vec3)
+        ensures
+            Self::pure_vec3_spec(v).norm2_spec().eqv_spec(v.norm2_spec()),
+    {
+        let p = Self::pure_vec3_spec(v);
+        let pv = p.vector_part_spec();
+        let z = Scalar::from_int_spec(0);
+        assert(p.w == z);
+        Scalar::lemma_eqv_reflexive(z);
+        assert(p.w.eqv_spec(z));
+        Self::lemma_vector_part_norm2_if_pure(p);
+        assert(pv.norm2_spec().eqv_spec(p.norm2_spec()));
+        assert(pv == v);
+        assert(v.norm2_spec().eqv_spec(p.norm2_spec()));
+        Scalar::lemma_eqv_symmetric(v.norm2_spec(), p.norm2_spec());
+        assert(v.norm2_spec().eqv_spec(p.norm2_spec()) == p.norm2_spec().eqv_spec(v.norm2_spec()));
+        assert(p.norm2_spec().eqv_spec(v.norm2_spec()));
+    }
+
+    pub proof fn lemma_rotate_vec3_norm_preserves(v: Vec3, q: Self)
+        requires
+            q.unit_spec(),
+        ensures
+            Self::rotate_vec3_spec(v, q).norm2_spec().eqv_spec(v.norm2_spec()),
+    {
+        let one = Scalar::from_int_spec(1);
+        let p = Self::pure_vec3_spec(v);
+        let qc = q.conjugate_spec();
+        let r = Self::rotate_quat_spec(v, q);
+        let rv = Self::rotate_vec3_spec(v, q);
+
+        let n_r = r.norm2_spec();
+        let n_qp = q.mul_spec(p).norm2_spec();
+        let n_q = q.norm2_spec();
+        let n_qc = qc.norm2_spec();
+        let n_p = p.norm2_spec();
+        let n_mid0 = n_q.mul_spec(n_p).mul_spec(n_qc);
+        let n_mid1 = n_q.mul_spec(n_p).mul_spec(n_q);
+        let n_mid2 = n_q.mul_spec(n_p).mul_spec(one);
+        let n_mid3 = n_q.mul_spec(n_p);
+        let n_mid4 = one.mul_spec(n_p);
+
+        Self::lemma_rotate_quat_scalar_zero(v, q);
+        Self::lemma_vector_part_norm2_if_pure(r);
+        assert(rv == r.vector_part_spec());
+        assert(rv.norm2_spec().eqv_spec(n_r));
+
+        Self::lemma_norm2_mul(q.mul_spec(p), qc);
+        assert(n_r.eqv_spec(n_qp.mul_spec(n_qc)));
+        Self::lemma_norm2_mul(q, p);
+        assert(n_qp.eqv_spec(n_q.mul_spec(n_p)));
+        Scalar::lemma_eqv_mul_congruence_left(n_qp, n_q.mul_spec(n_p), n_qc);
+        assert(n_qp.mul_spec(n_qc).eqv_spec(n_mid0));
+        Scalar::lemma_eqv_transitive(n_r, n_qp.mul_spec(n_qc), n_mid0);
+        assert(n_r.eqv_spec(n_mid0));
+
+        Self::lemma_norm2_conjugate_invariant(q);
+        assert(n_qc.eqv_spec(n_q));
+        Scalar::lemma_eqv_mul_congruence_right(n_q.mul_spec(n_p), n_qc, n_q);
+        assert(n_mid0.eqv_spec(n_mid1));
+        Scalar::lemma_eqv_transitive(n_r, n_mid0, n_mid1);
+        assert(n_r.eqv_spec(n_mid1));
+
+        assert(q.unit_spec());
+        assert(n_q.eqv_spec(one));
+        Scalar::lemma_eqv_mul_congruence_right(n_q.mul_spec(n_p), n_q, one);
+        assert(n_mid1.eqv_spec(n_mid2));
+        Scalar::lemma_mul_one_identity(n_q.mul_spec(n_p));
+        assert(n_mid2 == n_mid3);
+        Scalar::lemma_eqv_reflexive(n_mid3);
+        assert(n_mid2.eqv_spec(n_mid3));
+        Scalar::lemma_eqv_transitive(n_r, n_mid1, n_mid2);
+        Scalar::lemma_eqv_transitive(n_r, n_mid2, n_mid3);
+        assert(n_r.eqv_spec(n_mid3));
+
+        Scalar::lemma_eqv_mul_congruence_left(n_q, one, n_p);
+        assert(n_mid3.eqv_spec(n_mid4));
+        Scalar::lemma_mul_one_identity(n_p);
+        assert(n_mid4 == n_p);
+        Scalar::lemma_eqv_reflexive(n_p);
+        assert(n_mid4.eqv_spec(n_p));
+        Scalar::lemma_eqv_transitive(n_r, n_mid3, n_mid4);
+        Scalar::lemma_eqv_transitive(n_r, n_mid4, n_p);
+        assert(n_r.eqv_spec(n_p));
+
+        Self::lemma_pure_vec3_norm2(v);
+        assert(n_p.eqv_spec(v.norm2_spec()));
+        Scalar::lemma_eqv_transitive(rv.norm2_spec(), n_r, n_p);
+        Scalar::lemma_eqv_transitive(rv.norm2_spec(), n_p, v.norm2_spec());
+        assert(rv.norm2_spec().eqv_spec(v.norm2_spec()));
+    }
+
+    pub proof fn lemma_rotate_vec3_composition(v: Vec3, q1: Self, q2: Self)
+        requires
+            q1.unit_spec(),
+            q2.unit_spec(),
+        ensures
+            Self::rotate_vec3_spec(Self::rotate_vec3_spec(v, q2), q1).eqv_spec(
+                Self::rotate_vec3_spec(v, q1.mul_spec(q2)),
+            ),
+    {
+        let p = Self::pure_vec3_spec(v);
+        let q1c = q1.conjugate_spec();
+        let q2c = q2.conjugate_spec();
+        let q12 = q1.mul_spec(q2);
+        let q12c = q12.conjugate_spec();
+
+        let v2 = Self::rotate_vec3_spec(v, q2);
+        let r2 = Self::rotate_quat_spec(v, q2);
+        let p2 = Self::pure_vec3_spec(v2);
+        let lhs_q = Self::rotate_quat_spec(v2, q1);
+        let rhs_q = Self::rotate_quat_spec(v, q12);
+        let lhs_t0 = q1.mul_spec(r2).mul_spec(q1c);
+        let lhs_t1 = q1.mul_spec(q2.mul_spec(p).mul_spec(q2c)).mul_spec(q1c);
+        let lhs_t2 = q1.mul_spec(q2.mul_spec(p).mul_spec(q2c).mul_spec(q1c));
+        let lhs_t3 = q1.mul_spec(q2.mul_spec(p).mul_spec(q2c.mul_spec(q1c)));
+        let lhs_t4 = q1.mul_spec(q2.mul_spec(p.mul_spec(q2c.mul_spec(q1c))));
+        let lhs_t5 = q1.mul_spec(q2).mul_spec(p.mul_spec(q2c.mul_spec(q1c)));
+        let lhs_t6 = q1.mul_spec(q2).mul_spec(p).mul_spec(q2c.mul_spec(q1c));
+
+        Self::lemma_rotate_quat_scalar_zero(v, q2);
+        assert(r2.w.eqv_spec(Scalar::from_int_spec(0)));
+        Self::lemma_pure_of_vector_part_if_pure(r2);
+        assert(v2 == r2.vector_part_spec());
+        assert(p2 == Self::pure_vec3_spec(r2.vector_part_spec()));
+        assert(p2.eqv_spec(r2));
+
+        Self::lemma_mul_eqv_congruence_right(q1, p2, r2);
+        Self::lemma_mul_eqv_congruence_left(q1.mul_spec(p2), q1.mul_spec(r2), q1c);
+        assert(lhs_q.eqv_spec(lhs_t0));
+
+        assert(r2 == q2.mul_spec(p).mul_spec(q2c));
+        assert(lhs_t0 == lhs_t1);
+        Self::lemma_mul_associative(q1, q2.mul_spec(p).mul_spec(q2c), q1c);
+        assert(lhs_t1.eqv_spec(lhs_t2));
+
+        Self::lemma_mul_associative(q2.mul_spec(p), q2c, q1c);
+        assert(q2.mul_spec(p).mul_spec(q2c).mul_spec(q1c).eqv_spec(q2.mul_spec(p).mul_spec(q2c.mul_spec(q1c))));
+        Self::lemma_mul_eqv_congruence_right(
+            q1,
+            q2.mul_spec(p).mul_spec(q2c).mul_spec(q1c),
+            q2.mul_spec(p).mul_spec(q2c.mul_spec(q1c)),
+        );
+        assert(lhs_t2.eqv_spec(lhs_t3));
+
+        Self::lemma_mul_associative(q2, p, q2c.mul_spec(q1c));
+        assert(q2.mul_spec(p).mul_spec(q2c.mul_spec(q1c)).eqv_spec(q2.mul_spec(p.mul_spec(q2c.mul_spec(q1c)))));
+        Self::lemma_mul_eqv_congruence_right(q1, q2.mul_spec(p).mul_spec(q2c.mul_spec(q1c)), q2.mul_spec(p.mul_spec(q2c.mul_spec(q1c))));
+        assert(lhs_t3.eqv_spec(lhs_t4));
+
+        Self::lemma_mul_associative(q1, q2, p.mul_spec(q2c.mul_spec(q1c)));
+        assert(lhs_t5.eqv_spec(lhs_t4));
+        Self::lemma_eqv_symmetric(lhs_t5, lhs_t4);
+        assert(lhs_t4.eqv_spec(lhs_t5));
+
+        Self::lemma_mul_associative(q12, p, q2c.mul_spec(q1c));
+        assert(lhs_t6.eqv_spec(lhs_t5));
+        Self::lemma_eqv_symmetric(lhs_t6, lhs_t5);
+        assert(lhs_t5.eqv_spec(lhs_t6));
+
+        Self::lemma_eqv_transitive(lhs_q, lhs_t0, lhs_t1);
+        Self::lemma_eqv_transitive(lhs_q, lhs_t1, lhs_t2);
+        Self::lemma_eqv_transitive(lhs_q, lhs_t2, lhs_t3);
+        Self::lemma_eqv_transitive(lhs_q, lhs_t3, lhs_t4);
+        Self::lemma_eqv_transitive(lhs_q, lhs_t4, lhs_t5);
+        Self::lemma_eqv_transitive(lhs_q, lhs_t5, lhs_t6);
+        assert(lhs_q.eqv_spec(lhs_t6));
+
+        Self::lemma_conjugate_mul_reverse(q1, q2);
+        assert(q12c.eqv_spec(q2c.mul_spec(q1c)));
+        Self::lemma_mul_eqv_congruence_right(q12.mul_spec(p), q12c, q2c.mul_spec(q1c));
+        assert(rhs_q.eqv_spec(lhs_t6));
+
+        Self::lemma_eqv_symmetric(rhs_q, lhs_t6);
+        assert(lhs_t6.eqv_spec(rhs_q));
+        Self::lemma_eqv_transitive(lhs_q, lhs_t6, rhs_q);
+        assert(lhs_q.eqv_spec(rhs_q));
+
+        Self::lemma_vector_part_eqv_congruence(lhs_q, rhs_q);
+        assert(lhs_q.vector_part_spec().eqv_spec(rhs_q.vector_part_spec()));
+        assert(Self::rotate_vec3_spec(v2, q1) == lhs_q.vector_part_spec());
+        assert(Self::rotate_vec3_spec(v, q12) == rhs_q.vector_part_spec());
+        assert(Self::rotate_vec3_spec(v2, q1).eqv_spec(Self::rotate_vec3_spec(v, q12)));
     }
 }
 
