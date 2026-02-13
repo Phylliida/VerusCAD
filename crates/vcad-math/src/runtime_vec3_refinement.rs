@@ -8,68 +8,15 @@ use vstd::view::View;
 verus! {
 
 #[verifier::external_type_specification]
-#[verifier::external_body]
 pub struct ExRuntimeVec3(RuntimeVec3);
 
 impl View for RuntimeVec3 {
     type V = Vec3;
 
-    uninterp spec fn view(&self) -> Vec3;
+    open spec fn view(&self) -> Vec3 {
+        Vec3 { x: self.x@, y: self.y@, z: self.z@ }
+    }
 }
-
-pub assume_specification[ RuntimeVec3::new ](
-    x: RuntimeScalar,
-    y: RuntimeScalar,
-    z: RuntimeScalar,
-) -> (out: RuntimeVec3)
-    ensures
-        out@ == (Vec3 { x: x@, y: y@, z: z@ }),
-;
-
-pub assume_specification[ RuntimeVec3::from_ints ](x: i64, y: i64, z: i64) -> (out: RuntimeVec3)
-    ensures
-        out@ == Vec3::from_ints_spec(x as int, y as int, z as int),
-;
-
-pub assume_specification[ RuntimeVec3::zero ]() -> (out: RuntimeVec3)
-    ensures
-        out@ == Vec3::zero_spec(),
-;
-
-pub assume_specification[ RuntimeVec3::add ](this: &RuntimeVec3, rhs: &RuntimeVec3) -> (out: RuntimeVec3)
-    ensures
-        out@ == this@.add_spec(rhs@),
-;
-
-pub assume_specification[ RuntimeVec3::sub ](this: &RuntimeVec3, rhs: &RuntimeVec3) -> (out: RuntimeVec3)
-    ensures
-        out@ == this@.sub_spec(rhs@),
-;
-
-pub assume_specification[ RuntimeVec3::neg ](this: &RuntimeVec3) -> (out: RuntimeVec3)
-    ensures
-        out@ == this@.neg_spec(),
-;
-
-pub assume_specification[ RuntimeVec3::scale ](this: &RuntimeVec3, k: &RuntimeScalar) -> (out: RuntimeVec3)
-    ensures
-        out@ == this@.scale_spec(k@),
-;
-
-pub assume_specification[ RuntimeVec3::dot ](this: &RuntimeVec3, rhs: &RuntimeVec3) -> (out: RuntimeScalar)
-    ensures
-        out@ == this@.dot_spec(rhs@),
-;
-
-pub assume_specification[ RuntimeVec3::cross ](this: &RuntimeVec3, rhs: &RuntimeVec3) -> (out: RuntimeVec3)
-    ensures
-        out@ == this@.cross_spec(rhs@),
-;
-
-pub assume_specification[ RuntimeVec3::norm2 ](this: &RuntimeVec3) -> (out: RuntimeScalar)
-    ensures
-        out@ == this@.norm2_spec(),
-;
 
 #[allow(dead_code)]
 pub fn runtime_vec3_add_pair_commutative(a: &RuntimeVec3, b: &RuntimeVec3) -> (pair: (

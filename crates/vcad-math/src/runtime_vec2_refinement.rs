@@ -7,64 +7,15 @@ use vstd::view::View;
 verus! {
 
 #[verifier::external_type_specification]
-#[verifier::external_body]
 pub struct ExRuntimeVec2(RuntimeVec2);
 
 impl View for RuntimeVec2 {
     type V = Vec2;
 
-    uninterp spec fn view(&self) -> Vec2;
+    open spec fn view(&self) -> Vec2 {
+        Vec2 { x: self.x@, y: self.y@ }
+    }
 }
-
-pub assume_specification[ RuntimeVec2::new ](x: RuntimeScalar, y: RuntimeScalar) -> (out: RuntimeVec2)
-    ensures
-        out@ == (Vec2 { x: x@, y: y@ }),
-;
-
-pub assume_specification[ RuntimeVec2::from_ints ](x: i64, y: i64) -> (out: RuntimeVec2)
-    ensures
-        out@ == Vec2::from_ints_spec(x as int, y as int),
-;
-
-pub assume_specification[ RuntimeVec2::zero ]() -> (out: RuntimeVec2)
-    ensures
-        out@ == Vec2::zero_spec(),
-;
-
-pub assume_specification[ RuntimeVec2::add ](this: &RuntimeVec2, rhs: &RuntimeVec2) -> (out: RuntimeVec2)
-    ensures
-        out@ == this@.add_spec(rhs@),
-;
-
-pub assume_specification[ RuntimeVec2::sub ](this: &RuntimeVec2, rhs: &RuntimeVec2) -> (out: RuntimeVec2)
-    ensures
-        out@ == this@.sub_spec(rhs@),
-;
-
-pub assume_specification[ RuntimeVec2::neg ](this: &RuntimeVec2) -> (out: RuntimeVec2)
-    ensures
-        out@ == this@.neg_spec(),
-;
-
-pub assume_specification[ RuntimeVec2::scale ](this: &RuntimeVec2, k: &RuntimeScalar) -> (out: RuntimeVec2)
-    ensures
-        out@ == this@.scale_spec(k@),
-;
-
-pub assume_specification[ RuntimeVec2::dot ](this: &RuntimeVec2, rhs: &RuntimeVec2) -> (out: RuntimeScalar)
-    ensures
-        out@ == this@.dot_spec(rhs@),
-;
-
-pub assume_specification[ RuntimeVec2::cross ](this: &RuntimeVec2, rhs: &RuntimeVec2) -> (out: RuntimeScalar)
-    ensures
-        out@ == this@.cross_spec(rhs@),
-;
-
-pub assume_specification[ RuntimeVec2::norm2 ](this: &RuntimeVec2) -> (out: RuntimeScalar)
-    ensures
-        out@ == this@.norm2_spec(),
-;
 
 #[allow(dead_code)]
 pub fn runtime_vec2_add_pair_commutative(a: &RuntimeVec2, b: &RuntimeVec2) -> (pair: (

@@ -305,6 +305,21 @@ pub proof fn lemma_orient2d_unit_ccw()
     let ba = b.sub_spec(a);
     let ca = c.sub_spec(a);
 
+    assert(a == Point2::from_ints_spec(0, 0));
+    assert(b == Point2::from_ints_spec(1, 0));
+    assert(c == Point2::from_ints_spec(0, 1));
+    assert(ba == Vec2 { x: b.x.sub_spec(a.x), y: b.y.sub_spec(a.y) });
+    assert(ca == Vec2 { x: c.x.sub_spec(a.x), y: c.y.sub_spec(a.y) });
+    assert(ba.x == Scalar::from_int_spec(1).sub_spec(Scalar::from_int_spec(0)));
+    assert(ba.y == Scalar::from_int_spec(0).sub_spec(Scalar::from_int_spec(0)));
+    assert(ca.x == Scalar::from_int_spec(0).sub_spec(Scalar::from_int_spec(0)));
+    assert(ca.y == Scalar::from_int_spec(1).sub_spec(Scalar::from_int_spec(0)));
+    Scalar::lemma_add_zero_identity(Scalar::from_int_spec(1));
+    Scalar::lemma_add_zero_identity(Scalar::from_int_spec(0));
+    assert(Scalar::from_int_spec(0).neg_spec() == Scalar::from_int_spec(0));
+    assert(Scalar::from_int_spec(1).sub_spec(Scalar::from_int_spec(0)) == Scalar::from_int_spec(1));
+    assert(Scalar::from_int_spec(0).sub_spec(Scalar::from_int_spec(0)) == Scalar::from_int_spec(0));
+
     assert(ba.x == Scalar::from_int_spec(1));
     assert(ba.y == Scalar::from_int_spec(0));
     assert(ca.x == Scalar::from_int_spec(0));

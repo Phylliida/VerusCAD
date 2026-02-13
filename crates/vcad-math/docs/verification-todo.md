@@ -5,15 +5,15 @@ Goal: remove trusted runtime proof boundaries so `vcad-math` runtime behavior is
 - [x] Full crate verifies: `./scripts/verify-vcad-math.sh`.
 - [ ] Trusted runtime assumptions remain (`assume_specification[...]`).
 - [ ] Trust surface reduced to zero runtime assumptions in `crates/vcad-math/src`.
-- [x] Current assumption count: `66`.
+- [x] Current assumption count: `36`.
 
 ## Assumption Inventory (Current)
 - [ ] `src/runtime_scalar_refinement.rs` (`9`)
-- [ ] `src/runtime_vec2_refinement.rs` (`10`)
-- [ ] `src/runtime_point2_refinement.rs` (`5`)
+- [x] `src/runtime_vec2_refinement.rs` (`0`)
+- [x] `src/runtime_point2_refinement.rs` (`0`)
 - [x] `src/runtime_orientation_refinement.rs` (`0`)
-- [ ] `src/runtime_vec3_refinement.rs` (`10`)
-- [ ] `src/runtime_point3_refinement.rs` (`5`)
+- [x] `src/runtime_vec3_refinement.rs` (`0`)
+- [x] `src/runtime_point3_refinement.rs` (`0`)
 - [x] `src/runtime_orientation3_refinement.rs` (`0`)
 - [ ] `src/runtime_vec4_refinement.rs` (`9`)
 - [ ] `src/runtime_point4_refinement.rs` (`5`)
@@ -21,8 +21,8 @@ Goal: remove trusted runtime proof boundaries so `vcad-math` runtime behavior is
 
 ## Recommended Work Order
 - [x] 1) Orientation wrappers (2D/3D): low count, good pattern warm-up.
-- [ ] 2) Vec/Point 2D runtime boundary.
-- [ ] 3) Vec/Point 3D runtime boundary.
+- [x] 2) Vec/Point 2D runtime boundary.
+- [x] 3) Vec/Point 3D runtime boundary.
 - [ ] 4) Vec/Point 4D runtime boundary.
 - [ ] 5) Quaternion runtime boundary.
 - [ ] 6) Scalar runtime boundary (likely hardest due backend/runtime representation).
@@ -38,43 +38,43 @@ Goal: remove trusted runtime proof boundaries so `vcad-math` runtime behavior is
 - [x] `runtime_orientation3::scale_point_from_origin3`
 - [x] `runtime_orientation3::orientation3`
 
-## C. runtime_vec2_refinement.rs (10)
-- [ ] `RuntimeVec2::new`
-- [ ] `RuntimeVec2::from_ints`
-- [ ] `RuntimeVec2::zero`
-- [ ] `RuntimeVec2::add`
-- [ ] `RuntimeVec2::sub`
-- [ ] `RuntimeVec2::neg`
-- [ ] `RuntimeVec2::scale`
-- [ ] `RuntimeVec2::dot`
-- [ ] `RuntimeVec2::cross`
-- [ ] `RuntimeVec2::norm2`
+## C. runtime_vec2_refinement.rs (0)
+- [x] `RuntimeVec2::new`
+- [x] `RuntimeVec2::from_ints`
+- [x] `RuntimeVec2::zero`
+- [x] `RuntimeVec2::add`
+- [x] `RuntimeVec2::sub`
+- [x] `RuntimeVec2::neg`
+- [x] `RuntimeVec2::scale`
+- [x] `RuntimeVec2::dot`
+- [x] `RuntimeVec2::cross`
+- [x] `RuntimeVec2::norm2`
 
-## D. runtime_point2_refinement.rs (5)
-- [ ] `RuntimePoint2::new`
-- [ ] `RuntimePoint2::from_ints`
-- [ ] `RuntimePoint2::add_vec`
-- [ ] `RuntimePoint2::sub`
-- [ ] `RuntimePoint2::dist2`
+## D. runtime_point2_refinement.rs (0)
+- [x] `RuntimePoint2::new`
+- [x] `RuntimePoint2::from_ints`
+- [x] `RuntimePoint2::add_vec`
+- [x] `RuntimePoint2::sub`
+- [x] `RuntimePoint2::dist2`
 
-## E. runtime_vec3_refinement.rs (10)
-- [ ] `RuntimeVec3::new`
-- [ ] `RuntimeVec3::from_ints`
-- [ ] `RuntimeVec3::zero`
-- [ ] `RuntimeVec3::add`
-- [ ] `RuntimeVec3::sub`
-- [ ] `RuntimeVec3::neg`
-- [ ] `RuntimeVec3::scale`
-- [ ] `RuntimeVec3::dot`
-- [ ] `RuntimeVec3::cross`
-- [ ] `RuntimeVec3::norm2`
+## E. runtime_vec3_refinement.rs (0)
+- [x] `RuntimeVec3::new`
+- [x] `RuntimeVec3::from_ints`
+- [x] `RuntimeVec3::zero`
+- [x] `RuntimeVec3::add`
+- [x] `RuntimeVec3::sub`
+- [x] `RuntimeVec3::neg`
+- [x] `RuntimeVec3::scale`
+- [x] `RuntimeVec3::dot`
+- [x] `RuntimeVec3::cross`
+- [x] `RuntimeVec3::norm2`
 
-## F. runtime_point3_refinement.rs (5)
-- [ ] `RuntimePoint3::new`
-- [ ] `RuntimePoint3::from_ints`
-- [ ] `RuntimePoint3::add_vec`
-- [ ] `RuntimePoint3::sub`
-- [ ] `RuntimePoint3::dist2`
+## F. runtime_point3_refinement.rs (0)
+- [x] `RuntimePoint3::new`
+- [x] `RuntimePoint3::from_ints`
+- [x] `RuntimePoint3::add_vec`
+- [x] `RuntimePoint3::sub`
+- [x] `RuntimePoint3::dist2`
 
 ## G. runtime_vec4_refinement.rs (9)
 - [ ] `RuntimeVec4::new`

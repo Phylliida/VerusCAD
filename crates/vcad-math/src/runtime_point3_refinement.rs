@@ -9,52 +9,15 @@ use vstd::view::View;
 verus! {
 
 #[verifier::external_type_specification]
-#[verifier::external_body]
 pub struct ExRuntimePoint3(RuntimePoint3);
 
 impl View for RuntimePoint3 {
     type V = Point3;
 
-    uninterp spec fn view(&self) -> Point3;
+    open spec fn view(&self) -> Point3 {
+        Point3 { x: self.x@, y: self.y@, z: self.z@ }
+    }
 }
-
-pub assume_specification[ RuntimePoint3::new ](
-    x: RuntimeScalar,
-    y: RuntimeScalar,
-    z: RuntimeScalar,
-) -> (out: RuntimePoint3)
-    ensures
-        out@ == (Point3 { x: x@, y: y@, z: z@ }),
-;
-
-pub assume_specification[ RuntimePoint3::from_ints ](x: i64, y: i64, z: i64) -> (out: RuntimePoint3)
-    ensures
-        out@ == Point3::from_ints_spec(x as int, y as int, z as int),
-;
-
-pub assume_specification[ RuntimePoint3::add_vec ](
-    this: &RuntimePoint3,
-    v: &RuntimeVec3,
-) -> (out: RuntimePoint3)
-    ensures
-        out@ == this@.add_vec_spec(v@),
-;
-
-pub assume_specification[ RuntimePoint3::sub ](
-    this: &RuntimePoint3,
-    rhs: &RuntimePoint3,
-) -> (out: RuntimeVec3)
-    ensures
-        out@ == this@.sub_spec(rhs@),
-;
-
-pub assume_specification[ RuntimePoint3::dist2 ](
-    this: &RuntimePoint3,
-    rhs: &RuntimePoint3,
-) -> (out: RuntimeScalar)
-    ensures
-        out@ == dist2_spec(this@, rhs@),
-;
 
 #[allow(dead_code)]
 pub fn runtime_point3_sub_then_add_cancel(p: &RuntimePoint3, q: &RuntimePoint3) -> (out: RuntimePoint3)
