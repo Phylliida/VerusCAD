@@ -562,6 +562,7 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
             fcnt == m.face_half_edges.len(),
             0 <= f <= fcnt,
             ok ==> forall|fp: int|
+                #![trigger m.face_half_edges@[fp]]
                 0 <= fp < f as int ==> exists|k: int| kernel_face_representative_cycle_witness_spec(m, fp, k),
     {
         let start = m.face_half_edges[f];
@@ -608,23 +609,6 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
                 assert(h as int == m.half_edges@[h_old as int].next as int);
                 assert(h as int == kernel_next_or_self_spec(m, kernel_next_iter_spec(m, start as int, steps_old as nat)));
                 assert(h as int == kernel_next_iter_spec(m, start as int, steps as nat));
-                if face_ok {
-                    assert(forall|i: int|
-                        0 <= i < steps as int ==> {
-                            let hi = kernel_next_iter_spec(m, start as int, i as nat);
-                            &&& 0 <= hi < hcnt as int
-                            &&& m.half_edges@[kernel_next_iter_spec(m, start as int, i as nat)].face as int == f as int
-                        }) by {
-                        if i < steps_old as int {
-                            assert(0 <= i < steps_old as int);
-                        } else {
-                            assert(i == steps_old as int);
-                            assert(kernel_next_iter_spec(m, start as int, i as nat) == h_old as int);
-                            assert(0 <= h_old as int && (h_old as int) < (hcnt as int));
-                            assert(m.half_edges@[h_old as int].face as int == f as int);
-                        }
-                    }
-                }
             }
         }
 
@@ -646,37 +630,17 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
                     assert(h as int == s);
                     assert(h as int == kernel_next_iter_spec(m, s, steps as nat));
                     assert(kernel_next_iter_spec(m, s, k as nat) == s);
-                    assert(forall|i: int|
-                        0 <= i < k ==> {
-                            let hi = kernel_next_iter_spec(m, s, i as nat);
-                            &&& 0 <= hi < hcnt as int
-                            &&& m.half_edges@[kernel_next_iter_spec(m, s, i as nat)].face as int == f as int
-                        });
                 }
             }
         } else {
             ok = false;
         }
 
-        proof {
-            if ok {
-                assert(forall|fp: int|
-                    0 <= fp < (f + 1) as int ==> exists|k: int| kernel_face_representative_cycle_witness_spec(m, fp, k)) by {
-                    if fp < f as int {
-                        assert(0 <= fp < f as int);
-                    } else {
-                        assert(fp == f as int);
-                        assert(exists|k: int| kernel_face_representative_cycle_witness_spec(m, f as int, k));
-                    }
-                }
-            }
-        }
         f += 1;
     }
 
     proof {
         if ok {
-            assert(forall|fp: int| 0 <= fp < fcnt as int ==> exists|k: int| kernel_face_representative_cycle_witness_spec(m, fp, k));
             assert(kernel_face_representative_cycles_spec(m));
             assert(kernel_face_representative_cycles_total_spec(m));
         }
@@ -707,6 +671,7 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
             vcnt == m.vertex_half_edges.len(),
             0 <= v <= vcnt,
             ok ==> forall|vp: int|
+                #![trigger m.vertex_half_edges@[vp]]
                 0 <= vp < v as int ==> exists|k: int| kernel_vertex_representative_cycle_witness_spec(m, vp, k),
     {
         let start = m.vertex_half_edges[v];
@@ -757,23 +722,6 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
                 assert(h as int == m.half_edges@[m.half_edges@[h_old as int].twin as int].next as int);
                 assert(h as int == kernel_vertex_ring_succ_or_self_spec(m, kernel_vertex_ring_iter_spec(m, start as int, steps_old as nat)));
                 assert(h as int == kernel_vertex_ring_iter_spec(m, start as int, steps as nat));
-                if vertex_ok {
-                    assert(forall|i: int|
-                        0 <= i < steps as int ==> {
-                            let hi = kernel_vertex_ring_iter_spec(m, start as int, i as nat);
-                            &&& 0 <= hi < hcnt as int
-                            &&& m.half_edges@[kernel_vertex_ring_iter_spec(m, start as int, i as nat)].vertex as int == v as int
-                        }) by {
-                        if i < steps_old as int {
-                            assert(0 <= i < steps_old as int);
-                        } else {
-                            assert(i == steps_old as int);
-                            assert(kernel_vertex_ring_iter_spec(m, start as int, i as nat) == h_old as int);
-                            assert(0 <= h_old as int && (h_old as int) < (hcnt as int));
-                            assert(m.half_edges@[h_old as int].vertex as int == v as int);
-                        }
-                    }
-                }
             }
         }
 
@@ -792,37 +740,17 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
                     assert(h as int == s);
                     assert(h as int == kernel_vertex_ring_iter_spec(m, s, steps as nat));
                     assert(kernel_vertex_ring_iter_spec(m, s, k as nat) == s);
-                    assert(forall|i: int|
-                        0 <= i < k ==> {
-                            let hi = kernel_vertex_ring_iter_spec(m, s, i as nat);
-                            &&& 0 <= hi < hcnt as int
-                            &&& m.half_edges@[kernel_vertex_ring_iter_spec(m, s, i as nat)].vertex as int == v as int
-                        });
                 }
             }
         } else {
             ok = false;
         }
 
-        proof {
-            if ok {
-                assert(forall|vp: int|
-                    0 <= vp < (v + 1) as int ==> exists|k: int| kernel_vertex_representative_cycle_witness_spec(m, vp, k)) by {
-                    if vp < v as int {
-                        assert(0 <= vp < v as int);
-                    } else {
-                        assert(vp == v as int);
-                        assert(exists|k: int| kernel_vertex_representative_cycle_witness_spec(m, v as int, k));
-                    }
-                }
-            }
-        }
         v += 1;
     }
 
     proof {
         if ok {
-            assert(forall|vp: int| 0 <= vp < vcnt as int ==> exists|k: int| kernel_vertex_representative_cycle_witness_spec(m, vp, k));
             assert(kernel_vertex_manifold_single_cycle_basic_spec(m));
             assert(kernel_vertex_manifold_single_cycle_total_spec(m));
         }
