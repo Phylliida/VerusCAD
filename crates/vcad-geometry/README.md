@@ -17,3 +17,4 @@ Design rule:
 
 Planning document:
 1. `docs/phase3-predicates.md`
+2. `docs/verification-todo.md`

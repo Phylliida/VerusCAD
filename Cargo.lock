@@ -127,6 +127,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "vcad-topology"
+version = "0.1.0"
+dependencies = [
+ "vcad-math",
+ "vstd",
+]
+
+[[package]]
 name = "verus_builtin"
 version = "0.0.0-2026-02-08-0120"
 

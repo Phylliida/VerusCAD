@@ -1,17 +1,56 @@
-use crate::orientation_predicates::orient3d_value;
+use crate::orientation_predicates::{orient3d_sign, orient3d_value};
 use vcad_math::runtime_point3::RuntimePoint3;
 use vcad_math::runtime_scalar::RuntimeScalar;
+#[cfg(verus_keep_ghost)]
+use vcad_math::orientation3::orient3d_spec;
+#[cfg(verus_keep_ghost)]
+use vstd::prelude::*;
+#[cfg(verus_keep_ghost)]
+use vstd::view::View;
 
+#[cfg(not(verus_keep_ghost))]
 pub fn point_above_plane(p: &RuntimePoint3, a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3) -> bool {
     orient3d_value(a, b, c, p).signum_i8() > 0
 }
 
+#[cfg(verus_keep_ghost)]
+verus! {
+pub fn point_above_plane(p: &RuntimePoint3, a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3) -> (out: bool)
+    ensures
+        out == (orient3d_spec(a@, b@, c@, p@).signum() == 1),
+{
+    orient3d_sign(a, b, c, p) == 1
+}
+}
+
+#[cfg(not(verus_keep_ghost))]
 pub fn point_below_plane(p: &RuntimePoint3, a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3) -> bool {
     orient3d_value(a, b, c, p).signum_i8() < 0
 }
 
+#[cfg(verus_keep_ghost)]
+verus! {
+pub fn point_below_plane(p: &RuntimePoint3, a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3) -> (out: bool)
+    ensures
+        out == (orient3d_spec(a@, b@, c@, p@).signum() == -1),
+{
+    orient3d_sign(a, b, c, p) == -1
+}
+}
+
+#[cfg(not(verus_keep_ghost))]
 pub fn point_on_plane(p: &RuntimePoint3, a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3) -> bool {
     orient3d_value(a, b, c, p).signum_i8() == 0
+}
+
+#[cfg(verus_keep_ghost)]
+verus! {
+pub fn point_on_plane(p: &RuntimePoint3, a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3) -> (out: bool)
+    ensures
+        out == (orient3d_spec(a@, b@, c@, p@).signum() == 0),
+{
+    orient3d_sign(a, b, c, p) == 0
+}
 }
 
 pub fn segment_crosses_plane_strict(

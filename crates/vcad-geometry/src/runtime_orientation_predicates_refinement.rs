@@ -13,44 +13,6 @@ use vstd::view::View;
 
 verus! {
 
-pub assume_specification[ orientation_predicates::orient2d_value ](
-    a: &RuntimePoint2,
-    b: &RuntimePoint2,
-    c: &RuntimePoint2,
-) -> (out: RuntimeScalar)
-    ensures
-        out@ == orient2d_spec(a@, b@, c@),
-;
-
-pub assume_specification[ orientation_predicates::orient3d_value ](
-    a: &RuntimePoint3,
-    b: &RuntimePoint3,
-    c: &RuntimePoint3,
-    d: &RuntimePoint3,
-) -> (out: RuntimeScalar)
-    ensures
-        out@ == orient3d_spec(a@, b@, c@, d@),
-;
-
-pub assume_specification[ orientation_predicates::orient2d_class ](
-    a: &RuntimePoint2,
-    b: &RuntimePoint2,
-    c: &RuntimePoint2,
-) -> (out: RuntimeOrientation)
-    ensures
-        out@ == orientation_spec(a@, b@, c@),
-;
-
-pub assume_specification[ orientation_predicates::orient3d_class ](
-    a: &RuntimePoint3,
-    b: &RuntimePoint3,
-    c: &RuntimePoint3,
-    d: &RuntimePoint3,
-) -> (out: RuntimeOrientation3)
-    ensures
-        out@ == orientation3_spec(a@, b@, c@, d@),
-;
-
 #[allow(dead_code)]
 pub fn runtime_orient2d_value_matches_signed_area2_poly(
     a: &RuntimePoint2,

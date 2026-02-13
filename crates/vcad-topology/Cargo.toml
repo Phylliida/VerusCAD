@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 vcad-math = { path = "../vcad-math" }
+vstd = { path = "../../../verus/source/vstd" }
 
 [features]
 default = []

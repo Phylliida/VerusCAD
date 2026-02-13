@@ -123,36 +123,6 @@ pub open spec fn segment_plane_point_at_parameter_spec(p: Point3, t: Scalar, d: 
     p.eqv_spec(d.add_vec_spec(e.sub_spec(d).scale_spec(t)))
 }
 
-pub assume_specification[ sidedness::point_above_plane ](
-    p: &RuntimePoint3,
-    a: &RuntimePoint3,
-    b: &RuntimePoint3,
-    c: &RuntimePoint3,
-) -> (out: bool)
-    ensures
-        out == (orient3d_spec(a@, b@, c@, p@).signum() == 1),
-;
-
-pub assume_specification[ sidedness::point_below_plane ](
-    p: &RuntimePoint3,
-    a: &RuntimePoint3,
-    b: &RuntimePoint3,
-    c: &RuntimePoint3,
-) -> (out: bool)
-    ensures
-        out == (orient3d_spec(a@, b@, c@, p@).signum() == -1),
-;
-
-pub assume_specification[ sidedness::point_on_plane ](
-    p: &RuntimePoint3,
-    a: &RuntimePoint3,
-    b: &RuntimePoint3,
-    c: &RuntimePoint3,
-) -> (out: bool)
-    ensures
-        out == (orient3d_spec(a@, b@, c@, p@).signum() == 0),
-;
-
 pub assume_specification[ sidedness::segment_crosses_plane_strict ](
     d: &RuntimePoint3,
     e: &RuntimePoint3,

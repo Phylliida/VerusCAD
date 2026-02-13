@@ -14,11 +14,6 @@ use vstd::prelude::*;
 
 verus! {
 
-pub open spec fn collinear3d_cross_zero_spec(a: Point3, b: Point3, c: Point3) -> bool {
-    let cross = b.sub_spec(a).cross_spec(c.sub_spec(a));
-    (cross.x.signum() == 0) && (cross.y.signum() == 0) && (cross.z.signum() == 0)
-}
-
 pub open spec fn base_plane_noncollinear3_spec(a: Point3, b: Point3, c: Point3) -> bool {
     let n = b.sub_spec(a).cross_spec(c.sub_spec(a));
     !(n.x.signum() == 0 && n.y.signum() == 0 && n.z.signum() == 0)
@@ -49,34 +44,6 @@ pub open spec fn coplanar5_set_spec(a: Point3, b: Point3, c: Point3, d: Point3, 
         || coplanar5_from_base_spec(b, d, e, a, c)
         || coplanar5_from_base_spec(c, d, e, a, b)
 }
-
-pub assume_specification[ collinearity_coplanarity::collinear2d ](
-    a: &RuntimePoint2,
-    b: &RuntimePoint2,
-    c: &RuntimePoint2,
-) -> (out: bool)
-    ensures
-        out == is_collinear(a@, b@, c@),
-;
-
-pub assume_specification[ collinearity_coplanarity::collinear3d ](
-    a: &RuntimePoint3,
-    b: &RuntimePoint3,
-    c: &RuntimePoint3,
-) -> (out: bool)
-    ensures
-        out == collinear3d_cross_zero_spec(a@, b@, c@),
-;
-
-pub assume_specification[ collinearity_coplanarity::coplanar ](
-    a: &RuntimePoint3,
-    b: &RuntimePoint3,
-    c: &RuntimePoint3,
-    d: &RuntimePoint3,
-) -> (out: bool)
-    ensures
-        out == is_coplanar(a@, b@, c@, d@),
-;
 
 #[allow(dead_code)]
 pub fn runtime_collinear2d_matches_orient_zero(
