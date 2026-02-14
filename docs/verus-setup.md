@@ -39,6 +39,31 @@ with:
 1. `PATH` including `verus/source/target-verus/release`,
 2. `VERUS_Z3_PATH=verus/source/z3`.
 
+## Fast verification loops
+For targeted local iterations (module or function), use the `*-fast.sh` scripts:
+
+```bash
+# vcad-math
+./scripts/verify-vcad-math-fast.sh
+./scripts/verify-vcad-math-fast.sh quaternion
+./scripts/verify-vcad-math-fast.sh quaternion lemma_assoc_basis_any
+
+# vcad-geometry
+./scripts/verify-vcad-geometry-fast.sh
+./scripts/verify-vcad-geometry-fast.sh runtime_sidedness_refinement
+./scripts/verify-vcad-geometry-fast.sh runtime_sidedness_refinement runtime_segment_crosses_plane_from_opposite_sides
+
+# vcad-topology
+./scripts/verify-vcad-topology-fast.sh
+./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement
+./scripts/verify-vcad-topology-fast.sh verified_checker_kernels kernel_check_index_bounds
+```
+
+Each fast script accepts:
+
+1. `module` (optional): a module name from the target crate.
+2. `function_pattern` (optional): function name substring/wildcard pattern inside that module.
+
 ## Troubleshooting
 ### `rustup: command not found`
 Run commands through `nix-shell` (as done by the scripts), or install rustup manually.

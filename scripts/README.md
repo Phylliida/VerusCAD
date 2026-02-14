@@ -19,7 +19,7 @@ Helper scripts for local Verus workflows.
    - default: `./scripts/verify-vcad-topology-fast.sh`
      verifies `runtime_halfedge_mesh_refinement`.
    - module: `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
-   - function: `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_is_valid_soundness`
+   - function: `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels kernel_check_index_bounds`
 8. `verify-vad-topology.sh`: compatibility alias that forwards to `verify-vcad-topology.sh`.
 
 These scripts assume this repo layout:
