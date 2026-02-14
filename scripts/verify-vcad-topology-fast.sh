@@ -13,7 +13,7 @@ usage: ./scripts/verify-vcad-topology-fast.sh [module] [function_pattern]
 examples:
   ./scripts/verify-vcad-topology-fast.sh
   ./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement
-  ./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_is_valid_soundness
+  ./scripts/verify-vcad-topology-fast.sh verified_checker_kernels kernel_check_index_bounds
 EOF
   exit 0
 fi
@@ -50,5 +50,5 @@ nix-shell -p rustup --run "
   export PATH='$VERUS_SOURCE/target-verus/release':\$PATH
   export VERUS_Z3_PATH='$VERUS_SOURCE/z3'
   cd '$ROOT_DIR'
-  cargo verus focus --manifest-path crates/vcad-topology/Cargo.toml -p vcad-topology --features verus-proofs -- $VERIFY_SCOPE --triggers-mode silent
+  cargo verus focus --manifest-path Cargo.toml -p vcad-topology --features verus-proofs -- $VERIFY_SCOPE --triggers-mode silent
 "
