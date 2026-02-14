@@ -147,19 +147,6 @@ impl RuntimeScalar {
         }
     }
 
-    fn sign_add_witness(lhs: RuntimeSign, rhs: RuntimeSign) -> (out: RuntimeSign)
-    {
-        match (lhs, rhs) {
-            (RuntimeSign::Zero, s) => s,
-            (s, RuntimeSign::Zero) => s,
-            (RuntimeSign::Positive, RuntimeSign::Positive) => RuntimeSign::Positive,
-            (RuntimeSign::Negative, RuntimeSign::Negative) => RuntimeSign::Negative,
-            // Opposite-sign sum depends on magnitudes; keep placeholder as unknown.
-            (RuntimeSign::Positive, RuntimeSign::Negative)
-            | (RuntimeSign::Negative, RuntimeSign::Positive) => RuntimeSign::Zero,
-        }
-    }
-
     fn sign_mul_witness(lhs: RuntimeSign, rhs: RuntimeSign) -> (out: RuntimeSign)
     {
         match (lhs, rhs) {
@@ -168,6 +155,47 @@ impl RuntimeScalar {
             | (RuntimeSign::Negative, RuntimeSign::Negative) => RuntimeSign::Positive,
             (RuntimeSign::Positive, RuntimeSign::Negative)
             | (RuntimeSign::Negative, RuntimeSign::Positive) => RuntimeSign::Negative,
+        }
+    }
+
+    fn add_signed_witness(
+        lhs_sign: RuntimeSign,
+        lhs_num_abs: &RuntimeBigNatWitness,
+        lhs_den: &RuntimeBigNatWitness,
+        rhs_sign: RuntimeSign,
+        rhs_num_abs: &RuntimeBigNatWitness,
+        rhs_den: &RuntimeBigNatWitness,
+    ) -> (out: (RuntimeSign, RuntimeBigNatWitness))
+    {
+        let lhs_scaled = lhs_num_abs.mul_limbwise_small_total(rhs_den);
+        let rhs_scaled = rhs_num_abs.mul_limbwise_small_total(lhs_den);
+        match (lhs_sign, rhs_sign) {
+            (RuntimeSign::Zero, _) => (rhs_sign, rhs_scaled),
+            (_, RuntimeSign::Zero) => (lhs_sign, lhs_scaled),
+            (RuntimeSign::Positive, RuntimeSign::Positive)
+            | (RuntimeSign::Negative, RuntimeSign::Negative) => {
+                (lhs_sign, lhs_scaled.add_limbwise_small_total(&rhs_scaled))
+            }
+            (RuntimeSign::Positive, RuntimeSign::Negative) => {
+                let cmp = lhs_scaled.cmp_limbwise_small_total(&rhs_scaled);
+                if cmp == 1 {
+                    (RuntimeSign::Positive, lhs_scaled.sub_limbwise_small_total(&rhs_scaled))
+                } else if cmp == -1 {
+                    (RuntimeSign::Negative, rhs_scaled.sub_limbwise_small_total(&lhs_scaled))
+                } else {
+                    (RuntimeSign::Zero, RuntimeBigNatWitness::zero())
+                }
+            }
+            (RuntimeSign::Negative, RuntimeSign::Positive) => {
+                let cmp = lhs_scaled.cmp_limbwise_small_total(&rhs_scaled);
+                if cmp == 1 {
+                    (RuntimeSign::Negative, lhs_scaled.sub_limbwise_small_total(&rhs_scaled))
+                } else if cmp == -1 {
+                    (RuntimeSign::Positive, rhs_scaled.sub_limbwise_small_total(&lhs_scaled))
+                } else {
+                    (RuntimeSign::Zero, RuntimeBigNatWitness::zero())
+                }
+            }
         }
     }
 
@@ -222,11 +250,19 @@ impl RuntimeScalar {
             out@ == self@.add_spec(rhs@),
     {
         let ghost model = self@.add_spec(rhs@);
+        let (sign_witness, num_abs_witness) = Self::add_signed_witness(
+            self.sign_witness,
+            &self.num_abs_witness,
+            &self.den_witness,
+            rhs.sign_witness,
+            &rhs.num_abs_witness,
+            &rhs.den_witness,
+        );
+        let den_witness = self.den_witness.mul_limbwise_small_total(&rhs.den_witness);
         let out = RuntimeScalar {
-            sign_witness: Self::sign_add_witness(self.sign_witness, rhs.sign_witness),
-            // Placeholder until exact bigint witness arithmetic is wired for add/sub/mul.
-            num_abs_witness: RuntimeBigNatWitness::zero(),
-            den_witness: RuntimeBigNatWitness::from_u32(1),
+            sign_witness,
+            num_abs_witness,
+            den_witness,
             model: Ghost(model),
         };
         proof {
@@ -240,11 +276,20 @@ impl RuntimeScalar {
             out@ == self@.sub_spec(rhs@),
     {
         let ghost model = self@.sub_spec(rhs@);
+        let rhs_neg_sign = Self::sign_neg_witness(rhs.sign_witness);
+        let (sign_witness, num_abs_witness) = Self::add_signed_witness(
+            self.sign_witness,
+            &self.num_abs_witness,
+            &self.den_witness,
+            rhs_neg_sign,
+            &rhs.num_abs_witness,
+            &rhs.den_witness,
+        );
+        let den_witness = self.den_witness.mul_limbwise_small_total(&rhs.den_witness);
         let out = RuntimeScalar {
-            sign_witness: Self::sign_add_witness(self.sign_witness, Self::sign_neg_witness(rhs.sign_witness)),
-            // Placeholder until exact bigint witness arithmetic is wired for add/sub/mul.
-            num_abs_witness: RuntimeBigNatWitness::zero(),
-            den_witness: RuntimeBigNatWitness::from_u32(1),
+            sign_witness,
+            num_abs_witness,
+            den_witness,
             model: Ghost(model),
         };
         proof {
@@ -258,11 +303,12 @@ impl RuntimeScalar {
             out@ == self@.mul_spec(rhs@),
     {
         let ghost model = self@.mul_spec(rhs@);
+        let num_abs_witness = self.num_abs_witness.mul_limbwise_small_total(&rhs.num_abs_witness);
+        let den_witness = self.den_witness.mul_limbwise_small_total(&rhs.den_witness);
         let out = RuntimeScalar {
             sign_witness: Self::sign_mul_witness(self.sign_witness, rhs.sign_witness),
-            // Placeholder until exact bigint witness arithmetic is wired for add/sub/mul.
-            num_abs_witness: RuntimeBigNatWitness::zero(),
-            den_witness: RuntimeBigNatWitness::from_u32(1),
+            num_abs_witness,
+            den_witness,
             model: Ghost(model),
         };
         proof {
@@ -324,7 +370,12 @@ impl RuntimeScalar {
                     assert(!self@.eqv_spec(ScalarModel::from_int_spec(0)));
                 }
                 let ghost inv = ScalarModel::reciprocal_constructive(self@);
-                let r = Self::from_model(Ghost(inv));
+                let r = RuntimeScalar {
+                    sign_witness: self.sign_witness,
+                    num_abs_witness: self.den_witness.copy_small_total(),
+                    den_witness: self.num_abs_witness.copy_small_total(),
+                    model: Ghost(inv),
+                };
                 proof {
                     assert(inv == r@);
                     assert(self@.mul_spec(inv).eqv_spec(one));
@@ -341,7 +392,15 @@ impl RuntimeScalar {
         ensures
             out@ == self@.neg_spec(),
     {
-        let out = Self::from_model(Ghost(self@.neg_spec()));
+        let out = RuntimeScalar {
+            sign_witness: Self::sign_neg_witness(self.sign_witness),
+            num_abs_witness: self.num_abs_witness.copy_small_total(),
+            den_witness: self.den_witness.copy_small_total(),
+            model: Ghost(self@.neg_spec()),
+        };
+        proof {
+            assert(out@ == self@.neg_spec());
+        }
         out
     }
 
@@ -351,7 +410,12 @@ impl RuntimeScalar {
             out@.canonical_sign_spec(),
     {
         let ghost m = ScalarModel::normalize_constructive(self@);
-        let out = Self::from_model(Ghost(m));
+        let out = RuntimeScalar {
+            sign_witness: self.sign_witness,
+            num_abs_witness: self.num_abs_witness.copy_small_total(),
+            den_witness: self.den_witness.copy_small_total(),
+            model: Ghost(m),
+        };
         proof {
             assert(out@ == m);
             assert(out@.eqv_spec(self@));

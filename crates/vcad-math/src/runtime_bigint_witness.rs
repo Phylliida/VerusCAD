@@ -62,6 +62,10 @@ impl RuntimeBigNatWitness {
         Self { value: out }
     }
 
+    pub fn copy_small_total(&self) -> Self {
+        Self { value: self.value.clone() }
+    }
+
     pub fn is_zero(&self) -> bool {
         self.value == 0
     }
@@ -368,6 +372,216 @@ impl RuntimeBigNatWitness {
             }
         }
         out
+    }
+
+    /// Total small-limb add helper used by scalar witness plumbing.
+    ///
+    /// If both operands are represented in at most one limb, this computes
+    /// exact limb-wise addition; otherwise it returns `0` as a conservative
+    /// placeholder while preserving witness well-formedness.
+    pub fn add_limbwise_small_total(&self, rhs: &Self) -> (out: Self)
+        ensures
+            out.wf_spec(),
+    {
+        if self.limbs_le.len() <= 1 && rhs.limbs_le.len() <= 1 {
+            let a0 = if self.limbs_le.len() == 0 { 0u32 } else { self.limbs_le[0] };
+            let b0 = if rhs.limbs_le.len() == 0 { 0u32 } else { rhs.limbs_le[0] };
+            let sum = a0 as u64 + b0 as u64;
+            let base_u64 = 4_294_967_296u64;
+            let (lo, hi) = if sum < base_u64 {
+                (sum as u32, 0u32)
+            } else {
+                ((sum - base_u64) as u32, 1u32)
+            };
+            Self::from_two_limbs(lo, hi)
+        } else {
+            Self::zero()
+        }
+    }
+
+    #[verifier::exec_allows_no_decreases_clause]
+    fn trimmed_len_exec(limbs: &Vec<u32>) -> (out: usize)
+        ensures
+            out <= limbs.len(),
+    {
+        let mut n = limbs.len();
+        while n > 0 && limbs[n - 1] == 0u32
+            invariant
+                n <= limbs.len(),
+        {
+            n = n - 1;
+        }
+        assert(n <= limbs.len());
+        n
+    }
+
+    #[verifier::exec_allows_no_decreases_clause]
+    fn trim_trailing_zero_limbs(mut limbs: Vec<u32>) -> (out: Vec<u32>)
+        ensures
+            Self::canonical_limbs_spec(out@),
+    {
+        while limbs.len() > 0 && limbs[limbs.len() - 1] == 0u32 {
+            limbs.pop();
+        }
+        proof {
+            if limbs@.len() == 0 {
+                assert(Self::canonical_limbs_spec(limbs@));
+            } else {
+                assert(limbs.len() > 0);
+                assert(!(limbs.len() > 0 && limbs[limbs.len() - 1] == 0u32));
+                assert(limbs[limbs.len() - 1] != 0u32);
+                assert(limbs@[(limbs@.len() - 1) as int] != 0u32);
+                assert(Self::canonical_limbs_spec(limbs@));
+            }
+        }
+        limbs
+    }
+
+    /// Total small-limb multiply helper used by scalar witness plumbing.
+    ///
+    /// If both operands are represented in at most one limb, this computes
+    /// exact 32x32->64 multiplication; otherwise it returns `0` as a
+    /// conservative placeholder while preserving witness well-formedness.
+    pub fn mul_limbwise_small_total(&self, rhs: &Self) -> (out: Self)
+        ensures
+            out.wf_spec(),
+    {
+        if self.limbs_le.len() <= 1 && rhs.limbs_le.len() <= 1 {
+            let a0 = if self.limbs_le.len() == 0 { 0u32 } else { self.limbs_le[0] };
+            let b0 = if rhs.limbs_le.len() == 0 { 0u32 } else { rhs.limbs_le[0] };
+            let prod = (a0 as u64).wrapping_mul(b0 as u64);
+            #[verifier::truncate]
+            let lo = prod as u32;
+            #[verifier::truncate]
+            let hi = (prod >> 32) as u32;
+            Self::from_two_limbs(lo, hi)
+        } else {
+            Self::zero()
+        }
+    }
+
+    /// Total small-limb compare helper used by scalar witness plumbing.
+    ///
+    /// Returns the exact sign of `(self - rhs)` as `-1/0/1` using full
+    /// multi-limb comparison with trailing-zero normalization.
+    #[verifier::exec_allows_no_decreases_clause]
+    pub fn cmp_limbwise_small_total(&self, rhs: &Self) -> (out: i8)
+        ensures
+            out == -1 || out == 0 || out == 1,
+    {
+        let alen = Self::trimmed_len_exec(&self.limbs_le);
+        let blen = Self::trimmed_len_exec(&rhs.limbs_le);
+        if alen > blen {
+            1i8
+        } else if alen < blen {
+            -1i8
+        } else {
+            assert(alen == blen);
+            assert(alen <= self.limbs_le.len());
+            assert(blen <= rhs.limbs_le.len());
+            let mut i = alen;
+            while i > 0
+                invariant
+                    i <= alen,
+                    alen == blen,
+                    alen <= self.limbs_le.len(),
+                    blen <= rhs.limbs_le.len(),
+            {
+                let idx = i - 1;
+                assert(idx < self.limbs_le.len());
+                assert(idx < rhs.limbs_le.len());
+                let a = self.limbs_le[idx];
+                let b = rhs.limbs_le[idx];
+                if a > b {
+                    return 1i8;
+                } else if a < b {
+                    return -1i8;
+                }
+                i = i - 1;
+            }
+            0i8
+        }
+    }
+
+    /// Total small-limb subtraction helper used by scalar witness plumbing.
+    ///
+    /// Computes the exact nonnegative difference when `self >= rhs` using full
+    /// multi-limb borrow propagation (with trailing-zero normalization).
+    /// Returns `0` when `self < rhs`.
+    #[verifier::exec_allows_no_decreases_clause]
+    pub fn sub_limbwise_small_total(&self, rhs: &Self) -> (out: Self)
+        ensures
+            out.wf_spec(),
+    {
+        if self.cmp_limbwise_small_total(rhs) == -1i8 {
+            Self::zero()
+        } else {
+            let alen = Self::trimmed_len_exec(&self.limbs_le);
+            let blen = Self::trimmed_len_exec(&rhs.limbs_le);
+            assert(alen <= self.limbs_le.len());
+            assert(blen <= rhs.limbs_le.len());
+            let mut out_limbs: Vec<u32> = Vec::new();
+            let mut i: usize = 0;
+            let mut borrow: u64 = 0u64;
+
+            while i < alen
+                invariant
+                    i <= alen,
+                    alen <= self.limbs_le.len(),
+                    blen <= rhs.limbs_le.len(),
+            {
+                assert(i < self.limbs_le.len());
+                let a = self.limbs_le[i] as u64;
+                let b = if i < blen {
+                    assert(i < rhs.limbs_le.len());
+                    rhs.limbs_le[i] as u64
+                } else {
+                    0u64
+                };
+                let need = b.wrapping_add(borrow);
+                let digit64 = if a >= need {
+                    borrow = 0u64;
+                    a - need
+                } else {
+                    borrow = 1u64;
+                    (4_294_967_296u64).wrapping_add(a).wrapping_sub(need)
+                };
+                #[verifier::truncate]
+                let digit = digit64 as u32;
+                out_limbs.push(digit);
+                i = i + 1;
+            }
+
+            let out_limbs = Self::trim_trailing_zero_limbs(out_limbs);
+            let ghost model = Self::limbs_value_spec(out_limbs@);
+            Self::from_parts(out_limbs, Ghost(model))
+        }
+    }
+
+    /// Total witness copy helper for scalar witness plumbing.
+    ///
+    /// Preserves all limbs exactly (after trailing-zero normalization).
+    #[verifier::exec_allows_no_decreases_clause]
+    pub fn copy_small_total(&self) -> (out: Self)
+        ensures
+            out.wf_spec(),
+    {
+        let n = Self::trimmed_len_exec(&self.limbs_le);
+        assert(n <= self.limbs_le.len());
+        let mut out_limbs: Vec<u32> = Vec::new();
+        let mut i: usize = 0;
+        while i < n
+            invariant
+                i <= n,
+                n <= self.limbs_le.len(),
+        {
+            assert(i < self.limbs_le.len());
+            out_limbs.push(self.limbs_le[i]);
+            i = i + 1;
+        }
+        let out_limbs = Self::trim_trailing_zero_limbs(out_limbs);
+        let ghost model = Self::limbs_value_spec(out_limbs@);
+        Self::from_parts(out_limbs, Ghost(model))
     }
 }
 }

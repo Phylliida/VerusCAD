@@ -79,8 +79,14 @@ Notes:
     - `den_witness = 1`
   - [x] `RuntimeScalar::{add,sub,mul}` no longer route through `from_model`; they now construct explicit witness-bearing outputs directly.
     - `sign_witness` is propagated by deterministic sign-combinator helpers.
-    - `num_abs_witness` / `den_witness` remain explicit placeholders pending exact bigint arithmetic wiring.
-  - [ ] Remaining constructors/operation constructors still route through placeholder `from_model`.
+    - `den_witness` now uses witness multiplication helper (`mul_limbwise_small_total`) in `add/sub/mul`.
+    - `num_abs_witness` now uses witness arithmetic in `mul` and same-sign `add/sub` paths (`mul_limbwise_small_total` + `add_limbwise_small_total`).
+    - Mixed-sign `add/sub` now uses multi-limb compare/sub witness helpers (`cmp_limbwise_small_total`, `sub_limbwise_small_total`) after scaled magnitude construction.
+    - Remaining non-small-limb fallback is now mainly from the scaling helpers (`mul_limbwise_small_total` / `add_limbwise_small_total`) before compare/sub.
+  - [x] `RuntimeScalar::{neg,normalize,recip}` now build outputs directly (no `from_model` call in those methods).
+    - Uses `RuntimeBigNatWitness::copy_small_total` for witness carry-through/swaps.
+    - For `recip`, witness numerator/denominator are swapped (`den`, `|num|`) on nonzero path.
+  - [x] No remaining `RuntimeScalar` constructors/operations route through placeholder `from_model` (helper remains but is unused).
 
 Completed scaffold:
 - `crates/vcad-math/src/runtime_bigint_witness.rs` introduced `RuntimeBigNatWitness`.
@@ -93,6 +99,12 @@ Completed scaffold:
   - first verified limb-wise add step (`add_limbwise_small`, for `<=1` limb inputs with carry split)
 - Runtime side includes basic exact arithmetic wrappers (`add`, `mul`) over `rug::Integer`.
 - `RuntimeBigNatWitness::from_u64` is now available in both runtime and verus modes (wf guarantee in verus mode).
+- `RuntimeBigNatWitness` now also exposes total small-limb witness arithmetic helpers in verus mode:
+  - `add_limbwise_small_total`
+  - `mul_limbwise_small_total`
+  - `cmp_limbwise_small_total` (now full multi-limb compare via trimmed length + high-to-low limb scan)
+  - `sub_limbwise_small_total` (now full multi-limb borrow subtraction for `self >= rhs`)
+  - `copy_small_total` (now full multi-limb copy with canonical trailing-zero trim)
 - `RuntimeScalar` (verus cfg) now carries explicit witness slots (`sign_witness`, `num_abs_witness`, `den_witness`) as scaffolding; model-consistency proofs are still pending.
 
 ### Phase 3: Rebuild Scalar Operations Over Witness
