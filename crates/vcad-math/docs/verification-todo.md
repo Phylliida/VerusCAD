@@ -112,7 +112,7 @@ Goal: remove trusted runtime proof boundaries so `vcad-math` runtime behavior is
 
 ## J. runtime_scalar_refinement.rs (0 assumptions)
 - [x] `RuntimeScalar::from_int`
-- [x] `RuntimeScalar::from_fraction` (minimal ghost contract)
+- [x] `RuntimeScalar::from_fraction` (runtime-only under `#[cfg(not(verus_keep_ghost))]`)
 - [x] `RuntimeScalar::add`
 - [x] `RuntimeScalar::sub`
 - [x] `RuntimeScalar::mul`
@@ -124,7 +124,6 @@ Goal: remove trusted runtime proof boundaries so `vcad-math` runtime behavior is
 ## Residual Trusted Items
 - [ ] `src/runtime_scalar.rs`: `RuntimeScalar::recip` (`#[verifier::external_body]`)
 - [ ] `src/runtime_scalar.rs`: `RuntimeScalar::signum_i8` (`#[verifier::external_body]`)
-- [ ] `src/runtime_scalar_refinement.rs`: `ExRugInteger` (`#[verifier::external_body]`)
 
 ## Completion Gates
 - [x] `rg -n "assume_specification\\[" crates/vcad-math/src` returns no matches.

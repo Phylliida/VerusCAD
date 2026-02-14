@@ -1,6 +1,5 @@
 use crate::runtime_scalar::RuntimeScalar;
 use crate::scalar::ScalarModel;
-use rug::Integer;
 use vstd::prelude::*;
 use vstd::view::View;
 
@@ -8,10 +7,6 @@ verus! {
 
 #[verifier::external_type_specification]
 pub struct ExRuntimeScalar(RuntimeScalar);
-
-#[verifier::external_type_specification]
-#[verifier::external_body]
-pub struct ExRugInteger(Integer);
 
 impl View for RuntimeScalar {
     type V = ScalarModel;

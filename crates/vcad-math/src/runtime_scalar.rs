@@ -119,12 +119,6 @@ impl RuntimeScalar {
         out
     }
 
-    pub fn from_fraction(num: Integer, den: Integer) -> (out: Option<Self>) {
-        let _ = num;
-        let _ = den;
-        Option::None
-    }
-
     pub fn add(&self, rhs: &Self) -> (out: Self)
         ensures
             out@ == self@.add_spec(rhs@),

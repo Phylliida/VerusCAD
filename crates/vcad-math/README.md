@@ -114,7 +114,7 @@ Use a staged loop:
 2. Full crate gate:
    - `./scripts/verify-vcad-math.sh`
 
-Latest full run in this workspace: `815 verified, 0 errors`.
+Latest full run in this workspace: `814 verified, 0 errors`.
 
 ## Related Docs
 1. `crates/vcad-math/docs/verification-todo.md`
