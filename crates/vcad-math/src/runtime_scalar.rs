@@ -143,7 +143,6 @@ impl RuntimeScalar {
         out
     }
 
-    #[verifier::external_body]
     pub fn recip(&self) -> (out: Option<Self>)
         ensures
             out.is_none() == self@.eqv_spec(ScalarModel::from_int_spec(0)),
@@ -156,7 +155,39 @@ impl RuntimeScalar {
                 },
             },
     {
-        Option::None
+        let s = self.signum_i8();
+        if s == 0 {
+            proof {
+                assert((s == 0) == (self@.signum() == 0));
+                assert(self@.signum() == 0);
+                ScalarModel::lemma_signum_zero_iff(self@);
+                assert(self@.num == 0);
+                ScalarModel::lemma_eqv_zero_iff_num_zero(self@);
+                assert(self@.eqv_spec(ScalarModel::from_int_spec(0)));
+            }
+            Option::None
+        } else {
+            let ghost one = ScalarModel::from_int_spec(1);
+            proof {
+                assert((s == 0) == (self@.signum() == 0));
+                assert(s != 0);
+                assert(self@.signum() != 0);
+                ScalarModel::lemma_signum_zero_iff(self@);
+                assert(self@.num != 0);
+                ScalarModel::lemma_eqv_zero_iff_num_zero(self@);
+                assert(!self@.eqv_spec(ScalarModel::from_int_spec(0)));
+            }
+            let ghost inv = ScalarModel::reciprocal_constructive(self@);
+            let r = Self::from_model(Ghost(inv));
+            proof {
+                assert(inv == r@);
+                assert(self@.mul_spec(inv).eqv_spec(one));
+                assert(inv.mul_spec(self@).eqv_spec(one));
+                assert(self@.mul_spec(r@).eqv_spec(one));
+                assert(r@.mul_spec(self@).eqv_spec(one));
+            }
+            Option::Some(r)
+        }
     }
 
     pub fn neg(&self) -> (out: Self)

@@ -117,18 +117,17 @@ Goal: remove trusted runtime proof boundaries so `vcad-math` runtime behavior is
 - [x] `RuntimeScalar::sub`
 - [x] `RuntimeScalar::mul`
 - [x] Model witness: `Scalar::reciprocal_constructive` (constructive reciprocal for nonzero model scalars)
-- [ ] `RuntimeScalar::recip` (still `external_body`)
+- [x] `RuntimeScalar::recip`
 - [x] `RuntimeScalar::neg`
 - [x] `RuntimeScalar::normalize`
 - [ ] `RuntimeScalar::signum_i8` (still `external_body`)
 
 ## Residual Trusted Items
-- [ ] `src/runtime_scalar.rs`: `RuntimeScalar::recip` (`#[verifier::external_body]`)
 - [ ] `src/runtime_scalar.rs`: `RuntimeScalar::signum_i8` (`#[verifier::external_body]`)
 
 ## Current Blocker
 - `RuntimeScalar` under `#[cfg(verus_keep_ghost)]` stores only ghost model state.
-- Verus currently disallows branching in exec code on spec-only values (e.g., `self@.eqv_spec(...)`, `self@.signum()`), so removing these final two `external_body` methods requires a deeper representation refactor for the verus path.
+- Verus currently disallows branching in exec code on spec-only values (e.g., `self@.signum()`), so removing the final `signum_i8` `external_body` requires a deeper representation refactor for the verus path.
 
 ## Completion Gates
 - [x] `rg -n "assume_specification\\[" crates/vcad-math/src` returns no matches.
