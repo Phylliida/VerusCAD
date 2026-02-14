@@ -183,6 +183,183 @@ impl RuntimeBigNatWitness {
         }
     }
 
+    proof fn lemma_limbs_value_drop_last_zero(limbs: Seq<u32>)
+        requires
+            limbs.len() > 0,
+            limbs[(limbs.len() - 1) as int] == 0u32,
+        ensures
+            Self::limbs_value_spec(limbs)
+                == Self::limbs_value_spec(limbs.subrange(0, limbs.len() as int - 1)),
+    {
+        let prefix = limbs.subrange(0, limbs.len() as int - 1);
+        assert(prefix.len() + 1 == limbs.len());
+        assert(prefix.push(0u32).len() == limbs.len());
+        assert forall|i: int| 0 <= i < limbs.len() implies #[trigger] prefix.push(0u32)[i] == limbs[i] by {
+            if i < prefix.len() {
+                assert(prefix.push(0u32)[i] == prefix[i]);
+                assert(prefix[i] == limbs[i]);
+            } else {
+                assert(i == prefix.len());
+                assert(i == limbs.len() - 1);
+                assert(prefix.push(0u32)[i] == 0u32);
+                assert(limbs[(limbs.len() - 1) as int] == 0u32);
+                assert(limbs[i] == 0u32);
+            }
+        };
+        assert(prefix.push(0u32) == limbs);
+        Self::lemma_limbs_value_push(prefix, 0u32);
+        assert(Self::pow_base_spec(prefix.len()) >= 0);
+        assert(0u32 as nat * Self::pow_base_spec(prefix.len()) == 0);
+        assert(
+            Self::limbs_value_spec(prefix.push(0u32))
+                == Self::limbs_value_spec(prefix) + 0
+        );
+        assert(
+            Self::limbs_value_spec(prefix.push(0u32))
+                == Self::limbs_value_spec(prefix)
+        );
+        assert(
+            Self::limbs_value_spec(limbs)
+                == Self::limbs_value_spec(limbs.subrange(0, limbs.len() as int - 1))
+        );
+    }
+
+    proof fn lemma_limbs_value_trim_suffix_zeros(limbs: Seq<u32>, n: nat)
+        requires
+            n <= limbs.len(),
+            forall|i: int| n <= i < limbs.len() ==> limbs[i] == 0u32,
+        ensures
+            Self::limbs_value_spec(limbs)
+                == Self::limbs_value_spec(limbs.subrange(0, n as int)),
+        decreases limbs.len() - n
+    {
+        if limbs.len() == n {
+            assert(limbs.subrange(0, n as int) == limbs);
+        } else {
+            assert(limbs.len() > 0);
+            assert(n < limbs.len());
+            let last = limbs.len() - 1;
+            assert(n <= last);
+            assert(limbs[last as int] == 0u32);
+            let prefix = limbs.subrange(0, limbs.len() as int - 1);
+            Self::lemma_limbs_value_drop_last_zero(limbs);
+            assert(
+                Self::limbs_value_spec(limbs)
+                    == Self::limbs_value_spec(prefix)
+            );
+            assert forall|i: int| n <= i < prefix.len() implies prefix[i] == 0u32 by {
+                assert(i < prefix.len());
+                assert(prefix.len() == limbs.len() - 1);
+                assert(i < limbs.len());
+                assert(limbs[i] == 0u32);
+                assert(prefix[i] == limbs[i]);
+            };
+            Self::lemma_limbs_value_trim_suffix_zeros(prefix, n);
+            assert(prefix.subrange(0, n as int) == limbs.subrange(0, n as int));
+            assert(
+                Self::limbs_value_spec(prefix)
+                    == Self::limbs_value_spec(prefix.subrange(0, n as int))
+            );
+            assert(
+                Self::limbs_value_spec(prefix.subrange(0, n as int))
+                    == Self::limbs_value_spec(limbs.subrange(0, n as int))
+            );
+            assert(
+                Self::limbs_value_spec(limbs)
+                    == Self::limbs_value_spec(limbs.subrange(0, n as int))
+            );
+        }
+    }
+
+    pub open spec fn limb_or_zero_spec(limbs: Seq<u32>, logical_len: nat, idx: nat) -> nat {
+        if idx < logical_len && idx < limbs.len() {
+            limbs[idx as int] as nat
+        } else {
+            0
+        }
+    }
+
+    pub open spec fn prefix_sum_spec(limbs: Seq<u32>, logical_len: nat, count: nat) -> nat
+        decreases count
+    {
+        if count == 0 {
+            0
+        } else {
+            let prev = (count - 1) as nat;
+            Self::prefix_sum_spec(limbs, logical_len, prev)
+                + Self::limb_or_zero_spec(limbs, logical_len, prev) * Self::pow_base_spec(prev)
+        }
+    }
+
+    proof fn lemma_prefix_sum_matches_subrange(limbs: Seq<u32>, logical_len: nat, count: nat)
+        requires
+            count <= logical_len,
+            count <= limbs.len(),
+        ensures
+            Self::prefix_sum_spec(limbs, logical_len, count)
+                == Self::limbs_value_spec(limbs.subrange(0, count as int)),
+        decreases count
+    {
+        if count == 0 {
+            assert(limbs.subrange(0, 0) == Seq::<u32>::empty());
+            assert(Self::prefix_sum_spec(limbs, logical_len, count) == 0);
+            assert(Self::limbs_value_spec(limbs.subrange(0, count as int)) == 0);
+        } else {
+            let prev = (count - 1) as nat;
+            Self::lemma_prefix_sum_matches_subrange(limbs, logical_len, prev);
+
+            assert(prev < count);
+            assert(prev < logical_len);
+            assert(prev < limbs.len());
+            assert(Self::limb_or_zero_spec(limbs, logical_len, prev) == limbs[prev as int] as nat);
+            assert(
+                Self::prefix_sum_spec(limbs, logical_len, count)
+                    == Self::prefix_sum_spec(limbs, logical_len, prev)
+                        + Self::limb_or_zero_spec(limbs, logical_len, prev) * Self::pow_base_spec(prev)
+            );
+            assert(
+                Self::prefix_sum_spec(limbs, logical_len, count)
+                    == Self::limbs_value_spec(limbs.subrange(0, prev as int))
+                        + limbs[prev as int] as nat * Self::pow_base_spec(prev)
+            );
+
+            let prefix = limbs.subrange(0, prev as int);
+            assert(prefix.push(limbs[prev as int]).len() == count);
+            assert forall|i: int| 0 <= i < count implies #[trigger] prefix.push(limbs[prev as int])[i] == limbs.subrange(0, count as int)[i] by {
+                if i < prev {
+                    assert(prefix.push(limbs[prev as int])[i] == prefix[i]);
+                    assert(prefix[i] == limbs[i]);
+                    assert(limbs.subrange(0, count as int)[i] == limbs[i]);
+                } else {
+                    assert(i == prev);
+                    assert(prefix.push(limbs[prev as int])[i] == limbs[prev as int]);
+                    assert(limbs.subrange(0, count as int)[i] == limbs[prev as int]);
+                }
+            };
+            assert(prefix.push(limbs[prev as int]) == limbs.subrange(0, count as int));
+            Self::lemma_limbs_value_push(prefix, limbs[prev as int]);
+            assert(
+                Self::limbs_value_spec(limbs.subrange(0, count as int))
+                    == Self::limbs_value_spec(prefix)
+                        + limbs[prev as int] as nat * Self::pow_base_spec(prev)
+            );
+            assert(
+                Self::prefix_sum_spec(limbs, logical_len, count)
+                    == Self::limbs_value_spec(limbs.subrange(0, count as int))
+            );
+        }
+    }
+
+    proof fn lemma_prefix_sum_eq_subrange_value(limbs: Seq<u32>, logical_len: nat)
+        requires
+            logical_len <= limbs.len(),
+        ensures
+            Self::prefix_sum_spec(limbs, logical_len, logical_len)
+                == Self::limbs_value_spec(limbs.subrange(0, logical_len as int)),
+    {
+        Self::lemma_prefix_sum_matches_subrange(limbs, logical_len, logical_len);
+    }
+
     proof fn lemma_model_zero_or_single_limb(&self)
         requires
             self.wf_spec(),
@@ -206,11 +383,13 @@ impl RuntimeBigNatWitness {
             model == Self::limbs_value_spec(limbs_le@),
             Self::canonical_limbs_spec(limbs_le@),
         ensures
+            out.limbs_le@ == limbs_le@,
             out.model@ == model,
             out.wf_spec(),
     {
         let out = RuntimeBigNatWitness { limbs_le, model: Ghost(model) };
         proof {
+            assert(out.limbs_le@ == limbs_le@);
             assert(out.model@ == model);
             assert(out.wf_spec());
         }
@@ -428,38 +607,79 @@ impl RuntimeBigNatWitness {
     fn trimmed_len_exec(limbs: &Vec<u32>) -> (out: usize)
         ensures
             out <= limbs.len(),
+            forall|i: int| out <= i < limbs.len() ==> limbs@[i] == 0u32,
+            out > 0 ==> limbs@[(out - 1) as int] != 0u32,
     {
         let mut n = limbs.len();
         while n > 0 && limbs[n - 1] == 0u32
             invariant
                 n <= limbs.len(),
+                forall|i: int| n <= i < limbs.len() ==> limbs@[i] == 0u32,
         {
+            assert(n > 0);
+            assert(limbs[(n - 1) as int] == 0u32);
             n = n - 1;
         }
         assert(n <= limbs.len());
+        if n > 0 {
+            assert(!(n > 0 && limbs[n - 1] == 0u32));
+            assert(limbs[n - 1] != 0u32);
+            assert(limbs@[(n - 1) as int] != 0u32);
+        }
         n
     }
 
     #[verifier::exec_allows_no_decreases_clause]
-    fn trim_trailing_zero_limbs(mut limbs: Vec<u32>) -> (out: Vec<u32>)
+    fn trim_trailing_zero_limbs(limbs: Vec<u32>) -> (out: Vec<u32>)
         ensures
             Self::canonical_limbs_spec(out@),
+            Self::limbs_value_spec(out@) == Self::limbs_value_spec(limbs@),
     {
-        while limbs.len() > 0 && limbs[limbs.len() - 1] == 0u32 {
-            limbs.pop();
+        let n = Self::trimmed_len_exec(&limbs);
+        assert(n <= limbs.len());
+        let mut out: Vec<u32> = Vec::new();
+        let mut i: usize = 0;
+        while i < n
+            invariant
+                i <= n,
+                n <= limbs.len(),
+                out@ == limbs@.subrange(0, i as int),
+        {
+            assert(i < limbs.len());
+            out.push(limbs[i]);
+            i = i + 1;
         }
         proof {
-            if limbs@.len() == 0 {
-                assert(Self::canonical_limbs_spec(limbs@));
+            assert(out@ == limbs@.subrange(0, n as int));
+            if n == 0 {
+                assert(out@.len() == 0);
+                assert(Self::canonical_limbs_spec(out@));
             } else {
-                assert(limbs.len() > 0);
-                assert(!(limbs.len() > 0 && limbs[limbs.len() - 1] == 0u32));
-                assert(limbs[limbs.len() - 1] != 0u32);
-                assert(limbs@[(limbs@.len() - 1) as int] != 0u32);
-                assert(Self::canonical_limbs_spec(limbs@));
+                assert(0 < n);
+                assert(out@.len() == n);
+                assert(limbs@[(n - 1) as int] != 0u32);
+                assert(out@[(out@.len() - 1) as int] == limbs@[(n - 1) as int]);
+                assert(out@[(out@.len() - 1) as int] != 0u32);
+                assert(Self::canonical_limbs_spec(out@));
             }
         }
-        limbs
+        proof {
+            let ng: nat = n as nat;
+            assert(ng <= limbs@.len());
+            assert(forall|i: int| ng <= i < limbs@.len() ==> limbs@[i] == 0u32);
+            Self::lemma_limbs_value_trim_suffix_zeros(limbs@, ng);
+            assert(
+                Self::limbs_value_spec(limbs@)
+                    == Self::limbs_value_spec(limbs@.subrange(0, n as int))
+            );
+            assert(out@ == limbs@.subrange(0, n as int));
+            assert(
+                Self::limbs_value_spec(out@)
+                    == Self::limbs_value_spec(limbs@.subrange(0, n as int))
+            );
+            assert(Self::limbs_value_spec(out@) == Self::limbs_value_spec(limbs@));
+        }
+        out
     }
 
     /// Total limb-wise multiplication helper used by scalar witness plumbing.
@@ -655,6 +875,7 @@ impl RuntimeBigNatWitness {
     pub fn copy_small_total(&self) -> (out: Self)
         ensures
             out.wf_spec(),
+            out.model@ == Self::limbs_value_spec(self.limbs_le@),
     {
         let n = Self::trimmed_len_exec(&self.limbs_le);
         assert(n <= self.limbs_le.len());
@@ -664,14 +885,55 @@ impl RuntimeBigNatWitness {
             invariant
                 i <= n,
                 n <= self.limbs_le.len(),
+                out_limbs@ == self.limbs_le@.subrange(0, i as int),
         {
             assert(i < self.limbs_le.len());
             out_limbs.push(self.limbs_le[i]);
             i = i + 1;
         }
-        let out_limbs = Self::trim_trailing_zero_limbs(out_limbs);
+        proof {
+            assert(out_limbs@ == self.limbs_le@.subrange(0, n as int));
+        }
+        proof {
+            if n == 0 {
+                assert(out_limbs@.len() == 0);
+                assert(Self::canonical_limbs_spec(out_limbs@));
+            } else {
+                assert(0 < n);
+                assert(out_limbs@.len() == n);
+                assert(self.limbs_le@[(n - 1) as int] != 0u32);
+                assert(out_limbs@[(out_limbs@.len() - 1) as int] == self.limbs_le@[(n - 1) as int]);
+                assert(out_limbs@[(out_limbs@.len() - 1) as int] != 0u32);
+                assert(Self::canonical_limbs_spec(out_limbs@));
+            }
+        }
+        proof {
+            let ng: nat = n as nat;
+            assert(ng <= self.limbs_le@.len());
+            assert(forall|i: int| ng <= i < self.limbs_le@.len() ==> self.limbs_le@[i] == 0u32);
+            Self::lemma_limbs_value_trim_suffix_zeros(self.limbs_le@, ng);
+            assert(
+                Self::limbs_value_spec(self.limbs_le@)
+                    == Self::limbs_value_spec(self.limbs_le@.subrange(0, n as int))
+            );
+            assert(out_limbs@ == self.limbs_le@.subrange(0, n as int));
+            assert(
+                Self::limbs_value_spec(self.limbs_le@)
+                    == Self::limbs_value_spec(out_limbs@)
+            );
+        }
         let ghost model = Self::limbs_value_spec(out_limbs@);
-        Self::from_parts(out_limbs, Ghost(model))
+        let out = Self::from_parts(out_limbs, Ghost(model));
+        proof {
+            assert(out.model@ == Self::limbs_value_spec(out.limbs_le@));
+            assert(out.limbs_le@ == self.limbs_le@.subrange(0, n as int));
+            assert(
+                Self::limbs_value_spec(self.limbs_le@)
+                    == Self::limbs_value_spec(out.limbs_le@)
+            );
+            assert(out.model@ == Self::limbs_value_spec(self.limbs_le@));
+        }
+        out
     }
 }
 }

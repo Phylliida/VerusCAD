@@ -104,7 +104,16 @@ Completed scaffold:
   - `mul_limbwise_small_total` (now full schoolbook multi-limb multiplication + canonical trim)
   - `cmp_limbwise_small_total` (now full multi-limb compare via trimmed length + high-to-low limb scan)
   - `sub_limbwise_small_total` (now full multi-limb borrow subtraction for `self >= rhs`)
-  - `copy_small_total` (now full multi-limb copy with canonical trailing-zero trim)
+  - `copy_small_total` (now full multi-limb copy; exact limb-value preservation proof landed)
+  - `trimmed_len_exec` now proves exact trailing-zero boundary facts:
+    - all limbs in `[trimmed_len, len)` are zero
+    - if `trimmed_len > 0`, limb `trimmed_len - 1` is nonzero
+  - `trim_trailing_zero_limbs` now proves semantic preservation:
+    - canonical output limbs
+    - exact limb-value equality vs input (`limbs_value_spec` preserved)
+  - prefix-sum proof scaffolding for future total-helper semantics:
+    - `limb_or_zero_spec`, `prefix_sum_spec`
+    - `lemma_prefix_sum_matches_subrange`, `lemma_prefix_sum_eq_subrange_value`
 - `RuntimeScalar` (verus cfg) now carries explicit witness slots (`sign_witness`, `num_abs_witness`, `den_witness`) as scaffolding; model-consistency proofs are still pending.
 
 ### Phase 3: Rebuild Scalar Operations Over Witness
