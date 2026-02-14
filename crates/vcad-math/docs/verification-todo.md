@@ -70,7 +70,7 @@ Notes:
 
 ### Phase 2: Implement Witness-Carrying Scalar (verus mode)
 - [x] Add prerequisite verified bigint witness module(s) for exact exec arithmetic.
-- [ ] Extend `RuntimeScalar` (verus cfg) with exec-visible witness fields.
+- [x] Extend `RuntimeScalar` (verus cfg) with exec-visible witness fields.
 - [ ] Add and prove representation invariant linking witness to `self@ : ScalarModel`.
 - [ ] Update constructors (`from_int`, etc.) to initialize witness + model consistently.
 
@@ -78,11 +78,13 @@ Completed scaffold:
 - `crates/vcad-math/src/runtime_bigint_witness.rs` introduced `RuntimeBigNatWitness`.
 - Verus-side scaffold includes:
   - exact limb-value spec (`limbs_value_spec`)
+  - base-power helper + append-value law (`pow_base_spec`, `lemma_limbs_value_push`)
   - canonical limb predicate (`canonical_limbs_spec`)
   - representation predicate (`wf_spec`)
   - verified constructors (`zero`, `from_u32`, `from_two_limbs`)
   - first verified limb-wise add step (`add_limbwise_small`, for `<=1` limb inputs with carry split)
 - Runtime side includes basic exact arithmetic wrappers (`add`, `mul`) over `rug::Integer`.
+- `RuntimeScalar` (verus cfg) now carries explicit witness slots (`sign_witness`, `num_abs_witness`, `den_witness`) as scaffolding; model-consistency proofs are still pending.
 
 ### Phase 3: Rebuild Scalar Operations Over Witness
 - [ ] Re-implement `add/sub/mul/neg/normalize/recip` to update witness in exec mode.

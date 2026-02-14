@@ -89,6 +89,16 @@ impl RuntimeBigNatWitness {
         4_294_967_296
     }
 
+    pub open spec fn pow_base_spec(exp: nat) -> nat
+        decreases exp
+    {
+        if exp == 0 {
+            1
+        } else {
+            Self::limb_base_spec() * Self::pow_base_spec((exp - 1) as nat)
+        }
+    }
+
     pub open spec fn limbs_value_spec(limbs: Seq<u32>) -> nat
         decreases limbs.len()
     {
@@ -108,6 +118,59 @@ impl RuntimeBigNatWitness {
     pub open spec fn wf_spec(&self) -> bool {
         &&& self.model@ == Self::limbs_value_spec(self.limbs_le@)
         &&& Self::canonical_limbs_spec(self.limbs_le@)
+    }
+
+    proof fn lemma_pow_base_succ(exp: nat)
+        ensures
+            Self::pow_base_spec(exp + 1) == Self::limb_base_spec() * Self::pow_base_spec(exp),
+    {
+    }
+
+    /// Value update law for appending a high limb in little-endian representation.
+    proof fn lemma_limbs_value_push(limbs: Seq<u32>, digit: u32)
+        ensures
+            Self::limbs_value_spec(limbs.push(digit))
+                == Self::limbs_value_spec(limbs) + digit as nat * Self::pow_base_spec(limbs.len()),
+        decreases limbs.len()
+    {
+        if limbs.len() == 0 {
+            assert(Self::limbs_value_spec(Seq::<u32>::empty()) == 0);
+            assert(Self::pow_base_spec(0) == 1);
+            assert(limbs.push(digit).len() == 1);
+            assert(Self::limbs_value_spec(limbs.push(digit)) == digit as nat);
+            assert(
+                Self::limbs_value_spec(limbs.push(digit))
+                    == Self::limbs_value_spec(limbs) + digit as nat * Self::pow_base_spec(limbs.len())
+            );
+        } else {
+            let tail = limbs.subrange(1, limbs.len() as int);
+            Self::lemma_limbs_value_push(tail, digit);
+            assert(tail.len() + 1 == limbs.len());
+            assert(limbs.push(digit).subrange(1, limbs.push(digit).len() as int) == tail.push(digit));
+            assert(Self::limbs_value_spec(limbs.push(digit)) == limbs[0] as nat + Self::limb_base_spec() * Self::limbs_value_spec(tail.push(digit)));
+            assert(Self::limbs_value_spec(limbs) == limbs[0] as nat + Self::limb_base_spec() * Self::limbs_value_spec(tail));
+            assert(Self::limbs_value_spec(tail.push(digit)) == Self::limbs_value_spec(tail) + digit as nat * Self::pow_base_spec(tail.len()));
+            assert(
+                Self::limbs_value_spec(limbs.push(digit))
+                    == Self::limbs_value_spec(limbs)
+                        + Self::limb_base_spec() * (digit as nat * Self::pow_base_spec(tail.len()))
+            );
+            Self::lemma_pow_base_succ(tail.len() as nat);
+            assert(Self::pow_base_spec(limbs.len()) == Self::limb_base_spec() * Self::pow_base_spec(tail.len() as nat));
+            assert(
+                Self::limb_base_spec() * (digit as nat * Self::pow_base_spec(tail.len()))
+                    == digit as nat * (Self::limb_base_spec() * Self::pow_base_spec(tail.len()))
+            ) by (nonlinear_arith)
+            ;
+            assert(
+                digit as nat * (Self::limb_base_spec() * Self::pow_base_spec(tail.len()))
+                    == digit as nat * Self::pow_base_spec(limbs.len())
+            );
+            assert(
+                Self::limbs_value_spec(limbs.push(digit))
+                    == Self::limbs_value_spec(limbs) + digit as nat * Self::pow_base_spec(limbs.len())
+            );
+        }
     }
 
     proof fn lemma_model_zero_or_single_limb(&self)

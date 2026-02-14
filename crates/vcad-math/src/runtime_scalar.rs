@@ -1,6 +1,8 @@
 use core::hash::{Hash, Hasher};
 use rug::{Integer, Rational};
 #[cfg(verus_keep_ghost)]
+use crate::runtime_bigint_witness::RuntimeBigNatWitness;
+#[cfg(verus_keep_ghost)]
 use crate::scalar::ScalarModel;
 #[cfg(verus_keep_ghost)]
 use vstd::prelude::*;
@@ -15,6 +17,12 @@ use vstd::view::View;
 pub struct RuntimeScalar {
     #[cfg(not(verus_keep_ghost))]
     value: Rational,
+    #[cfg(verus_keep_ghost)]
+    pub sign_witness: RuntimeSign,
+    #[cfg(verus_keep_ghost)]
+    pub num_abs_witness: RuntimeBigNatWitness,
+    #[cfg(verus_keep_ghost)]
+    pub den_witness: RuntimeBigNatWitness,
     #[cfg(verus_keep_ghost)]
     pub model: Ghost<ScalarModel>,
 }
@@ -134,7 +142,15 @@ impl RuntimeScalar {
         ensures
             out@ == model,
     {
-        RuntimeScalar { model: Ghost(model) }
+        // Phase-2 scaffold: explicit exec-visible bigint witnesses are now
+        // carried on the verus runtime scalar object. Wiring these witnesses
+        // to exact model-consistent arithmetic is the next step.
+        RuntimeScalar {
+            sign_witness: RuntimeSign::Zero,
+            num_abs_witness: RuntimeBigNatWitness::zero(),
+            den_witness: RuntimeBigNatWitness::from_u32(1),
+            model: Ghost(model),
+        }
     }
 
     pub fn from_int(value: i64) -> (out: Self)
