@@ -1,0 +1,121 @@
+#![cfg(feature = "verus-proofs")]
+
+use crate::segment_intersection::{self, SegmentIntersection2dKind, SegmentIntersection2dKindSpec};
+use vcad_math::runtime_point2::RuntimePoint2;
+use vstd::prelude::*;
+use vstd::view::View;
+
+verus! {
+
+#[verifier::external_type_specification]
+pub struct ExSegmentIntersection2dKind(SegmentIntersection2dKind);
+
+impl View for SegmentIntersection2dKind {
+    type V = SegmentIntersection2dKindSpec;
+
+    open spec fn view(&self) -> SegmentIntersection2dKindSpec {
+        match self {
+            SegmentIntersection2dKind::Disjoint => SegmentIntersection2dKindSpec::Disjoint,
+            SegmentIntersection2dKind::Proper => SegmentIntersection2dKindSpec::Proper,
+            SegmentIntersection2dKind::EndpointTouch => SegmentIntersection2dKindSpec::EndpointTouch,
+            SegmentIntersection2dKind::CollinearOverlap => SegmentIntersection2dKindSpec::CollinearOverlap,
+        }
+    }
+}
+
+#[allow(dead_code)]
+pub proof fn segment_intersection_runtime_kind_exhaustive(k: SegmentIntersection2dKind)
+    ensures
+        (k@ is Disjoint) || (k@ is Proper) || (k@ is EndpointTouch) || (k@ is CollinearOverlap),
+{
+    match k {
+        SegmentIntersection2dKind::Disjoint => {
+            assert(k@ is Disjoint);
+        }
+        SegmentIntersection2dKind::Proper => {
+            assert(k@ is Proper);
+        }
+        SegmentIntersection2dKind::EndpointTouch => {
+            assert(k@ is EndpointTouch);
+        }
+        SegmentIntersection2dKind::CollinearOverlap => {
+            assert(k@ is CollinearOverlap);
+        }
+    }
+}
+
+#[allow(dead_code)]
+pub proof fn segment_intersection_runtime_kind_pairwise_disjoint(k: SegmentIntersection2dKind)
+    ensures
+        !((k@ is Disjoint) && (k@ is Proper)),
+        !((k@ is Disjoint) && (k@ is EndpointTouch)),
+        !((k@ is Disjoint) && (k@ is CollinearOverlap)),
+        !((k@ is Proper) && (k@ is EndpointTouch)),
+        !((k@ is Proper) && (k@ is CollinearOverlap)),
+        !((k@ is EndpointTouch) && (k@ is CollinearOverlap)),
+{
+    match k {
+        SegmentIntersection2dKind::Disjoint => {
+            assert(!(k@ is Proper));
+            assert(!(k@ is EndpointTouch));
+            assert(!(k@ is CollinearOverlap));
+        }
+        SegmentIntersection2dKind::Proper => {
+            assert(!(k@ is Disjoint));
+            assert(!(k@ is EndpointTouch));
+            assert(!(k@ is CollinearOverlap));
+        }
+        SegmentIntersection2dKind::EndpointTouch => {
+            assert(!(k@ is Disjoint));
+            assert(!(k@ is Proper));
+            assert(!(k@ is CollinearOverlap));
+        }
+        SegmentIntersection2dKind::CollinearOverlap => {
+            assert(!(k@ is Disjoint));
+            assert(!(k@ is Proper));
+            assert(!(k@ is EndpointTouch));
+        }
+    }
+}
+
+#[allow(dead_code)]
+pub proof fn segment_intersection_kind_spec_total_for_runtime_points(
+    a: &RuntimePoint2,
+    b: &RuntimePoint2,
+    c: &RuntimePoint2,
+    d: &RuntimePoint2,
+)
+    ensures
+        (segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is Disjoint)
+            || (segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is Proper)
+            || (segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is EndpointTouch)
+            || (segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is CollinearOverlap),
+{
+    segment_intersection::lemma_segment_intersection_kind_spec_exhaustive(a@, b@, c@, d@);
+}
+
+#[allow(dead_code)]
+pub proof fn segment_intersection_kind_spec_pairwise_disjoint_for_runtime_points(
+    a: &RuntimePoint2,
+    b: &RuntimePoint2,
+    c: &RuntimePoint2,
+    d: &RuntimePoint2,
+)
+    ensures
+        !((segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is Disjoint)
+            && (segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is Proper)),
+        !((segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is Disjoint)
+            && (segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is EndpointTouch)),
+        !((segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is Disjoint)
+            && (segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is CollinearOverlap)),
+        !((segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is Proper)
+            && (segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is EndpointTouch)),
+        !((segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is Proper)
+            && (segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is CollinearOverlap)),
+        !((segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is EndpointTouch)
+            && (segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is CollinearOverlap)),
+{
+    segment_intersection::lemma_segment_intersection_kind_spec_pairwise_disjoint(a@, b@, c@, d@);
+}
+
+} // verus!

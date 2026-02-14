@@ -73,11 +73,14 @@ Goal: add high-value geometric predicates/constructions that are currently not c
 
 ## H. 2D Segment-Segment Intersection (Start Here)
 Proposed file: `src/segment_intersection.rs` (+ `src/runtime_segment_intersection_refinement.rs` if runtime/proof split is needed)
-- [ ] Define relation enum (disjoint/proper/endpoint/collinear-overlap).
-- [ ] Add exact spec predicates for each case and prove mutual exclusivity.
-- [ ] Implement runtime classifier and prove refinement to spec.
-- [ ] Add witness extraction API for intersection point(s) where applicable.
-- [ ] Add representative runtime tests (crossing, touching endpoint, parallel disjoint, overlap).
+- [x] Define relation enum (disjoint/proper/endpoint/collinear-overlap).
+- [x] Add initial spec skeleton predicates for case classification.
+- [x] Implement runtime classifier.
+- [x] Add witness extraction API for unique-point intersections (`Proper`, `EndpointTouch`).
+- [x] Add representative runtime tests (crossing, touching endpoint, parallel disjoint, overlap).
+- [x] Prove mutual exclusivity/completeness of spec cases.
+- [ ] Prove runtime classifier refinement to spec.
+- [x] Add a dedicated refinement module with enum view mapping and spec totality/disjointness helpers.
 
 ## I. General Point-in-Polygon
 Proposed file: `src/polygon_general.rs`
