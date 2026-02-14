@@ -1,6 +1,6 @@
 use crate::orientation_predicates::orient2d_sign;
 use vcad_math::runtime_point2::RuntimePoint2;
-use vcad_math::runtime_scalar::RuntimeScalar;
+use vcad_math::runtime_scalar::{RuntimeScalar, RuntimeSign};
 #[cfg(verus_keep_ghost)]
 use vcad_math::orientation::orient2d_spec;
 #[cfg(verus_keep_ghost)]
@@ -21,7 +21,11 @@ pub enum SegmentIntersection2dKind {
 
 #[cfg(not(verus_keep_ghost))]
 fn scalar_sign(a: &RuntimeScalar, b: &RuntimeScalar) -> i8 {
-    a.sub(b).signum_i8()
+    match a.sub(b).sign() {
+        RuntimeSign::Positive => 1,
+        RuntimeSign::Negative => -1,
+        RuntimeSign::Zero => 0,
+    }
 }
 
 #[cfg(not(verus_keep_ghost))]
@@ -316,29 +320,21 @@ fn scalar_sign(a: &RuntimeScalar, b: &RuntimeScalar) -> (out: i8)
         (out <= 0) == (scalar_sign_spec(a@, b@) <= 0),
 {
     let diff = a.sub(b);
-    let out = diff.signum_i8();
+    let sign = diff.sign();
+    let out = match sign {
+        RuntimeSign::Positive => 1,
+        RuntimeSign::Negative => -1,
+        RuntimeSign::Zero => 0,
+    };
     proof {
-        let sp = diff.lemma_signum_i8_matches_proof(out);
-        assert((sp == 1) == (diff@.signum() == 1));
-        assert((sp == -1) == (diff@.signum() == -1));
-        assert((sp == 0) == (diff@.signum() == 0));
+        assert((sign is Positive) == (diff@.signum() == 1));
+        assert((sign is Negative) == (diff@.signum() == -1));
+        assert((sign is Zero) == (diff@.signum() == 0));
         assert((out == 1) == (diff@.signum() == 1));
         assert((out == -1) == (diff@.signum() == -1));
         assert((out == 0) == (diff@.signum() == 0));
         assert(diff@ == a@.sub_spec(b@));
         vcad_math::scalar::Scalar::lemma_signum_cases(diff@);
-        if diff@.signum() == 1 {
-            assert(out == 1);
-            assert(sp == 1);
-        } else if diff@.signum() == -1 {
-            assert(out == -1);
-            assert(sp == -1);
-        } else {
-            assert(diff@.signum() == 0);
-            assert(out == 0);
-            assert(sp == 0);
-        }
-        assert(out == sp);
         if out == 1 {
             assert(diff@.signum() == 1);
             assert(out as int == 1);

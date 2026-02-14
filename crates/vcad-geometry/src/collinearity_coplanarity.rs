@@ -48,13 +48,13 @@ pub fn collinear3d(a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3) -> (
     let ca = c.sub(a);
     let cross = ba.cross(&ca);
     let n2 = cross.norm2();
-    let s = n2.signum_i8();
-    let out = s == 0;
+    let sign = n2.sign();
+    let out = match sign {
+        RuntimeSign::Zero => true,
+        RuntimeSign::Negative | RuntimeSign::Positive => false,
+    };
     proof {
-        let sp = n2.lemma_signum_i8_matches_proof(s);
-        assert((sp == 0) == (n2@.signum() == 0));
-        assert((s == 0) == (n2@.signum() == 0));
-        assert(s == sp);
+        assert((sign is Zero) == (n2@.signum() == 0));
         assert(ba@ == b@.sub_spec(a@));
         assert(ca@ == c@.sub_spec(a@));
         assert(cross@ == ba@.cross_spec(ca@));

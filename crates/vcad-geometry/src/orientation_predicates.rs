@@ -54,7 +54,11 @@ pub fn orient3d_value(
 
 #[cfg(not(verus_keep_ghost))]
 pub fn orient2d_sign(a: &RuntimePoint2, b: &RuntimePoint2, c: &RuntimePoint2) -> i8 {
-    orient2d_value(a, b, c).signum_i8()
+    match runtime_orientation::orientation(a, b, c) {
+        RuntimeOrientation::Ccw => 1,
+        RuntimeOrientation::Cw => -1,
+        RuntimeOrientation::Collinear => 0,
+    }
 }
 
 #[cfg(verus_keep_ghost)]
@@ -111,7 +115,11 @@ pub fn orient3d_sign(
     c: &RuntimePoint3,
     d: &RuntimePoint3,
 ) -> i8 {
-    orient3d_value(a, b, c, d).signum_i8()
+    match runtime_orientation3::orientation3(a, b, c, d) {
+        RuntimeOrientation3::Positive => 1,
+        RuntimeOrientation3::Negative => -1,
+        RuntimeOrientation3::Coplanar => 0,
+    }
 }
 
 #[cfg(verus_keep_ghost)]

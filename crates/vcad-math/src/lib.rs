@@ -8,6 +8,11 @@ pub use runtime_scalar::RuntimeScalar;
 #[cfg(verus_keep_ghost)]
 mod runtime_scalar_refinement;
 
+pub mod runtime_bigint_witness;
+pub use runtime_bigint_witness::RuntimeBigNatWitness;
+#[cfg(verus_keep_ghost)]
+mod runtime_bigint_witness_refinement;
+
 pub mod runtime_vec2;
 pub use runtime_vec2::RuntimeVec2;
 #[cfg(verus_keep_ghost)]

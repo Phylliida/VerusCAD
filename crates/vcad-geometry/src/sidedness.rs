@@ -438,7 +438,10 @@ mod tests {
 
         assert!(segment_crosses_plane_strict(&d, &e, &a, &b, &c));
         let t = segment_plane_intersection_parameter_strict(&d, &e, &a, &b, &c).unwrap();
-        assert_eq!(t.signum_i8(), 1);
+        assert!(matches!(
+            t.sign(),
+            vcad_math::runtime_scalar::RuntimeSign::Positive
+        ));
 
         let p = segment_plane_intersection_point_strict(&d, &e, &a, &b, &c).unwrap();
         assert_eq!(point_on_plane(&p, &a, &b, &c), true);
