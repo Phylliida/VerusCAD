@@ -98,6 +98,10 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
 - [ ] Verify `check_face_cycles` (closure + no overlap + min cycle length).
   - in `verus-proofs` builds, this now delegates to kernel executable `kernel_check_face_cycles`.
   - semantic contract strengthening in kernel proof is still pending.
+  - next substeps:
+    - strengthen `kernel_check_face_cycles` postcondition from `out ==> kernel_index_bounds_spec` to `out ==> kernel_face_representative_cycles_total_spec`.
+    - add per-face cycle-length witness threading invariant (`forall fp < f. exists k ...`) in outer loop.
+    - prove representative-cycle witness construction at face loop boundary (`k = steps`).
   - file: `src/halfedge_mesh.rs`
 - [x] Verify `check_no_degenerate_edges`.
   - in `verus-proofs` builds, this is delegated to verified kernel checker.
@@ -105,6 +109,10 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
 - [ ] Verify `check_vertex_manifold_single_cycle`.
   - in `verus-proofs` builds, this now delegates to kernel executable `kernel_check_vertex_manifold_single_cycle`.
   - semantic contract strengthening in kernel proof is still pending.
+  - next substeps:
+    - strengthen `kernel_check_vertex_manifold_single_cycle` postcondition from `out ==> kernel_index_bounds_spec` to `out ==> kernel_vertex_manifold_single_cycle_total_spec`.
+    - add per-vertex cycle witness threading invariant (`forall vp < v. exists k ...`) in outer loop.
+    - prove representative-ring witness construction at vertex loop boundary (`k = steps`).
   - file: `src/halfedge_mesh.rs`
 - [x] Verify `check_edge_has_exactly_two_half_edges`.
   - in `verus-proofs` builds, this is delegated to a verified kernel checker.

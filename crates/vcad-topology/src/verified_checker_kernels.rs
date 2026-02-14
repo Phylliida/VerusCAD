@@ -650,18 +650,18 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
             0 <= v <= vcnt,
     {
         let mut expected: usize = 0;
-        let mut h: usize = 0;
-        while h < hcnt
+        let mut hh: usize = 0;
+        while hh < hcnt
             invariant
                 kernel_index_bounds_spec(m),
                 hcnt == m.half_edges.len(),
-                0 <= h <= hcnt,
-                0 <= expected <= h,
+                0 <= hh <= hcnt,
+                0 <= expected <= hh,
         {
-            if m.half_edges[h].vertex == v {
+            if m.half_edges[hh].vertex == v {
                 expected += 1;
             }
-            h += 1;
+            hh += 1;
         }
         if expected == 0 {
             return false;

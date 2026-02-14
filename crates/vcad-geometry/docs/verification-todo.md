@@ -57,3 +57,60 @@ File: `src/runtime_convex_polygon_refinement.rs`
 - [x] Reduce witness-proof duplication and make quantifier instantiation explicit:
   - Reuse helper lemmas for existential witness construction in sidedness refinements.
   - Keep explicit `#[trigger]` terms on witness point-parameter predicates.
+
+## G. Next Geometry Kernel Backlog (2026-02-14)
+Goal: add high-value geometric predicates/constructions that are currently not covered by `vcad-topology` (which focuses on combinatorial half-edge validity).
+
+## Recommended Build Order (Phase 5+)
+- [ ] 1) 2D segment-segment intersection classification.
+- [ ] 2) General (non-convex) point-in-polygon classification.
+- [ ] 3) 3D segment/ray-triangle intersection with barycentric witness.
+- [ ] 4) 2D convex polygon clipping/intersection.
+- [ ] 5) Distance/projection kernels.
+- [ ] 6) Triangle primitives + normal/area consistency lemmas.
+- [ ] 7) Typed classification enums for geometry relations.
+- [ ] 8) Affine invariance lemmas (translation/scaling, with sign effects).
+
+## H. 2D Segment-Segment Intersection (Start Here)
+Proposed file: `src/segment_intersection.rs` (+ `src/runtime_segment_intersection_refinement.rs` if runtime/proof split is needed)
+- [ ] Define relation enum (disjoint/proper/endpoint/collinear-overlap).
+- [ ] Add exact spec predicates for each case and prove mutual exclusivity.
+- [ ] Implement runtime classifier and prove refinement to spec.
+- [ ] Add witness extraction API for intersection point(s) where applicable.
+- [ ] Add representative runtime tests (crossing, touching endpoint, parallel disjoint, overlap).
+
+## I. General Point-in-Polygon
+Proposed file: `src/polygon_general.rs`
+- [ ] Define boundary-inclusive and strict-inside specs for simple polygons.
+- [ ] Implement ray-crossing (or winding) runtime algorithm with exact arithmetic.
+- [ ] Prove runtime result matches spec classification.
+- [ ] Add handling for boundary edge/vertex hits as explicit cases.
+
+## J. Segment/Ray-Triangle (3D)
+Proposed file: `src/triangle_intersection.rs`
+- [ ] Define spec for intersection existence and barycentric witness constraints.
+- [ ] Implement segment-triangle intersection using exact orientation/sidedness predicates.
+- [ ] Implement ray-triangle variant and prove implication relations.
+- [ ] Prove witness validity (on segment/ray and inside triangle).
+
+## K. Convex Polygon Clipping / Intersection
+Proposed file: `src/convex_polygon_clip.rs`
+- [ ] Define spec for output polygon validity and point-membership equivalence.
+- [ ] Implement clipping pipeline (Sutherland-Hodgman style with exact arithmetic).
+- [ ] Prove closure/invariant lemmas per clipping step.
+- [ ] Add runtime tests for empty/partial/full containment cases.
+
+## L. Distance / Projection Kernels
+Proposed file: `src/distance_projection.rs`
+- [ ] Add `point_segment_dist2`, `point_plane_signed_distance_num`, and projection parameter APIs.
+- [ ] Specify exact relationships (non-negativity, zero-iff, clamping/witness bounds).
+- [ ] Prove core algebraic lemmas linking dot products and squared distances.
+
+## M. Cross-Cutting Proof Layer
+Proposed file: `src/geometry_relations.rs` and/or lemma modules
+- [ ] Introduce shared relation enums used by multiple predicates.
+- [ ] Add affine invariance lemmas reused by intersection and polygon proofs.
+- [ ] Keep fast-script defaults updated as new modules land.
+- [ ] Gate each milestone with:
+  - `./scripts/verify-vcad-geometry-fast.sh <module>`
+  - `./scripts/verify-vcad-geometry.sh`
