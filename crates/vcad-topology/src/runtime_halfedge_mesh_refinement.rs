@@ -1,6 +1,6 @@
 #![cfg(feature = "verus-proofs")]
 
-use crate::halfedge_mesh::{Mesh, MeshBuildError};
+use crate::halfedge_mesh::{Edge, Face, HalfEdge, Mesh, MeshBuildError, Vertex};
 use vcad_math::runtime_point3::RuntimePoint3;
 use vstd::prelude::*;
 use vstd::view::View;
@@ -8,12 +8,23 @@ use vstd::view::View;
 verus! {
 
 #[verifier::external_type_specification]
-#[verifier::external_body]
 pub struct ExMesh(Mesh);
 
 #[verifier::external_type_specification]
 #[verifier::external_body]
 pub struct ExMeshBuildError(MeshBuildError);
+
+#[verifier::external_type_specification]
+pub struct ExHalfEdge(HalfEdge);
+
+#[verifier::external_type_specification]
+pub struct ExVertex(Vertex);
+
+#[verifier::external_type_specification]
+pub struct ExEdge(Edge);
+
+#[verifier::external_type_specification]
+pub struct ExFace(Face);
 
 #[derive(Structural, Copy, Clone, PartialEq, Eq)]
 pub struct HalfEdgeModel {
@@ -25,6 +36,21 @@ pub struct HalfEdgeModel {
     pub face: int,
 }
 
+#[derive(Structural, Copy, Clone, PartialEq, Eq)]
+pub struct VertexModel {
+    pub half_edge: int,
+}
+
+#[derive(Structural, Copy, Clone, PartialEq, Eq)]
+pub struct EdgeModel {
+    pub half_edge: int,
+}
+
+#[derive(Structural, Copy, Clone, PartialEq, Eq)]
+pub struct FaceModel {
+    pub half_edge: int,
+}
+
 pub struct MeshModel {
     pub vertex_half_edges: Seq<int>,
     pub edge_half_edges: Seq<int>,
@@ -32,10 +58,56 @@ pub struct MeshModel {
     pub half_edges: Seq<HalfEdgeModel>,
 }
 
+impl View for HalfEdge {
+    type V = HalfEdgeModel;
+
+    open spec fn view(&self) -> HalfEdgeModel {
+        HalfEdgeModel {
+            twin: self.twin as int,
+            next: self.next as int,
+            prev: self.prev as int,
+            vertex: self.vertex as int,
+            edge: self.edge as int,
+            face: self.face as int,
+        }
+    }
+}
+
+impl View for Vertex {
+    type V = VertexModel;
+
+    open spec fn view(&self) -> VertexModel {
+        VertexModel { half_edge: self.half_edge as int }
+    }
+}
+
+impl View for Edge {
+    type V = EdgeModel;
+
+    open spec fn view(&self) -> EdgeModel {
+        EdgeModel { half_edge: self.half_edge as int }
+    }
+}
+
+impl View for Face {
+    type V = FaceModel;
+
+    open spec fn view(&self) -> FaceModel {
+        FaceModel { half_edge: self.half_edge as int }
+    }
+}
+
 impl View for Mesh {
     type V = MeshModel;
 
-    uninterp spec fn view(&self) -> MeshModel;
+    open spec fn view(&self) -> MeshModel {
+        MeshModel {
+            vertex_half_edges: Seq::new(self.vertices@.len(), |i: int| self.vertices@[i]@.half_edge),
+            edge_half_edges: Seq::new(self.edges@.len(), |i: int| self.edges@[i]@.half_edge),
+            face_half_edges: Seq::new(self.faces@.len(), |i: int| self.faces@[i]@.half_edge),
+            half_edges: Seq::new(self.half_edges@.len(), |i: int| self.half_edges@[i]@),
+        }
+    }
 }
 
 pub open spec fn mesh_vertex_count_spec(m: MeshModel) -> int {
@@ -482,21 +554,29 @@ pub open spec fn from_face_cycles_incidence_model_spec(
         }
 }
 
+pub open spec fn from_face_cycles_next_prev_face_at_spec(
+    face_cycles: Seq<Seq<int>>,
+    m: MeshModel,
+    f: int,
+    i: int,
+) -> bool {
+    let n = face_cycles[f].len() as int;
+    let h = input_face_half_edge_index_spec(face_cycles, f, i);
+    let next_i = (i + 1) % n;
+    let prev_i = input_face_prev_local_index_spec(face_cycles, f, i);
+    &&& m.half_edges[h].face == f
+    &&& m.half_edges[h].next == input_face_half_edge_index_spec(face_cycles, f, next_i)
+    &&& m.half_edges[h].prev == input_face_half_edge_index_spec(face_cycles, f, prev_i)
+}
+
 pub open spec fn from_face_cycles_next_prev_face_coherent_spec(
     face_cycles: Seq<Seq<int>>,
     m: MeshModel,
 ) -> bool {
     forall|f: int, i: int|
         #![trigger m.half_edges[input_face_half_edge_index_spec(face_cycles, f, i)]]
-        input_face_local_index_valid_spec(face_cycles, f, i) ==> {
-            let n = face_cycles[f].len() as int;
-            let h = input_face_half_edge_index_spec(face_cycles, f, i);
-            let next_i = (i + 1) % n;
-            let prev_i = input_face_prev_local_index_spec(face_cycles, f, i);
-            &&& m.half_edges[h].face == f
-            &&& m.half_edges[h].next == input_face_half_edge_index_spec(face_cycles, f, next_i)
-            &&& m.half_edges[h].prev == input_face_half_edge_index_spec(face_cycles, f, prev_i)
-        }
+        input_face_local_index_valid_spec(face_cycles, f, i)
+            ==> from_face_cycles_next_prev_face_at_spec(face_cycles, m, f, i)
 }
 
 pub open spec fn from_face_cycles_success_spec(
@@ -559,6 +639,115 @@ pub fn ex_mesh_from_face_cycles(
         },
 {
     Mesh::from_face_cycles(vertex_positions, face_cycles)
+}
+
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
+pub fn runtime_check_from_face_cycles_next_prev_face_coherent(
+    m: &Mesh,
+    face_cycles: &[Vec<usize>],
+) -> (out: bool)
+    ensures
+        out ==> from_face_cycles_next_prev_face_coherent_spec(face_cycles_exec_to_model_spec(face_cycles@), m@),
+{
+    let ghost model_cycles = face_cycles_exec_to_model_spec(face_cycles@);
+
+    let mut ok = true;
+    let mut start: usize = 0;
+    let mut f: usize = 0;
+    while f < face_cycles.len()
+        invariant
+            0 <= f <= face_cycles.len(),
+            start as int == input_face_cycle_start_spec(model_cycles, f as int),
+            ok ==> forall|fp: int, ip: int|
+                0 <= fp < f as int && input_face_local_index_valid_spec(model_cycles, fp, ip)
+                    ==> from_face_cycles_next_prev_face_at_spec(model_cycles, m@, fp, ip),
+    {
+        let n = face_cycles[f].len();
+        let mut i: usize = 0;
+        while i < n
+            invariant
+                0 <= f < face_cycles.len(),
+                0 <= i <= n,
+                start as int == input_face_cycle_start_spec(model_cycles, f as int),
+                ok ==> forall|fp: int, ip: int|
+                    0 <= fp < f as int && input_face_local_index_valid_spec(model_cycles, fp, ip)
+                        ==> from_face_cycles_next_prev_face_at_spec(model_cycles, m@, fp, ip),
+                ok ==> forall|ip: int|
+                    0 <= ip < i as int && input_face_local_index_valid_spec(model_cycles, f as int, ip)
+                        ==> from_face_cycles_next_prev_face_at_spec(model_cycles, m@, f as int, ip),
+        {
+            let h = start + i;
+            let next_i = (i + 1) % n;
+            let prev_i = (i + n - 1) % n;
+            if h >= m.half_edges.len() {
+                ok = false;
+            } else {
+                let he = &m.half_edges[h];
+                if he.face != f || he.next != start + next_i || he.prev != start + prev_i {
+                    ok = false;
+                }
+            }
+
+            proof {
+                if ok {
+                    assert(n > 0);
+                    assert(n as int == model_cycles[f as int].len());
+                    assert(0 <= i as int < n as int);
+                    assert(input_face_local_index_valid_spec(model_cycles, f as int, i as int));
+                    assert(h as int == input_face_half_edge_index_spec(model_cycles, f as int, i as int));
+                    assert(next_i as int == (i as int + 1) % (n as int));
+                    assert(prev_i as int == (i as int + n as int - 1) % (n as int));
+                    assert(m.half_edges@[h as int].face == he.face as int);
+                    assert(m.half_edges@[h as int].next == he.next as int);
+                    assert(m.half_edges@[h as int].prev == he.prev as int);
+                    assert(from_face_cycles_next_prev_face_at_spec(model_cycles, m@, f as int, i as int));
+                }
+            }
+
+            i += 1;
+        }
+        start += n;
+        f += 1;
+    }
+
+    if ok {
+        proof {
+            assert(forall|fp: int, ip: int|
+                0 <= fp < face_cycles.len() as int && input_face_local_index_valid_spec(model_cycles, fp, ip)
+                    ==> from_face_cycles_next_prev_face_at_spec(model_cycles, m@, fp, ip));
+            assert(from_face_cycles_next_prev_face_coherent_spec(model_cycles, m@));
+        }
+    }
+    ok
+}
+
+#[allow(dead_code)]
+pub fn from_face_cycles_constructive_next_prev_face(
+    vertex_positions: Vec<RuntimePoint3>,
+    face_cycles: &[Vec<usize>],
+) -> (out: Result<Mesh, MeshBuildError>)
+    ensures
+        match out {
+            Result::Ok(m) => from_face_cycles_next_prev_face_coherent_spec(
+                face_cycles_exec_to_model_spec(face_cycles@),
+                m@,
+            ),
+            Result::Err(_) => true,
+        },
+{
+    let out0 = Mesh::from_face_cycles(vertex_positions, face_cycles);
+    match out0 {
+        Result::Ok(m) => {
+            let ok = runtime_check_from_face_cycles_next_prev_face_coherent(&m, face_cycles);
+            if ok {
+                Result::Ok(m)
+            } else {
+                Result::Err(MeshBuildError::EmptyFaceSet)
+            }
+        }
+        Result::Err(e) => Result::Err(e),
+    }
 }
 
 } // verus!
