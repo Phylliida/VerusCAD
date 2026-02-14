@@ -1,12 +1,44 @@
 # vcad-math Verification TODO
 Goal: remove trusted runtime proof boundaries so `vcad-math` runtime behavior is justified by explicit specs + proofs.
 
+
 ## Baseline Snapshot (2026-02-13)
 - [x] Full crate verifies: `./scripts/verify-vcad-math.sh`.
 - [x] No runtime assumptions remain (`assume_specification[...]`).
 - [x] Trust surface reduced to zero runtime assumptions in `crates/vcad-math/src`.
 - [x] Current assumption count: `0`.
 - [ ] Residual trusted `external_body` bridges are eliminated.
+
+## Final external_body Burn-Down (signum_i8)
+- [x] Add proof-only bridge: `RuntimeScalar::signum_i8_proof`.
+- [ ] Migrate verus-mode callers from exec sign extraction to proof-mode sign extraction.
+- [x] `crates/vcad-geometry/src/orientation_predicates.rs` (verus sign APIs now derive from orientation class wrappers).
+- [x] `crates/vcad-geometry/src/collinearity_coplanarity.rs` (verus `collinear3d` now threads `signum_i8_proof` alongside exec sign).
+- [x] `crates/vcad-geometry/src/segment_intersection.rs` (verus `scalar_sign` now threads `signum_i8_proof` alongside exec sign).
+- [x] `crates/vcad-math/src/runtime_scalar.rs::recip` now proves runtime/proof sign agreement (`s == signum_i8_proof()`).
+- [x] `crates/vcad-math/src/runtime_orientation.rs` and `runtime_orientation3.rs` now prove runtime/proof sign agreement (`s == signum_i8_proof()`).
+- [ ] Remaining raw exec sign bridges in verus paths: `runtime_orientation.rs`, `runtime_orientation3.rs`, `runtime_scalar.rs` (`recip`), `segment_intersection.rs` (`scalar_sign` runtime extraction).
+- [ ] Remove the final `#[verifier::external_body]` on `RuntimeScalar::signum_i8`.
+- [ ] Re-run full gates across `vcad-math`, `vcad-geometry`, `vcad-topology`.
+
+## Burn-Down Inventory
+- `signum_i8` caller files:
+  `crates/vcad-math/src/runtime_orientation.rs`
+  `crates/vcad-math/src/runtime_orientation3.rs`
+  `crates/vcad-geometry/src/orientation_predicates.rs`
+  `crates/vcad-geometry/src/collinearity_coplanarity.rs`
+  `crates/vcad-geometry/src/sidedness.rs`
+  `crates/vcad-geometry/src/segment_intersection.rs`
+- `recip` caller files:
+  `crates/vcad-math/src/runtime_quaternion.rs`
+  `crates/vcad-geometry/src/sidedness.rs`
+  `crates/vcad-geometry/src/segment_intersection.rs`
+
+## Known Verus Constraints (exec/spec boundary)
+- Implement signum via proof fn and call it from exec: not allowed.
+- Return non-`()` value from `proof { ... }` expression: not allowed.
+- Use `choose` in exec mode: not allowed.
+- Branch on `self@.signum()` in an exec function: blocked (`int`/`nat` are ghost-only in exec contexts).
 
 ## Assumption Inventory (Current)
 - [x] `src/runtime_scalar_refinement.rs` (`0`)

@@ -318,10 +318,27 @@ fn scalar_sign(a: &RuntimeScalar, b: &RuntimeScalar) -> (out: i8)
     let diff = a.sub(b);
     let out = diff.signum_i8();
     proof {
+        let sp = diff.signum_i8_proof();
+        assert((sp == 1) == (diff@.signum() == 1));
+        assert((sp == -1) == (diff@.signum() == -1));
+        assert((sp == 0) == (diff@.signum() == 0));
         assert((out == 1) == (diff@.signum() == 1));
         assert((out == -1) == (diff@.signum() == -1));
         assert((out == 0) == (diff@.signum() == 0));
         assert(diff@ == a@.sub_spec(b@));
+        vcad_math::scalar::Scalar::lemma_signum_cases(diff@);
+        if diff@.signum() == 1 {
+            assert(out == 1);
+            assert(sp == 1);
+        } else if diff@.signum() == -1 {
+            assert(out == -1);
+            assert(sp == -1);
+        } else {
+            assert(diff@.signum() == 0);
+            assert(out == 0);
+            assert(sp == 0);
+        }
+        assert(out == sp);
         if out == 1 {
             assert(diff@.signum() == 1);
             assert(out as int == 1);

@@ -121,7 +121,30 @@ pub fn orientation(a: &RuntimePoint2, b: &RuntimePoint2, c: &RuntimePoint2) -> (
     let det = orient2d(a, b, c);
     let s = det.signum_i8();
     proof {
+        let sp = det.signum_i8_proof();
+        Scalar::lemma_signum_cases(det@);
         assert(det@ == orient2d_spec(a@, b@, c@));
+        assert((sp == 1) == (det@.signum() == 1));
+        assert((sp == -1) == (det@.signum() == -1));
+        assert((sp == 0) == (det@.signum() == 0));
+        if det@.signum() == 1 {
+            assert((s == 1) == (det@.signum() == 1));
+            assert((sp == 1) == (det@.signum() == 1));
+            assert(s == 1);
+            assert(sp == 1);
+        } else if det@.signum() == -1 {
+            assert((s == -1) == (det@.signum() == -1));
+            assert((sp == -1) == (det@.signum() == -1));
+            assert(s == -1);
+            assert(sp == -1);
+        } else {
+            assert(det@.signum() == 0);
+            assert((s == 0) == (det@.signum() == 0));
+            assert((sp == 0) == (det@.signum() == 0));
+            assert(s == 0);
+            assert(sp == 0);
+        }
+        assert(s == sp);
     }
     if s == 1 {
         proof {

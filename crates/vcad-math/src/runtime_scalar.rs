@@ -156,6 +156,28 @@ impl RuntimeScalar {
             },
     {
         let s = self.signum_i8();
+        proof {
+            let sp = self.signum_i8_proof();
+            ScalarModel::lemma_signum_cases(self@);
+            if self@.signum() == 1 {
+                assert((s == 1) == (self@.signum() == 1));
+                assert((sp == 1) == (self@.signum() == 1));
+                assert(s == 1);
+                assert(sp == 1);
+            } else if self@.signum() == -1 {
+                assert((s == -1) == (self@.signum() == -1));
+                assert((sp == -1) == (self@.signum() == -1));
+                assert(s == -1);
+                assert(sp == -1);
+            } else {
+                assert(self@.signum() == 0);
+                assert((s == 0) == (self@.signum() == 0));
+                assert((sp == 0) == (self@.signum() == 0));
+                assert(s == 0);
+                assert(sp == 0);
+            }
+            assert(s == sp);
+        }
         if s == 0 {
             proof {
                 assert((s == 0) == (self@.signum() == 0));
@@ -211,6 +233,27 @@ impl RuntimeScalar {
             assert(out@.canonical_sign_spec());
         }
         out
+    }
+
+    /// Proof-only sign extraction from the scalar model.
+    ///
+    /// This is the migration target for verus-mode callers that currently
+    /// depend on the trusted exec `signum_i8` bridge.
+    pub proof fn signum_i8_proof(&self) -> (out: i8)
+        ensures
+            (out == 1) == (self@.signum() == 1),
+            (out == -1) == (self@.signum() == -1),
+            (out == 0) == (self@.signum() == 0),
+    {
+        if self@.signum() == 1 {
+            1i8
+        } else if self@.signum() == -1 {
+            -1i8
+        } else {
+            ScalarModel::lemma_signum_cases(self@);
+            assert(self@.signum() == 0);
+            0i8
+        }
     }
 
     #[verifier::external_body]

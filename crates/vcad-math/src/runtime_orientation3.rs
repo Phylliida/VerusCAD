@@ -137,7 +137,30 @@ pub fn orientation3(a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3, d: 
     let det = orient3d(a, b, c, d);
     let s = det.signum_i8();
     proof {
+        let sp = det.signum_i8_proof();
+        Scalar::lemma_signum_cases(det@);
         assert(det@ == orient3d_spec(a@, b@, c@, d@));
+        assert((sp == 1) == (det@.signum() == 1));
+        assert((sp == -1) == (det@.signum() == -1));
+        assert((sp == 0) == (det@.signum() == 0));
+        if det@.signum() == 1 {
+            assert((s == 1) == (det@.signum() == 1));
+            assert((sp == 1) == (det@.signum() == 1));
+            assert(s == 1);
+            assert(sp == 1);
+        } else if det@.signum() == -1 {
+            assert((s == -1) == (det@.signum() == -1));
+            assert((sp == -1) == (det@.signum() == -1));
+            assert(s == -1);
+            assert(sp == -1);
+        } else {
+            assert(det@.signum() == 0);
+            assert((s == 0) == (det@.signum() == 0));
+            assert((sp == 0) == (det@.signum() == 0));
+            assert(s == 0);
+            assert(sp == 0);
+        }
+        assert(s == sp);
     }
     if s == 1 {
         proof {

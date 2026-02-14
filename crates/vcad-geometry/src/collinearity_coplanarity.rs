@@ -46,7 +46,20 @@ pub fn collinear3d(a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3) -> (
     let ba = b.sub(a);
     let ca = c.sub(a);
     let cross = ba.cross(&ca);
-    cross.norm2().signum_i8() == 0
+    let n2 = cross.norm2();
+    let s = n2.signum_i8();
+    let out = s == 0;
+    proof {
+        let sp = n2.signum_i8_proof();
+        assert((sp == 0) == (n2@.signum() == 0));
+        assert((s == 0) == (n2@.signum() == 0));
+        assert(ba@ == b@.sub_spec(a@));
+        assert(ca@ == c@.sub_spec(a@));
+        assert(cross@ == ba@.cross_spec(ca@));
+        assert(n2@ == cross@.norm2_spec());
+        assert(n2@ == b@.sub_spec(a@).cross_spec(c@.sub_spec(a@)).norm2_spec());
+    }
+    out
 }
 }
 

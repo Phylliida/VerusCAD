@@ -65,7 +65,42 @@ pub fn orient2d_sign(a: &RuntimePoint2, b: &RuntimePoint2, c: &RuntimePoint2) ->
         (out == -1) == (orient2d_spec(a@, b@, c@).signum() == -1),
         (out == 0) == (orient2d_spec(a@, b@, c@).signum() == 0),
 {
-    orient2d_value(a, b, c).signum_i8()
+    let cls = runtime_orientation::orientation(a, b, c);
+    match cls {
+        ccls @ RuntimeOrientation::Ccw => {
+            proof {
+                vcad_math::orientation::lemma_orientation_spec_matches_predicates(a@, b@, c@);
+                assert(ccls@ == orientation_spec(a@, b@, c@));
+                assert(orientation_spec(a@, b@, c@) is Ccw);
+                assert((orientation_spec(a@, b@, c@) is Ccw) == (orient2d_spec(a@, b@, c@).signum() == 1));
+                assert((orientation_spec(a@, b@, c@) is Cw) == (orient2d_spec(a@, b@, c@).signum() == -1));
+                assert((orientation_spec(a@, b@, c@) is Collinear) == (orient2d_spec(a@, b@, c@).signum() == 0));
+            }
+            1
+        }
+        ccls @ RuntimeOrientation::Cw => {
+            proof {
+                vcad_math::orientation::lemma_orientation_spec_matches_predicates(a@, b@, c@);
+                assert(ccls@ == orientation_spec(a@, b@, c@));
+                assert(orientation_spec(a@, b@, c@) is Cw);
+                assert((orientation_spec(a@, b@, c@) is Ccw) == (orient2d_spec(a@, b@, c@).signum() == 1));
+                assert((orientation_spec(a@, b@, c@) is Cw) == (orient2d_spec(a@, b@, c@).signum() == -1));
+                assert((orientation_spec(a@, b@, c@) is Collinear) == (orient2d_spec(a@, b@, c@).signum() == 0));
+            }
+            -1
+        }
+        ccls @ RuntimeOrientation::Collinear => {
+            proof {
+                vcad_math::orientation::lemma_orientation_spec_matches_predicates(a@, b@, c@);
+                assert(ccls@ == orientation_spec(a@, b@, c@));
+                assert(orientation_spec(a@, b@, c@) is Collinear);
+                assert((orientation_spec(a@, b@, c@) is Ccw) == (orient2d_spec(a@, b@, c@).signum() == 1));
+                assert((orientation_spec(a@, b@, c@) is Cw) == (orient2d_spec(a@, b@, c@).signum() == -1));
+                assert((orientation_spec(a@, b@, c@) is Collinear) == (orient2d_spec(a@, b@, c@).signum() == 0));
+            }
+            0
+        }
+    }
 }
 }
 
@@ -92,7 +127,42 @@ pub fn orient3d_sign(
         (out == -1) == (orient3d_spec(a@, b@, c@, d@).signum() == -1),
         (out == 0) == (orient3d_spec(a@, b@, c@, d@).signum() == 0),
 {
-    orient3d_value(a, b, c, d).signum_i8()
+    let cls = runtime_orientation3::orientation3(a, b, c, d);
+    match cls {
+        ccls @ RuntimeOrientation3::Positive => {
+            proof {
+                vcad_math::orientation3::lemma_orientation3_spec_matches_predicates(a@, b@, c@, d@);
+                assert(ccls@ == orientation3_spec(a@, b@, c@, d@));
+                assert(orientation3_spec(a@, b@, c@, d@) is Positive);
+                assert((orientation3_spec(a@, b@, c@, d@) is Positive) == (orient3d_spec(a@, b@, c@, d@).signum() == 1));
+                assert((orientation3_spec(a@, b@, c@, d@) is Negative) == (orient3d_spec(a@, b@, c@, d@).signum() == -1));
+                assert((orientation3_spec(a@, b@, c@, d@) is Coplanar) == (orient3d_spec(a@, b@, c@, d@).signum() == 0));
+            }
+            1
+        }
+        ccls @ RuntimeOrientation3::Negative => {
+            proof {
+                vcad_math::orientation3::lemma_orientation3_spec_matches_predicates(a@, b@, c@, d@);
+                assert(ccls@ == orientation3_spec(a@, b@, c@, d@));
+                assert(orientation3_spec(a@, b@, c@, d@) is Negative);
+                assert((orientation3_spec(a@, b@, c@, d@) is Positive) == (orient3d_spec(a@, b@, c@, d@).signum() == 1));
+                assert((orientation3_spec(a@, b@, c@, d@) is Negative) == (orient3d_spec(a@, b@, c@, d@).signum() == -1));
+                assert((orientation3_spec(a@, b@, c@, d@) is Coplanar) == (orient3d_spec(a@, b@, c@, d@).signum() == 0));
+            }
+            -1
+        }
+        ccls @ RuntimeOrientation3::Coplanar => {
+            proof {
+                vcad_math::orientation3::lemma_orientation3_spec_matches_predicates(a@, b@, c@, d@);
+                assert(ccls@ == orientation3_spec(a@, b@, c@, d@));
+                assert(orientation3_spec(a@, b@, c@, d@) is Coplanar);
+                assert((orientation3_spec(a@, b@, c@, d@) is Positive) == (orient3d_spec(a@, b@, c@, d@).signum() == 1));
+                assert((orientation3_spec(a@, b@, c@, d@) is Negative) == (orient3d_spec(a@, b@, c@, d@).signum() == -1));
+                assert((orientation3_spec(a@, b@, c@, d@) is Coplanar) == (orient3d_spec(a@, b@, c@, d@).signum() == 0));
+            }
+            0
+        }
+    }
 }
 }
 
