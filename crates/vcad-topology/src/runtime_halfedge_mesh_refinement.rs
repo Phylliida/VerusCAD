@@ -290,4 +290,197 @@ pub open spec fn mesh_valid_spec(m: MeshModel) -> bool {
     mesh_structurally_valid_spec(m) && mesh_euler_closed_components_spec(m)
 }
 
+pub open spec fn input_face_local_index_valid_spec(face_cycles: Seq<Seq<int>>, f: int, i: int) -> bool {
+    0 <= f < face_cycles.len() as int && 0 <= i < face_cycles[f].len() as int
+}
+
+pub open spec fn input_face_cycle_start_spec(face_cycles: Seq<Seq<int>>, f: int) -> int
+    decreases if f <= 0 { 0 } else { f }
+{
+    if f <= 0 {
+        0
+    } else {
+        input_face_cycle_start_spec(face_cycles, f - 1) + face_cycles[(f - 1) as int].len() as int
+    }
+}
+
+pub open spec fn input_half_edge_count_spec(face_cycles: Seq<Seq<int>>) -> int {
+    input_face_cycle_start_spec(face_cycles, face_cycles.len() as int)
+}
+
+pub open spec fn input_face_half_edge_index_spec(face_cycles: Seq<Seq<int>>, f: int, i: int) -> int {
+    input_face_cycle_start_spec(face_cycles, f) + i
+}
+
+pub open spec fn input_face_from_vertex_spec(face_cycles: Seq<Seq<int>>, f: int, i: int) -> int {
+    let n = face_cycles[f].len() as int;
+    if n > 0 {
+        face_cycles[f][i]
+    } else {
+        0
+    }
+}
+
+pub open spec fn input_face_to_vertex_spec(face_cycles: Seq<Seq<int>>, f: int, i: int) -> int {
+    let n = face_cycles[f].len() as int;
+    if n > 0 {
+        face_cycles[f][(i + 1) % n]
+    } else {
+        0
+    }
+}
+
+pub open spec fn input_face_prev_local_index_spec(face_cycles: Seq<Seq<int>>, f: int, i: int) -> int {
+    let n = face_cycles[f].len() as int;
+    if n > 0 {
+        (i + n - 1) % n
+    } else {
+        0
+    }
+}
+
+pub open spec fn from_face_cycles_basic_input_spec(vertex_count: int, face_cycles: Seq<Seq<int>>) -> bool {
+    &&& vertex_count > 0
+    &&& face_cycles.len() > 0
+    &&& forall|f: int|
+        #![trigger face_cycles[f]]
+        0 <= f < face_cycles.len() as int ==> {
+            let n = face_cycles[f].len() as int;
+            &&& n >= 3
+            &&& forall|i: int|
+                #![trigger face_cycles[f][i]]
+                0 <= i < n ==> 0 <= face_cycles[f][i] < vertex_count
+        }
+}
+
+pub open spec fn from_face_cycles_no_duplicate_oriented_edges_spec(face_cycles: Seq<Seq<int>>) -> bool {
+    forall|f1: int, i1: int, f2: int, i2: int|
+        #![trigger input_face_from_vertex_spec(face_cycles, f1, i1), input_face_to_vertex_spec(face_cycles, f1, i1), input_face_from_vertex_spec(face_cycles, f2, i2), input_face_to_vertex_spec(face_cycles, f2, i2)]
+        input_face_local_index_valid_spec(face_cycles, f1, i1)
+            && input_face_local_index_valid_spec(face_cycles, f2, i2)
+            && input_face_from_vertex_spec(face_cycles, f1, i1) == input_face_from_vertex_spec(face_cycles, f2, i2)
+            && input_face_to_vertex_spec(face_cycles, f1, i1) == input_face_to_vertex_spec(face_cycles, f2, i2)
+            ==> f1 == f2 && i1 == i2
+}
+
+pub open spec fn from_face_cycles_all_oriented_edges_have_twin_spec(face_cycles: Seq<Seq<int>>) -> bool {
+    forall|f: int, i: int|
+        #![trigger input_face_from_vertex_spec(face_cycles, f, i), input_face_to_vertex_spec(face_cycles, f, i)]
+        input_face_local_index_valid_spec(face_cycles, f, i) ==> exists|g: int, j: int| {
+            &&& input_face_local_index_valid_spec(face_cycles, g, j)
+            &&& #[trigger] input_face_from_vertex_spec(face_cycles, g, j)
+                == input_face_to_vertex_spec(face_cycles, f, i)
+            &&& #[trigger] input_face_to_vertex_spec(face_cycles, g, j)
+                == input_face_from_vertex_spec(face_cycles, f, i)
+        }
+}
+
+pub open spec fn from_face_cycles_no_isolated_vertices_spec(vertex_count: int, face_cycles: Seq<Seq<int>>) -> bool {
+    forall|v: int|
+        #![trigger v + 0]
+        0 <= v < vertex_count ==> exists|f: int, i: int| {
+        &&& input_face_local_index_valid_spec(face_cycles, f, i)
+        &&& #[trigger] input_face_from_vertex_spec(face_cycles, f, i) == v
+    }
+}
+
+pub open spec fn from_face_cycles_failure_spec(vertex_count: int, face_cycles: Seq<Seq<int>>) -> bool {
+    !from_face_cycles_basic_input_spec(vertex_count, face_cycles)
+        || !from_face_cycles_no_duplicate_oriented_edges_spec(face_cycles)
+        || !from_face_cycles_all_oriented_edges_have_twin_spec(face_cycles)
+        || !from_face_cycles_no_isolated_vertices_spec(vertex_count, face_cycles)
+}
+
+pub open spec fn mesh_half_edge_from_vertex_spec(m: MeshModel, h: int) -> int {
+    m.half_edges[h].vertex
+}
+
+pub open spec fn mesh_half_edge_to_vertex_spec(m: MeshModel, h: int) -> int {
+    m.half_edges[m.half_edges[h].next].vertex
+}
+
+pub open spec fn mesh_undirected_key_spec(a: int, b: int) -> (int, int) {
+    if a <= b {
+        (a, b)
+    } else {
+        (b, a)
+    }
+}
+
+pub open spec fn from_face_cycles_incidence_model_spec(
+    vertex_count: int,
+    face_cycles: Seq<Seq<int>>,
+    m: MeshModel,
+) -> bool {
+    let fcnt = face_cycles.len() as int;
+    let hcnt = input_half_edge_count_spec(face_cycles);
+    &&& mesh_vertex_count_spec(m) == vertex_count
+    &&& mesh_face_count_spec(m) == fcnt
+    &&& mesh_half_edge_count_spec(m) == hcnt
+    &&& mesh_index_bounds_spec(m)
+    &&& forall|f: int|
+        #![trigger m.face_half_edges[f]]
+        0 <= f < fcnt ==> m.face_half_edges[f] == input_face_cycle_start_spec(face_cycles, f)
+    &&& forall|f: int, i: int|
+        #![trigger m.half_edges[input_face_half_edge_index_spec(face_cycles, f, i)]]
+        input_face_local_index_valid_spec(face_cycles, f, i) ==> {
+            let n = face_cycles[f].len() as int;
+            let h = input_face_half_edge_index_spec(face_cycles, f, i);
+            let next_i = (i + 1) % n;
+            let prev_i = input_face_prev_local_index_spec(face_cycles, f, i);
+            &&& m.half_edges[h].face == f
+            &&& m.half_edges[h].vertex == input_face_from_vertex_spec(face_cycles, f, i)
+            &&& m.half_edges[h].next == input_face_half_edge_index_spec(face_cycles, f, next_i)
+            &&& m.half_edges[h].prev == input_face_half_edge_index_spec(face_cycles, f, prev_i)
+        }
+    &&& forall|h: int|
+        #![trigger m.half_edges[h].twin]
+        0 <= h < hcnt ==> {
+            let t = m.half_edges[h].twin;
+            &&& 0 <= t < hcnt
+            &&& mesh_half_edge_from_vertex_spec(m, t) == mesh_half_edge_to_vertex_spec(m, h)
+            &&& mesh_half_edge_to_vertex_spec(m, t) == mesh_half_edge_from_vertex_spec(m, h)
+        }
+    &&& forall|h1: int, h2: int|
+        #![trigger m.half_edges[h1].edge, m.half_edges[h2].edge]
+        0 <= h1 < hcnt && 0 <= h2 < hcnt ==> {
+            (m.half_edges[h1].edge == m.half_edges[h2].edge) <==> (
+                mesh_undirected_key_spec(
+                    mesh_half_edge_from_vertex_spec(m, h1),
+                    mesh_half_edge_to_vertex_spec(m, h1),
+                ) == mesh_undirected_key_spec(
+                    mesh_half_edge_from_vertex_spec(m, h2),
+                    mesh_half_edge_to_vertex_spec(m, h2),
+                )
+            )
+        }
+    &&& forall|e: int|
+        #![trigger m.edge_half_edges[e]]
+        0 <= e < mesh_edge_count_spec(m) ==> {
+            let h = m.edge_half_edges[e];
+            &&& 0 <= h < hcnt
+            &&& m.half_edges[h].edge == e
+        }
+    &&& forall|h: int| 0 <= h < hcnt ==> 0 <= #[trigger] m.half_edges[h].edge < mesh_edge_count_spec(m)
+    &&& forall|v: int|
+        #![trigger m.vertex_half_edges[v]]
+        0 <= v < vertex_count ==> {
+            let h = m.vertex_half_edges[v];
+            &&& 0 <= h < hcnt
+            &&& m.half_edges[h].vertex == v
+        }
+}
+
+pub open spec fn from_face_cycles_success_spec(
+    vertex_count: int,
+    face_cycles: Seq<Seq<int>>,
+    m: MeshModel,
+) -> bool {
+    &&& from_face_cycles_basic_input_spec(vertex_count, face_cycles)
+    &&& from_face_cycles_no_duplicate_oriented_edges_spec(face_cycles)
+    &&& from_face_cycles_all_oriented_edges_have_twin_spec(face_cycles)
+    &&& from_face_cycles_no_isolated_vertices_spec(vertex_count, face_cycles)
+    &&& from_face_cycles_incidence_model_spec(vertex_count, face_cycles, m)
+}
+
 } // verus!

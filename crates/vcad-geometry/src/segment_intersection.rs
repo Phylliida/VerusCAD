@@ -19,30 +19,37 @@ pub enum SegmentIntersection2dKind {
     CollinearOverlap,
 }
 
+#[cfg(not(verus_keep_ghost))]
 fn scalar_sign(a: &RuntimeScalar, b: &RuntimeScalar) -> i8 {
     a.sub(b).signum_i8()
 }
 
+#[cfg(not(verus_keep_ghost))]
 fn scalar_eq(a: &RuntimeScalar, b: &RuntimeScalar) -> bool {
     scalar_sign(a, b) == 0
 }
 
+#[cfg(not(verus_keep_ghost))]
 fn scalar_le(a: &RuntimeScalar, b: &RuntimeScalar) -> bool {
     scalar_sign(a, b) <= 0
 }
 
+#[cfg(not(verus_keep_ghost))]
 fn scalar_lt(a: &RuntimeScalar, b: &RuntimeScalar) -> bool {
     scalar_sign(a, b) < 0
 }
 
+#[cfg(not(verus_keep_ghost))]
 fn scalar_min<'a>(a: &'a RuntimeScalar, b: &'a RuntimeScalar) -> &'a RuntimeScalar {
     if scalar_le(a, b) { a } else { b }
 }
 
+#[cfg(not(verus_keep_ghost))]
 fn scalar_max<'a>(a: &'a RuntimeScalar, b: &'a RuntimeScalar) -> &'a RuntimeScalar {
     if scalar_le(a, b) { b } else { a }
 }
 
+#[cfg(not(verus_keep_ghost))]
 fn point_on_segment_inclusive_runtime(
     p: &RuntimePoint2,
     a: &RuntimePoint2,
@@ -67,6 +74,7 @@ fn point_on_segment_inclusive_runtime(
 // -1 => disjoint intervals
 //  0 => overlap at exactly one coordinate
 //  1 => overlap on a non-zero interval
+#[cfg(not(verus_keep_ghost))]
 fn collinear_overlap_dimension_kind(
     a1: &RuntimeScalar,
     a2: &RuntimeScalar,
@@ -88,6 +96,7 @@ fn collinear_overlap_dimension_kind(
     }
 }
 
+#[cfg(not(verus_keep_ghost))]
 fn endpoint_touch_point_runtime(
     a: &RuntimePoint2,
     b: &RuntimePoint2,
@@ -109,6 +118,7 @@ fn endpoint_touch_point_runtime(
     None
 }
 
+#[cfg(not(verus_keep_ghost))]
 fn proper_intersection_point_runtime(
     a: &RuntimePoint2,
     b: &RuntimePoint2,
@@ -196,20 +206,36 @@ pub enum SegmentIntersection2dKindSpec {
     CollinearOverlap,
 }
 
+pub open spec fn scalar_sign_spec(a: Scalar, b: Scalar) -> int {
+    a.sub_spec(b).signum()
+}
+
+pub open spec fn scalar_eq_sign_spec(a: Scalar, b: Scalar) -> bool {
+    scalar_sign_spec(a, b) == 0
+}
+
+pub open spec fn scalar_le_sign_spec(a: Scalar, b: Scalar) -> bool {
+    scalar_sign_spec(a, b) <= 0
+}
+
+pub open spec fn scalar_lt_sign_spec(a: Scalar, b: Scalar) -> bool {
+    scalar_sign_spec(a, b) < 0
+}
+
 pub open spec fn scalar_min_spec(a: Scalar, b: Scalar) -> Scalar {
-    if a.le_spec(b) { a } else { b }
+    if scalar_le_sign_spec(a, b) { a } else { b }
 }
 
 pub open spec fn scalar_max_spec(a: Scalar, b: Scalar) -> Scalar {
-    if a.le_spec(b) { b } else { a }
+    if scalar_le_sign_spec(a, b) { b } else { a }
 }
 
 pub open spec fn point_on_segment_inclusive_spec(p: Point2, a: Point2, b: Point2) -> bool {
     &&& orient2d_spec(a, b, p).signum() == 0
-    &&& scalar_min_spec(a.x, b.x).le_spec(p.x)
-    &&& p.x.le_spec(scalar_max_spec(a.x, b.x))
-    &&& scalar_min_spec(a.y, b.y).le_spec(p.y)
-    &&& p.y.le_spec(scalar_max_spec(a.y, b.y))
+    &&& scalar_le_sign_spec(scalar_min_spec(a.x, b.x), p.x)
+    &&& scalar_le_sign_spec(p.x, scalar_max_spec(a.x, b.x))
+    &&& scalar_le_sign_spec(scalar_min_spec(a.y, b.y), p.y)
+    &&& scalar_le_sign_spec(p.y, scalar_max_spec(a.y, b.y))
 }
 
 pub open spec fn collinear_overlap_dimension_kind_spec(
@@ -224,9 +250,9 @@ pub open spec fn collinear_overlap_dimension_kind_spec(
     let b_hi = scalar_max_spec(b1, b2);
     let lo = scalar_max_spec(a_lo, b_lo);
     let hi = scalar_min_spec(a_hi, b_hi);
-    if hi.lt_spec(lo) {
+    if scalar_lt_sign_spec(hi, lo) {
         -1
-    } else if lo.eqv_spec(hi) {
+    } else if scalar_eq_sign_spec(lo, hi) {
         0
     } else {
         1
@@ -244,7 +270,7 @@ pub open spec fn segment_intersection_kind_spec(
     let o3 = orient2d_spec(c, d, a).signum();
     let o4 = orient2d_spec(c, d, b).signum();
     if o1 == 0 && o2 == 0 && o3 == 0 && o4 == 0 {
-        let use_x = !a.x.eqv_spec(b.x) || !c.x.eqv_spec(d.x);
+        let use_x = scalar_sign_spec(a.x, b.x) != 0 || scalar_sign_spec(c.x, d.x) != 0;
         let overlap_kind = if use_x {
             collinear_overlap_dimension_kind_spec(a.x, b.x, c.x, d.x)
         } else {

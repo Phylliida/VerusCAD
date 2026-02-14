@@ -118,4 +118,52 @@ pub proof fn segment_intersection_kind_spec_pairwise_disjoint_for_runtime_points
     segment_intersection::lemma_segment_intersection_kind_spec_pairwise_disjoint(a@, b@, c@, d@);
 }
 
+#[allow(dead_code)]
+pub fn runtime_segment_intersection_kind_refines_spec(
+    a: &RuntimePoint2,
+    b: &RuntimePoint2,
+    c: &RuntimePoint2,
+    d: &RuntimePoint2,
+) -> (out: SegmentIntersection2dKind)
+    ensures
+        out@ == segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@),
+{
+    segment_intersection::segment_intersection_kind_2d(a, b, c, d)
+}
+
+#[allow(dead_code)]
+pub fn runtime_segment_intersection_kind_total_from_classifier(
+    a: &RuntimePoint2,
+    b: &RuntimePoint2,
+    c: &RuntimePoint2,
+    d: &RuntimePoint2,
+) -> (out: SegmentIntersection2dKind)
+    ensures
+        (out@ is Disjoint) || (out@ is Proper) || (out@ is EndpointTouch) || (out@ is CollinearOverlap),
+{
+    let out = runtime_segment_intersection_kind_refines_spec(a, b, c, d);
+    segment_intersection_runtime_kind_exhaustive(out);
+    out
+}
+
+#[allow(dead_code)]
+pub fn runtime_segment_intersection_kind_disjointness_from_classifier(
+    a: &RuntimePoint2,
+    b: &RuntimePoint2,
+    c: &RuntimePoint2,
+    d: &RuntimePoint2,
+) -> (out: SegmentIntersection2dKind)
+    ensures
+        !((out@ is Disjoint) && (out@ is Proper)),
+        !((out@ is Disjoint) && (out@ is EndpointTouch)),
+        !((out@ is Disjoint) && (out@ is CollinearOverlap)),
+        !((out@ is Proper) && (out@ is EndpointTouch)),
+        !((out@ is Proper) && (out@ is CollinearOverlap)),
+        !((out@ is EndpointTouch) && (out@ is CollinearOverlap)),
+{
+    let out = runtime_segment_intersection_kind_refines_spec(a, b, c, d);
+    segment_intersection_runtime_kind_pairwise_disjoint(out);
+    out
+}
+
 } // verus!

@@ -79,7 +79,7 @@ Proposed file: `src/segment_intersection.rs` (+ `src/runtime_segment_intersectio
 - [x] Add witness extraction API for unique-point intersections (`Proper`, `EndpointTouch`).
 - [x] Add representative runtime tests (crossing, touching endpoint, parallel disjoint, overlap).
 - [x] Prove mutual exclusivity/completeness of spec cases.
-- [ ] Prove runtime classifier refinement to spec.
+- [x] Prove runtime classifier refinement to spec.
 - [x] Add a dedicated refinement module with enum view mapping and spec totality/disjointness helpers.
 
 ## I. General Point-in-Polygon

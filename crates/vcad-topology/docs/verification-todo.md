@@ -52,9 +52,10 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
   - file: `src/runtime_halfedge_mesh_refinement.rs`
 
 ## C. Verify Core Construction Pipeline
-- [ ] Add model-level spec for `Mesh::from_face_cycles`.
-  - include exact incidence map semantics and failure-condition semantics.
-  - file: `src/halfedge_mesh.rs`
+- [x] Add model-level spec for `Mesh::from_face_cycles`.
+  - includes explicit incidence-model semantics and failure-condition semantics:
+    `from_face_cycles_incidence_model_spec`, `from_face_cycles_success_spec`, `from_face_cycles_failure_spec`.
+  - file: `src/runtime_halfedge_mesh_refinement.rs`
 - [ ] Prove face-cycle construction assigns coherent `next/prev/face` fields.
   - file: `src/halfedge_mesh.rs`
 - [ ] Prove twin assignment is total for closed inputs and involutive.
