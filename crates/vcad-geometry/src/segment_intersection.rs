@@ -153,10 +153,6 @@ pub fn segment_intersection_kind_2d(
     let touch2 = o2 == 0 && point_on_segment_inclusive_runtime(d, a, b);
     let touch3 = o3 == 0 && point_on_segment_inclusive_runtime(a, c, d);
     let touch4 = o4 == 0 && point_on_segment_inclusive_runtime(b, c, d);
-    let touch1 = o1 == 0 && point_on_segment_inclusive_runtime(c, a, b);
-    let touch2 = o2 == 0 && point_on_segment_inclusive_runtime(d, a, b);
-    let touch3 = o3 == 0 && point_on_segment_inclusive_runtime(a, c, d);
-    let touch4 = o4 == 0 && point_on_segment_inclusive_runtime(b, c, d);
 
     if o1 == 0 && o2 == 0 && o3 == 0 && o4 == 0 {
         let use_x = scalar_sign(a.x(), b.x()) != 0 || scalar_sign(c.x(), d.x()) != 0;
@@ -174,10 +170,7 @@ pub fn segment_intersection_kind_2d(
         }
     } else if o1 != 0 && o2 != 0 && o3 != 0 && o4 != 0 && o1 != o2 && o3 != o4 {
         SegmentIntersection2dKind::Proper
-    } else if (o1 == 0 && point_on_segment_inclusive_runtime(c, a, b))
-        || (o2 == 0 && point_on_segment_inclusive_runtime(d, a, b))
-        || (o3 == 0 && point_on_segment_inclusive_runtime(a, c, d))
-        || (o4 == 0 && point_on_segment_inclusive_runtime(b, c, d))
+    } else if touch1 || touch2 || touch3 || touch4
     {
         SegmentIntersection2dKind::EndpointTouch
     } else {
