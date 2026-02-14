@@ -73,6 +73,14 @@ Notes:
 - [x] Extend `RuntimeScalar` (verus cfg) with exec-visible witness fields.
 - [ ] Add and prove representation invariant linking witness to `self@ : ScalarModel`.
 - [ ] Update constructors (`from_int`, etc.) to initialize witness + model consistently.
+  - [x] `RuntimeScalar::from_int` now initializes concrete exec witnesses:
+    - `sign_witness` from runtime integer sign
+    - `num_abs_witness` from runtime absolute value (`RuntimeBigNatWitness::from_u64`)
+    - `den_witness = 1`
+  - [x] `RuntimeScalar::{add,sub,mul}` no longer route through `from_model`; they now construct explicit witness-bearing outputs directly.
+    - `sign_witness` is propagated by deterministic sign-combinator helpers.
+    - `num_abs_witness` / `den_witness` remain explicit placeholders pending exact bigint arithmetic wiring.
+  - [ ] Remaining constructors/operation constructors still route through placeholder `from_model`.
 
 Completed scaffold:
 - `crates/vcad-math/src/runtime_bigint_witness.rs` introduced `RuntimeBigNatWitness`.
@@ -84,6 +92,7 @@ Completed scaffold:
   - verified constructors (`zero`, `from_u32`, `from_two_limbs`)
   - first verified limb-wise add step (`add_limbwise_small`, for `<=1` limb inputs with carry split)
 - Runtime side includes basic exact arithmetic wrappers (`add`, `mul`) over `rug::Integer`.
+- `RuntimeBigNatWitness::from_u64` is now available in both runtime and verus modes (wf guarantee in verus mode).
 - `RuntimeScalar` (verus cfg) now carries explicit witness slots (`sign_witness`, `num_abs_witness`, `den_witness`) as scaffolding; model-consistency proofs are still pending.
 
 ### Phase 3: Rebuild Scalar Operations Over Witness

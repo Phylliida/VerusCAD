@@ -138,13 +138,47 @@ impl RuntimeScalar {
 #[cfg(verus_keep_ghost)]
 verus! {
 impl RuntimeScalar {
+    fn sign_neg_witness(sign: RuntimeSign) -> (out: RuntimeSign)
+    {
+        match sign {
+            RuntimeSign::Negative => RuntimeSign::Positive,
+            RuntimeSign::Zero => RuntimeSign::Zero,
+            RuntimeSign::Positive => RuntimeSign::Negative,
+        }
+    }
+
+    fn sign_add_witness(lhs: RuntimeSign, rhs: RuntimeSign) -> (out: RuntimeSign)
+    {
+        match (lhs, rhs) {
+            (RuntimeSign::Zero, s) => s,
+            (s, RuntimeSign::Zero) => s,
+            (RuntimeSign::Positive, RuntimeSign::Positive) => RuntimeSign::Positive,
+            (RuntimeSign::Negative, RuntimeSign::Negative) => RuntimeSign::Negative,
+            // Opposite-sign sum depends on magnitudes; keep placeholder as unknown.
+            (RuntimeSign::Positive, RuntimeSign::Negative)
+            | (RuntimeSign::Negative, RuntimeSign::Positive) => RuntimeSign::Zero,
+        }
+    }
+
+    fn sign_mul_witness(lhs: RuntimeSign, rhs: RuntimeSign) -> (out: RuntimeSign)
+    {
+        match (lhs, rhs) {
+            (RuntimeSign::Zero, _) | (_, RuntimeSign::Zero) => RuntimeSign::Zero,
+            (RuntimeSign::Positive, RuntimeSign::Positive)
+            | (RuntimeSign::Negative, RuntimeSign::Negative) => RuntimeSign::Positive,
+            (RuntimeSign::Positive, RuntimeSign::Negative)
+            | (RuntimeSign::Negative, RuntimeSign::Positive) => RuntimeSign::Negative,
+        }
+    }
+
     fn from_model(Ghost(model): Ghost<ScalarModel>) -> (out: Self)
         ensures
             out@ == model,
     {
         // Phase-2 scaffold: explicit exec-visible bigint witnesses are now
-        // carried on the verus runtime scalar object. Wiring these witnesses
-        // to exact model-consistent arithmetic is the next step.
+        // carried on the verus runtime scalar object. Arithmetic constructors
+        // still route through this placeholder until each operation is migrated
+        // to witness-preserving updates.
         RuntimeScalar {
             sign_witness: RuntimeSign::Zero,
             num_abs_witness: RuntimeBigNatWitness::zero(),
@@ -157,7 +191,29 @@ impl RuntimeScalar {
         ensures
             out@ == ScalarModel::from_int_spec(value as int),
     {
-        let out = Self::from_model(Ghost(ScalarModel::from_int_spec(value as int)));
+        let sign_witness = if value > 0 {
+            RuntimeSign::Positive
+        } else if value < 0 {
+            RuntimeSign::Negative
+        } else {
+            RuntimeSign::Zero
+        };
+        let abs_u64 = if value == -9_223_372_036_854_775_808i64 {
+            9_223_372_036_854_775_808u64
+        } else if value < 0 {
+            (-value) as u64
+        } else {
+            value as u64
+        };
+        let out = RuntimeScalar {
+            sign_witness,
+            num_abs_witness: RuntimeBigNatWitness::from_u64(abs_u64),
+            den_witness: RuntimeBigNatWitness::from_u32(1),
+            model: Ghost(ScalarModel::from_int_spec(value as int)),
+        };
+        proof {
+            assert(out@ == ScalarModel::from_int_spec(value as int));
+        }
         out
     }
 
@@ -165,7 +221,17 @@ impl RuntimeScalar {
         ensures
             out@ == self@.add_spec(rhs@),
     {
-        let out = Self::from_model(Ghost(self@.add_spec(rhs@)));
+        let ghost model = self@.add_spec(rhs@);
+        let out = RuntimeScalar {
+            sign_witness: Self::sign_add_witness(self.sign_witness, rhs.sign_witness),
+            // Placeholder until exact bigint witness arithmetic is wired for add/sub/mul.
+            num_abs_witness: RuntimeBigNatWitness::zero(),
+            den_witness: RuntimeBigNatWitness::from_u32(1),
+            model: Ghost(model),
+        };
+        proof {
+            assert(out@ == self@.add_spec(rhs@));
+        }
         out
     }
 
@@ -173,7 +239,17 @@ impl RuntimeScalar {
         ensures
             out@ == self@.sub_spec(rhs@),
     {
-        let out = Self::from_model(Ghost(self@.sub_spec(rhs@)));
+        let ghost model = self@.sub_spec(rhs@);
+        let out = RuntimeScalar {
+            sign_witness: Self::sign_add_witness(self.sign_witness, Self::sign_neg_witness(rhs.sign_witness)),
+            // Placeholder until exact bigint witness arithmetic is wired for add/sub/mul.
+            num_abs_witness: RuntimeBigNatWitness::zero(),
+            den_witness: RuntimeBigNatWitness::from_u32(1),
+            model: Ghost(model),
+        };
+        proof {
+            assert(out@ == self@.sub_spec(rhs@));
+        }
         out
     }
 
@@ -181,7 +257,17 @@ impl RuntimeScalar {
         ensures
             out@ == self@.mul_spec(rhs@),
     {
-        let out = Self::from_model(Ghost(self@.mul_spec(rhs@)));
+        let ghost model = self@.mul_spec(rhs@);
+        let out = RuntimeScalar {
+            sign_witness: Self::sign_mul_witness(self.sign_witness, rhs.sign_witness),
+            // Placeholder until exact bigint witness arithmetic is wired for add/sub/mul.
+            num_abs_witness: RuntimeBigNatWitness::zero(),
+            den_witness: RuntimeBigNatWitness::from_u32(1),
+            model: Ghost(model),
+        };
+        proof {
+            assert(out@ == self@.mul_spec(rhs@));
+        }
         out
     }
 

@@ -30,6 +30,12 @@ impl RuntimeBigNatWitness {
         Self { value: Integer::from(x) }
     }
 
+    pub fn from_u64(x: u64) -> Self {
+        let lo = x as u32;
+        let hi = (x >> 32) as u32;
+        Self::from_two_limbs(lo, hi)
+    }
+
     pub fn from_two_limbs(lo: u32, hi: u32) -> Self {
         if hi == 0 {
             return Self::from_u32(lo);
@@ -239,6 +245,16 @@ impl RuntimeBigNatWitness {
             }
             Self::from_parts(limbs_le, Ghost(x as nat))
         }
+    }
+
+    pub fn from_u64(x: u64) -> (out: Self)
+        ensures
+            out.wf_spec(),
+    {
+        let lo = x as u32;
+        let hi = (x >> 32) as u32;
+        let out = Self::from_two_limbs(lo, hi);
+        out
     }
 
     pub fn from_two_limbs(lo: u32, hi: u32) -> (out: Self)
