@@ -374,29 +374,54 @@ impl RuntimeBigNatWitness {
         out
     }
 
-    /// Total small-limb add helper used by scalar witness plumbing.
+    /// Total limb-wise addition helper used by scalar witness plumbing.
     ///
-    /// If both operands are represented in at most one limb, this computes
-    /// exact limb-wise addition; otherwise it returns `0` as a conservative
-    /// placeholder while preserving witness well-formedness.
+    /// Computes carry-propagating multi-limb addition over little-endian limbs,
+    /// then canonicalizes the output by trimming trailing zero limbs.
+    #[verifier::exec_allows_no_decreases_clause]
     pub fn add_limbwise_small_total(&self, rhs: &Self) -> (out: Self)
         ensures
             out.wf_spec(),
     {
-        if self.limbs_le.len() <= 1 && rhs.limbs_le.len() <= 1 {
-            let a0 = if self.limbs_le.len() == 0 { 0u32 } else { self.limbs_le[0] };
-            let b0 = if rhs.limbs_le.len() == 0 { 0u32 } else { rhs.limbs_le[0] };
-            let sum = a0 as u64 + b0 as u64;
-            let base_u64 = 4_294_967_296u64;
-            let (lo, hi) = if sum < base_u64 {
-                (sum as u32, 0u32)
+        let alen = Self::trimmed_len_exec(&self.limbs_le);
+        let blen = Self::trimmed_len_exec(&rhs.limbs_le);
+        assert(alen <= self.limbs_le.len());
+        assert(blen <= rhs.limbs_le.len());
+        let n = if alen > blen { alen } else { blen };
+        let mut out_limbs: Vec<u32> = Vec::new();
+        let mut i: usize = 0;
+        let mut carry: u64 = 0u64;
+        while i < n
+            invariant
+                i <= n,
+                alen <= self.limbs_le.len(),
+                blen <= rhs.limbs_le.len(),
+        {
+            let a = if i < alen {
+                assert(i < self.limbs_le.len());
+                self.limbs_le[i] as u64
             } else {
-                ((sum - base_u64) as u32, 1u32)
+                0u64
             };
-            Self::from_two_limbs(lo, hi)
-        } else {
-            Self::zero()
+            let b = if i < blen {
+                assert(i < rhs.limbs_le.len());
+                rhs.limbs_le[i] as u64
+            } else {
+                0u64
+            };
+            let sum = a.wrapping_add(b).wrapping_add(carry);
+            #[verifier::truncate]
+            let digit = sum as u32;
+            carry = if sum >= 4_294_967_296u64 { 1u64 } else { 0u64 };
+            out_limbs.push(digit);
+            i = i + 1;
         }
+        if carry != 0u64 {
+            out_limbs.push(1u32);
+        }
+        let out_limbs = Self::trim_trailing_zero_limbs(out_limbs);
+        let ghost model = Self::limbs_value_spec(out_limbs@);
+        Self::from_parts(out_limbs, Ghost(model))
     }
 
     #[verifier::exec_allows_no_decreases_clause]
@@ -437,26 +462,91 @@ impl RuntimeBigNatWitness {
         limbs
     }
 
-    /// Total small-limb multiply helper used by scalar witness plumbing.
+    /// Total limb-wise multiplication helper used by scalar witness plumbing.
     ///
-    /// If both operands are represented in at most one limb, this computes
-    /// exact 32x32->64 multiplication; otherwise it returns `0` as a
-    /// conservative placeholder while preserving witness well-formedness.
+    /// Computes schoolbook multi-limb multiplication over little-endian limbs,
+    /// with local carry propagation and canonical trailing-zero trim.
+    #[verifier::exec_allows_no_decreases_clause]
     pub fn mul_limbwise_small_total(&self, rhs: &Self) -> (out: Self)
         ensures
             out.wf_spec(),
     {
-        if self.limbs_le.len() <= 1 && rhs.limbs_le.len() <= 1 {
-            let a0 = if self.limbs_le.len() == 0 { 0u32 } else { self.limbs_le[0] };
-            let b0 = if rhs.limbs_le.len() == 0 { 0u32 } else { rhs.limbs_le[0] };
-            let prod = (a0 as u64).wrapping_mul(b0 as u64);
-            #[verifier::truncate]
-            let lo = prod as u32;
-            #[verifier::truncate]
-            let hi = (prod >> 32) as u32;
-            Self::from_two_limbs(lo, hi)
-        } else {
+        let alen = Self::trimmed_len_exec(&self.limbs_le);
+        let blen = Self::trimmed_len_exec(&rhs.limbs_le);
+        assert(alen <= self.limbs_le.len());
+        assert(blen <= rhs.limbs_le.len());
+        if alen == 0 || blen == 0 {
             Self::zero()
+        } else {
+            let mut total_len = alen.wrapping_add(blen);
+            total_len = total_len.wrapping_add(2usize);
+            let mut out_limbs: Vec<u32> = Vec::new();
+            while out_limbs.len() < total_len
+                invariant
+                    out_limbs.len() <= total_len,
+            {
+                out_limbs.push(0u32);
+            }
+
+            let mut i: usize = 0;
+            while i < alen
+                invariant
+                    i <= alen,
+                    alen <= self.limbs_le.len(),
+                    blen <= rhs.limbs_le.len(),
+                    out_limbs.len() == total_len,
+            {
+                assert(i < self.limbs_le.len());
+                let ai = self.limbs_le[i] as u128;
+                let mut carry: u128 = 0u128;
+                let mut j: usize = 0;
+                while j < blen
+                    invariant
+                        j <= blen,
+                        i < alen,
+                        alen <= self.limbs_le.len(),
+                        blen <= rhs.limbs_le.len(),
+                        out_limbs.len() == total_len,
+                {
+                    let idx = i.wrapping_add(j);
+                    if idx >= out_limbs.len() {
+                        break;
+                    }
+                    assert(j < rhs.limbs_le.len());
+                    let bj = rhs.limbs_le[j] as u128;
+                    let existing = out_limbs[idx] as u128;
+                    let term = ai.wrapping_mul(bj);
+                    let total = term.wrapping_add(existing).wrapping_add(carry);
+                    #[verifier::truncate]
+                    let digit = total as u32;
+                    out_limbs[idx] = digit;
+                    carry = total >> 32;
+                    j = j + 1;
+                }
+
+                let mut k = i.wrapping_add(blen);
+                while carry != 0u128
+                    invariant
+                        out_limbs.len() == total_len,
+                {
+                    if k >= out_limbs.len() {
+                        break;
+                    }
+                    let existing = out_limbs[k] as u128;
+                    let total = existing.wrapping_add(carry);
+                    #[verifier::truncate]
+                    let digit = total as u32;
+                    out_limbs[k] = digit;
+                    carry = total >> 32;
+                    k = k + 1;
+                }
+
+                i = i + 1;
+            }
+
+            let out_limbs = Self::trim_trailing_zero_limbs(out_limbs);
+            let ghost model = Self::limbs_value_spec(out_limbs@);
+            Self::from_parts(out_limbs, Ghost(model))
         }
     }
 

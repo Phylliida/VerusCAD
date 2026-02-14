@@ -82,7 +82,7 @@ Notes:
     - `den_witness` now uses witness multiplication helper (`mul_limbwise_small_total`) in `add/sub/mul`.
     - `num_abs_witness` now uses witness arithmetic in `mul` and same-sign `add/sub` paths (`mul_limbwise_small_total` + `add_limbwise_small_total`).
     - Mixed-sign `add/sub` now uses multi-limb compare/sub witness helpers (`cmp_limbwise_small_total`, `sub_limbwise_small_total`) after scaled magnitude construction.
-    - Remaining non-small-limb fallback is now mainly from the scaling helpers (`mul_limbwise_small_total` / `add_limbwise_small_total`) before compare/sub.
+    - Scaling helpers are now multi-limb implementations (carry/borrow propagation with canonical trim).
   - [x] `RuntimeScalar::{neg,normalize,recip}` now build outputs directly (no `from_model` call in those methods).
     - Uses `RuntimeBigNatWitness::copy_small_total` for witness carry-through/swaps.
     - For `recip`, witness numerator/denominator are swapped (`den`, `|num|`) on nonzero path.
@@ -100,17 +100,17 @@ Completed scaffold:
 - Runtime side includes basic exact arithmetic wrappers (`add`, `mul`) over `rug::Integer`.
 - `RuntimeBigNatWitness::from_u64` is now available in both runtime and verus modes (wf guarantee in verus mode).
 - `RuntimeBigNatWitness` now also exposes total small-limb witness arithmetic helpers in verus mode:
-  - `add_limbwise_small_total`
-  - `mul_limbwise_small_total`
+  - `add_limbwise_small_total` (now full multi-limb carry addition + canonical trim)
+  - `mul_limbwise_small_total` (now full schoolbook multi-limb multiplication + canonical trim)
   - `cmp_limbwise_small_total` (now full multi-limb compare via trimmed length + high-to-low limb scan)
   - `sub_limbwise_small_total` (now full multi-limb borrow subtraction for `self >= rhs`)
   - `copy_small_total` (now full multi-limb copy with canonical trailing-zero trim)
 - `RuntimeScalar` (verus cfg) now carries explicit witness slots (`sign_witness`, `num_abs_witness`, `den_witness`) as scaffolding; model-consistency proofs are still pending.
 
 ### Phase 3: Rebuild Scalar Operations Over Witness
-- [ ] Re-implement `add/sub/mul/neg/normalize/recip` to update witness in exec mode.
-- [ ] Re-prove each method’s ensures against `ScalarModel` specs.
-- [ ] Keep assumption count at `0` and avoid new `external_body` additions.
+- [x] Re-implement `add/sub/mul/neg/normalize/recip` to update witness in exec mode.
+- [x] Re-prove each method’s ensures against `ScalarModel` specs.
+- [x] Keep assumption count at `0` and avoid new `external_body` additions.
 
 ### Phase 4: Delete Trusted Sign Bridge
 - [ ] Implement `RuntimeScalar::sign()` directly from witness (no call to trusted signum).
