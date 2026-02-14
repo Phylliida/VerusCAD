@@ -1,6 +1,7 @@
 use crate::orientation_predicates::{orient2d_sign, orient2d_value, orient3d_sign, orient3d_value};
 use vcad_math::runtime_point2::RuntimePoint2;
 use vcad_math::runtime_point3::RuntimePoint3;
+use vcad_math::runtime_scalar::RuntimeSign;
 #[cfg(verus_keep_ghost)]
 use vcad_math::orientation::is_collinear;
 #[cfg(verus_keep_ghost)]
@@ -12,7 +13,7 @@ use vstd::view::View;
 
 #[cfg(not(verus_keep_ghost))]
 pub fn collinear2d(a: &RuntimePoint2, b: &RuntimePoint2, c: &RuntimePoint2) -> bool {
-    orient2d_value(a, b, c).signum_i8() == 0
+    orient2d_sign(a, b, c) == 0
 }
 
 #[cfg(verus_keep_ghost)]
@@ -34,7 +35,7 @@ pub fn collinear3d(a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3) -> b
     let ba = b.sub(a);
     let ca = c.sub(a);
     let cross = ba.cross(&ca);
-    cross.norm2().signum_i8() == 0
+    cross.norm2().sign() == RuntimeSign::Zero
 }
 
 #[cfg(verus_keep_ghost)]
@@ -50,9 +51,10 @@ pub fn collinear3d(a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3) -> (
     let s = n2.signum_i8();
     let out = s == 0;
     proof {
-        let sp = n2.signum_i8_proof();
+        let sp = n2.lemma_signum_i8_matches_proof(s);
         assert((sp == 0) == (n2@.signum() == 0));
         assert((s == 0) == (n2@.signum() == 0));
+        assert(s == sp);
         assert(ba@ == b@.sub_spec(a@));
         assert(ca@ == c@.sub_spec(a@));
         assert(cross@ == ba@.cross_spec(ca@));
@@ -65,7 +67,7 @@ pub fn collinear3d(a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3) -> (
 
 #[cfg(not(verus_keep_ghost))]
 pub fn coplanar(a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3, d: &RuntimePoint3) -> bool {
-    orient3d_value(a, b, c, d).signum_i8() == 0
+    orient3d_sign(a, b, c, d) == 0
 }
 
 #[cfg(verus_keep_ghost)]

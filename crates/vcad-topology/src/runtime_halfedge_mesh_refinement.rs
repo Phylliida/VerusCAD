@@ -26,6 +26,11 @@ pub struct ExEdge(Edge);
 #[verifier::external_type_specification]
 pub struct ExFace(Face);
 
+#[verifier::external_body]
+fn mesh_build_error_empty_face_set() -> MeshBuildError {
+    MeshBuildError::EmptyFaceSet
+}
+
 #[derive(Structural, Copy, Clone, PartialEq, Eq)]
 pub struct HalfEdgeModel {
     pub twin: int,
@@ -687,21 +692,20 @@ pub fn runtime_check_from_face_cycles_next_prev_face_coherent(
                 if he.face != f || he.next != start + next_i || he.prev != start + prev_i {
                     ok = false;
                 }
-            }
-
-            proof {
-                if ok {
-                    assert(n > 0);
-                    assert(n as int == model_cycles[f as int].len());
-                    assert(0 <= i as int < n as int);
-                    assert(input_face_local_index_valid_spec(model_cycles, f as int, i as int));
-                    assert(h as int == input_face_half_edge_index_spec(model_cycles, f as int, i as int));
-                    assert(next_i as int == (i as int + 1) % (n as int));
-                    assert(prev_i as int == (i as int + n as int - 1) % (n as int));
-                    assert(m.half_edges@[h as int].face == he.face as int);
-                    assert(m.half_edges@[h as int].next == he.next as int);
-                    assert(m.half_edges@[h as int].prev == he.prev as int);
-                    assert(from_face_cycles_next_prev_face_at_spec(model_cycles, m@, f as int, i as int));
+                proof {
+                    if ok {
+                        assert(n > 0);
+                        assert(n as int == model_cycles[f as int].len());
+                        assert(0 <= (i as int) && (i as int) < (n as int));
+                        assert(input_face_local_index_valid_spec(model_cycles, f as int, i as int));
+                        assert(h as int == input_face_half_edge_index_spec(model_cycles, f as int, i as int));
+                        assert(next_i as int == (i as int + 1) % (n as int));
+                        assert(prev_i as int == (i as int + n as int - 1) % (n as int));
+                        assert(m.half_edges@[h as int].face == he.face as int);
+                        assert(m.half_edges@[h as int].next == he.next as int);
+                        assert(m.half_edges@[h as int].prev == he.prev as int);
+                        assert(from_face_cycles_next_prev_face_at_spec(model_cycles, m@, f as int, i as int));
+                    }
                 }
             }
 
@@ -743,7 +747,7 @@ pub fn from_face_cycles_constructive_next_prev_face(
             if ok {
                 Result::Ok(m)
             } else {
-                Result::Err(MeshBuildError::EmptyFaceSet)
+                Result::Err(mesh_build_error_empty_face_set())
             }
         }
         Result::Err(e) => Result::Err(e),

@@ -1,5 +1,5 @@
 use crate::runtime_point3::RuntimePoint3;
-use crate::runtime_scalar::RuntimeScalar;
+use crate::runtime_scalar::{RuntimeScalar, RuntimeSign};
 #[cfg(verus_keep_ghost)]
 use crate::orientation3::{orient3d_spec, orientation3_spec, Orientation3};
 #[cfg(verus_keep_ghost)]
@@ -121,10 +121,10 @@ pub fn scale_point_from_origin3(p: &RuntimePoint3, k: &RuntimeScalar) -> (out: R
 
 #[cfg(not(verus_keep_ghost))]
 pub fn orientation3(a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3, d: &RuntimePoint3) -> RuntimeOrientation3 {
-    match orient3d(a, b, c, d).signum_i8() {
-        1 => RuntimeOrientation3::Positive,
-        -1 => RuntimeOrientation3::Negative,
-        _ => RuntimeOrientation3::Coplanar,
+    match orient3d(a, b, c, d).sign() {
+        RuntimeSign::Positive => RuntimeOrientation3::Positive,
+        RuntimeSign::Negative => RuntimeOrientation3::Negative,
+        RuntimeSign::Zero => RuntimeOrientation3::Coplanar,
     }
 }
 
@@ -135,58 +135,36 @@ pub fn orientation3(a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3, d: 
         out@ == orientation3_spec(a@, b@, c@, d@),
 {
     let det = orient3d(a, b, c, d);
-    let s = det.signum_i8();
-    proof {
-        let sp = det.signum_i8_proof();
-        Scalar::lemma_signum_cases(det@);
-        assert(det@ == orient3d_spec(a@, b@, c@, d@));
-        assert((sp == 1) == (det@.signum() == 1));
-        assert((sp == -1) == (det@.signum() == -1));
-        assert((sp == 0) == (det@.signum() == 0));
-        if det@.signum() == 1 {
-            assert((s == 1) == (det@.signum() == 1));
-            assert((sp == 1) == (det@.signum() == 1));
-            assert(s == 1);
-            assert(sp == 1);
-        } else if det@.signum() == -1 {
-            assert((s == -1) == (det@.signum() == -1));
-            assert((sp == -1) == (det@.signum() == -1));
-            assert(s == -1);
-            assert(sp == -1);
-        } else {
-            assert(det@.signum() == 0);
-            assert((s == 0) == (det@.signum() == 0));
-            assert((sp == 0) == (det@.signum() == 0));
-            assert(s == 0);
-            assert(sp == 0);
+    let sign = det.sign();
+    match sign {
+        RuntimeSign::Positive => {
+            proof {
+                assert((sign is Positive) == (det@.signum() == 1));
+                assert(det@.signum() == 1);
+                assert(orientation3_spec(a@, b@, c@, d@) == Orientation3::Positive);
+            }
+            RuntimeOrientation3::Positive
         }
-        assert(s == sp);
-    }
-    if s == 1 {
-        proof {
-            assert((s == 1) == (det@.signum() == 1));
-            assert(det@.signum() == 1);
-            assert(orientation3_spec(a@, b@, c@, d@) == Orientation3::Positive);
+        RuntimeSign::Negative => {
+            proof {
+                assert((sign is Negative) == (det@.signum() == -1));
+                assert(det@.signum() == -1);
+                assert(orientation3_spec(a@, b@, c@, d@) == Orientation3::Negative);
+            }
+            RuntimeOrientation3::Negative
         }
-        RuntimeOrientation3::Positive
-    } else if s == -1 {
-        proof {
-            assert((s == -1) == (det@.signum() == -1));
-            assert(det@.signum() == -1);
-            assert(orientation3_spec(a@, b@, c@, d@) == Orientation3::Negative);
+        RuntimeSign::Zero => {
+            proof {
+                assert((sign is Positive) == (det@.signum() == 1));
+                assert((sign is Negative) == (det@.signum() == -1));
+                assert(!(sign is Positive));
+                assert(!(sign is Negative));
+                assert(det@.signum() != 1);
+                assert(det@.signum() != -1);
+                assert(orientation3_spec(a@, b@, c@, d@) == Orientation3::Coplanar);
+            }
+            RuntimeOrientation3::Coplanar
         }
-        RuntimeOrientation3::Negative
-    } else {
-        proof {
-            assert((s == 1) == (det@.signum() == 1));
-            assert((s == -1) == (det@.signum() == -1));
-            assert(s != 1);
-            assert(s != -1);
-            assert(det@.signum() != 1);
-            assert(det@.signum() != -1);
-            assert(orientation3_spec(a@, b@, c@, d@) == Orientation3::Coplanar);
-        }
-        RuntimeOrientation3::Coplanar
     }
 }
 }

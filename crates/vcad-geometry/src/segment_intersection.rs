@@ -318,7 +318,7 @@ fn scalar_sign(a: &RuntimeScalar, b: &RuntimeScalar) -> (out: i8)
     let diff = a.sub(b);
     let out = diff.signum_i8();
     proof {
-        let sp = diff.signum_i8_proof();
+        let sp = diff.lemma_signum_i8_matches_proof(out);
         assert((sp == 1) == (diff@.signum() == 1));
         assert((sp == -1) == (diff@.signum() == -1));
         assert((sp == 0) == (diff@.signum() == 0));

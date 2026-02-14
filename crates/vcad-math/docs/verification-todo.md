@@ -10,6 +10,8 @@ Goal: remove trusted runtime proof boundaries so `vcad-math` runtime behavior is
 - [ ] Residual trusted `external_body` bridges are eliminated.
 
 ## Final external_body Burn-Down (signum_i8)
+- [x] Introduce semantic sign API: `RuntimeSign` (`Negative/Zero/Positive`) + `RuntimeScalar::sign()`.
+- [x] Migrate orientation runtime paths to semantic sign branching (`runtime_orientation.rs`, `runtime_orientation3.rs`).
 - [x] Add proof-only bridge: `RuntimeScalar::signum_i8_proof`.
 - [ ] Migrate verus-mode callers from exec sign extraction to proof-mode sign extraction.
 - [x] `crates/vcad-geometry/src/orientation_predicates.rs` (verus sign APIs now derive from orientation class wrappers).
@@ -17,7 +19,7 @@ Goal: remove trusted runtime proof boundaries so `vcad-math` runtime behavior is
 - [x] `crates/vcad-geometry/src/segment_intersection.rs` (verus `scalar_sign` now threads `signum_i8_proof` alongside exec sign).
 - [x] `crates/vcad-math/src/runtime_scalar.rs::recip` now proves runtime/proof sign agreement (`s == signum_i8_proof()`).
 - [x] `crates/vcad-math/src/runtime_orientation.rs` and `runtime_orientation3.rs` now prove runtime/proof sign agreement (`s == signum_i8_proof()`).
-- [ ] Remaining raw exec sign bridges in verus paths: `runtime_orientation.rs`, `runtime_orientation3.rs`, `runtime_scalar.rs` (`recip`), `segment_intersection.rs` (`scalar_sign` runtime extraction).
+- [ ] Remaining trusted sign bridge consumers in verus paths: `runtime_scalar.rs` (`recip`), `runtime_orientation.rs`, `runtime_orientation3.rs`, `segment_intersection.rs` (`scalar_sign` runtime extraction).
 - [ ] Remove the final `#[verifier::external_body]` on `RuntimeScalar::signum_i8`.
 - [ ] Re-run full gates across `vcad-math`, `vcad-geometry`, `vcad-topology`.
 

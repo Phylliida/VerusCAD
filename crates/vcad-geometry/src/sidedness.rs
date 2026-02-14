@@ -14,7 +14,7 @@ use vstd::view::View;
 
 #[cfg(not(verus_keep_ghost))]
 pub fn point_above_plane(p: &RuntimePoint3, a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3) -> bool {
-    orient3d_value(a, b, c, p).signum_i8() > 0
+    orient3d_sign(a, b, c, p) == 1
 }
 
 #[cfg(verus_keep_ghost)]
@@ -29,7 +29,7 @@ pub fn point_above_plane(p: &RuntimePoint3, a: &RuntimePoint3, b: &RuntimePoint3
 
 #[cfg(not(verus_keep_ghost))]
 pub fn point_below_plane(p: &RuntimePoint3, a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3) -> bool {
-    orient3d_value(a, b, c, p).signum_i8() < 0
+    orient3d_sign(a, b, c, p) == -1
 }
 
 #[cfg(verus_keep_ghost)]
@@ -44,7 +44,7 @@ pub fn point_below_plane(p: &RuntimePoint3, a: &RuntimePoint3, b: &RuntimePoint3
 
 #[cfg(not(verus_keep_ghost))]
 pub fn point_on_plane(p: &RuntimePoint3, a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3) -> bool {
-    orient3d_value(a, b, c, p).signum_i8() == 0
+    orient3d_sign(a, b, c, p) == 0
 }
 
 #[cfg(verus_keep_ghost)]
@@ -65,8 +65,8 @@ pub fn segment_crosses_plane_strict(
     b: &RuntimePoint3,
     c: &RuntimePoint3,
 ) -> bool {
-    let od = orient3d_value(a, b, c, d).signum_i8();
-    let oe = orient3d_value(a, b, c, e).signum_i8();
+    let od = orient3d_sign(a, b, c, d);
+    let oe = orient3d_sign(a, b, c, e);
     (od > 0 && oe < 0) || (od < 0 && oe > 0)
 }
 

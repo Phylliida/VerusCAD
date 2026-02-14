@@ -19,6 +19,24 @@ pub struct RuntimeScalar {
     pub model: Ghost<ScalarModel>,
 }
 
+#[cfg(not(verus_keep_ghost))]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum RuntimeSign {
+    Negative,
+    Zero,
+    Positive,
+}
+
+#[cfg(verus_keep_ghost)]
+verus! {
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum RuntimeSign {
+    Negative,
+    Zero,
+    Positive,
+}
+}
+
 #[cfg(verus_keep_ghost)]
 impl core::fmt::Debug for RuntimeScalar {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -90,13 +108,21 @@ impl RuntimeScalar {
         Self { value: self.value.clone() }
     }
 
-    pub fn signum_i8(&self) -> i8 {
+    pub fn sign(&self) -> RuntimeSign {
         if self.value > 0 {
-            1
+            RuntimeSign::Positive
         } else if self.value < 0 {
-            -1
+            RuntimeSign::Negative
         } else {
-            0
+            RuntimeSign::Zero
+        }
+    }
+
+    pub fn signum_i8(&self) -> i8 {
+        match self.sign() {
+            RuntimeSign::Positive => 1,
+            RuntimeSign::Negative => -1,
+            RuntimeSign::Zero => 0,
         }
     }
 }
@@ -143,6 +169,22 @@ impl RuntimeScalar {
         out
     }
 
+    pub fn sign(&self) -> (out: RuntimeSign)
+        ensures
+            (out is Positive) == (self@.signum() == 1),
+            (out is Negative) == (self@.signum() == -1),
+            (out is Zero) == (self@.signum() == 0),
+    {
+        let s = self.signum_i8();
+        if s == 1 {
+            RuntimeSign::Positive
+        } else if s == -1 {
+            RuntimeSign::Negative
+        } else {
+            RuntimeSign::Zero
+        }
+    }
+
     pub fn recip(&self) -> (out: Option<Self>)
         ensures
             out.is_none() == self@.eqv_spec(ScalarModel::from_int_spec(0)),
@@ -155,60 +197,41 @@ impl RuntimeScalar {
                 },
             },
     {
-        let s = self.signum_i8();
-        proof {
-            let sp = self.signum_i8_proof();
-            ScalarModel::lemma_signum_cases(self@);
-            if self@.signum() == 1 {
-                assert((s == 1) == (self@.signum() == 1));
-                assert((sp == 1) == (self@.signum() == 1));
-                assert(s == 1);
-                assert(sp == 1);
-            } else if self@.signum() == -1 {
-                assert((s == -1) == (self@.signum() == -1));
-                assert((sp == -1) == (self@.signum() == -1));
-                assert(s == -1);
-                assert(sp == -1);
-            } else {
-                assert(self@.signum() == 0);
-                assert((s == 0) == (self@.signum() == 0));
-                assert((sp == 0) == (self@.signum() == 0));
-                assert(s == 0);
-                assert(sp == 0);
+        let sign = self.sign();
+        match sign {
+            RuntimeSign::Zero => {
+                proof {
+                    assert((sign is Zero) == (self@.signum() == 0));
+                    assert(self@.signum() == 0);
+                    ScalarModel::lemma_signum_zero_iff(self@);
+                    assert(self@.num == 0);
+                    ScalarModel::lemma_eqv_zero_iff_num_zero(self@);
+                    assert(self@.eqv_spec(ScalarModel::from_int_spec(0)));
+                }
+                Option::None
             }
-            assert(s == sp);
-        }
-        if s == 0 {
-            proof {
-                assert((s == 0) == (self@.signum() == 0));
-                assert(self@.signum() == 0);
-                ScalarModel::lemma_signum_zero_iff(self@);
-                assert(self@.num == 0);
-                ScalarModel::lemma_eqv_zero_iff_num_zero(self@);
-                assert(self@.eqv_spec(ScalarModel::from_int_spec(0)));
+            RuntimeSign::Negative | RuntimeSign::Positive => {
+                let ghost one = ScalarModel::from_int_spec(1);
+                proof {
+                    assert((sign is Zero) == (self@.signum() == 0));
+                    assert(!(sign is Zero));
+                    assert(self@.signum() != 0);
+                    ScalarModel::lemma_signum_zero_iff(self@);
+                    assert(self@.num != 0);
+                    ScalarModel::lemma_eqv_zero_iff_num_zero(self@);
+                    assert(!self@.eqv_spec(ScalarModel::from_int_spec(0)));
+                }
+                let ghost inv = ScalarModel::reciprocal_constructive(self@);
+                let r = Self::from_model(Ghost(inv));
+                proof {
+                    assert(inv == r@);
+                    assert(self@.mul_spec(inv).eqv_spec(one));
+                    assert(inv.mul_spec(self@).eqv_spec(one));
+                    assert(self@.mul_spec(r@).eqv_spec(one));
+                    assert(r@.mul_spec(self@).eqv_spec(one));
+                }
+                Option::Some(r)
             }
-            Option::None
-        } else {
-            let ghost one = ScalarModel::from_int_spec(1);
-            proof {
-                assert((s == 0) == (self@.signum() == 0));
-                assert(s != 0);
-                assert(self@.signum() != 0);
-                ScalarModel::lemma_signum_zero_iff(self@);
-                assert(self@.num != 0);
-                ScalarModel::lemma_eqv_zero_iff_num_zero(self@);
-                assert(!self@.eqv_spec(ScalarModel::from_int_spec(0)));
-            }
-            let ghost inv = ScalarModel::reciprocal_constructive(self@);
-            let r = Self::from_model(Ghost(inv));
-            proof {
-                assert(inv == r@);
-                assert(self@.mul_spec(inv).eqv_spec(one));
-                assert(inv.mul_spec(self@).eqv_spec(one));
-                assert(self@.mul_spec(r@).eqv_spec(one));
-                assert(r@.mul_spec(self@).eqv_spec(one));
-            }
-            Option::Some(r)
         }
     }
 
@@ -254,6 +277,40 @@ impl RuntimeScalar {
             assert(self@.signum() == 0);
             0i8
         }
+    }
+
+    /// Canonical bridge lemma from the exec signum contract to the proof signum witness.
+    pub proof fn lemma_signum_i8_matches_proof(&self, s: i8) -> (sp: i8)
+        requires
+            (s == 1) == (self@.signum() == 1),
+            (s == -1) == (self@.signum() == -1),
+            (s == 0) == (self@.signum() == 0),
+        ensures
+            (sp == 1) == (self@.signum() == 1),
+            (sp == -1) == (self@.signum() == -1),
+            (sp == 0) == (self@.signum() == 0),
+            s == sp,
+    {
+        let sp = self.signum_i8_proof();
+        ScalarModel::lemma_signum_cases(self@);
+        if self@.signum() == 1 {
+            assert((s == 1) == (self@.signum() == 1));
+            assert((sp == 1) == (self@.signum() == 1));
+            assert(s == 1);
+            assert(sp == 1);
+        } else if self@.signum() == -1 {
+            assert((s == -1) == (self@.signum() == -1));
+            assert((sp == -1) == (self@.signum() == -1));
+            assert(s == -1);
+            assert(sp == -1);
+        } else {
+            assert(self@.signum() == 0);
+            assert((s == 0) == (self@.signum() == 0));
+            assert((sp == 0) == (self@.signum() == 0));
+            assert(s == 0);
+            assert(sp == 0);
+        }
+        sp
     }
 
     #[verifier::external_body]

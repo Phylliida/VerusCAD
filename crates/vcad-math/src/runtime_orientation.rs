@@ -1,5 +1,5 @@
 use crate::runtime_point2::RuntimePoint2;
-use crate::runtime_scalar::RuntimeScalar;
+use crate::runtime_scalar::{RuntimeScalar, RuntimeSign};
 #[cfg(verus_keep_ghost)]
 use crate::orientation::{orient2d_spec, orientation_spec, Orientation};
 #[cfg(verus_keep_ghost)]
@@ -105,10 +105,10 @@ pub fn scale_point_from_origin(p: &RuntimePoint2, k: &RuntimeScalar) -> (out: Ru
 
 #[cfg(not(verus_keep_ghost))]
 pub fn orientation(a: &RuntimePoint2, b: &RuntimePoint2, c: &RuntimePoint2) -> RuntimeOrientation {
-    match orient2d(a, b, c).signum_i8() {
-        1 => RuntimeOrientation::Ccw,
-        -1 => RuntimeOrientation::Cw,
-        _ => RuntimeOrientation::Collinear,
+    match orient2d(a, b, c).sign() {
+        RuntimeSign::Positive => RuntimeOrientation::Ccw,
+        RuntimeSign::Negative => RuntimeOrientation::Cw,
+        RuntimeSign::Zero => RuntimeOrientation::Collinear,
     }
 }
 
@@ -119,58 +119,36 @@ pub fn orientation(a: &RuntimePoint2, b: &RuntimePoint2, c: &RuntimePoint2) -> (
         out@ == orientation_spec(a@, b@, c@),
 {
     let det = orient2d(a, b, c);
-    let s = det.signum_i8();
-    proof {
-        let sp = det.signum_i8_proof();
-        Scalar::lemma_signum_cases(det@);
-        assert(det@ == orient2d_spec(a@, b@, c@));
-        assert((sp == 1) == (det@.signum() == 1));
-        assert((sp == -1) == (det@.signum() == -1));
-        assert((sp == 0) == (det@.signum() == 0));
-        if det@.signum() == 1 {
-            assert((s == 1) == (det@.signum() == 1));
-            assert((sp == 1) == (det@.signum() == 1));
-            assert(s == 1);
-            assert(sp == 1);
-        } else if det@.signum() == -1 {
-            assert((s == -1) == (det@.signum() == -1));
-            assert((sp == -1) == (det@.signum() == -1));
-            assert(s == -1);
-            assert(sp == -1);
-        } else {
-            assert(det@.signum() == 0);
-            assert((s == 0) == (det@.signum() == 0));
-            assert((sp == 0) == (det@.signum() == 0));
-            assert(s == 0);
-            assert(sp == 0);
+    let sign = det.sign();
+    match sign {
+        RuntimeSign::Positive => {
+            proof {
+                assert((sign is Positive) == (det@.signum() == 1));
+                assert(det@.signum() == 1);
+                assert(orientation_spec(a@, b@, c@) == Orientation::Ccw);
+            }
+            RuntimeOrientation::Ccw
         }
-        assert(s == sp);
-    }
-    if s == 1 {
-        proof {
-            assert((s == 1) == (det@.signum() == 1));
-            assert(det@.signum() == 1);
-            assert(orientation_spec(a@, b@, c@) == Orientation::Ccw);
+        RuntimeSign::Negative => {
+            proof {
+                assert((sign is Negative) == (det@.signum() == -1));
+                assert(det@.signum() == -1);
+                assert(orientation_spec(a@, b@, c@) == Orientation::Cw);
+            }
+            RuntimeOrientation::Cw
         }
-        RuntimeOrientation::Ccw
-    } else if s == -1 {
-        proof {
-            assert((s == -1) == (det@.signum() == -1));
-            assert(det@.signum() == -1);
-            assert(orientation_spec(a@, b@, c@) == Orientation::Cw);
+        RuntimeSign::Zero => {
+            proof {
+                assert((sign is Positive) == (det@.signum() == 1));
+                assert((sign is Negative) == (det@.signum() == -1));
+                assert(!(sign is Positive));
+                assert(!(sign is Negative));
+                assert(det@.signum() != 1);
+                assert(det@.signum() != -1);
+                assert(orientation_spec(a@, b@, c@) == Orientation::Collinear);
+            }
+            RuntimeOrientation::Collinear
         }
-        RuntimeOrientation::Cw
-    } else {
-        proof {
-            assert((s == 1) == (det@.signum() == 1));
-            assert((s == -1) == (det@.signum() == -1));
-            assert(s != 1);
-            assert(s != -1);
-            assert(det@.signum() != 1);
-            assert(det@.signum() != -1);
-            assert(orientation_spec(a@, b@, c@) == Orientation::Collinear);
-        }
-        RuntimeOrientation::Collinear
     }
 }
 }
