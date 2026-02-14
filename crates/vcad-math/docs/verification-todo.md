@@ -113,6 +113,7 @@ Completed scaffold:
     - exact limb-value equality vs input (`limbs_value_spec` preserved)
   - prefix-sum proof scaffolding for future total-helper semantics:
     - `limb_or_zero_spec`, `prefix_sum_spec`
+    - `lemma_limb_or_zero_past_logical_len`, `lemma_prefix_sum_step`
     - `lemma_prefix_sum_matches_subrange`, `lemma_prefix_sum_eq_subrange_value`
 - `RuntimeScalar` (verus cfg) now carries explicit witness slots (`sign_witness`, `num_abs_witness`, `den_witness`) as scaffolding; model-consistency proofs are still pending.
 

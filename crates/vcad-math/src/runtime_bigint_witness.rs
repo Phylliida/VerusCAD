@@ -291,6 +291,133 @@ impl RuntimeBigNatWitness {
         }
     }
 
+    pub open spec fn add_sum_spec(a: nat, b: nat, carry_in: nat) -> nat {
+        a + b + carry_in
+    }
+
+    pub open spec fn add_digit_spec(a: nat, b: nat, carry_in: nat) -> nat {
+        if Self::add_sum_spec(a, b, carry_in) >= Self::limb_base_spec() {
+            (Self::add_sum_spec(a, b, carry_in) - Self::limb_base_spec()) as nat
+        } else {
+            Self::add_sum_spec(a, b, carry_in)
+        }
+    }
+
+    pub open spec fn add_carry_spec(a: nat, b: nat, carry_in: nat) -> nat {
+        if Self::add_sum_spec(a, b, carry_in) >= Self::limb_base_spec() {
+            1
+        } else {
+            0
+        }
+    }
+
+    proof fn lemma_add_digit_carry_decompose(a: nat, b: nat, carry_in: nat)
+        requires
+            a < Self::limb_base_spec(),
+            b < Self::limb_base_spec(),
+            carry_in <= 1,
+        ensures
+            Self::add_carry_spec(a, b, carry_in) <= 1,
+            Self::add_digit_spec(a, b, carry_in)
+                + Self::add_carry_spec(a, b, carry_in) * Self::limb_base_spec()
+                == Self::add_sum_spec(a, b, carry_in),
+    {
+        let sum = Self::add_sum_spec(a, b, carry_in);
+        let base = Self::limb_base_spec();
+        if sum >= base {
+            assert(Self::add_digit_spec(a, b, carry_in) == (sum - base) as nat);
+            assert(Self::add_carry_spec(a, b, carry_in) == 1);
+            assert(Self::add_carry_spec(a, b, carry_in) <= 1);
+            assert((sum - base) as nat + base == sum);
+            assert(
+                Self::add_digit_spec(a, b, carry_in)
+                    + Self::add_carry_spec(a, b, carry_in) * base
+                    == sum
+            );
+        } else {
+            assert(Self::add_digit_spec(a, b, carry_in) == sum);
+            assert(Self::add_carry_spec(a, b, carry_in) == 0);
+            assert(Self::add_carry_spec(a, b, carry_in) <= 1);
+            assert(
+                Self::add_digit_spec(a, b, carry_in)
+                    + Self::add_carry_spec(a, b, carry_in) * base
+                    == sum
+            );
+        }
+        assert(sum == Self::add_sum_spec(a, b, carry_in));
+    }
+
+    proof fn lemma_limb_or_zero_past_logical_len(limbs: Seq<u32>, logical_len: nat, idx: nat)
+        requires
+            logical_len <= idx,
+        ensures
+            Self::limb_or_zero_spec(limbs, logical_len, idx) == 0,
+    {
+        assert(!(idx < logical_len));
+        assert(Self::limb_or_zero_spec(limbs, logical_len, idx) == 0);
+    }
+
+    proof fn lemma_prefix_sum_step(limbs: Seq<u32>, logical_len: nat, count: nat)
+        ensures
+            Self::prefix_sum_spec(limbs, logical_len, count + 1)
+                == Self::prefix_sum_spec(limbs, logical_len, count)
+                    + Self::limb_or_zero_spec(limbs, logical_len, count) * Self::pow_base_spec(count),
+    {
+        assert(
+            Self::prefix_sum_spec(limbs, logical_len, count + 1)
+                == Self::prefix_sum_spec(limbs, logical_len, count)
+                    + Self::limb_or_zero_spec(limbs, logical_len, count) * Self::pow_base_spec(count)
+        );
+    }
+
+    proof fn lemma_prefix_sum_constant_from_extra(limbs: Seq<u32>, logical_len: nat, extra: nat)
+        ensures
+            Self::prefix_sum_spec(limbs, logical_len, logical_len + extra)
+                == Self::prefix_sum_spec(limbs, logical_len, logical_len),
+        decreases extra
+    {
+        if extra == 0 {
+            assert(logical_len + extra == logical_len);
+        } else {
+            let prev = (extra - 1) as nat;
+            Self::lemma_prefix_sum_constant_from_extra(limbs, logical_len, prev);
+            assert(extra == prev + 1);
+            assert((logical_len + prev) + 1 == logical_len + extra);
+            Self::lemma_prefix_sum_step(limbs, logical_len, logical_len + prev);
+            Self::lemma_limb_or_zero_past_logical_len(limbs, logical_len, logical_len + prev);
+            assert(
+                Self::prefix_sum_spec(limbs, logical_len, logical_len + extra)
+                    == Self::prefix_sum_spec(limbs, logical_len, logical_len + prev)
+                        + Self::limb_or_zero_spec(limbs, logical_len, logical_len + prev)
+                            * Self::pow_base_spec(logical_len + prev)
+            );
+            assert(
+                Self::prefix_sum_spec(limbs, logical_len, logical_len + extra)
+                    == Self::prefix_sum_spec(limbs, logical_len, logical_len + prev)
+            );
+            assert(
+                Self::prefix_sum_spec(limbs, logical_len, logical_len + prev)
+                    == Self::prefix_sum_spec(limbs, logical_len, logical_len)
+            );
+        }
+    }
+
+    proof fn lemma_prefix_sum_constant_past_logical_len(limbs: Seq<u32>, logical_len: nat, count: nat)
+        requires
+            logical_len <= count,
+        ensures
+            Self::prefix_sum_spec(limbs, logical_len, count)
+                == Self::prefix_sum_spec(limbs, logical_len, logical_len),
+    {
+        let extra = (count - logical_len) as nat;
+        assert(logical_len + extra == count);
+        Self::lemma_prefix_sum_constant_from_extra(limbs, logical_len, extra);
+        assert(
+            Self::prefix_sum_spec(limbs, logical_len, count)
+                == Self::prefix_sum_spec(limbs, logical_len, logical_len + extra)
+        );
+    }
+
     proof fn lemma_prefix_sum_matches_subrange(limbs: Seq<u32>, logical_len: nat, count: nat)
         requires
             count <= logical_len,
