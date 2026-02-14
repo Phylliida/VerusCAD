@@ -142,7 +142,9 @@ pub fn runtime_segment_intersection_kind_total_from_classifier(
         (out@ is Disjoint) || (out@ is Proper) || (out@ is EndpointTouch) || (out@ is CollinearOverlap),
 {
     let out = runtime_segment_intersection_kind_refines_spec(a, b, c, d);
-    segment_intersection_runtime_kind_exhaustive(out);
+    proof {
+        segment_intersection_runtime_kind_exhaustive(out);
+    }
     out
 }
 
@@ -162,7 +164,9 @@ pub fn runtime_segment_intersection_kind_disjointness_from_classifier(
         !((out@ is EndpointTouch) && (out@ is CollinearOverlap)),
 {
     let out = runtime_segment_intersection_kind_refines_spec(a, b, c, d);
-    segment_intersection_runtime_kind_pairwise_disjoint(out);
+    proof {
+        segment_intersection_runtime_kind_pairwise_disjoint(out);
+    }
     out
 }
 

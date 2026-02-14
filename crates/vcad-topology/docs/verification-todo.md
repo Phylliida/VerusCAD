@@ -57,6 +57,12 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
     `from_face_cycles_incidence_model_spec`, `from_face_cycles_success_spec`, `from_face_cycles_failure_spec`.
   - file: `src/runtime_halfedge_mesh_refinement.rs`
 - [ ] Prove face-cycle construction assigns coherent `next/prev/face` fields.
+  - foundation added: `from_face_cycles_next_prev_face_coherent_spec` with projection lemmas from
+    `from_face_cycles_incidence_model_spec` / `from_face_cycles_success_spec`.
+  - executable bridge added: `ex_mesh_from_face_cycles` maps runtime `Result` outcomes to
+    `from_face_cycles_success_spec` / `from_face_cycles_failure_spec`.
+  - note: the bridge currently uses `#[verifier::external_fn_specification]` (trusted); replace with
+    constructive proof from implementation as this section advances.
   - file: `src/halfedge_mesh.rs`
 - [ ] Prove twin assignment is total for closed inputs and involutive.
   - file: `src/halfedge_mesh.rs`
@@ -99,6 +105,10 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
 - [ ] Verify `check_face_cycles` (closure + no overlap + min cycle length).
   - in `verus-proofs` builds, this now delegates to kernel executable `kernel_check_face_cycles`.
   - semantic contract strengthening in kernel proof is still pending.
+  - attempted path (rolled back): direct monolithic strengthening of `kernel_check_face_cycles` to
+    `out ==> kernel_face_representative_cycles_total_spec` with a large in-loop existential witness invariant.
+    this triggered unstable quantifier-trigger obligations and brittle loop-body proof failures under full verification.
+    avoid repeating this monolithic approach; prefer factoring into small helper lemmas (next-iter progression, per-face witness construction, and existential lifting) before re-strengthening the executable postcondition.
   - next substeps:
     - strengthen `kernel_check_face_cycles` postcondition from `out ==> kernel_index_bounds_spec` to `out ==> kernel_face_representative_cycles_total_spec`.
     - add per-face cycle-length witness threading invariant (`forall fp < f. exists k ...`) in outer loop.

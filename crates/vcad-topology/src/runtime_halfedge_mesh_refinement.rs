@@ -1,6 +1,7 @@
 #![cfg(feature = "verus-proofs")]
 
-use crate::halfedge_mesh::Mesh;
+use crate::halfedge_mesh::{Mesh, MeshBuildError};
+use vcad_math::runtime_point3::RuntimePoint3;
 use vstd::prelude::*;
 use vstd::view::View;
 
@@ -9,6 +10,10 @@ verus! {
 #[verifier::external_type_specification]
 #[verifier::external_body]
 pub struct ExMesh(Mesh);
+
+#[verifier::external_type_specification]
+#[verifier::external_body]
+pub struct ExMeshBuildError(MeshBuildError);
 
 #[derive(Structural, Copy, Clone, PartialEq, Eq)]
 pub struct HalfEdgeModel {
@@ -391,6 +396,12 @@ pub open spec fn from_face_cycles_failure_spec(vertex_count: int, face_cycles: S
         || !from_face_cycles_no_isolated_vertices_spec(vertex_count, face_cycles)
 }
 
+pub open spec fn face_cycles_exec_to_model_spec(face_cycles: Seq<Vec<usize>>) -> Seq<Seq<int>> {
+    Seq::new(face_cycles.len(), |f: int| {
+        Seq::new(face_cycles[f]@.len(), |i: int| face_cycles[f]@[i] as int)
+    })
+}
+
 pub open spec fn mesh_half_edge_from_vertex_spec(m: MeshModel, h: int) -> int {
     m.half_edges[h].vertex
 }
@@ -471,6 +482,23 @@ pub open spec fn from_face_cycles_incidence_model_spec(
         }
 }
 
+pub open spec fn from_face_cycles_next_prev_face_coherent_spec(
+    face_cycles: Seq<Seq<int>>,
+    m: MeshModel,
+) -> bool {
+    forall|f: int, i: int|
+        #![trigger m.half_edges[input_face_half_edge_index_spec(face_cycles, f, i)]]
+        input_face_local_index_valid_spec(face_cycles, f, i) ==> {
+            let n = face_cycles[f].len() as int;
+            let h = input_face_half_edge_index_spec(face_cycles, f, i);
+            let next_i = (i + 1) % n;
+            let prev_i = input_face_prev_local_index_spec(face_cycles, f, i);
+            &&& m.half_edges[h].face == f
+            &&& m.half_edges[h].next == input_face_half_edge_index_spec(face_cycles, f, next_i)
+            &&& m.half_edges[h].prev == input_face_half_edge_index_spec(face_cycles, f, prev_i)
+        }
+}
+
 pub open spec fn from_face_cycles_success_spec(
     vertex_count: int,
     face_cycles: Seq<Seq<int>>,
@@ -481,6 +509,56 @@ pub open spec fn from_face_cycles_success_spec(
     &&& from_face_cycles_all_oriented_edges_have_twin_spec(face_cycles)
     &&& from_face_cycles_no_isolated_vertices_spec(vertex_count, face_cycles)
     &&& from_face_cycles_incidence_model_spec(vertex_count, face_cycles, m)
+}
+
+pub proof fn lemma_from_face_cycles_incidence_implies_next_prev_face_coherent(
+    vertex_count: int,
+    face_cycles: Seq<Seq<int>>,
+    m: MeshModel,
+)
+    ensures
+        from_face_cycles_incidence_model_spec(vertex_count, face_cycles, m)
+            ==> from_face_cycles_next_prev_face_coherent_spec(face_cycles, m),
+{
+    if from_face_cycles_incidence_model_spec(vertex_count, face_cycles, m) {
+        assert(from_face_cycles_next_prev_face_coherent_spec(face_cycles, m));
+    }
+}
+
+pub proof fn lemma_from_face_cycles_success_implies_next_prev_face_coherent(
+    vertex_count: int,
+    face_cycles: Seq<Seq<int>>,
+    m: MeshModel,
+)
+    ensures
+        from_face_cycles_success_spec(vertex_count, face_cycles, m)
+            ==> from_face_cycles_next_prev_face_coherent_spec(face_cycles, m),
+{
+    if from_face_cycles_success_spec(vertex_count, face_cycles, m) {
+        assert(from_face_cycles_incidence_model_spec(vertex_count, face_cycles, m));
+        lemma_from_face_cycles_incidence_implies_next_prev_face_coherent(vertex_count, face_cycles, m);
+    }
+}
+
+#[verifier::external_fn_specification]
+pub fn ex_mesh_from_face_cycles(
+    vertex_positions: Vec<RuntimePoint3>,
+    face_cycles: &[Vec<usize>],
+) -> (out: Result<Mesh, MeshBuildError>)
+    ensures
+        match out {
+            Result::Ok(m) => from_face_cycles_success_spec(
+                vertex_positions@.len() as int,
+                face_cycles_exec_to_model_spec(face_cycles@),
+                m@,
+            ),
+            Result::Err(_) => from_face_cycles_failure_spec(
+                vertex_positions@.len() as int,
+                face_cycles_exec_to_model_spec(face_cycles@),
+            ),
+        },
+{
+    Mesh::from_face_cycles(vertex_positions, face_cycles)
 }
 
 } // verus!
