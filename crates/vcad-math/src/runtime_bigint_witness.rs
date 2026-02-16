@@ -1175,6 +1175,7 @@ impl RuntimeBigNatWitness {
     pub fn cmp_limbwise_small_total(&self, rhs: &Self) -> (out: i8)
         ensures
             out == -1 || out == 0 || out == 1,
+            out == 0 ==> Self::limbs_value_spec(self.limbs_le@) == Self::limbs_value_spec(rhs.limbs_le@),
     {
         let alen = Self::trimmed_len_exec(&self.limbs_le);
         let blen = Self::trimmed_len_exec(&rhs.limbs_le);
@@ -1193,6 +1194,7 @@ impl RuntimeBigNatWitness {
                     alen == blen,
                     alen <= self.limbs_le.len(),
                     blen <= rhs.limbs_le.len(),
+                    forall|j: int| i <= j < alen ==> self.limbs_le@[j] == rhs.limbs_le@[j],
             {
                 let idx = i - 1;
                 assert(idx < self.limbs_le.len());
@@ -1204,7 +1206,47 @@ impl RuntimeBigNatWitness {
                 } else if a < b {
                     return -1i8;
                 }
+                assert(a == b);
+                assert(self.limbs_le@[idx as int] == rhs.limbs_le@[idx as int]);
                 i = i - 1;
+            }
+            proof {
+                let alen_nat = alen as nat;
+                let blen_nat = blen as nat;
+                assert(i == 0);
+                assert(alen == blen);
+                assert(forall|j: int| 0 <= j < alen ==> self.limbs_le@[j] == rhs.limbs_le@[j]);
+                assert forall|j: int| (0 <= j && j < alen) implies
+                    #[trigger] self.limbs_le@.subrange(0, alen as int)[j]
+                        == rhs.limbs_le@.subrange(0, blen as int)[j] by {
+                    if 0 <= j && j < alen {
+                        assert(self.limbs_le@.subrange(0, alen as int)[j] == self.limbs_le@[j]);
+                        assert(rhs.limbs_le@.subrange(0, blen as int)[j] == rhs.limbs_le@[j]);
+                    }
+                };
+                assert(self.limbs_le@.subrange(0, alen as int) == rhs.limbs_le@.subrange(0, blen as int));
+                assert(alen_nat <= self.limbs_le@.len());
+                assert(blen_nat <= rhs.limbs_le@.len());
+                assert(forall|j: int| alen_nat <= j < self.limbs_le@.len() ==> self.limbs_le@[j] == 0u32);
+                assert(forall|j: int| blen_nat <= j < rhs.limbs_le@.len() ==> rhs.limbs_le@[j] == 0u32);
+                Self::lemma_limbs_value_trim_suffix_zeros(self.limbs_le@, alen_nat);
+                Self::lemma_limbs_value_trim_suffix_zeros(rhs.limbs_le@, blen_nat);
+                assert(
+                    Self::limbs_value_spec(self.limbs_le@)
+                        == Self::limbs_value_spec(self.limbs_le@.subrange(0, alen as int))
+                );
+                assert(
+                    Self::limbs_value_spec(rhs.limbs_le@)
+                        == Self::limbs_value_spec(rhs.limbs_le@.subrange(0, blen as int))
+                );
+                assert(
+                    Self::limbs_value_spec(self.limbs_le@.subrange(0, alen as int))
+                        == Self::limbs_value_spec(rhs.limbs_le@.subrange(0, blen as int))
+                );
+                assert(
+                    Self::limbs_value_spec(self.limbs_le@)
+                        == Self::limbs_value_spec(rhs.limbs_le@)
+                );
             }
             0i8
         }
