@@ -1176,6 +1176,7 @@ impl RuntimeBigNatWitness {
         ensures
             out == -1 || out == 0 || out == 1,
             out == 0 ==> Self::limbs_value_spec(self.limbs_le@) == Self::limbs_value_spec(rhs.limbs_le@),
+            self.limbs_le@ == rhs.limbs_le@ ==> out == 0,
     {
         let alen = Self::trimmed_len_exec(&self.limbs_le);
         let blen = Self::trimmed_len_exec(&rhs.limbs_le);
@@ -1262,7 +1263,10 @@ impl RuntimeBigNatWitness {
         ensures
             out.wf_spec(),
     {
-        if self.cmp_limbwise_small_total(rhs) == -1i8 {
+        let cmp = self.cmp_limbwise_small_total(rhs);
+        if cmp == -1i8 {
+            Self::zero()
+        } else if cmp == 0i8 {
             Self::zero()
         } else {
             let alen = Self::trimmed_len_exec(&self.limbs_le);
