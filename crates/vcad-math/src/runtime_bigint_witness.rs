@@ -1167,11 +1167,27 @@ impl RuntimeBigNatWitness {
 
     pub fn from_u64(x: u64) -> (out: Self)
         ensures
+            out.model@ == x as nat,
             out.wf_spec(),
     {
-        let lo = x as u32;
-        let hi = (x >> 32) as u32;
+        let base_u64 = 4_294_967_296u64;
+        let lo_u64 = x % base_u64;
+        let hi_u64 = x / base_u64;
+        let lo = #[verifier::truncate] (lo_u64 as u32);
+        let hi = #[verifier::truncate] (hi_u64 as u32);
         let out = Self::from_two_limbs(lo, hi);
+        proof {
+            assert(x == hi_u64 * base_u64 + lo_u64);
+            assert(lo_u64 < base_u64);
+            assert(hi_u64 <= 4_294_967_295u64);
+            assert(lo as u64 == lo_u64);
+            assert(hi as u64 == hi_u64);
+            assert(out.model@ == lo as nat + Self::limb_base_spec() * hi as nat);
+            assert(Self::limb_base_spec() == 4_294_967_296);
+            assert(x == hi as u64 * 4_294_967_296u64 + lo as u64);
+            assert(x as nat == hi as nat * 4_294_967_296nat + lo as nat);
+            assert(out.model@ == x as nat);
+        }
         out
     }
 

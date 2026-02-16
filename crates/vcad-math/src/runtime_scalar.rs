@@ -158,6 +158,94 @@ impl RuntimeScalar {
         }
     }
 
+    pub open spec fn signed_num_witness_spec(&self) -> int {
+        match self.sign_witness {
+            RuntimeSign::Negative => -(self.num_abs_witness.model@ as int),
+            RuntimeSign::Zero => 0,
+            RuntimeSign::Positive => self.num_abs_witness.model@ as int,
+        }
+    }
+
+    pub open spec fn witness_wf_spec(&self) -> bool {
+        &&& self.num_abs_witness.wf_spec()
+        &&& self.den_witness.wf_spec()
+        &&& self.den_witness.model@ > 0
+        &&& match self.sign_witness {
+            RuntimeSign::Negative => self.signed_num_witness_spec() < 0,
+            RuntimeSign::Zero => self.signed_num_witness_spec() == 0,
+            RuntimeSign::Positive => self.signed_num_witness_spec() > 0,
+        }
+        &&& self.signed_num_witness_spec() * self@.denom()
+                == self@.num * (self.den_witness.model@ as int)
+    }
+
+    pub proof fn lemma_witness_sign_matches_model(&self)
+        requires
+            self.witness_wf_spec(),
+        ensures
+            (self.sign_witness is Positive) == (self@.signum() == 1),
+            (self.sign_witness is Negative) == (self@.signum() == -1),
+            (self.sign_witness is Zero) == (self@.signum() == 0),
+    {
+        ScalarModel::lemma_denom_positive(self@);
+        ScalarModel::lemma_signum_positive_iff(self@);
+        ScalarModel::lemma_signum_negative_iff(self@);
+        ScalarModel::lemma_signum_zero_iff(self@);
+        if self.sign_witness is Positive {
+            assert(self.signed_num_witness_spec() > 0);
+            assert(self@.denom() > 0);
+            assert(self.den_witness.model@ as int > 0);
+            assert((self.signed_num_witness_spec() > 0 && self@.denom() > 0)
+                ==> self.signed_num_witness_spec() * self@.denom() > 0) by (nonlinear_arith);
+            assert(self.signed_num_witness_spec() * self@.denom() > 0);
+            assert(self.signed_num_witness_spec() * self@.denom()
+                == self@.num * (self.den_witness.model@ as int));
+            assert(self@.num * (self.den_witness.model@ as int) > 0);
+            assert((self.den_witness.model@ as int > 0
+                && self@.num * (self.den_witness.model@ as int) > 0) ==> self@.num > 0) by (nonlinear_arith);
+            assert(self@.num > 0);
+            assert(self@.signum() == 1);
+            assert(!(self.sign_witness is Negative));
+            assert(!(self.sign_witness is Zero));
+            assert(self@.signum() != -1);
+            assert(self@.signum() != 0);
+        } else if self.sign_witness is Negative {
+            assert(self.signed_num_witness_spec() < 0);
+            assert(self@.denom() > 0);
+            assert(self.den_witness.model@ as int > 0);
+            assert((self.signed_num_witness_spec() < 0 && self@.denom() > 0)
+                ==> self.signed_num_witness_spec() * self@.denom() < 0) by (nonlinear_arith);
+            assert(self.signed_num_witness_spec() * self@.denom() < 0);
+            assert(self.signed_num_witness_spec() * self@.denom()
+                == self@.num * (self.den_witness.model@ as int));
+            assert(self@.num * (self.den_witness.model@ as int) < 0);
+            assert((self.den_witness.model@ as int > 0
+                && self@.num * (self.den_witness.model@ as int) < 0) ==> self@.num < 0) by (nonlinear_arith);
+            assert(self@.num < 0);
+            assert(self@.signum() == -1);
+            assert(!(self.sign_witness is Positive));
+            assert(!(self.sign_witness is Zero));
+            assert(self@.signum() != 1);
+            assert(self@.signum() != 0);
+        } else {
+            assert(self.sign_witness is Zero);
+            assert(self.signed_num_witness_spec() == 0);
+            assert(self.signed_num_witness_spec() * self@.denom() == 0);
+            assert(self.signed_num_witness_spec() * self@.denom()
+                == self@.num * (self.den_witness.model@ as int));
+            assert(self@.num * (self.den_witness.model@ as int) == 0);
+            assert(self.den_witness.model@ as int > 0);
+            assert((self.den_witness.model@ as int > 0
+                && self@.num * (self.den_witness.model@ as int) == 0) ==> self@.num == 0) by (nonlinear_arith);
+            assert(self@.num == 0);
+            assert(self@.signum() == 0);
+            assert(!(self.sign_witness is Positive));
+            assert(!(self.sign_witness is Negative));
+            assert(self@.signum() != 1);
+            assert(self@.signum() != -1);
+        }
+    }
+
     fn add_signed_witness(
         lhs_sign: RuntimeSign,
         lhs_num_abs: &RuntimeBigNatWitness,
@@ -218,6 +306,7 @@ impl RuntimeScalar {
     pub fn from_int(value: i64) -> (out: Self)
         ensures
             out@ == ScalarModel::from_int_spec(value as int),
+            out.witness_wf_spec(),
     {
         let sign_witness = if value > 0 {
             RuntimeSign::Positive
@@ -241,6 +330,54 @@ impl RuntimeScalar {
         };
         proof {
             assert(out@ == ScalarModel::from_int_spec(value as int));
+            assert(out.num_abs_witness.model@ == abs_u64 as nat);
+            assert(out.den_witness.model@ == 1);
+            assert(out@.denom() == 1);
+            assert(out.den_witness.model@ > 0);
+            if value > 0 {
+                assert(sign_witness is Positive);
+                assert(abs_u64 == value as u64);
+                assert(abs_u64 as int == value as int);
+                assert(out.signed_num_witness_spec() == out.num_abs_witness.model@ as int);
+                assert(out.signed_num_witness_spec() == value as int);
+                assert(out.signed_num_witness_spec() > 0);
+                assert(out@.num == value as int);
+                assert(out.signed_num_witness_spec() * out@.denom()
+                    == value as int * 1);
+                assert(out@.num * (out.den_witness.model@ as int)
+                    == value as int * 1);
+            } else if value < 0 {
+                assert(sign_witness is Negative);
+                if value == -9_223_372_036_854_775_808i64 {
+                    assert(abs_u64 == 9_223_372_036_854_775_808u64);
+                    assert(value as int == -9_223_372_036_854_775_808int);
+                    assert(abs_u64 as int == 9_223_372_036_854_775_808int);
+                    assert(value as int == -(abs_u64 as int));
+                } else {
+                    assert(abs_u64 == (-value) as u64);
+                    assert((-value) as int == abs_u64 as int);
+                    assert(value as int == -(abs_u64 as int));
+                }
+                assert(out.signed_num_witness_spec() == -(out.num_abs_witness.model@ as int));
+                assert(out.signed_num_witness_spec() == -(abs_u64 as int));
+                assert(out.signed_num_witness_spec() == value as int);
+                assert(out.signed_num_witness_spec() < 0);
+                assert(out@.num == value as int);
+                assert(out.signed_num_witness_spec() * out@.denom()
+                    == value as int * 1);
+                assert(out@.num * (out.den_witness.model@ as int)
+                    == value as int * 1);
+            } else {
+                assert(sign_witness is Zero);
+                assert(abs_u64 == 0u64);
+                assert(out.signed_num_witness_spec() == 0);
+                assert(out.signed_num_witness_spec() * out@.denom() == 0);
+                assert(out@.num == 0);
+                assert(out@.num * (out.den_witness.model@ as int) == 0);
+            }
+            assert(out.signed_num_witness_spec() * out@.denom()
+                == out@.num * (out.den_witness.model@ as int));
+            assert(out.witness_wf_spec());
         }
         out
     }
@@ -331,6 +468,20 @@ impl RuntimeScalar {
         } else {
             RuntimeSign::Zero
         }
+    }
+
+    pub fn sign_from_witness(&self) -> (out: RuntimeSign)
+        requires
+            self.witness_wf_spec(),
+        ensures
+            (out is Positive) == (self@.signum() == 1),
+            (out is Negative) == (self@.signum() == -1),
+            (out is Zero) == (self@.signum() == 0),
+    {
+        proof {
+            self.lemma_witness_sign_matches_model();
+        }
+        self.sign_witness
     }
 
     pub fn recip(&self) -> (out: Option<Self>)

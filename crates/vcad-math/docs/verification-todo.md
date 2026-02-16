@@ -121,6 +121,8 @@ Completed scaffold:
     - semantic lift landed for positive case:
       `limbs_value(rhs) < limbs_value(self) ==> out.model@ == limbs_value(self) - limbs_value(rhs)`
   - `copy_small_total` (now full multi-limb copy; exact limb-value preservation proof landed)
+  - `from_u64` now carries an exact semantic postcondition in verus mode:
+    - `out.model@ == x as nat` (proved via div/mod decomposition to two limbs)
   - `trimmed_len_exec` now proves exact trailing-zero boundary facts:
     - all limbs in `[trimmed_len, len)` are zero
     - if `trimmed_len > 0`, limb `trimmed_len - 1` is nonzero
@@ -138,6 +140,12 @@ Completed scaffold:
     - `add_limbwise_small_total` now proves full semantic addition:
       - `out.model@ == limbs_value(self.limbs_le@) + limbs_value(rhs.limbs_le@)`
 - `RuntimeScalar` (verus cfg) now carries explicit witness slots (`sign_witness`, `num_abs_witness`, `den_witness`) as scaffolding; model-consistency proofs are still pending.
+  - scalar witness invariant scaffolding landed:
+    - `signed_num_witness_spec`
+    - `witness_wf_spec` (bigint wf + denominator positivity + signed cross-product relation)
+    - `lemma_witness_sign_matches_model`
+    - proof-backed extraction API: `sign_from_witness` (requires `witness_wf_spec`)
+  - `RuntimeScalar::from_int` now establishes `out.witness_wf_spec()` in its postcondition.
 
 ### Phase 3: Rebuild Scalar Operations Over Witness
 - [x] Re-implement `add/sub/mul/neg/normalize/recip` to update witness in exec mode.
