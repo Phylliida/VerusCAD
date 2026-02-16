@@ -33,6 +33,13 @@ Goal: remove trusted runtime proof boundaries so `vcad-math` runtime behavior is
 - Verus forbids deriving exec values by branching on spec-only expressions (`self@...`) and forbids calling proof fns from exec fns.
 - Therefore `RuntimeScalar::sign()` currently still depends on trusted `signum_i8()`.
 
+### What Hasn't Worked Yet (Documented Failures)
+- Directly reintroducing a full semantic loop invariant in `RuntimeBigNatWitness::add_limbwise_small_total` (linking `limbs_value_spec + carry*pow` to `prefix_sum_spec`) in one pass has repeatedly failed on arithmetic bridge obligations.
+- Cast-heavy proofs around per-step digit/carry (`u64/u128` to `u32` and then to `nat`) were brittle when mixed with `#[verifier::truncate]`; key equalities like `digit + carry*base == sum` were not consistently recoverable in that shape.
+- Broad one-shot `by (nonlinear_arith)` assertions over large expressions (push law + carry law + prefix-step expansion combined) were unstable; proof obligations needed finer decomposition but still regressed under the full invariant lift.
+- Attempted branch-local bounds such as `sum < 2*base`, `(sum-base) <= base-1`, and cast-equality bridges (`base_u64 as nat == limb_base_spec`) were unreliable in the failing configuration and did not compose into a full step proof.
+- Practical outcome: that semantic-lift attempt was reverted to keep the crate green, and `add_limbwise_small_total` currently remains on `out.wf_spec()` while retaining proof scaffolding hooks (`lemma_add_digit_carry_decompose`) for the next incremental lift.
+
 ## Final external_body Burn-Down (signum_i8)
 - [x] Introduce semantic sign API: `RuntimeSign` (`Negative/Zero/Positive`) + `RuntimeScalar::sign()`.
 - [x] Migrate orientation runtime paths to semantic sign branching (`runtime_orientation.rs`, `runtime_orientation3.rs`).
@@ -115,6 +122,10 @@ Completed scaffold:
     - `limb_or_zero_spec`, `prefix_sum_spec`
     - `lemma_limb_or_zero_past_logical_len`, `lemma_prefix_sum_step`
     - `lemma_prefix_sum_matches_subrange`, `lemma_prefix_sum_eq_subrange_value`
+  - carry-step arithmetic scaffold for addition:
+    - `add_sum_spec`, `add_digit_spec`, `add_carry_spec`
+    - `lemma_add_digit_carry_decompose`
+    - `add_limbwise_small_total` now calls the carry-step lemma per iteration (proof hook only; semantic postcondition still pending)
 - `RuntimeScalar` (verus cfg) now carries explicit witness slots (`sign_witness`, `num_abs_witness`, `den_witness`) as scaffolding; model-consistency proofs are still pending.
 
 ### Phase 3: Rebuild Scalar Operations Over Witness

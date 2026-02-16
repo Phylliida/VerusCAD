@@ -697,12 +697,16 @@ impl RuntimeBigNatWitness {
         let mut out_limbs: Vec<u32> = Vec::new();
         let mut i: usize = 0;
         let mut carry: u64 = 0u64;
+        let base_u64: u64 = 4_294_967_296u64;
         while i < n
             invariant
                 i <= n,
                 alen <= self.limbs_le.len(),
                 blen <= rhs.limbs_le.len(),
+                carry == 0u64 || carry == 1u64,
         {
+            let i_old = i;
+            let carry_in = carry;
             let a = if i < alen {
                 assert(i < self.limbs_le.len());
                 self.limbs_le[i] as u64
@@ -715,10 +719,45 @@ impl RuntimeBigNatWitness {
             } else {
                 0u64
             };
-            let sum = a.wrapping_add(b).wrapping_add(carry);
-            #[verifier::truncate]
-            let digit = sum as u32;
-            carry = if sum >= 4_294_967_296u64 { 1u64 } else { 0u64 };
+            let sum = a + b + carry_in;
+            let (digit, next_carry) = if sum >= base_u64 {
+                #[verifier::truncate]
+                let d = (sum - base_u64) as u32;
+                (d, 1u64)
+            } else {
+                #[verifier::truncate]
+                let d = sum as u32;
+                (d, 0u64)
+            };
+            proof {
+                let a_nat = a as nat;
+                let b_nat = b as nat;
+                let carry_nat = carry_in as nat;
+                if i_old < alen {
+                    assert(i_old < self.limbs_le.len());
+                    assert(a == self.limbs_le[i_old as int] as u64);
+                    assert(a_nat == self.limbs_le@[i_old as int] as nat);
+                    assert(a_nat < Self::limb_base_spec());
+                } else {
+                    assert(a == 0u64);
+                    assert(a_nat == 0);
+                    assert(a_nat < Self::limb_base_spec());
+                }
+                if i_old < blen {
+                    assert(i_old < rhs.limbs_le.len());
+                    assert(b == rhs.limbs_le[i_old as int] as u64);
+                    assert(b_nat == rhs.limbs_le@[i_old as int] as nat);
+                    assert(b_nat < Self::limb_base_spec());
+                } else {
+                    assert(b == 0u64);
+                    assert(b_nat == 0);
+                    assert(b_nat < Self::limb_base_spec());
+                }
+                assert(carry_in == 0u64 || carry_in == 1u64);
+                assert(carry_nat <= 1);
+                Self::lemma_add_digit_carry_decompose(a_nat, b_nat, carry_nat);
+            }
+            carry = next_carry;
             out_limbs.push(digit);
             i = i + 1;
         }
