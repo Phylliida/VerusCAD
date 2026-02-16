@@ -347,6 +347,53 @@ impl RuntimeBigNatWitness {
         assert(sum == Self::add_sum_spec(a, b, carry_in));
     }
 
+    proof fn lemma_add_prefix_step(
+        psr: nat,
+        psa: nat,
+        psb: nat,
+        digit: nat,
+        a: nat,
+        b: nat,
+        carry_in: nat,
+        carry_out: nat,
+        pow_i: nat,
+        pow_next: nat,
+    )
+        requires
+            psr + carry_in * pow_i == psa + psb,
+            digit + carry_out * Self::limb_base_spec() == a + b + carry_in,
+            pow_next == Self::limb_base_spec() * pow_i,
+        ensures
+            psr + digit * pow_i + carry_out * pow_next
+                == psa + psb + a * pow_i + b * pow_i,
+    {
+        assert(carry_out * pow_next == carry_out * (Self::limb_base_spec() * pow_i));
+        assert(carry_out * (Self::limb_base_spec() * pow_i) == carry_out * Self::limb_base_spec() * pow_i)
+            by (nonlinear_arith);
+        assert(
+            digit * pow_i + carry_out * pow_next
+                == digit * pow_i + carry_out * Self::limb_base_spec() * pow_i
+        );
+        assert(
+            digit * pow_i + carry_out * Self::limb_base_spec() * pow_i
+                == (digit + carry_out * Self::limb_base_spec()) * pow_i
+        ) by (nonlinear_arith);
+        assert((digit + carry_out * Self::limb_base_spec()) * pow_i == (a + b + carry_in) * pow_i);
+        assert((a + b + carry_in) * pow_i == a * pow_i + b * pow_i + carry_in * pow_i)
+            by (nonlinear_arith);
+        assert(
+            psr + digit * pow_i + carry_out * pow_next
+                == psr + a * pow_i + b * pow_i + carry_in * pow_i
+        );
+        assert(
+            psr + a * pow_i + b * pow_i + carry_in * pow_i
+                == (psr + carry_in * pow_i) + a * pow_i + b * pow_i
+        ) by (nonlinear_arith);
+        assert((psr + carry_in * pow_i) + a * pow_i + b * pow_i == (psa + psb) + a * pow_i + b * pow_i);
+        assert((psa + psb) + a * pow_i + b * pow_i == psa + psb + a * pow_i + b * pow_i)
+            by (nonlinear_arith);
+    }
+
     proof fn lemma_limb_or_zero_past_logical_len(limbs: Seq<u32>, logical_len: nat, idx: nat)
         requires
             logical_len <= idx,
@@ -688,25 +735,36 @@ impl RuntimeBigNatWitness {
     pub fn add_limbwise_small_total(&self, rhs: &Self) -> (out: Self)
         ensures
             out.wf_spec(),
+            out.model@ == Self::limbs_value_spec(self.limbs_le@) + Self::limbs_value_spec(rhs.limbs_le@),
     {
         let alen = Self::trimmed_len_exec(&self.limbs_le);
         let blen = Self::trimmed_len_exec(&rhs.limbs_le);
         assert(alen <= self.limbs_le.len());
         assert(blen <= rhs.limbs_le.len());
+        let ghost alen_nat = alen as nat;
+        let ghost blen_nat = blen as nat;
+        proof {
+            assert(alen_nat == alen as nat);
+            assert(blen_nat == blen as nat);
+        }
         let n = if alen > blen { alen } else { blen };
         let mut out_limbs: Vec<u32> = Vec::new();
         let mut i: usize = 0;
         let mut carry: u64 = 0u64;
-        let base_u64: u64 = 4_294_967_296u64;
         while i < n
             invariant
                 i <= n,
                 alen <= self.limbs_le.len(),
                 blen <= rhs.limbs_le.len(),
+                out_limbs@.len() == i,
                 carry == 0u64 || carry == 1u64,
+                Self::limbs_value_spec(out_limbs@) + carry as nat * Self::pow_base_spec(i as nat)
+                    == Self::prefix_sum_spec(self.limbs_le@, alen as nat, i as nat)
+                        + Self::prefix_sum_spec(rhs.limbs_le@, blen as nat, i as nat),
         {
             let i_old = i;
             let carry_in = carry;
+            let ghost i_nat = i_old as nat;
             let a = if i < alen {
                 assert(i < self.limbs_le.len());
                 self.limbs_le[i] as u64
@@ -720,12 +778,25 @@ impl RuntimeBigNatWitness {
                 0u64
             };
             let sum = a + b + carry_in;
-            let (digit, next_carry) = if sum >= base_u64 {
-                #[verifier::truncate]
-                let d = (sum - base_u64) as u32;
+            let (digit, next_carry) = if sum >= 4_294_967_296u64 {
+                assert(sum == a + b + carry_in);
+                assert(a <= 4_294_967_295u64);
+                assert(b <= 4_294_967_295u64);
+                assert(carry_in <= 1u64);
+                assert(sum <= 8_589_934_591u64);
+                assert(sum >= 4_294_967_296u64);
+                assert(sum - 4_294_967_296u64 <= 4_294_967_295u64);
+                let d = (sum - 4_294_967_296u64) as u32;
                 (d, 1u64)
             } else {
-                #[verifier::truncate]
+                assert(sum == a + b + carry_in);
+                assert(a <= 4_294_967_295u64);
+                assert(b <= 4_294_967_295u64);
+                assert(carry_in <= 1u64);
+                assert(sum <= 8_589_934_591u64);
+                assert(!(sum >= 4_294_967_296u64));
+                assert(sum < 4_294_967_296u64);
+                assert(sum <= 4_294_967_295u64);
                 let d = sum as u32;
                 (d, 0u64)
             };
@@ -733,40 +804,200 @@ impl RuntimeBigNatWitness {
                 let a_nat = a as nat;
                 let b_nat = b as nat;
                 let carry_nat = carry_in as nat;
+                let digit_nat = digit as nat;
+                let next_carry_nat = next_carry as nat;
+                assert(i_nat == i_old as nat);
                 if i_old < alen {
                     assert(i_old < self.limbs_le.len());
+                    assert((i_old as int) < (alen as int));
+                    assert(i_nat < alen as nat);
+                    assert(i_nat < self.limbs_le@.len());
                     assert(a == self.limbs_le[i_old as int] as u64);
                     assert(a_nat == self.limbs_le@[i_old as int] as nat);
                     assert(a_nat < Self::limb_base_spec());
+                    assert(
+                        Self::limb_or_zero_spec(self.limbs_le@, alen as nat, i_nat)
+                            == self.limbs_le@[i_old as int] as nat
+                    );
+                    assert(Self::limb_or_zero_spec(self.limbs_le@, alen as nat, i_nat) == a_nat);
                 } else {
                     assert(a == 0u64);
                     assert(a_nat == 0);
                     assert(a_nat < Self::limb_base_spec());
+                    assert((alen as int) <= (i_old as int));
+                    assert(alen as nat <= i_nat);
+                    Self::lemma_limb_or_zero_past_logical_len(self.limbs_le@, alen as nat, i_nat);
+                    assert(Self::limb_or_zero_spec(self.limbs_le@, alen as nat, i_nat) == a_nat);
                 }
                 if i_old < blen {
                     assert(i_old < rhs.limbs_le.len());
+                    assert((i_old as int) < (blen as int));
+                    assert(i_nat < blen as nat);
+                    assert(i_nat < rhs.limbs_le@.len());
                     assert(b == rhs.limbs_le[i_old as int] as u64);
                     assert(b_nat == rhs.limbs_le@[i_old as int] as nat);
                     assert(b_nat < Self::limb_base_spec());
+                    assert(
+                        Self::limb_or_zero_spec(rhs.limbs_le@, blen as nat, i_nat)
+                            == rhs.limbs_le@[i_old as int] as nat
+                    );
+                    assert(Self::limb_or_zero_spec(rhs.limbs_le@, blen as nat, i_nat) == b_nat);
                 } else {
                     assert(b == 0u64);
                     assert(b_nat == 0);
                     assert(b_nat < Self::limb_base_spec());
+                    assert((blen as int) <= (i_old as int));
+                    assert(blen as nat <= i_nat);
+                    Self::lemma_limb_or_zero_past_logical_len(rhs.limbs_le@, blen as nat, i_nat);
+                    assert(Self::limb_or_zero_spec(rhs.limbs_le@, blen as nat, i_nat) == b_nat);
                 }
                 assert(carry_in == 0u64 || carry_in == 1u64);
                 assert(carry_nat <= 1);
                 Self::lemma_add_digit_carry_decompose(a_nat, b_nat, carry_nat);
+
+                assert(sum == a + b + carry_in);
+                assert(sum as nat == a_nat + b_nat + carry_nat);
+                if sum >= 4_294_967_296u64 {
+                    assert(next_carry == 1u64);
+                    assert(next_carry_nat == 1);
+                    assert(digit as u64 == sum - 4_294_967_296u64);
+                    assert(digit_nat == (sum - 4_294_967_296u64) as nat);
+                    assert(Self::limb_base_spec() == 4_294_967_296);
+                    assert((sum - 4_294_967_296u64) as nat + Self::limb_base_spec() == sum as nat);
+                    assert(digit_nat + next_carry_nat * Self::limb_base_spec() == sum as nat);
+                } else {
+                    assert(next_carry == 0u64);
+                    assert(next_carry_nat == 0);
+                    assert(digit as u64 == sum);
+                    assert(digit_nat == sum as nat);
+                    assert(digit_nat + next_carry_nat * Self::limb_base_spec() == sum as nat);
+                }
+                assert(digit_nat + next_carry_nat * Self::limb_base_spec() == a_nat + b_nat + carry_nat);
+
+                Self::lemma_prefix_sum_step(self.limbs_le@, alen as nat, i_nat);
+                Self::lemma_prefix_sum_step(rhs.limbs_le@, blen as nat, i_nat);
+                Self::lemma_pow_base_succ(i_nat);
+                Self::lemma_add_prefix_step(
+                    Self::limbs_value_spec(out_limbs@),
+                    Self::prefix_sum_spec(self.limbs_le@, alen as nat, i_nat),
+                    Self::prefix_sum_spec(rhs.limbs_le@, blen as nat, i_nat),
+                    digit_nat,
+                    a_nat,
+                    b_nat,
+                    carry_nat,
+                    next_carry_nat,
+                    Self::pow_base_spec(i_nat),
+                    Self::pow_base_spec(i_nat + 1),
+                );
+                Self::lemma_limbs_value_push(out_limbs@, digit);
+                assert(out_limbs@.push(digit).len() == i_nat + 1);
+                assert(
+                    Self::prefix_sum_spec(self.limbs_le@, alen as nat, i_nat + 1)
+                        == Self::prefix_sum_spec(self.limbs_le@, alen as nat, i_nat)
+                            + Self::limb_or_zero_spec(self.limbs_le@, alen as nat, i_nat)
+                                * Self::pow_base_spec(i_nat)
+                );
+                assert(
+                    Self::prefix_sum_spec(rhs.limbs_le@, blen as nat, i_nat + 1)
+                        == Self::prefix_sum_spec(rhs.limbs_le@, blen as nat, i_nat)
+                            + Self::limb_or_zero_spec(rhs.limbs_le@, blen as nat, i_nat)
+                                * Self::pow_base_spec(i_nat)
+                );
+                assert(
+                    Self::prefix_sum_spec(self.limbs_le@, alen as nat, i_nat + 1)
+                        == Self::prefix_sum_spec(self.limbs_le@, alen as nat, i_nat)
+                            + a_nat * Self::pow_base_spec(i_nat)
+                );
+                assert(
+                    Self::prefix_sum_spec(rhs.limbs_le@, blen as nat, i_nat + 1)
+                        == Self::prefix_sum_spec(rhs.limbs_le@, blen as nat, i_nat)
+                            + b_nat * Self::pow_base_spec(i_nat)
+                );
+                assert(
+                    Self::limbs_value_spec(out_limbs@.push(digit))
+                        + next_carry_nat * Self::pow_base_spec(i_nat + 1)
+                        == Self::prefix_sum_spec(self.limbs_le@, alen as nat, i_nat + 1)
+                            + Self::prefix_sum_spec(rhs.limbs_le@, blen as nat, i_nat + 1)
+                );
             }
             carry = next_carry;
             out_limbs.push(digit);
             i = i + 1;
         }
+        assert(i == n);
+        assert(out_limbs@.len() == n);
+        let ghost n_nat = n as nat;
+        let ghost pre_push = out_limbs@;
+        proof {
+            assert(
+                Self::limbs_value_spec(pre_push) + carry as nat * Self::pow_base_spec(n_nat)
+                    == Self::prefix_sum_spec(self.limbs_le@, alen_nat, n_nat)
+                        + Self::prefix_sum_spec(rhs.limbs_le@, blen_nat, n_nat)
+            );
+            if alen_nat <= n_nat {
+                Self::lemma_prefix_sum_constant_past_logical_len(self.limbs_le@, alen_nat, n_nat);
+            }
+            if blen_nat <= n_nat {
+                Self::lemma_prefix_sum_constant_past_logical_len(rhs.limbs_le@, blen_nat, n_nat);
+            }
+            Self::lemma_prefix_sum_eq_subrange_value(self.limbs_le@, alen_nat);
+            Self::lemma_prefix_sum_eq_subrange_value(rhs.limbs_le@, blen_nat);
+            assert(forall|j: int| alen_nat <= j < self.limbs_le@.len() ==> self.limbs_le@[j] == 0u32);
+            assert(forall|j: int| blen_nat <= j < rhs.limbs_le@.len() ==> rhs.limbs_le@[j] == 0u32);
+            Self::lemma_limbs_value_trim_suffix_zeros(self.limbs_le@, alen_nat);
+            Self::lemma_limbs_value_trim_suffix_zeros(rhs.limbs_le@, blen_nat);
+            assert(
+                Self::prefix_sum_spec(self.limbs_le@, alen_nat, n_nat)
+                    == Self::limbs_value_spec(self.limbs_le@)
+            );
+            assert(
+                Self::prefix_sum_spec(rhs.limbs_le@, blen_nat, n_nat)
+                    == Self::limbs_value_spec(rhs.limbs_le@)
+            );
+        }
         if carry != 0u64 {
             out_limbs.push(1u32);
         }
+        proof {
+            if carry == 0u64 {
+                assert(out_limbs@ == pre_push);
+                assert(carry as nat == 0);
+                assert(
+                    Self::limbs_value_spec(out_limbs@)
+                        == Self::limbs_value_spec(self.limbs_le@)
+                            + Self::limbs_value_spec(rhs.limbs_le@)
+                );
+            } else {
+                assert(carry == 1u64);
+                assert(carry as nat == 1);
+                Self::lemma_limbs_value_push(pre_push, 1u32);
+                assert(out_limbs@ == pre_push.push(1u32));
+                assert(
+                    Self::limbs_value_spec(out_limbs@)
+                        == Self::limbs_value_spec(pre_push) + Self::pow_base_spec(n_nat)
+                );
+                assert(
+                    Self::limbs_value_spec(out_limbs@)
+                        == Self::limbs_value_spec(self.limbs_le@)
+                            + Self::limbs_value_spec(rhs.limbs_le@)
+                );
+            }
+        }
         let out_limbs = Self::trim_trailing_zero_limbs(out_limbs);
+        proof {
+            assert(
+                Self::limbs_value_spec(out_limbs@)
+                    == Self::limbs_value_spec(self.limbs_le@)
+                        + Self::limbs_value_spec(rhs.limbs_le@)
+            );
+        }
         let ghost model = Self::limbs_value_spec(out_limbs@);
-        Self::from_parts(out_limbs, Ghost(model))
+        let out = Self::from_parts(out_limbs, Ghost(model));
+        proof {
+            assert(out.model@ == Self::limbs_value_spec(out.limbs_le@));
+            assert(out.model@ == Self::limbs_value_spec(self.limbs_le@) + Self::limbs_value_spec(rhs.limbs_le@));
+        }
+        out
     }
 
     #[verifier::exec_allows_no_decreases_clause]
