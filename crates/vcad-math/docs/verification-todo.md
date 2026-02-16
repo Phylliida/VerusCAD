@@ -110,10 +110,14 @@ Completed scaffold:
   - `add_limbwise_small_total` (now full multi-limb carry addition + canonical trim)
   - `mul_limbwise_small_total` (now full schoolbook multi-limb multiplication + canonical trim)
   - `cmp_limbwise_small_total` (now full multi-limb compare via trimmed length + high-to-low limb scan)
-    - semantic partial lift landed: `out == 0 ==> limbs_value(self) == limbs_value(rhs)`
-    - contract now also states exact-sequence equality implies zero compare result
+    - directional order semantics landed:
+      - `out == -1 ==> limbs_value(self) < limbs_value(rhs)`
+      - `out == 0 ==> limbs_value(self) == limbs_value(rhs)`
+      - `out == 1 ==> limbs_value(self) > limbs_value(rhs)`
+    - contract also states exact-sequence equality implies zero compare result
   - `sub_limbwise_small_total` (now full multi-limb borrow subtraction for `self >= rhs`)
     - now computes `cmp` once and short-circuits both `cmp == -1` and `cmp == 0` to `zero()`
+    - semantic lift landed for nonpositive case: `limbs_value(self) <= limbs_value(rhs) ==> out.model@ == 0`
   - `copy_small_total` (now full multi-limb copy; exact limb-value preservation proof landed)
   - `trimmed_len_exec` now proves exact trailing-zero boundary facts:
     - all limbs in `[trimmed_len, len)` are zero
