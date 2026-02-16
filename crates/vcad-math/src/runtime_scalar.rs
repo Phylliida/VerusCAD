@@ -139,6 +139,10 @@ impl RuntimeScalar {
 verus! {
 impl RuntimeScalar {
     fn sign_neg_witness(sign: RuntimeSign) -> (out: RuntimeSign)
+        ensures
+            (sign is Negative) ==> (out is Positive),
+            (sign is Zero) ==> (out is Zero),
+            (sign is Positive) ==> (out is Negative),
     {
         match sign {
             RuntimeSign::Negative => RuntimeSign::Positive,
@@ -148,6 +152,12 @@ impl RuntimeScalar {
     }
 
     fn sign_mul_witness(lhs: RuntimeSign, rhs: RuntimeSign) -> (out: RuntimeSign)
+        ensures
+            (out is Zero) == ((lhs is Zero) || (rhs is Zero)),
+            (out is Positive) == ((lhs is Positive && rhs is Positive)
+                || (lhs is Negative && rhs is Negative)),
+            (out is Negative) == ((lhs is Positive && rhs is Negative)
+                || (lhs is Negative && rhs is Positive)),
     {
         match (lhs, rhs) {
             (RuntimeSign::Zero, _) | (_, RuntimeSign::Zero) => RuntimeSign::Zero,
@@ -244,6 +254,30 @@ impl RuntimeScalar {
             assert(self@.signum() != 1);
             assert(self@.signum() != -1);
         }
+    }
+
+    proof fn lemma_int_pos_negates_to_neg(x: int)
+        requires
+            x > 0,
+        ensures
+            -x < 0,
+    {
+        assert((x > 0) ==> 0 - x < 0) by (nonlinear_arith);
+        assert(0 - x < 0);
+        assert(-x == 0 - x);
+        assert(-x < 0);
+    }
+
+    proof fn lemma_int_neg_negates_to_pos(x: int)
+        requires
+            x < 0,
+        ensures
+            -x > 0,
+    {
+        assert((x < 0) ==> 0 - x > 0) by (nonlinear_arith);
+        assert(0 - x > 0);
+        assert(-x == 0 - x);
+        assert(-x > 0);
     }
 
     fn add_signed_witness(
@@ -551,6 +585,77 @@ impl RuntimeScalar {
         };
         proof {
             assert(out@ == self@.neg_spec());
+        }
+        out
+    }
+
+    pub fn neg_wf(&self) -> (out: Self)
+        requires
+            self.witness_wf_spec(),
+        ensures
+            out@ == self@.neg_spec(),
+            out.witness_wf_spec(),
+    {
+        let sign_witness = Self::sign_neg_witness(self.sign_witness);
+        let num_abs_witness = self.num_abs_witness.copy_small_total();
+        let den_witness = self.den_witness.copy_small_total();
+        let out = RuntimeScalar {
+            sign_witness,
+            num_abs_witness,
+            den_witness,
+            model: Ghost(self@.neg_spec()),
+        };
+        proof {
+            assert(out@ == self@.neg_spec());
+            assert(out.num_abs_witness.wf_spec());
+            assert(out.den_witness.wf_spec());
+            assert(out.num_abs_witness.model@ == self.num_abs_witness.model@);
+            assert(out.den_witness.model@ == self.den_witness.model@);
+            assert(out.den_witness.model@ > 0);
+            let ghost s = self.signed_num_witness_spec();
+            let ghost os = out.signed_num_witness_spec();
+            match self.sign_witness {
+                RuntimeSign::Positive => {
+                    assert(sign_witness is Negative);
+                    assert(s > 0);
+                    assert(s == self.num_abs_witness.model@ as int);
+                    assert(os == -(out.num_abs_witness.model@ as int));
+                    assert(out.num_abs_witness.model@ == self.num_abs_witness.model@);
+                    assert(os == -s);
+                    Self::lemma_int_pos_negates_to_neg(s);
+                    assert(-s < 0);
+                    assert(os < 0);
+                }
+                RuntimeSign::Negative => {
+                    assert(sign_witness is Positive);
+                    assert(s < 0);
+                    assert(s == -(self.num_abs_witness.model@ as int));
+                    assert(os == out.num_abs_witness.model@ as int);
+                    assert(out.num_abs_witness.model@ == self.num_abs_witness.model@);
+                    assert(os == -s);
+                    Self::lemma_int_neg_negates_to_pos(s);
+                    assert(-s > 0);
+                    assert(os > 0);
+                }
+                RuntimeSign::Zero => {
+                    assert(sign_witness is Zero);
+                    assert(s == 0);
+                    assert(os == 0);
+                    assert(os == -s);
+                }
+            }
+            assert(out@.denom() == self@.denom());
+            assert(out@.num == -self@.num);
+            assert(s * self@.denom() == self@.num * (self.den_witness.model@ as int));
+            assert(os * out@.denom() == (-s) * self@.denom());
+            assert((-s) * self@.denom() == -(s * self@.denom())) by (nonlinear_arith);
+            assert((-self@.num) * (self.den_witness.model@ as int)
+                == -(self@.num * (self.den_witness.model@ as int))) by (nonlinear_arith);
+            assert((-s) * self@.denom() == (-self@.num) * (self.den_witness.model@ as int));
+            assert(out@.num * (out.den_witness.model@ as int)
+                == (-self@.num) * (self.den_witness.model@ as int));
+            assert(os * out@.denom() == out@.num * (out.den_witness.model@ as int));
+            assert(out.witness_wf_spec());
         }
         out
     }

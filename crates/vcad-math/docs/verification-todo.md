@@ -39,6 +39,9 @@ Goal: remove trusted runtime proof boundaries so `vcad-math` runtime behavior is
 - Broad one-shot `by (nonlinear_arith)` assertions over large expressions (push law + carry law + prefix-step expansion combined) were unstable; proof obligations needed finer decomposition but still regressed under the full invariant lift.
 - Attempted branch-local bounds such as `sum < 2*base`, `(sum-base) <= base-1`, and cast-equality bridges (`base_u64 as nat == limb_base_spec`) were unreliable in the failing configuration and did not compose into a full step proof.
 - Update (2026-02-16): `add_limbwise_small_total` now has a semantic postcondition (`out.model@ == limbs_value(self) + limbs_value(rhs)`) using a decomposed cast/prefix-step proof (`lemma_add_prefix_step`) and range-checked casts.
+- Update (2026-02-16): `mul_limbwise_small_total` now has a semantic postcondition
+  (`out.model@ == limbs_value(self) * limbs_value(rhs)`) via a verified shift/add construction
+  (`mul_by_u32_total` + `shift_base_once_total` + prefix-sum accumulation).
 
 ## Final external_body Burn-Down (signum_i8)
 - [x] Introduce semantic sign API: `RuntimeSign` (`Negative/Zero/Positive`) + `RuntimeScalar::sign()`.
@@ -108,7 +111,8 @@ Completed scaffold:
 - `RuntimeBigNatWitness::from_u64` is now available in both runtime and verus modes (wf guarantee in verus mode).
 - `RuntimeBigNatWitness` now also exposes total small-limb witness arithmetic helpers in verus mode:
   - `add_limbwise_small_total` (now full multi-limb carry addition + canonical trim)
-  - `mul_limbwise_small_total` (now full schoolbook multi-limb multiplication + canonical trim)
+  - `mul_limbwise_small_total` (now full multi-limb multiplication with exact semantic lift:
+    `out.model@ == limbs_value(self) * limbs_value(rhs)`)
   - `cmp_limbwise_small_total` (now full multi-limb compare via trimmed length + high-to-low limb scan)
     - directional order semantics landed:
       - `out == -1 ==> limbs_value(self) < limbs_value(rhs)`
@@ -144,8 +148,12 @@ Completed scaffold:
     - `signed_num_witness_spec`
     - `witness_wf_spec` (bigint wf + denominator positivity + signed cross-product relation)
     - `lemma_witness_sign_matches_model`
+    - stronger sign helper contracts:
+      - `sign_neg_witness` / `sign_mul_witness` now carry explicit sign-shape ensures
     - proof-backed extraction API: `sign_from_witness` (requires `witness_wf_spec`)
   - `RuntimeScalar::from_int` now establishes `out.witness_wf_spec()` in its postcondition.
+  - witness-preserving helper landed for negation:
+    - `RuntimeScalar::neg_wf` (requires `witness_wf_spec`, ensures `out.witness_wf_spec()`)
 
 ### Phase 3: Rebuild Scalar Operations Over Witness
 - [x] Re-implement `add/sub/mul/neg/normalize/recip` to update witness in exec mode.

@@ -1656,92 +1656,311 @@ impl RuntimeBigNatWitness {
         out
     }
 
+    /// Multiplies by one base limb (`2^32`) by prepending a zero low limb.
+    #[verifier::exec_allows_no_decreases_clause]
+    fn shift_base_once_total(&self) -> (out: Self)
+        ensures
+            out.wf_spec(),
+            out.model@ == Self::limbs_value_spec(self.limbs_le@) * Self::limb_base_spec(),
+    {
+        let n = Self::trimmed_len_exec(&self.limbs_le);
+        assert(n <= self.limbs_le.len());
+        if n == 0 {
+            let out = Self::zero();
+            proof {
+                let ng: nat = n as nat;
+                assert(ng == 0);
+                assert(ng <= self.limbs_le@.len());
+                assert(forall|j: int| ng <= j < self.limbs_le@.len() ==> self.limbs_le@[j] == 0u32);
+                Self::lemma_limbs_value_trim_suffix_zeros(self.limbs_le@, ng);
+                assert(self.limbs_le@.subrange(0, n as int) == Seq::<u32>::empty());
+                assert(Self::limbs_value_spec(Seq::<u32>::empty()) == 0);
+                assert(Self::limbs_value_spec(self.limbs_le@) == 0);
+                assert(out.model@ == 0);
+                assert(out.model@ == Self::limbs_value_spec(self.limbs_le@) * Self::limb_base_spec());
+            }
+            out
+        } else {
+            let mut out_limbs: Vec<u32> = Vec::new();
+            out_limbs.push(0u32);
+            let mut i: usize = 0;
+            while i < n
+                invariant
+                    i <= n,
+                    n <= self.limbs_le.len(),
+                    out_limbs@ == Seq::<u32>::empty().push(0u32) + self.limbs_le@.subrange(0, i as int),
+            {
+                assert(i < self.limbs_le.len());
+                out_limbs.push(self.limbs_le[i]);
+                i = i + 1;
+            }
+            proof {
+                assert(i == n);
+                let ghost zero_prefix = Seq::<u32>::empty().push(0u32);
+                let ghost trimmed = self.limbs_le@.subrange(0, n as int);
+                assert(out_limbs@ == zero_prefix + trimmed);
+                assert(zero_prefix.len() == 1);
+                assert(Self::limbs_value_spec(zero_prefix) == 0);
+                Self::lemma_limbs_value_append(zero_prefix, trimmed);
+                assert(
+                    Self::limbs_value_spec(out_limbs@)
+                        == Self::limbs_value_spec(zero_prefix)
+                            + Self::pow_base_spec(zero_prefix.len()) * Self::limbs_value_spec(trimmed)
+                );
+                assert(Self::pow_base_spec(zero_prefix.len()) == Self::pow_base_spec(1));
+                Self::lemma_pow_base_succ(0);
+                assert(Self::pow_base_spec(0) == 1);
+                assert(Self::pow_base_spec(1) == Self::limb_base_spec() * Self::pow_base_spec(0));
+                assert(Self::pow_base_spec(1) == Self::limb_base_spec());
+                assert(
+                    Self::limbs_value_spec(out_limbs@)
+                        == Self::limb_base_spec() * Self::limbs_value_spec(trimmed)
+                );
+                let ng: nat = n as nat;
+                assert(ng <= self.limbs_le@.len());
+                assert(forall|j: int| ng <= j < self.limbs_le@.len() ==> self.limbs_le@[j] == 0u32);
+                Self::lemma_limbs_value_trim_suffix_zeros(self.limbs_le@, ng);
+                assert(Self::limbs_value_spec(self.limbs_le@) == Self::limbs_value_spec(trimmed));
+                assert(
+                    Self::limbs_value_spec(out_limbs@)
+                        == Self::limb_base_spec() * Self::limbs_value_spec(self.limbs_le@)
+                );
+                let ghost self_val = Self::limbs_value_spec(self.limbs_le@);
+                assert(
+                    Self::limb_base_spec() * self_val
+                        == self_val * Self::limb_base_spec()
+                ) by (nonlinear_arith);
+
+                assert(out_limbs@.len() == n + 1);
+                assert(self.limbs_le@[(n - 1) as int] != 0u32);
+                assert(out_limbs@[(out_limbs@.len() - 1) as int] == self.limbs_le@[(n - 1) as int]);
+                assert(out_limbs@[(out_limbs@.len() - 1) as int] != 0u32);
+                assert(Self::canonical_limbs_spec(out_limbs@));
+            }
+            let ghost model = Self::limbs_value_spec(out_limbs@);
+            let out = Self::from_parts(out_limbs, Ghost(model));
+            proof {
+                assert(out.model@ == Self::limbs_value_spec(out.limbs_le@));
+                let ghost self_val = Self::limbs_value_spec(self.limbs_le@);
+                assert(Self::limb_base_spec() * self_val == self_val * Self::limb_base_spec()) by (nonlinear_arith);
+                assert(out.model@ == Self::limb_base_spec() * self_val);
+                assert(out.model@ == Self::limbs_value_spec(self.limbs_le@) * Self::limb_base_spec());
+            }
+            out
+        }
+    }
+
+    /// Multiplies by one `u32` limb via repeated semantic addition.
+    #[verifier::exec_allows_no_decreases_clause]
+    fn mul_by_u32_total(&self, rhs_limb: u32) -> (out: Self)
+        ensures
+            out.wf_spec(),
+            out.model@ == Self::limbs_value_spec(self.limbs_le@) * rhs_limb as nat,
+    {
+        let mut acc = Self::zero();
+        let mut remaining = rhs_limb;
+        while remaining > 0
+            invariant
+                acc.wf_spec(),
+                acc.model@ + Self::limbs_value_spec(self.limbs_le@) * (remaining as nat)
+                    == Self::limbs_value_spec(self.limbs_le@) * rhs_limb as nat,
+        {
+            let prev_remaining = remaining;
+            let next = acc.add_limbwise_small_total(self);
+            remaining = prev_remaining - 1;
+            proof {
+                let ghost self_val = Self::limbs_value_spec(self.limbs_le@);
+                assert(prev_remaining > 0);
+                assert(prev_remaining as nat == remaining as nat + 1);
+                assert(Self::limbs_value_spec(acc.limbs_le@) == acc.model@);
+                assert(Self::limbs_value_spec(next.limbs_le@) == next.model@);
+                assert(next.model@ == Self::limbs_value_spec(acc.limbs_le@) + Self::limbs_value_spec(self.limbs_le@));
+                assert(next.model@ == acc.model@ + self_val);
+                assert(
+                    self_val * (prev_remaining as nat)
+                        == self_val * ((remaining as nat) + 1)
+                );
+                assert(
+                    self_val * ((remaining as nat) + 1)
+                        == self_val * (remaining as nat) + self_val
+                ) by (nonlinear_arith);
+                assert(
+                    next.model@ + self_val * (remaining as nat)
+                        == (acc.model@ + self_val) + self_val * (remaining as nat)
+                );
+                assert(
+                    (acc.model@ + self_val) + self_val * (remaining as nat)
+                        == acc.model@ + (self_val * (remaining as nat) + self_val)
+                ) by (nonlinear_arith);
+                assert(
+                    acc.model@ + (self_val * (remaining as nat) + self_val)
+                        == acc.model@ + self_val * (prev_remaining as nat)
+                );
+                assert(
+                    acc.model@ + self_val * (prev_remaining as nat)
+                        == self_val * rhs_limb as nat
+                );
+                assert(next.model@ + self_val * (remaining as nat) == self_val * rhs_limb as nat);
+            }
+            acc = next;
+        }
+        proof {
+            let ghost self_val = Self::limbs_value_spec(self.limbs_le@);
+            assert(!(remaining > 0));
+            assert(remaining == 0);
+            assert(remaining as nat == 0);
+            assert(acc.model@ + self_val * (remaining as nat) == self_val * rhs_limb as nat);
+            assert(acc.model@ == self_val * rhs_limb as nat);
+        }
+        acc
+    }
+
     /// Total limb-wise multiplication helper used by scalar witness plumbing.
     ///
-    /// Computes schoolbook multi-limb multiplication over little-endian limbs,
-    /// with local carry propagation and canonical trailing-zero trim.
+    /// Computes exact multiplication in little-endian limb space by combining:
+    /// - per-limb scalar multiplication (`mul_by_u32_total`)
+    /// - base shifting (`shift_base_once_total`)
+    /// - semantic accumulation (`add_limbwise_small_total`)
     #[verifier::exec_allows_no_decreases_clause]
     pub fn mul_limbwise_small_total(&self, rhs: &Self) -> (out: Self)
         ensures
             out.wf_spec(),
+            out.model@ == Self::limbs_value_spec(self.limbs_le@) * Self::limbs_value_spec(rhs.limbs_le@),
     {
-        let alen = Self::trimmed_len_exec(&self.limbs_le);
         let blen = Self::trimmed_len_exec(&rhs.limbs_le);
-        assert(alen <= self.limbs_le.len());
         assert(blen <= rhs.limbs_le.len());
-        if alen == 0 || blen == 0 {
-            Self::zero()
-        } else {
-            let mut total_len = alen.wrapping_add(blen);
-            total_len = total_len.wrapping_add(2usize);
-            let mut out_limbs: Vec<u32> = Vec::new();
-            while out_limbs.len() < total_len
-                invariant
-                    out_limbs.len() <= total_len,
-            {
-                out_limbs.push(0u32);
-            }
-
-            let mut i: usize = 0;
-            while i < alen
-                invariant
-                    i <= alen,
-                    alen <= self.limbs_le.len(),
-                    blen <= rhs.limbs_le.len(),
-                    out_limbs.len() == total_len,
-            {
-                assert(i < self.limbs_le.len());
-                let ai = self.limbs_le[i] as u128;
-                let mut carry: u128 = 0u128;
-                let mut j: usize = 0;
-                while j < blen
-                    invariant
-                        j <= blen,
-                        i < alen,
-                        alen <= self.limbs_le.len(),
-                        blen <= rhs.limbs_le.len(),
-                        out_limbs.len() == total_len,
-                {
-                    let idx = i.wrapping_add(j);
-                    if idx >= out_limbs.len() {
-                        break;
-                    }
-                    assert(j < rhs.limbs_le.len());
-                    let bj = rhs.limbs_le[j] as u128;
-                    let existing = out_limbs[idx] as u128;
-                    let term = ai.wrapping_mul(bj);
-                    let total = term.wrapping_add(existing).wrapping_add(carry);
-                    #[verifier::truncate]
-                    let digit = total as u32;
-                    out_limbs[idx] = digit;
-                    carry = total >> 32;
-                    j = j + 1;
-                }
-
-                let mut k = i.wrapping_add(blen);
-                while carry != 0u128
-                    invariant
-                        out_limbs.len() == total_len,
-                {
-                    if k >= out_limbs.len() {
-                        break;
-                    }
-                    let existing = out_limbs[k] as u128;
-                    let total = existing.wrapping_add(carry);
-                    #[verifier::truncate]
-                    let digit = total as u32;
-                    out_limbs[k] = digit;
-                    carry = total >> 32;
-                    k = k + 1;
-                }
-
-                i = i + 1;
-            }
-
-            let out_limbs = Self::trim_trailing_zero_limbs(out_limbs);
-            let ghost model = Self::limbs_value_spec(out_limbs@);
-            Self::from_parts(out_limbs, Ghost(model))
+        let mut acc = Self::zero();
+        let mut shifted = self.copy_small_total();
+        let mut i: usize = 0;
+        proof {
+            assert(acc.model@ == 0);
+            assert(Self::prefix_sum_spec(rhs.limbs_le@, blen as nat, 0) == 0);
+            assert(Self::pow_base_spec(0) == 1);
+            assert(
+                Self::limbs_value_spec(self.limbs_le@)
+                    * Self::prefix_sum_spec(rhs.limbs_le@, blen as nat, 0)
+                    == 0
+            ) by (nonlinear_arith);
+            assert(
+                acc.model@
+                    == Self::limbs_value_spec(self.limbs_le@)
+                        * Self::prefix_sum_spec(rhs.limbs_le@, blen as nat, 0)
+            );
+            assert(shifted.model@ == Self::limbs_value_spec(self.limbs_le@));
+            assert(
+                shifted.model@
+                    == Self::limbs_value_spec(self.limbs_le@) * Self::pow_base_spec(0)
+            );
         }
+        while i < blen
+            invariant
+                i <= blen,
+                blen <= rhs.limbs_le.len(),
+                acc.wf_spec(),
+                shifted.wf_spec(),
+                acc.model@ == Self::limbs_value_spec(self.limbs_le@)
+                    * Self::prefix_sum_spec(rhs.limbs_le@, blen as nat, i as nat),
+                shifted.model@ == Self::limbs_value_spec(self.limbs_le@) * Self::pow_base_spec(i as nat),
+        {
+            assert(i < rhs.limbs_le.len());
+            let limb = rhs.limbs_le[i];
+            let term = shifted.mul_by_u32_total(limb);
+            let next_acc = acc.add_limbwise_small_total(&term);
+            let next_shifted = shifted.shift_base_once_total();
+            proof {
+                let i_nat = i as nat;
+                let blen_nat = blen as nat;
+                let ghost self_val = Self::limbs_value_spec(self.limbs_le@);
+                let ghost prefix_i = Self::prefix_sum_spec(rhs.limbs_le@, blen_nat, i_nat);
+                let ghost prefix_next = Self::prefix_sum_spec(rhs.limbs_le@, blen_nat, i_nat + 1);
+                assert(i_nat < blen_nat);
+                assert(i_nat < rhs.limbs_le@.len());
+                assert(Self::limb_or_zero_spec(rhs.limbs_le@, blen_nat, i_nat) == rhs.limbs_le@[i as int] as nat);
+                assert(Self::limb_or_zero_spec(rhs.limbs_le@, blen_nat, i_nat) == limb as nat);
+                Self::lemma_prefix_sum_step(rhs.limbs_le@, blen_nat, i_nat);
+                assert(
+                    prefix_next
+                        == prefix_i + limb as nat * Self::pow_base_spec(i_nat)
+                );
+
+                assert(Self::limbs_value_spec(shifted.limbs_le@) == shifted.model@);
+                assert(term.model@ == Self::limbs_value_spec(shifted.limbs_le@) * limb as nat);
+                assert(term.model@ == shifted.model@ * limb as nat);
+                assert(shifted.model@ == self_val * Self::pow_base_spec(i_nat));
+                let ghost pow_i = Self::pow_base_spec(i_nat);
+                let ghost limb_nat = limb as nat;
+                assert(term.model@ == (self_val * pow_i) * limb_nat);
+
+                assert(Self::limbs_value_spec(acc.limbs_le@) == acc.model@);
+                assert(Self::limbs_value_spec(term.limbs_le@) == term.model@);
+                assert(
+                    next_acc.model@
+                        == Self::limbs_value_spec(acc.limbs_le@) + Self::limbs_value_spec(term.limbs_le@)
+                );
+                assert(next_acc.model@ == acc.model@ + term.model@);
+                assert(acc.model@ == self_val * prefix_i);
+                assert(
+                    next_acc.model@
+                        == self_val * prefix_i
+                            + (self_val * pow_i) * limb_nat
+                );
+                assert((self_val * pow_i) * limb_nat == self_val * (pow_i * limb_nat))
+                    by (nonlinear_arith);
+                assert(pow_i * limb_nat == limb_nat * pow_i) by (nonlinear_arith);
+                assert(self_val * (pow_i * limb_nat) == self_val * (limb_nat * pow_i))
+                    by (nonlinear_arith);
+                assert(
+                    next_acc.model@
+                        == self_val * prefix_i + self_val * (limb_nat * pow_i)
+                );
+                assert(
+                    self_val * prefix_i + self_val * (limb_nat * pow_i)
+                        == self_val * (prefix_i + limb_nat * pow_i)
+                ) by (nonlinear_arith);
+                assert(next_acc.model@ == self_val * (prefix_i + limb_nat * pow_i));
+                assert(next_acc.model@ == self_val * prefix_next);
+
+                assert(Self::limbs_value_spec(next_shifted.limbs_le@) == next_shifted.model@);
+                assert(next_shifted.model@ == Self::limbs_value_spec(shifted.limbs_le@) * Self::limb_base_spec());
+                assert(next_shifted.model@ == shifted.model@ * Self::limb_base_spec());
+                Self::lemma_pow_base_succ(i_nat);
+                let ghost pow_next = Self::pow_base_spec(i_nat + 1);
+                assert(pow_next == Self::limb_base_spec() * pow_i);
+                let ghost base = Self::limb_base_spec();
+                assert(next_shifted.model@ == (self_val * pow_i) * base);
+                assert((self_val * pow_i) * base == self_val * (pow_i * base))
+                    by (nonlinear_arith);
+                assert(pow_i * base == base * pow_i) by (nonlinear_arith);
+                assert(self_val * (pow_i * base) == self_val * (base * pow_i))
+                    by (nonlinear_arith);
+                assert(next_shifted.model@ == self_val * (base * pow_i));
+                assert(next_shifted.model@ == self_val * pow_next);
+            }
+            acc = next_acc;
+            shifted = next_shifted;
+            i = i + 1;
+        }
+        proof {
+            let blen_nat = blen as nat;
+            assert(i == blen);
+            assert(
+                acc.model@
+                    == Self::limbs_value_spec(self.limbs_le@)
+                        * Self::prefix_sum_spec(rhs.limbs_le@, blen_nat, blen_nat)
+            );
+            Self::lemma_prefix_sum_eq_subrange_value(rhs.limbs_le@, blen_nat);
+            assert(forall|j: int| blen_nat <= j < rhs.limbs_le@.len() ==> rhs.limbs_le@[j] == 0u32);
+            Self::lemma_limbs_value_trim_suffix_zeros(rhs.limbs_le@, blen_nat);
+            assert(
+                Self::prefix_sum_spec(rhs.limbs_le@, blen_nat, blen_nat)
+                    == Self::limbs_value_spec(rhs.limbs_le@)
+            );
+            assert(
+                acc.model@
+                    == Self::limbs_value_spec(self.limbs_le@) * Self::limbs_value_spec(rhs.limbs_le@)
+            );
+        }
+        acc
     }
 
     /// Total small-limb compare helper used by scalar witness plumbing.
