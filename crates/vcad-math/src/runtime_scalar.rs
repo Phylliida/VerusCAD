@@ -5,6 +5,8 @@ use crate::runtime_bigint_witness::RuntimeBigNatWitness;
 #[cfg(verus_keep_ghost)]
 use crate::scalar::ScalarModel;
 #[cfg(verus_keep_ghost)]
+use vstd::arithmetic::mul::{lemma_mul_basics, lemma_mul_strict_inequality};
+#[cfg(verus_keep_ghost)]
 use vstd::prelude::*;
 #[cfg(verus_keep_ghost)]
 use vstd::view::View;
@@ -138,8 +140,43 @@ impl RuntimeScalar {
 #[cfg(verus_keep_ghost)]
 verus! {
 impl RuntimeScalar {
+    pub open spec fn sign_neg_spec(sign: RuntimeSign) -> RuntimeSign {
+        match sign {
+            RuntimeSign::Negative => RuntimeSign::Positive,
+            RuntimeSign::Zero => RuntimeSign::Zero,
+            RuntimeSign::Positive => RuntimeSign::Negative,
+        }
+    }
+
+    pub open spec fn sign_mul_spec(lhs: RuntimeSign, rhs: RuntimeSign) -> RuntimeSign {
+        match (lhs, rhs) {
+            (RuntimeSign::Zero, _) | (_, RuntimeSign::Zero) => RuntimeSign::Zero,
+            (RuntimeSign::Positive, RuntimeSign::Positive)
+            | (RuntimeSign::Negative, RuntimeSign::Negative) => RuntimeSign::Positive,
+            (RuntimeSign::Positive, RuntimeSign::Negative)
+            | (RuntimeSign::Negative, RuntimeSign::Positive) => RuntimeSign::Negative,
+        }
+    }
+
+    pub open spec fn signed_from_parts_spec(sign: RuntimeSign, abs: nat) -> int {
+        match sign {
+            RuntimeSign::Negative => -(abs as int),
+            RuntimeSign::Zero => 0,
+            RuntimeSign::Positive => abs as int,
+        }
+    }
+
+    pub open spec fn sign_parts_wf_spec(sign: RuntimeSign, abs: nat) -> bool {
+        match sign {
+            RuntimeSign::Negative => Self::signed_from_parts_spec(sign, abs) < 0,
+            RuntimeSign::Zero => Self::signed_from_parts_spec(sign, abs) == 0,
+            RuntimeSign::Positive => Self::signed_from_parts_spec(sign, abs) > 0,
+        }
+    }
+
     fn sign_neg_witness(sign: RuntimeSign) -> (out: RuntimeSign)
         ensures
+            out == Self::sign_neg_spec(sign),
             (sign is Negative) ==> (out is Positive),
             (sign is Zero) ==> (out is Zero),
             (sign is Positive) ==> (out is Negative),
@@ -153,6 +190,7 @@ impl RuntimeScalar {
 
     fn sign_mul_witness(lhs: RuntimeSign, rhs: RuntimeSign) -> (out: RuntimeSign)
         ensures
+            out == Self::sign_mul_spec(lhs, rhs),
             (out is Zero) == ((lhs is Zero) || (rhs is Zero)),
             (out is Positive) == ((lhs is Positive && rhs is Positive)
                 || (lhs is Negative && rhs is Negative)),
@@ -169,11 +207,7 @@ impl RuntimeScalar {
     }
 
     pub open spec fn signed_num_witness_spec(&self) -> int {
-        match self.sign_witness {
-            RuntimeSign::Negative => -(self.num_abs_witness.model@ as int),
-            RuntimeSign::Zero => 0,
-            RuntimeSign::Positive => self.num_abs_witness.model@ as int,
-        }
+        Self::signed_from_parts_spec(self.sign_witness, self.num_abs_witness.model@)
     }
 
     pub open spec fn witness_wf_spec(&self) -> bool {
@@ -187,6 +221,74 @@ impl RuntimeScalar {
         }
         &&& self.signed_num_witness_spec() * self@.denom()
                 == self@.num * (self.den_witness.model@ as int)
+    }
+
+    proof fn lemma_nat_product_positive(a: nat, b: nat)
+        requires
+            a > 0,
+            b > 0,
+        ensures
+            a * b > 0,
+    {
+        assert(0 < a as int);
+        assert(0 < b as int);
+        lemma_mul_strict_inequality(0, a as int, b as int);
+        lemma_mul_basics(b as int);
+        assert(0 * (b as int) == 0);
+        assert(0 < (a as int) * (b as int));
+        assert((a * b) as int == (a as int) * (b as int)) by (nonlinear_arith);
+        assert((a * b) as int > 0);
+        assert(a * b > 0);
+    }
+
+    proof fn lemma_sign_parts_wf_from_witness_wf(&self)
+        requires
+            self.witness_wf_spec(),
+        ensures
+            Self::sign_parts_wf_spec(self.sign_witness, self.num_abs_witness.model@),
+    {
+        assert(Self::signed_from_parts_spec(self.sign_witness, self.num_abs_witness.model@)
+            == self.signed_num_witness_spec());
+        match self.sign_witness {
+            RuntimeSign::Positive => {
+                assert(self.signed_num_witness_spec() > 0);
+                assert(Self::sign_parts_wf_spec(self.sign_witness, self.num_abs_witness.model@));
+            }
+            RuntimeSign::Negative => {
+                assert(self.signed_num_witness_spec() < 0);
+                assert(Self::sign_parts_wf_spec(self.sign_witness, self.num_abs_witness.model@));
+            }
+            RuntimeSign::Zero => {
+                assert(self.signed_num_witness_spec() == 0);
+                assert(Self::sign_parts_wf_spec(self.sign_witness, self.num_abs_witness.model@));
+            }
+        }
+    }
+
+    proof fn lemma_abs_positive_from_sign_parts(sign: RuntimeSign, abs: nat)
+        requires
+            Self::sign_parts_wf_spec(sign, abs),
+            !(sign is Zero),
+        ensures
+            abs > 0,
+    {
+        match sign {
+            RuntimeSign::Positive => {
+                assert(Self::signed_from_parts_spec(sign, abs) == abs as int);
+                assert(abs as int > 0);
+                assert(abs > 0);
+            }
+            RuntimeSign::Negative => {
+                assert(Self::signed_from_parts_spec(sign, abs) == -(abs as int));
+                assert(-(abs as int) < 0);
+                assert((-(abs as int) < 0) ==> abs as int > 0) by (nonlinear_arith);
+                assert(abs as int > 0);
+                assert(abs > 0);
+            }
+            RuntimeSign::Zero => {
+                assert(false);
+            }
+        }
     }
 
     pub proof fn lemma_witness_sign_matches_model(&self)
@@ -278,6 +380,103 @@ impl RuntimeScalar {
         assert(0 - x > 0);
         assert(-x == 0 - x);
         assert(-x > 0);
+    }
+
+    proof fn lemma_signed_from_parts_mul(
+        lhs_sign: RuntimeSign,
+        lhs_abs: nat,
+        rhs_sign: RuntimeSign,
+        rhs_abs: nat,
+    )
+        ensures
+            Self::signed_from_parts_spec(
+                Self::sign_mul_spec(lhs_sign, rhs_sign),
+                lhs_abs * rhs_abs,
+            ) == Self::signed_from_parts_spec(lhs_sign, lhs_abs)
+                * Self::signed_from_parts_spec(rhs_sign, rhs_abs),
+    {
+        match lhs_sign {
+            RuntimeSign::Zero => {
+                assert(Self::sign_mul_spec(lhs_sign, rhs_sign) is Zero);
+                assert(Self::signed_from_parts_spec(Self::sign_mul_spec(lhs_sign, rhs_sign), lhs_abs * rhs_abs) == 0);
+                assert(Self::signed_from_parts_spec(lhs_sign, lhs_abs) == 0);
+                assert(
+                    Self::signed_from_parts_spec(lhs_sign, lhs_abs)
+                        * Self::signed_from_parts_spec(rhs_sign, rhs_abs)
+                        == 0
+                );
+            }
+            RuntimeSign::Positive => {
+                match rhs_sign {
+                    RuntimeSign::Zero => {
+                        assert(Self::sign_mul_spec(lhs_sign, rhs_sign) is Zero);
+                        assert(Self::signed_from_parts_spec(Self::sign_mul_spec(lhs_sign, rhs_sign), lhs_abs * rhs_abs) == 0);
+                        assert(Self::signed_from_parts_spec(rhs_sign, rhs_abs) == 0);
+                        assert(
+                            Self::signed_from_parts_spec(lhs_sign, lhs_abs)
+                                * Self::signed_from_parts_spec(rhs_sign, rhs_abs)
+                                == 0
+                        );
+                    }
+                    RuntimeSign::Positive => {
+                        assert(Self::sign_mul_spec(lhs_sign, rhs_sign) is Positive);
+                        assert(Self::signed_from_parts_spec(Self::sign_mul_spec(lhs_sign, rhs_sign), lhs_abs * rhs_abs)
+                            == (lhs_abs * rhs_abs) as int);
+                        assert(Self::signed_from_parts_spec(lhs_sign, lhs_abs) == lhs_abs as int);
+                        assert(Self::signed_from_parts_spec(rhs_sign, rhs_abs) == rhs_abs as int);
+                        assert((lhs_abs * rhs_abs) as int
+                            == (lhs_abs as int) * (rhs_abs as int)) by (nonlinear_arith);
+                    }
+                    RuntimeSign::Negative => {
+                        assert(Self::sign_mul_spec(lhs_sign, rhs_sign) is Negative);
+                        assert(Self::signed_from_parts_spec(Self::sign_mul_spec(lhs_sign, rhs_sign), lhs_abs * rhs_abs)
+                            == -((lhs_abs * rhs_abs) as int));
+                        assert(Self::signed_from_parts_spec(lhs_sign, lhs_abs) == lhs_abs as int);
+                        assert(Self::signed_from_parts_spec(rhs_sign, rhs_abs) == -(rhs_abs as int));
+                        assert((lhs_abs * rhs_abs) as int
+                            == (lhs_abs as int) * (rhs_abs as int)) by (nonlinear_arith);
+                        assert((lhs_abs as int) * (-(rhs_abs as int))
+                            == -((lhs_abs as int) * (rhs_abs as int))) by (nonlinear_arith);
+                    }
+                }
+            }
+            RuntimeSign::Negative => {
+                match rhs_sign {
+                    RuntimeSign::Zero => {
+                        assert(Self::sign_mul_spec(lhs_sign, rhs_sign) is Zero);
+                        assert(Self::signed_from_parts_spec(Self::sign_mul_spec(lhs_sign, rhs_sign), lhs_abs * rhs_abs) == 0);
+                        assert(Self::signed_from_parts_spec(rhs_sign, rhs_abs) == 0);
+                        assert(
+                            Self::signed_from_parts_spec(lhs_sign, lhs_abs)
+                                * Self::signed_from_parts_spec(rhs_sign, rhs_abs)
+                                == 0
+                        );
+                    }
+                    RuntimeSign::Positive => {
+                        assert(Self::sign_mul_spec(lhs_sign, rhs_sign) is Negative);
+                        assert(Self::signed_from_parts_spec(Self::sign_mul_spec(lhs_sign, rhs_sign), lhs_abs * rhs_abs)
+                            == -((lhs_abs * rhs_abs) as int));
+                        assert(Self::signed_from_parts_spec(lhs_sign, lhs_abs) == -(lhs_abs as int));
+                        assert(Self::signed_from_parts_spec(rhs_sign, rhs_abs) == rhs_abs as int);
+                        assert((lhs_abs * rhs_abs) as int
+                            == (lhs_abs as int) * (rhs_abs as int)) by (nonlinear_arith);
+                        assert((-(lhs_abs as int)) * (rhs_abs as int)
+                            == -((lhs_abs as int) * (rhs_abs as int))) by (nonlinear_arith);
+                    }
+                    RuntimeSign::Negative => {
+                        assert(Self::sign_mul_spec(lhs_sign, rhs_sign) is Positive);
+                        assert(Self::signed_from_parts_spec(Self::sign_mul_spec(lhs_sign, rhs_sign), lhs_abs * rhs_abs)
+                            == (lhs_abs * rhs_abs) as int);
+                        assert(Self::signed_from_parts_spec(lhs_sign, lhs_abs) == -(lhs_abs as int));
+                        assert(Self::signed_from_parts_spec(rhs_sign, rhs_abs) == -(rhs_abs as int));
+                        assert((lhs_abs * rhs_abs) as int
+                            == (lhs_abs as int) * (rhs_abs as int)) by (nonlinear_arith);
+                        assert((-(lhs_abs as int)) * (-(rhs_abs as int))
+                            == (lhs_abs as int) * (rhs_abs as int)) by (nonlinear_arith);
+                    }
+                }
+            }
+        }
     }
 
     fn add_signed_witness(
@@ -484,6 +683,188 @@ impl RuntimeScalar {
         };
         proof {
             assert(out@ == self@.mul_spec(rhs@));
+        }
+        out
+    }
+
+    pub fn mul_wf(&self, rhs: &Self) -> (out: Self)
+        requires
+            self.witness_wf_spec(),
+            rhs.witness_wf_spec(),
+        ensures
+            out@ == self@.mul_spec(rhs@),
+            out.witness_wf_spec(),
+    {
+        let ghost model = self@.mul_spec(rhs@);
+        let num_abs_witness = self.num_abs_witness.mul_limbwise_small_total(&rhs.num_abs_witness);
+        let den_witness = self.den_witness.mul_limbwise_small_total(&rhs.den_witness);
+        let sign_witness = Self::sign_mul_witness(self.sign_witness, rhs.sign_witness);
+        let out = RuntimeScalar {
+            sign_witness,
+            num_abs_witness,
+            den_witness,
+            model: Ghost(model),
+        };
+        proof {
+            assert(out@ == self@.mul_spec(rhs@));
+            assert(out.num_abs_witness.wf_spec());
+            assert(out.den_witness.wf_spec());
+            assert(out.num_abs_witness.model@ == self.num_abs_witness.model@ * rhs.num_abs_witness.model@);
+            assert(out.den_witness.model@ == self.den_witness.model@ * rhs.den_witness.model@);
+            assert(self.den_witness.model@ > 0);
+            assert(rhs.den_witness.model@ > 0);
+            Self::lemma_nat_product_positive(self.den_witness.model@, rhs.den_witness.model@);
+            assert(out.den_witness.model@ == self.den_witness.model@ * rhs.den_witness.model@);
+            assert(out.den_witness.model@ > 0);
+
+            let ghost s1 = self.signed_num_witness_spec();
+            let ghost s2 = rhs.signed_num_witness_spec();
+            let ghost so = out.signed_num_witness_spec();
+            self.lemma_sign_parts_wf_from_witness_wf();
+            rhs.lemma_sign_parts_wf_from_witness_wf();
+            Self::lemma_signed_from_parts_mul(
+                self.sign_witness,
+                self.num_abs_witness.model@,
+                rhs.sign_witness,
+                rhs.num_abs_witness.model@,
+            );
+            assert(
+                so
+                    == Self::signed_from_parts_spec(
+                        Self::sign_mul_spec(self.sign_witness, rhs.sign_witness),
+                        self.num_abs_witness.model@ * rhs.num_abs_witness.model@,
+                    )
+            );
+            assert(sign_witness == Self::sign_mul_spec(self.sign_witness, rhs.sign_witness));
+            assert(so == s1 * s2);
+
+            if sign_witness is Zero {
+                assert(
+                    (sign_witness is Zero)
+                        == ((self.sign_witness is Zero) || (rhs.sign_witness is Zero))
+                );
+                assert((self.sign_witness is Zero) || (rhs.sign_witness is Zero));
+                if self.sign_witness is Zero {
+                    assert(s1 == 0);
+                } else {
+                    assert(rhs.sign_witness is Zero);
+                    assert(s2 == 0);
+                }
+                assert(so == s1 * s2);
+                assert(so == 0);
+                assert(Self::sign_parts_wf_spec(sign_witness, out.num_abs_witness.model@));
+            } else if sign_witness is Positive {
+                assert(
+                    (sign_witness is Positive)
+                        == ((self.sign_witness is Positive && rhs.sign_witness is Positive)
+                            || (self.sign_witness is Negative && rhs.sign_witness is Negative))
+                );
+                assert(
+                    (self.sign_witness is Positive && rhs.sign_witness is Positive)
+                        || (self.sign_witness is Negative && rhs.sign_witness is Negative)
+                );
+                if self.sign_witness is Positive && rhs.sign_witness is Positive {
+                    Self::lemma_abs_positive_from_sign_parts(
+                        self.sign_witness,
+                        self.num_abs_witness.model@,
+                    );
+                    Self::lemma_abs_positive_from_sign_parts(
+                        rhs.sign_witness,
+                        rhs.num_abs_witness.model@,
+                    );
+                } else {
+                    assert(self.sign_witness is Negative && rhs.sign_witness is Negative);
+                    Self::lemma_abs_positive_from_sign_parts(
+                        self.sign_witness,
+                        self.num_abs_witness.model@,
+                    );
+                    Self::lemma_abs_positive_from_sign_parts(
+                        rhs.sign_witness,
+                        rhs.num_abs_witness.model@,
+                    );
+                }
+                Self::lemma_nat_product_positive(self.num_abs_witness.model@, rhs.num_abs_witness.model@);
+                assert(out.num_abs_witness.model@ > 0);
+                assert(so == out.num_abs_witness.model@ as int);
+                assert(so > 0);
+                assert(Self::sign_parts_wf_spec(sign_witness, out.num_abs_witness.model@));
+            } else {
+                assert(sign_witness is Negative);
+                assert(
+                    (sign_witness is Negative)
+                        == ((self.sign_witness is Positive && rhs.sign_witness is Negative)
+                            || (self.sign_witness is Negative && rhs.sign_witness is Positive))
+                );
+                if self.sign_witness is Positive && rhs.sign_witness is Negative {
+                    Self::lemma_abs_positive_from_sign_parts(
+                        self.sign_witness,
+                        self.num_abs_witness.model@,
+                    );
+                    Self::lemma_abs_positive_from_sign_parts(
+                        rhs.sign_witness,
+                        rhs.num_abs_witness.model@,
+                    );
+                } else {
+                    assert(self.sign_witness is Negative && rhs.sign_witness is Positive);
+                    Self::lemma_abs_positive_from_sign_parts(
+                        self.sign_witness,
+                        self.num_abs_witness.model@,
+                    );
+                    Self::lemma_abs_positive_from_sign_parts(
+                        rhs.sign_witness,
+                        rhs.num_abs_witness.model@,
+                    );
+                }
+                Self::lemma_nat_product_positive(self.num_abs_witness.model@, rhs.num_abs_witness.model@);
+                assert(out.num_abs_witness.model@ > 0);
+                assert(so == -(out.num_abs_witness.model@ as int));
+                assert(so < 0);
+                assert(Self::sign_parts_wf_spec(sign_witness, out.num_abs_witness.model@));
+            }
+
+            ScalarModel::lemma_mul_denom_product_int(self@, rhs@);
+            assert(out@.denom() == self@.denom() * rhs@.denom());
+            assert(out@.num == self@.num * rhs@.num);
+            assert(s1 * self@.denom() == self@.num * (self.den_witness.model@ as int));
+            assert(s2 * rhs@.denom() == rhs@.num * (rhs.den_witness.model@ as int));
+            assert(
+                (s1 * self@.denom()) * (s2 * rhs@.denom())
+                    == (self@.num * (self.den_witness.model@ as int))
+                        * (rhs@.num * (rhs.den_witness.model@ as int))
+            );
+            assert(
+                (s1 * self@.denom()) * (s2 * rhs@.denom())
+                    == (s1 * s2) * (self@.denom() * rhs@.denom())
+            ) by (nonlinear_arith);
+            assert(
+                (self@.num * (self.den_witness.model@ as int))
+                    * (rhs@.num * (rhs.den_witness.model@ as int))
+                    == (self@.num * rhs@.num)
+                        * ((self.den_witness.model@ as int) * (rhs.den_witness.model@ as int))
+            ) by (nonlinear_arith);
+            assert(
+                (s1 * s2) * (self@.denom() * rhs@.denom())
+                    == (self@.num * rhs@.num)
+                        * ((self.den_witness.model@ as int) * (rhs.den_witness.model@ as int))
+            );
+            assert(
+                so * out@.denom()
+                    == (self@.num * rhs@.num)
+                        * ((self.den_witness.model@ as int) * (rhs.den_witness.model@ as int))
+            );
+            assert(
+                (self.den_witness.model@ * rhs.den_witness.model@) as int
+                    == (self.den_witness.model@ as int) * (rhs.den_witness.model@ as int)
+            ) by (nonlinear_arith);
+            assert(out.den_witness.model@ as int
+                == (self.den_witness.model@ as int) * (rhs.den_witness.model@ as int));
+            assert(
+                out@.num * (out.den_witness.model@ as int)
+                    == (self@.num * rhs@.num)
+                        * ((self.den_witness.model@ as int) * (rhs.den_witness.model@ as int))
+            );
+            assert(so * out@.denom() == out@.num * (out.den_witness.model@ as int));
+            assert(out.witness_wf_spec());
         }
         out
     }

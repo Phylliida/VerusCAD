@@ -154,6 +154,8 @@ Completed scaffold:
   - `RuntimeScalar::from_int` now establishes `out.witness_wf_spec()` in its postcondition.
   - witness-preserving helper landed for negation:
     - `RuntimeScalar::neg_wf` (requires `witness_wf_spec`, ensures `out.witness_wf_spec()`)
+  - witness-preserving helper landed for multiplication:
+    - `RuntimeScalar::mul_wf` (requires both inputs `witness_wf_spec`, ensures `out.witness_wf_spec()`)
 
 ### Phase 3: Rebuild Scalar Operations Over Witness
 - [x] Re-implement `add/sub/mul/neg/normalize/recip` to update witness in exec mode.
