@@ -966,6 +966,81 @@ impl RuntimeBigNatWitness {
         assert(Self::limbs_value_spec(a) > Self::limbs_value_spec(b));
     }
 
+    proof fn lemma_trimmed_len_gt_implies_value_gt(a: Seq<u32>, alen: nat, b: Seq<u32>, blen: nat)
+        requires
+            alen <= a.len(),
+            blen <= b.len(),
+            forall|i: int| alen <= i < a.len() ==> a[i] == 0u32,
+            forall|i: int| blen <= i < b.len() ==> b[i] == 0u32,
+            blen < alen,
+            alen > 0,
+            a[(alen - 1) as int] != 0u32,
+        ensures
+            Self::limbs_value_spec(a) > Self::limbs_value_spec(b),
+    {
+        let a_trim = a.subrange(0, alen as int);
+        let b_trim = b.subrange(0, blen as int);
+        Self::lemma_limbs_value_trim_suffix_zeros(a, alen);
+        Self::lemma_limbs_value_trim_suffix_zeros(b, blen);
+        assert(Self::limbs_value_spec(a) == Self::limbs_value_spec(a_trim));
+        assert(Self::limbs_value_spec(b) == Self::limbs_value_spec(b_trim));
+
+        Self::lemma_limbs_value_lt_pow_len(b_trim);
+        assert(Self::limbs_value_spec(b_trim) < Self::pow_base_spec(blen));
+        assert(blen + 1 <= alen);
+        assert((alen - 1) + 1 == alen);
+        assert(blen <= (alen - 1) as nat);
+        Self::lemma_pow_monotonic(blen, (alen - 1) as nat);
+        assert(Self::pow_base_spec(blen) <= Self::pow_base_spec((alen - 1) as nat));
+        assert(Self::limbs_value_spec(b_trim) < Self::pow_base_spec((alen - 1) as nat));
+
+        assert(a_trim.len() == alen);
+        assert(a_trim[(a_trim.len() - 1) as int] == a[(alen - 1) as int]);
+        assert(a_trim[(a_trim.len() - 1) as int] != 0u32);
+        Self::lemma_limbs_value_ge_pow_last_nonzero(a_trim);
+        assert(Self::pow_base_spec((alen - 1) as nat) <= Self::limbs_value_spec(a_trim));
+        assert(Self::limbs_value_spec(b_trim) < Self::limbs_value_spec(a_trim));
+        assert(Self::limbs_value_spec(a) > Self::limbs_value_spec(b));
+    }
+
+    proof fn lemma_trimmed_high_diff_implies_value_gt(a: Seq<u32>, alen: nat, b: Seq<u32>, blen: nat, idx: nat)
+        requires
+            alen == blen,
+            alen <= a.len(),
+            blen <= b.len(),
+            forall|i: int| alen <= i < a.len() ==> a[i] == 0u32,
+            forall|i: int| blen <= i < b.len() ==> b[i] == 0u32,
+            idx < alen,
+            a[idx as int] > b[idx as int],
+            forall|j: int| idx < j < alen ==> a[j] == b[j],
+        ensures
+            Self::limbs_value_spec(a) > Self::limbs_value_spec(b),
+    {
+        let a_trim = a.subrange(0, alen as int);
+        let b_trim = b.subrange(0, blen as int);
+        assert(a_trim.len() == alen);
+        assert(b_trim.len() == blen);
+        assert(a_trim.len() == b_trim.len());
+        assert(a_trim[idx as int] == a[idx as int]);
+        assert(b_trim[idx as int] == b[idx as int]);
+        assert(a_trim[idx as int] > b_trim[idx as int]);
+        assert forall|j: int| idx < j < a_trim.len() implies #[trigger] a_trim[j] == b_trim[j] by {
+            assert(j < a_trim.len());
+            assert(a_trim.len() == alen);
+            assert(j < alen);
+            assert(j < blen);
+            assert(a_trim[j] == a[j]);
+            assert(b_trim[j] == b[j]);
+        };
+
+        Self::lemma_cmp_high_diff_gt(a_trim, b_trim, idx);
+        Self::lemma_limbs_value_trim_suffix_zeros(a, alen);
+        Self::lemma_limbs_value_trim_suffix_zeros(b, blen);
+        assert(Self::limbs_value_spec(a) == Self::limbs_value_spec(a_trim));
+        assert(Self::limbs_value_spec(b) == Self::limbs_value_spec(b_trim));
+        assert(Self::limbs_value_spec(a) > Self::limbs_value_spec(b));
+    }
+
     proof fn lemma_model_zero_or_single_limb(&self)
         requires
             self.wf_spec(),
@@ -1607,14 +1682,52 @@ impl RuntimeBigNatWitness {
     pub fn cmp_limbwise_small_total(&self, rhs: &Self) -> (out: i8)
         ensures
             out == -1 || out == 0 || out == 1,
+            out == -1 ==> Self::limbs_value_spec(self.limbs_le@) < Self::limbs_value_spec(rhs.limbs_le@),
             out == 0 ==> Self::limbs_value_spec(self.limbs_le@) == Self::limbs_value_spec(rhs.limbs_le@),
+            out == 1 ==> Self::limbs_value_spec(self.limbs_le@) > Self::limbs_value_spec(rhs.limbs_le@),
             self.limbs_le@ == rhs.limbs_le@ ==> out == 0,
     {
         let alen = Self::trimmed_len_exec(&self.limbs_le);
         let blen = Self::trimmed_len_exec(&rhs.limbs_le);
         if alen > blen {
+            proof {
+                let alen_nat = alen as nat;
+                let blen_nat = blen as nat;
+                assert(alen_nat <= self.limbs_le@.len());
+                assert(blen_nat <= rhs.limbs_le@.len());
+                assert(forall|j: int| alen_nat <= j < self.limbs_le@.len() ==> self.limbs_le@[j] == 0u32);
+                assert(forall|j: int| blen_nat <= j < rhs.limbs_le@.len() ==> rhs.limbs_le@[j] == 0u32);
+                assert(alen_nat > blen_nat);
+                assert(alen_nat > 0);
+                assert(self.limbs_le@[(alen - 1) as int] != 0u32);
+                Self::lemma_trimmed_len_gt_implies_value_gt(
+                    self.limbs_le@,
+                    alen_nat,
+                    rhs.limbs_le@,
+                    blen_nat,
+                );
+            }
             1i8
         } else if alen < blen {
+            proof {
+                let alen_nat = alen as nat;
+                let blen_nat = blen as nat;
+                assert(alen_nat <= self.limbs_le@.len());
+                assert(blen_nat <= rhs.limbs_le@.len());
+                assert(forall|j: int| alen_nat <= j < self.limbs_le@.len() ==> self.limbs_le@[j] == 0u32);
+                assert(forall|j: int| blen_nat <= j < rhs.limbs_le@.len() ==> rhs.limbs_le@[j] == 0u32);
+                assert(blen_nat > alen_nat);
+                assert(blen_nat > 0);
+                assert(rhs.limbs_le@[(blen - 1) as int] != 0u32);
+                Self::lemma_trimmed_len_gt_implies_value_gt(
+                    rhs.limbs_le@,
+                    blen_nat,
+                    self.limbs_le@,
+                    alen_nat,
+                );
+                assert(Self::limbs_value_spec(rhs.limbs_le@) > Self::limbs_value_spec(self.limbs_le@));
+                assert(Self::limbs_value_spec(self.limbs_le@) < Self::limbs_value_spec(rhs.limbs_le@));
+            }
             -1i8
         } else {
             assert(alen == blen);
@@ -1627,6 +1740,8 @@ impl RuntimeBigNatWitness {
                     alen == blen,
                     alen <= self.limbs_le.len(),
                     blen <= rhs.limbs_le.len(),
+                    forall|j: int| alen <= j < self.limbs_le@.len() ==> self.limbs_le@[j] == 0u32,
+                    forall|j: int| blen <= j < rhs.limbs_le@.len() ==> rhs.limbs_le@[j] == 0u32,
                     forall|j: int| i <= j < alen ==> self.limbs_le@[j] == rhs.limbs_le@[j],
             {
                 let idx = i - 1;
@@ -1635,8 +1750,66 @@ impl RuntimeBigNatWitness {
                 let a = self.limbs_le[idx];
                 let b = rhs.limbs_le[idx];
                 if a > b {
+                    proof {
+                        let alen_nat = alen as nat;
+                        let blen_nat = blen as nat;
+                        let idx_nat = idx as nat;
+                        assert(alen_nat == blen_nat);
+                        assert(alen_nat <= self.limbs_le@.len());
+                        assert(blen_nat <= rhs.limbs_le@.len());
+                        assert(forall|j: int| alen_nat <= j < self.limbs_le@.len() ==> self.limbs_le@[j] == 0u32);
+                        assert(forall|j: int| blen_nat <= j < rhs.limbs_le@.len() ==> rhs.limbs_le@[j] == 0u32);
+                        assert(idx_nat < alen_nat);
+                        assert(self.limbs_le@[idx as int] > rhs.limbs_le@[idx as int]);
+                        assert(i == idx + 1);
+                        assert forall|j: int| idx_nat < j < alen_nat
+                            implies self.limbs_le@[j] == rhs.limbs_le@[j] by {
+                            assert(idx as int + 1 <= j);
+                            assert(i as int == idx as int + 1);
+                            assert(i <= j);
+                            assert(j < alen);
+                            assert(self.limbs_le@[j] == rhs.limbs_le@[j]);
+                        };
+                        Self::lemma_trimmed_high_diff_implies_value_gt(
+                            self.limbs_le@,
+                            alen_nat,
+                            rhs.limbs_le@,
+                            blen_nat,
+                            idx_nat,
+                        );
+                    }
                     return 1i8;
                 } else if a < b {
+                    proof {
+                        let alen_nat = alen as nat;
+                        let blen_nat = blen as nat;
+                        let idx_nat = idx as nat;
+                        assert(alen_nat == blen_nat);
+                        assert(alen_nat <= self.limbs_le@.len());
+                        assert(blen_nat <= rhs.limbs_le@.len());
+                        assert(forall|j: int| alen_nat <= j < self.limbs_le@.len() ==> self.limbs_le@[j] == 0u32);
+                        assert(forall|j: int| blen_nat <= j < rhs.limbs_le@.len() ==> rhs.limbs_le@[j] == 0u32);
+                        assert(idx_nat < alen_nat);
+                        assert(rhs.limbs_le@[idx as int] > self.limbs_le@[idx as int]);
+                        assert(i == idx + 1);
+                        assert forall|j: int| idx_nat < j < alen_nat
+                            implies rhs.limbs_le@[j] == self.limbs_le@[j] by {
+                            assert(idx as int + 1 <= j);
+                            assert(i as int == idx as int + 1);
+                            assert(i <= j);
+                            assert(j < alen);
+                            assert(self.limbs_le@[j] == rhs.limbs_le@[j]);
+                        };
+                        Self::lemma_trimmed_high_diff_implies_value_gt(
+                            rhs.limbs_le@,
+                            blen_nat,
+                            self.limbs_le@,
+                            alen_nat,
+                            idx_nat,
+                        );
+                        assert(Self::limbs_value_spec(rhs.limbs_le@) > Self::limbs_value_spec(self.limbs_le@));
+                        assert(Self::limbs_value_spec(self.limbs_le@) < Self::limbs_value_spec(rhs.limbs_le@));
+                    }
                     return -1i8;
                 }
                 assert(a == b);
@@ -1694,13 +1867,34 @@ impl RuntimeBigNatWitness {
     pub fn sub_limbwise_small_total(&self, rhs: &Self) -> (out: Self)
         ensures
             out.wf_spec(),
+            Self::limbs_value_spec(self.limbs_le@) <= Self::limbs_value_spec(rhs.limbs_le@) ==> out.model@ == 0,
     {
         let cmp = self.cmp_limbwise_small_total(rhs);
         if cmp == -1i8 {
-            Self::zero()
+            let out = Self::zero();
+            proof {
+                assert(Self::limbs_value_spec(self.limbs_le@) < Self::limbs_value_spec(rhs.limbs_le@));
+                assert(Self::limbs_value_spec(self.limbs_le@) <= Self::limbs_value_spec(rhs.limbs_le@));
+                assert(out.model@ == 0);
+            }
+            out
         } else if cmp == 0i8 {
-            Self::zero()
+            let out = Self::zero();
+            proof {
+                assert(Self::limbs_value_spec(self.limbs_le@) == Self::limbs_value_spec(rhs.limbs_le@));
+                assert(Self::limbs_value_spec(self.limbs_le@) <= Self::limbs_value_spec(rhs.limbs_le@));
+                assert(out.model@ == 0);
+            }
+            out
         } else {
+            proof {
+                assert(cmp == -1 || cmp == 0 || cmp == 1);
+                assert(cmp != -1i8);
+                assert(cmp != 0i8);
+                assert(cmp == 1i8);
+                assert(Self::limbs_value_spec(self.limbs_le@) > Self::limbs_value_spec(rhs.limbs_le@));
+                assert(!(Self::limbs_value_spec(self.limbs_le@) <= Self::limbs_value_spec(rhs.limbs_le@)));
+            }
             let alen = Self::trimmed_len_exec(&self.limbs_le);
             let blen = Self::trimmed_len_exec(&rhs.limbs_le);
             assert(alen <= self.limbs_le.len());
