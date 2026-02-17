@@ -28,7 +28,8 @@ Long-horizon milestones for `vcad-math` beyond the current proof-lemma TODO.
 - [x] Introduce paired `exec` operations with `ensures` to existing spec/proof operations.
   - covered in `src/runtime_scalar_refinement.rs` for `from_int/from_fraction/add/sub/mul/neg/normalize`.
 - [x] Keep current proof lemmas as theorems over spec model; add thin exec correctness wrappers.
-  - runtime wrappers currently rely on trusted `assume_specification` at the `rug` boundary.
+  - `assume_specification` boundaries in `vcad-math/src` have been removed.
+  - remaining trust discussion is now centered on cfg-split runtime paths and refinement bridge style (`external_type_specification`).
 - [x] Add a small set of regression proofs/tests to catch accidental weakening of guarantees.
   - added verified regression wrappers in `src/runtime_scalar_refinement.rs`:
     - `runtime_add_pair_commutative`
