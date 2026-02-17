@@ -4,6 +4,7 @@ use crate::convex_polygon;
 use vcad_math::orientation::orient2d_spec;
 use vcad_math::point2::Point2;
 use vcad_math::runtime_point2::RuntimePoint2;
+use vcad_math::runtime_wf as wf;
 use vcad_math::scalar::Scalar;
 use vstd::prelude::*;
 
@@ -823,7 +824,7 @@ pub fn runtime_point_in_convex_polygon_matches_spec(
     polygon: &[RuntimePoint2],
 ) -> (out: bool)
     requires
-        p.witness_wf_spec(),
+        wf::point2_wf1_spec(p),
         convex_polygon::point2_seq_wf_spec(polygon@),
     ensures
         out == point_in_convex_polygon_edge_sign_consistent_spec(p@, polygon@),
@@ -846,7 +847,7 @@ pub fn runtime_point_in_convex_polygon_short_polygon_false(
     polygon: &[RuntimePoint2],
 ) -> (out: bool)
     requires
-        p.witness_wf_spec(),
+        wf::point2_wf1_spec(p),
         convex_polygon::point2_seq_wf_spec(polygon@),
         polygon@.len() < 3,
     ensures
@@ -872,7 +873,7 @@ pub fn runtime_point_in_convex_polygon_true_implies_no_mixed_signs(
     polygon: &[RuntimePoint2],
 ) -> (out: bool)
     requires
-        p.witness_wf_spec(),
+        wf::point2_wf1_spec(p),
         convex_polygon::point2_seq_wf_spec(polygon@),
     ensures
         out == point_in_convex_polygon_boundary_inclusive_spec(p@, polygon@),
@@ -903,7 +904,7 @@ pub fn runtime_point_strictly_in_convex_polygon_matches_spec(
     polygon: &[RuntimePoint2],
 ) -> (out: bool)
     requires
-        p.witness_wf_spec(),
+        wf::point2_wf1_spec(p),
         convex_polygon::point2_seq_wf_spec(polygon@),
     ensures
         out == point_strictly_in_convex_polygon_edge_sign_consistent_spec(p@, polygon@),
@@ -923,7 +924,7 @@ pub fn runtime_point_in_convex_polygon_convex_geometric_iff(
     polygon: &[RuntimePoint2],
 ) -> (out: bool)
     requires
-        p.witness_wf_spec(),
+        wf::point2_wf1_spec(p),
         convex_polygon::point2_seq_wf_spec(polygon@),
         polygon_convex_consistent_order_spec(polygon@),
     ensures
@@ -957,7 +958,7 @@ pub fn runtime_point_strictly_in_convex_polygon_convex_geometric_iff(
     polygon: &[RuntimePoint2],
 ) -> (out: bool)
     requires
-        p.witness_wf_spec(),
+        wf::point2_wf1_spec(p),
         convex_polygon::point2_seq_wf_spec(polygon@),
         polygon_strict_convex_consistent_order_spec(polygon@),
     ensures

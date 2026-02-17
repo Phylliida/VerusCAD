@@ -13,6 +13,10 @@ pub open spec fn point2_wf3_spec(a: &RuntimePoint2, b: &RuntimePoint2, c: &Runti
     &&& c.witness_wf_spec()
 }
 
+pub open spec fn point2_wf1_spec(a: &RuntimePoint2) -> bool {
+    a.witness_wf_spec()
+}
+
 pub open spec fn point2_wf4_spec(a: &RuntimePoint2, b: &RuntimePoint2, c: &RuntimePoint2, d: &RuntimePoint2) -> bool {
     &&& a.witness_wf_spec()
     &&& b.witness_wf_spec()
@@ -24,6 +28,10 @@ pub open spec fn point3_wf3_spec(a: &RuntimePoint3, b: &RuntimePoint3, c: &Runti
     &&& a.witness_wf_spec()
     &&& b.witness_wf_spec()
     &&& c.witness_wf_spec()
+}
+
+pub open spec fn point3_wf1_spec(a: &RuntimePoint3) -> bool {
+    a.witness_wf_spec()
 }
 
 pub open spec fn point3_wf4_spec(a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3, d: &RuntimePoint3) -> bool {

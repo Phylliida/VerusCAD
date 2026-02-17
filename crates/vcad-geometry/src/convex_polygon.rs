@@ -5,6 +5,8 @@ use vcad_math::orientation::orient2d_spec;
 #[cfg(verus_keep_ghost)]
 use vcad_math::point2::Point2;
 #[cfg(verus_keep_ghost)]
+use vcad_math::runtime_wf as wf;
+#[cfg(verus_keep_ghost)]
 use vstd::prelude::*;
 #[cfg(verus_keep_ghost)]
 use vstd::view::View;
@@ -256,7 +258,7 @@ pub fn point_in_convex_polygon_2d(p: &RuntimePoint2, polygon: &[RuntimePoint2]) 
 verus! {
 pub fn point_in_convex_polygon_2d(p: &RuntimePoint2, polygon: &[RuntimePoint2]) -> (out: bool)
     requires
-        p.witness_wf_spec(),
+        wf::point2_wf1_spec(p),
         point2_seq_wf_spec(polygon@),
     ensures
         out == point_in_convex_polygon_boundary_inclusive_spec(p@, polygon@),
@@ -278,7 +280,7 @@ pub fn point_in_convex_polygon_2d(p: &RuntimePoint2, polygon: &[RuntimePoint2]) 
             n == polygon.len(),
             n >= 3,
             0 <= i <= n,
-            p.witness_wf_spec(),
+            wf::point2_wf1_spec(p),
             point2_seq_prefix_wf_spec(polygon@, n as int),
             saw_pos == polygon_prefix_has_positive_edge_sign_spec(p@, polygon@, i as int),
             saw_neg == polygon_prefix_has_negative_edge_sign_spec(p@, polygon@, i as int),
@@ -395,7 +397,7 @@ pub fn point_strictly_in_convex_polygon_2d(p: &RuntimePoint2, polygon: &[Runtime
 verus! {
 pub fn point_strictly_in_convex_polygon_2d(p: &RuntimePoint2, polygon: &[RuntimePoint2]) -> (out: bool)
     requires
-        p.witness_wf_spec(),
+        wf::point2_wf1_spec(p),
         point2_seq_wf_spec(polygon@),
     ensures
         out == point_strictly_in_convex_polygon_edge_sign_consistent_spec(p@, polygon@),
@@ -418,7 +420,7 @@ pub fn point_strictly_in_convex_polygon_2d(p: &RuntimePoint2, polygon: &[Runtime
             n == polygon.len(),
             n >= 3,
             0 <= i <= n,
-            p.witness_wf_spec(),
+            wf::point2_wf1_spec(p),
             point2_seq_prefix_wf_spec(polygon@, n as int),
             saw_pos == polygon_prefix_has_positive_edge_sign_spec(p@, polygon@, i as int),
             saw_neg == polygon_prefix_has_negative_edge_sign_spec(p@, polygon@, i as int),
