@@ -539,6 +539,8 @@ pub fn runtime_quaternion_mul_conjugate_left_real_norm2(q: &RuntimeQuaternion) -
 pub fn runtime_quaternion_inverse_identities(
     q: &RuntimeQuaternion,
 ) -> (out: Option<(RuntimeQuaternion, RuntimeQuaternion, RuntimeQuaternion)>)
+    requires
+        q.witness_wf_spec(),
     ensures
         match out {
             Option::None => q@.norm2_spec().eqv_spec(Scalar::from_int_spec(0)),

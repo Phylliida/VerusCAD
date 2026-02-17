@@ -225,6 +225,13 @@ impl RuntimeQuaternion {
         out
     }
 
+    pub open spec fn witness_wf_spec(&self) -> bool {
+        &&& self.w.witness_wf_spec()
+        &&& self.x.witness_wf_spec()
+        &&& self.y.witness_wf_spec()
+        &&& self.z.witness_wf_spec()
+    }
+
     pub fn add(&self, rhs: &Self) -> (out: Self)
         ensures
             out@ == self@.add_spec(rhs@),
@@ -422,7 +429,121 @@ impl RuntimeQuaternion {
         out
     }
 
+    pub fn norm2_wf(&self) -> (out: RuntimeScalar)
+        requires
+            self.witness_wf_spec(),
+        ensures
+            out@ == self@.norm2_spec(),
+            out.witness_wf_spec(),
+    {
+        let ww = self.w.mul_wf(&self.w);
+        let xx = self.x.mul_wf(&self.x);
+        let yy = self.y.mul_wf(&self.y);
+        let zz = self.z.mul_wf(&self.z);
+        let wwx = ww.add_wf(&xx);
+        let wwxy = wwx.add_wf(&yy);
+        let out = wwxy.add_wf(&zz);
+        proof {
+            assert(ww@ == self@.w.mul_spec(self@.w));
+            assert(xx@ == self@.x.mul_spec(self@.x));
+            assert(yy@ == self@.y.mul_spec(self@.y));
+            assert(zz@ == self@.z.mul_spec(self@.z));
+            assert(wwx@ == ww@.add_spec(xx@));
+            assert(wwxy@ == wwx@.add_spec(yy@));
+            assert(out@ == wwxy@.add_spec(zz@));
+            assert(out@ == self@.norm2_spec());
+            assert(out.witness_wf_spec());
+        }
+        out
+    }
+
+    proof fn lemma_real_eqv_congruence(s1: Scalar, s2: Scalar)
+        requires
+            s1.eqv_spec(s2),
+        ensures
+            Quaternion::real_spec(s1).eqv_spec(Quaternion::real_spec(s2)),
+    {
+        let one = Quaternion::one_spec();
+        let r1 = Quaternion::real_spec(s1);
+        let r2 = Quaternion::real_spec(s2);
+        let one_s1 = one.scale_spec(s1);
+        let one_s2 = one.scale_spec(s2);
+
+        Quaternion::lemma_real_from_one_scale(s1);
+        Quaternion::lemma_real_from_one_scale(s2);
+        Quaternion::lemma_scale_eqv_scalar_congruence(one, s1, s2);
+        Quaternion::lemma_eqv_symmetric(one_s1, r1);
+        Quaternion::lemma_eqv_transitive(r1, one_s1, one_s2);
+        Quaternion::lemma_eqv_transitive(r1, one_s2, r2);
+        assert(r1.eqv_spec(r2));
+    }
+
+    proof fn lemma_conjugate_scale_left_inverse(q: Quaternion, inv_n: Scalar)
+        requires
+            q.norm2_spec().mul_spec(inv_n).eqv_spec(Scalar::from_int_spec(1)),
+        ensures
+            q.conjugate_spec().scale_spec(inv_n).mul_spec(q).eqv_spec(Quaternion::one_spec()),
+    {
+        let qc = q.conjugate_spec();
+        let lhs = qc.scale_spec(inv_n).mul_spec(q);
+        let p = qc.mul_spec(q);
+        let r = Quaternion::real_spec(q.norm2_spec());
+        let rs = r.scale_spec(inv_n);
+        let r1 = Quaternion::real_spec(Scalar::from_int_spec(1));
+        let one = Quaternion::one_spec();
+
+        Quaternion::lemma_mul_scale_left(qc, q, inv_n);
+        assert(lhs.eqv_spec(p.scale_spec(inv_n)));
+
+        Quaternion::lemma_mul_conjugate_left_real_norm2(q);
+        Quaternion::lemma_scale_eqv_congruence(p, r, inv_n);
+        assert(p.scale_spec(inv_n).eqv_spec(rs));
+
+        Quaternion::lemma_real_scale(q.norm2_spec(), inv_n);
+        assert(rs.eqv_spec(Quaternion::real_spec(q.norm2_spec().mul_spec(inv_n))));
+        Self::lemma_real_eqv_congruence(q.norm2_spec().mul_spec(inv_n), Scalar::from_int_spec(1));
+        assert(Quaternion::real_spec(q.norm2_spec().mul_spec(inv_n)).eqv_spec(r1));
+        assert(Quaternion::real_spec(Scalar::from_int_spec(1)) == Quaternion::one_spec()) by (compute);
+
+        Quaternion::lemma_eqv_transitive(lhs, p.scale_spec(inv_n), rs);
+        Quaternion::lemma_eqv_transitive(lhs, rs, Quaternion::real_spec(q.norm2_spec().mul_spec(inv_n)));
+        Quaternion::lemma_eqv_transitive(lhs, Quaternion::real_spec(q.norm2_spec().mul_spec(inv_n)), r1);
+        assert(lhs.eqv_spec(one));
+    }
+
+    proof fn lemma_left_right_inverse_unique(q: Quaternion, left_inv: Quaternion, right_inv: Quaternion)
+        requires
+            left_inv.mul_spec(q).eqv_spec(Quaternion::one_spec()),
+            q.mul_spec(right_inv).eqv_spec(Quaternion::one_spec()),
+        ensures
+            left_inv.eqv_spec(right_inv),
+    {
+        let one = Quaternion::one_spec();
+
+        Quaternion::lemma_mul_one_identity(left_inv);
+        assert(left_inv.mul_spec(one).eqv_spec(left_inv));
+        Quaternion::lemma_eqv_symmetric(left_inv.mul_spec(one), left_inv);
+        assert(left_inv.eqv_spec(left_inv.mul_spec(one)));
+
+        Quaternion::lemma_mul_eqv_congruence_right(left_inv, one, q.mul_spec(right_inv));
+        assert(left_inv.mul_spec(one).eqv_spec(left_inv.mul_spec(q.mul_spec(right_inv))));
+        Quaternion::lemma_mul_associative(left_inv, q, right_inv);
+        assert(left_inv.mul_spec(q.mul_spec(right_inv)).eqv_spec(left_inv.mul_spec(q).mul_spec(right_inv)));
+        Quaternion::lemma_mul_eqv_congruence_left(left_inv.mul_spec(q), one, right_inv);
+        assert(left_inv.mul_spec(q).mul_spec(right_inv).eqv_spec(one.mul_spec(right_inv)));
+        Quaternion::lemma_mul_one_identity(right_inv);
+        assert(one.mul_spec(right_inv).eqv_spec(right_inv));
+
+        Quaternion::lemma_eqv_transitive(left_inv, left_inv.mul_spec(one), left_inv.mul_spec(q.mul_spec(right_inv)));
+        Quaternion::lemma_eqv_transitive(left_inv, left_inv.mul_spec(q.mul_spec(right_inv)), left_inv.mul_spec(q).mul_spec(right_inv));
+        Quaternion::lemma_eqv_transitive(left_inv, left_inv.mul_spec(q).mul_spec(right_inv), one.mul_spec(right_inv));
+        Quaternion::lemma_eqv_transitive(left_inv, one.mul_spec(right_inv), right_inv);
+        assert(left_inv.eqv_spec(right_inv));
+    }
+
     pub fn inverse(&self) -> (out: Option<Self>)
+        requires
+            self.witness_wf_spec(),
         ensures
             out.is_some() == !self@.norm2_spec().eqv_spec(Scalar::from_int_spec(0)),
             match out {
@@ -430,7 +551,7 @@ impl RuntimeQuaternion {
                 Option::Some(inv) => inv@.eqv_spec(self@.inverse_spec()),
             },
     {
-        let n = self.norm2();
+        let n = self.norm2_wf();
         let inv_n_opt = n.recip();
         match inv_n_opt {
             Option::None => {
@@ -447,99 +568,22 @@ impl RuntimeQuaternion {
                 let inv = self.conjugate().scale(&inv_n);
                 proof {
                     let q = self@;
-                    let qc = q.conjugate_spec();
-                    let one = Quaternion::one_spec();
-                    let z = Scalar::from_int_spec(0);
-                    let inv_rt = qc.scale_spec(inv_n@);
+                    let inv_rt = q.conjugate_spec().scale_spec(inv_n@);
                     let inv_spec = q.inverse_spec();
 
                     assert(inv_n_opt.is_some());
                     assert(!n@.eqv_spec(Scalar::from_int_spec(0)));
                     assert(n@ == q.norm2_spec());
                     assert(!q.norm2_spec().eqv_spec(Scalar::from_int_spec(0)));
+                    assert(n@.mul_spec(inv_n@).eqv_spec(Scalar::from_int_spec(1)));
+                    assert(q.norm2_spec().mul_spec(inv_n@) == n@.mul_spec(inv_n@));
+                    assert(q.norm2_spec().mul_spec(inv_n@).eqv_spec(Scalar::from_int_spec(1)));
 
                     assert(inv@ == inv_rt);
 
-                    Quaternion::lemma_mul_scale_right(q, qc, inv_n@);
-                    assert(q.mul_spec(inv_rt).eqv_spec(q.mul_spec(qc).scale_spec(inv_n@)));
-                    Quaternion::lemma_mul_conjugate_right_real_norm2(q);
-                    assert(q.mul_spec(qc).eqv_spec(Quaternion::real_spec(q.norm2_spec())));
-                    Quaternion::lemma_scale_eqv_congruence(
-                        q.mul_spec(qc),
-                        Quaternion::real_spec(q.norm2_spec()),
-                        inv_n@,
-                    );
-                    let rs_r = Quaternion::real_spec(q.norm2_spec()).scale_spec(inv_n@);
-                    assert(q.mul_spec(qc).scale_spec(inv_n@).eqv_spec(rs_r));
-                    assert(rs_r.w == q.norm2_spec().mul_spec(inv_n@));
-                    assert(rs_r.x == z.mul_spec(inv_n@));
-                    assert(rs_r.y == z.mul_spec(inv_n@));
-                    assert(rs_r.z == z.mul_spec(inv_n@));
-                    assert(n@.mul_spec(inv_n@).eqv_spec(Scalar::from_int_spec(1)));
-                    assert(q.norm2_spec().mul_spec(inv_n@).eqv_spec(Scalar::from_int_spec(1)));
-                    Scalar::lemma_mul_zero(inv_n@);
-                    assert(z.mul_spec(inv_n@).eqv_spec(z));
-                    assert(one.w == Scalar::from_int_spec(1));
-                    assert(one.x == z);
-                    assert(one.y == z);
-                    assert(one.z == z);
-                    assert(rs_r.w.eqv_spec(one.w));
-                    assert(rs_r.x.eqv_spec(one.x));
-                    assert(rs_r.y.eqv_spec(one.y));
-                    assert(rs_r.z.eqv_spec(one.z));
-                    Quaternion::lemma_eqv_from_components(rs_r, one);
-                    assert(rs_r.eqv_spec(one));
-                    Quaternion::lemma_eqv_transitive(q.mul_spec(inv_rt), q.mul_spec(qc).scale_spec(inv_n@), rs_r);
-                    Quaternion::lemma_eqv_transitive(q.mul_spec(inv_rt), rs_r, one);
-                    assert(q.mul_spec(inv_rt).eqv_spec(one));
-
-                    Quaternion::lemma_mul_scale_left(qc, q, inv_n@);
-                    assert(inv_rt.mul_spec(q).eqv_spec(qc.mul_spec(q).scale_spec(inv_n@)));
-                    Quaternion::lemma_mul_conjugate_left_real_norm2(q);
-                    assert(qc.mul_spec(q).eqv_spec(Quaternion::real_spec(q.norm2_spec())));
-                    Quaternion::lemma_scale_eqv_congruence(
-                        qc.mul_spec(q),
-                        Quaternion::real_spec(q.norm2_spec()),
-                        inv_n@,
-                    );
-                    let rs_l = Quaternion::real_spec(q.norm2_spec()).scale_spec(inv_n@);
-                    assert(qc.mul_spec(q).scale_spec(inv_n@).eqv_spec(rs_l));
-                    assert(rs_l.w == q.norm2_spec().mul_spec(inv_n@));
-                    assert(rs_l.x == z.mul_spec(inv_n@));
-                    assert(rs_l.y == z.mul_spec(inv_n@));
-                    assert(rs_l.z == z.mul_spec(inv_n@));
-                    assert(rs_l.w.eqv_spec(one.w));
-                    assert(rs_l.x.eqv_spec(one.x));
-                    assert(rs_l.y.eqv_spec(one.y));
-                    assert(rs_l.z.eqv_spec(one.z));
-                    Quaternion::lemma_eqv_from_components(rs_l, one);
-                    assert(rs_l.eqv_spec(one));
-                    Quaternion::lemma_eqv_transitive(inv_rt.mul_spec(q), qc.mul_spec(q).scale_spec(inv_n@), rs_l);
-                    Quaternion::lemma_eqv_transitive(inv_rt.mul_spec(q), rs_l, one);
-                    assert(inv_rt.mul_spec(q).eqv_spec(one));
-
+                    Self::lemma_conjugate_scale_left_inverse(q, inv_n@);
                     Quaternion::lemma_inverse_right(q);
-                    Quaternion::lemma_inverse_left(q);
-                    assert(q.mul_spec(inv_spec).eqv_spec(one));
-                    assert(inv_spec.mul_spec(q).eqv_spec(one));
-
-                    Quaternion::lemma_mul_one_identity(inv_rt);
-                    assert(inv_rt.mul_spec(one).eqv_spec(inv_rt));
-                    Quaternion::lemma_eqv_symmetric(inv_rt.mul_spec(one), inv_rt);
-                    assert(inv_rt.eqv_spec(inv_rt.mul_spec(one)));
-                    Quaternion::lemma_mul_eqv_congruence_right(inv_rt, one, q.mul_spec(inv_spec));
-                    assert(inv_rt.mul_spec(one).eqv_spec(inv_rt.mul_spec(q.mul_spec(inv_spec))));
-                    Quaternion::lemma_mul_associative(inv_rt, q, inv_spec);
-                    assert(inv_rt.mul_spec(q.mul_spec(inv_spec)).eqv_spec(inv_rt.mul_spec(q).mul_spec(inv_spec)));
-                    Quaternion::lemma_mul_eqv_congruence_left(inv_rt.mul_spec(q), one, inv_spec);
-                    assert(inv_rt.mul_spec(q).mul_spec(inv_spec).eqv_spec(one.mul_spec(inv_spec)));
-                    Quaternion::lemma_mul_one_identity(inv_spec);
-                    assert(one.mul_spec(inv_spec).eqv_spec(inv_spec));
-                    Quaternion::lemma_eqv_transitive(inv_rt, inv_rt.mul_spec(one), inv_rt.mul_spec(q.mul_spec(inv_spec)));
-                    Quaternion::lemma_eqv_transitive(inv_rt, inv_rt.mul_spec(q.mul_spec(inv_spec)), inv_rt.mul_spec(q).mul_spec(inv_spec));
-                    Quaternion::lemma_eqv_transitive(inv_rt, inv_rt.mul_spec(q).mul_spec(inv_spec), one.mul_spec(inv_spec));
-                    Quaternion::lemma_eqv_transitive(inv_rt, one.mul_spec(inv_spec), inv_spec);
-                    assert(inv_rt.eqv_spec(inv_spec));
+                    Self::lemma_left_right_inverse_unique(q, inv_rt, inv_spec);
 
                     Quaternion::lemma_eqv_reflexive(inv@);
                     assert(inv@.eqv_spec(inv_rt));
