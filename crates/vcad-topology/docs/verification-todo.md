@@ -142,6 +142,17 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
     - strengthen `kernel_check_vertex_manifold_single_cycle` postcondition from `out ==> kernel_index_bounds_spec` to `out ==> kernel_vertex_manifold_single_cycle_total_spec`.
     - add per-vertex cycle witness threading invariant (`forall vp < v. exists k ...`) in outer loop.
     - prove representative-ring witness construction at vertex loop boundary (`k = steps`).
+  - burndown update (2026-02-17):
+    - attempted re-strengthening of `kernel_check_vertex_manifold_single_cycle` to
+      `out ==> kernel_vertex_manifold_single_cycle_total_spec`; this was rolled back after
+      trigger-heavy obligations remained unstable in quantified invariant preservation and
+      existential witness lifting.
+    - landed incremental groundwork in `src/verified_checker_kernels.rs`: the inner vertex-ring walk
+      now carries `h as int == kernel_vertex_ring_iter_spec(m, start as int, steps as nat)` and
+      proves one-step progression via `lemma_kernel_vertex_ring_iter_step`, keeping executable state
+      aligned with the spec iterator for the later witness proof.
+    - verification check: `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` passed
+      (`34 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
 - [x] Verify `check_edge_has_exactly_two_half_edges`.
   - in `verus-proofs` builds, this is delegated to a verified kernel checker.

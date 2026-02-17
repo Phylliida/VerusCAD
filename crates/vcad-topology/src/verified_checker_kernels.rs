@@ -786,7 +786,11 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
                 0 <= steps <= expected + 1,
                 local_seen@.len() == hcnt as int,
                 0 <= h < hcnt,
+                h as int == kernel_vertex_ring_iter_spec(m, start as int, steps as nat),
         {
+            let h_prev = h;
+            let steps_prev = steps;
+
             if local_seen[h] {
                 return false;
             }
@@ -799,6 +803,21 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
                 return false;
             }
             steps += 1;
+
+            proof {
+                assert(steps == steps_prev + 1);
+                assert(h_prev as int == kernel_vertex_ring_iter_spec(m, start as int, steps_prev as nat));
+
+                assert(0 <= h_prev as int);
+                assert((h_prev as int) < (hcnt as int));
+                assert((m.half_edges@[h_prev as int].twin as int) < hcnt as int);
+                assert((m.half_edges@[m.half_edges@[h_prev as int].twin as int].next as int) < hcnt as int);
+                assert(kernel_vertex_ring_succ_or_self_spec(m, h_prev as int)
+                    == m.half_edges@[m.half_edges@[h_prev as int].twin as int].next as int);
+                lemma_kernel_vertex_ring_iter_step(m, start as int, steps_prev as nat);
+                assert(h as int == kernel_vertex_ring_iter_spec(m, start as int, steps as nat));
+            }
+
             if h == start {
                 break;
             }
