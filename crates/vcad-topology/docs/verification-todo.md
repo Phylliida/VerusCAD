@@ -128,6 +128,17 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `steps == hcnt + 1` state and simplifies future cycle-length bound reasoning.
     - verification check: `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` passed
       (`34 verified, 0 errors`).
+    - follow-up attempt (2026-02-17, later): retried postcondition strengthening with an explicit
+      outer-loop witness invariant (`forall fp < f. exists k ...`) and an inner-loop per-step
+      face-membership invariant aligned to `kernel_next_iter_spec`.
+    - this second attempt was rolled back: quantified assertions around witness lifting and invariant
+      preservation at the inner-loop `break` remained brittle (trigger-sensitive and unstable under
+      small proof-structure changes), and keeping it would regress verifier stability.
+    - no executable-proof behavior change was kept from the follow-up attempt; `kernel_check_face_cycles`
+      remains at the stable contract `out ==> kernel_index_bounds_spec(m)` while groundwork from prior
+      burndown steps remains in place.
+    - post-rollback verification check: `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels`
+      passed (`34 verified, 0 errors`).
   - file: `src/verified_checker_kernels.rs`
 - [x] Verify `check_no_degenerate_edges`.
   - in `verus-proofs` builds, this is delegated to verified kernel checker.
