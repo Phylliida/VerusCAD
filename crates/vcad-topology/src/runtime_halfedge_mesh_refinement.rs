@@ -496,13 +496,6 @@ pub open spec fn face_cycles_exec_to_model_spec(face_cycles: Seq<Vec<usize>>) ->
     })
 }
 
-pub proof fn lemma_face_cycles_exec_to_model_len(face_cycles: Seq<Vec<usize>>)
-    ensures
-        face_cycles_exec_to_model_spec(face_cycles).len() == face_cycles.len(),
-{
-    assert(face_cycles_exec_to_model_spec(face_cycles).len() == face_cycles.len());
-}
-
 pub proof fn lemma_face_cycles_exec_to_model_face_len(face_cycles: Seq<Vec<usize>>, f: int)
     requires
         0 <= f < face_cycles.len() as int,
@@ -511,13 +504,6 @@ pub proof fn lemma_face_cycles_exec_to_model_face_len(face_cycles: Seq<Vec<usize
 {
     assert(face_cycles_exec_to_model_spec(face_cycles)[f]
         == Seq::new(face_cycles[f]@.len(), |i: int| face_cycles[f]@[i] as int));
-}
-
-pub proof fn lemma_vec_usize_view_len(v: &Vec<usize>)
-    ensures
-        v@.len() == v.len(),
-{
-    assert(v@.len() == v.len());
 }
 
 pub proof fn lemma_face_cycles_exec_to_model_face_len_exec(
@@ -534,7 +520,7 @@ pub proof fn lemma_face_cycles_exec_to_model_face_len_exec(
         face_cycles_exec_to_model_spec(face_cycles@)[f as int].len() == n as int,
 {
     lemma_face_cycles_exec_to_model_face_len(face_cycles@, f as int);
-    lemma_vec_usize_view_len(face);
+    assert(face@.len() == face.len());
     assert(face_cycles@.index(f as int) == face_cycles@[f as int]);
     assert(face_cycles@[f as int] == *face);
     assert(face_cycles@[f as int]@.len() == (*face)@.len());
@@ -720,7 +706,7 @@ pub fn runtime_check_from_face_cycles_next_prev_face_coherent(
     let ghost model_cycles = face_cycles_exec_to_model_spec(face_cycles@);
 
     proof {
-        lemma_face_cycles_exec_to_model_len(face_cycles@);
+        assert(face_cycles_exec_to_model_spec(face_cycles@).len() == face_cycles.len());
         assert(model_cycles.len() == face_cycles.len() as int);
     }
 
@@ -738,9 +724,6 @@ pub fn runtime_check_from_face_cycles_next_prev_face_coherent(
     {
         let face = vstd::slice::slice_index_get(face_cycles, f);
         let n = face.len();
-        proof {
-            assert(*face == face_cycles@.index(f as int));
-        }
         if n == 0 {
             return false;
         }
@@ -749,7 +732,6 @@ pub fn runtime_check_from_face_cycles_next_prev_face_coherent(
         }
         proof {
             lemma_face_cycles_exec_to_model_face_len_exec(face_cycles, f, face, n);
-            assert(model_cycles == face_cycles_exec_to_model_spec(face_cycles@));
             assert(model_cycles[f as int].len() == n as int);
         }
 
@@ -771,9 +753,6 @@ pub fn runtime_check_from_face_cycles_next_prev_face_coherent(
         {
             let next_i = if i + 1 < n { i + 1 } else { 0 };
             let prev_i = if i == 0 { n - 1 } else { i - 1 };
-
-            assert(next_i < n);
-            assert(prev_i < n);
 
             let h = match start.checked_add(i) {
                 Some(v) => v,
