@@ -110,10 +110,25 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
     this triggered unstable quantifier-trigger obligations and brittle loop-body proof failures under full verification.
     avoid repeating this monolithic approach; prefer factoring into small helper lemmas (next-iter progression, per-face witness construction, and existential lifting) before re-strengthening the executable postcondition.
   - next substeps:
+    - groundwork landed in `src/verified_checker_kernels.rs`:
+      `lemma_kernel_next_iter_step`, `lemma_kernel_next_or_self_in_bounds`, `lemma_kernel_next_iter_in_bounds`
+      to support bounded next-iteration witness construction.
     - strengthen `kernel_check_face_cycles` postcondition from `out ==> kernel_index_bounds_spec` to `out ==> kernel_face_representative_cycles_total_spec`.
     - add per-face cycle-length witness threading invariant (`forall fp < f. exists k ...`) in outer loop.
     - prove representative-cycle witness construction at face loop boundary (`k = steps`).
-  - file: `src/halfedge_mesh.rs`
+  - burndown update (2026-02-17):
+    - attempted re-strengthening of `kernel_check_face_cycles` to
+      `out ==> kernel_face_representative_cycles_total_spec`; this was rolled back after trigger-heavy
+      existential threading obligations remained unstable in the outer-loop witness propagation.
+    - landed incremental groundwork in `src/verified_checker_kernels.rs`: the inner face walk now carries
+      `h as int == kernel_next_iter_spec(m, start as int, steps as nat)` and proves one-step progression via
+      `lemma_kernel_next_iter_step`, which keeps execution-state and spec-iterator state aligned for future
+      witness construction.
+    - adjusted the inner loop bound to `steps < hcnt` with explicit `closed` tracking; this avoids the
+      `steps == hcnt + 1` state and simplifies future cycle-length bound reasoning.
+    - verification check: `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` passed
+      (`34 verified, 0 errors`).
+  - file: `src/verified_checker_kernels.rs`
 - [x] Verify `check_no_degenerate_edges`.
   - in `verus-proofs` builds, this is delegated to verified kernel checker.
   - file: `src/halfedge_mesh.rs`
@@ -121,6 +136,9 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
   - in `verus-proofs` builds, this now delegates to kernel executable `kernel_check_vertex_manifold_single_cycle`.
   - semantic contract strengthening in kernel proof is still pending.
   - next substeps:
+    - groundwork landed in `src/verified_checker_kernels.rs`:
+      `lemma_kernel_vertex_ring_iter_step`, `lemma_kernel_vertex_ring_succ_or_self_in_bounds`,
+      `lemma_kernel_vertex_ring_iter_in_bounds` to support bounded ring-iteration witness construction.
     - strengthen `kernel_check_vertex_manifold_single_cycle` postcondition from `out ==> kernel_index_bounds_spec` to `out ==> kernel_vertex_manifold_single_cycle_total_spec`.
     - add per-vertex cycle witness threading invariant (`forall vp < v. exists k ...`) in outer loop.
     - prove representative-ring witness construction at vertex loop boundary (`k = steps`).

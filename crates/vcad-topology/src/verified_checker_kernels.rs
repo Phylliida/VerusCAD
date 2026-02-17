@@ -175,6 +175,87 @@ pub open spec fn kernel_vertex_ring_iter_spec(m: &KernelMesh, h: int, n: nat) ->
     }
 }
 
+pub proof fn lemma_kernel_next_iter_step(m: &KernelMesh, h: int, n: nat)
+    ensures
+        kernel_next_iter_spec(m, h, (n + 1) as nat)
+            == kernel_next_or_self_spec(m, kernel_next_iter_spec(m, h, n)),
+{
+    assert(kernel_next_iter_spec(m, h, (n + 1) as nat)
+        == kernel_next_or_self_spec(m, kernel_next_iter_spec(m, h, n)));
+}
+
+pub proof fn lemma_kernel_vertex_ring_iter_step(m: &KernelMesh, h: int, n: nat)
+    ensures
+        kernel_vertex_ring_iter_spec(m, h, (n + 1) as nat)
+            == kernel_vertex_ring_succ_or_self_spec(m, kernel_vertex_ring_iter_spec(m, h, n)),
+{
+    assert(kernel_vertex_ring_iter_spec(m, h, (n + 1) as nat)
+        == kernel_vertex_ring_succ_or_self_spec(m, kernel_vertex_ring_iter_spec(m, h, n)));
+}
+
+pub proof fn lemma_kernel_next_or_self_in_bounds(m: &KernelMesh, h: int)
+    requires
+        kernel_index_bounds_spec(m),
+        0 <= h < kernel_half_edge_count_spec(m),
+    ensures
+        0 <= kernel_next_or_self_spec(m, h) < kernel_half_edge_count_spec(m),
+{
+    let hcnt = kernel_half_edge_count_spec(m);
+    let n = m.half_edges@[h].next as int;
+    assert(0 <= n < hcnt);
+    assert(kernel_next_or_self_spec(m, h) == n);
+}
+
+pub proof fn lemma_kernel_vertex_ring_succ_or_self_in_bounds(m: &KernelMesh, h: int)
+    requires
+        kernel_index_bounds_spec(m),
+        0 <= h < kernel_half_edge_count_spec(m),
+    ensures
+        0 <= kernel_vertex_ring_succ_or_self_spec(m, h) < kernel_half_edge_count_spec(m),
+{
+    let hcnt = kernel_half_edge_count_spec(m);
+    let t = m.half_edges@[h].twin as int;
+    assert(0 <= t < hcnt);
+    let n = m.half_edges@[t].next as int;
+    assert(0 <= n < hcnt);
+    assert(kernel_vertex_ring_succ_or_self_spec(m, h) == n);
+}
+
+pub proof fn lemma_kernel_next_iter_in_bounds(m: &KernelMesh, h: int, n: nat)
+    requires
+        kernel_index_bounds_spec(m),
+        0 <= h < kernel_half_edge_count_spec(m),
+    ensures
+        0 <= kernel_next_iter_spec(m, h, n) < kernel_half_edge_count_spec(m),
+    decreases n
+{
+    if n == 0 {
+    } else {
+        lemma_kernel_next_iter_in_bounds(m, h, (n - 1) as nat);
+        lemma_kernel_next_or_self_in_bounds(m, kernel_next_iter_spec(m, h, (n - 1) as nat));
+        lemma_kernel_next_iter_step(m, h, (n - 1) as nat);
+    }
+}
+
+pub proof fn lemma_kernel_vertex_ring_iter_in_bounds(m: &KernelMesh, h: int, n: nat)
+    requires
+        kernel_index_bounds_spec(m),
+        0 <= h < kernel_half_edge_count_spec(m),
+    ensures
+        0 <= kernel_vertex_ring_iter_spec(m, h, n) < kernel_half_edge_count_spec(m),
+    decreases n
+{
+    if n == 0 {
+    } else {
+        lemma_kernel_vertex_ring_iter_in_bounds(m, h, (n - 1) as nat);
+        lemma_kernel_vertex_ring_succ_or_self_in_bounds(
+            m,
+            kernel_vertex_ring_iter_spec(m, h, (n - 1) as nat),
+        );
+        lemma_kernel_vertex_ring_iter_step(m, h, (n - 1) as nat);
+    }
+}
+
 pub open spec fn kernel_face_representative_cycle_witness_spec(m: &KernelMesh, f: int, k: int) -> bool {
     let hcnt = kernel_half_edge_count_spec(m);
     let start = m.face_half_edges@[f] as int;
@@ -566,15 +647,20 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
         let mut local_seen: Vec<bool> = vec![false; hcnt];
         let mut h = start;
         let mut steps: usize = 0;
-        while steps <= hcnt
+        let mut closed = false;
+        while steps < hcnt
             invariant
                 kernel_index_bounds_spec(m),
                 hcnt == m.half_edges.len(),
-                0 <= steps <= hcnt + 1,
+                0 <= steps <= hcnt,
                 global_seen@.len() == hcnt as int,
                 local_seen@.len() == hcnt as int,
                 0 <= h < hcnt,
+                h as int == kernel_next_iter_spec(m, start as int, steps as nat),
         {
+            let h_prev = h;
+            let steps_prev = steps;
+
             if local_seen[h] {
                 return false;
             }
@@ -592,17 +678,35 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
                 return false;
             }
             steps += 1;
+
+            proof {
+                assert(steps == steps_prev + 1);
+                assert(h_prev as int == kernel_next_iter_spec(m, start as int, steps_prev as nat));
+
+                lemma_kernel_next_iter_step(m, start as int, steps_prev as nat);
+                assert(0 <= h_prev as int);
+                assert((h_prev as int) < (hcnt as int));
+                assert((m.half_edges@[h_prev as int].next as int) < hcnt as int);
+                assert(kernel_next_or_self_spec(m, h_prev as int) == m.half_edges@[h_prev as int].next as int);
+                assert(h as int == kernel_next_iter_spec(m, start as int, steps as nat));
+            }
+
             if h == start {
+                closed = true;
                 break;
             }
         }
 
+        if !closed {
+            return false;
+        }
         if h != start {
             return false;
         }
         if steps < 3 {
             return false;
         }
+
         f += 1;
     }
 
