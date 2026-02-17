@@ -24,5 +24,5 @@ nix-shell -p rustup --run "
   export PATH='$VERUS_SOURCE/target-verus/release':\$PATH
   export VERUS_Z3_PATH='$VERUS_SOURCE/z3'
   cd '$ROOT_DIR'
-  cargo verus verify --manifest-path crates/vcad-topology/Cargo.toml -p vcad-topology --features verus-proofs
+  cargo verus verify --manifest-path crates/vcad-topology/Cargo.toml -p vcad-topology --features verus-proofs -- --triggers-mode silent
 "

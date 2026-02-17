@@ -1757,7 +1757,7 @@ impl Scalar {
     /// among all equivalent forms with denominator at most `bound`.
     pub proof fn normalize_bounded(a: Self, bound: nat) -> (m: Self)
         requires
-            exists|s: Self| s.eqv_spec(a) && s.denom_nat() <= bound,
+            exists|s: Self| #![auto] s.eqv_spec(a) && s.denom_nat() <= bound,
         ensures
             m.eqv_spec(a),
             m.denom_nat() <= bound,
@@ -1766,7 +1766,7 @@ impl Scalar {
         decreases bound,
     {
         if bound == 0 {
-            let s = choose|s: Self| s.eqv_spec(a) && s.denom_nat() <= bound;
+            let s = choose|s: Self| #![auto] s.eqv_spec(a) && s.denom_nat() <= bound;
             Self::lemma_denom_positive(s);
             assert(s.denom_nat() > 0);
             assert(s.denom_nat() <= 0);
@@ -1774,7 +1774,7 @@ impl Scalar {
             s
         } else {
             let prev = (bound as int - 1) as nat;
-            if exists|s: Self| s.eqv_spec(a) && s.denom_nat() <= prev {
+            if exists|s: Self| #![auto] s.eqv_spec(a) && s.denom_nat() <= prev {
                 let mprev = Self::normalize_bounded(a, prev);
                 assert(mprev.eqv_spec(a));
                 assert(mprev.denom_nat() <= prev);
@@ -1797,11 +1797,11 @@ impl Scalar {
                 };
                 mprev
             } else {
-                let s0 = choose|s: Self| s.eqv_spec(a) && s.denom_nat() <= bound;
+                let s0 = choose|s: Self| #![auto] s.eqv_spec(a) && s.denom_nat() <= bound;
                 assert(s0.eqv_spec(a));
                 assert(s0.denom_nat() <= bound);
                 if s0.denom_nat() <= prev {
-                    assert(exists|s: Self| s.eqv_spec(a) && s.denom_nat() <= prev) by {
+                    assert(exists|s: Self| #![auto] s.eqv_spec(a) && s.denom_nat() <= prev) by {
                         assert(s0.eqv_spec(a));
                         assert(s0.denom_nat() <= prev);
                     };
@@ -1813,7 +1813,7 @@ impl Scalar {
                 assert forall|t: Self| #![auto]
                     t.eqv_spec(a) && t.denom_nat() <= bound implies s0.denom_nat() <= t.denom_nat() by {
                     if t.denom_nat() <= prev {
-                        assert(exists|s: Self| s.eqv_spec(a) && s.denom_nat() <= prev) by {
+                        assert(exists|s: Self| #![auto] s.eqv_spec(a) && s.denom_nat() <= prev) by {
                             assert(t.eqv_spec(a));
                             assert(t.denom_nat() <= prev);
                         };
@@ -1839,7 +1839,7 @@ impl Scalar {
             m.canonical_sign_spec(),
     {
         Self::lemma_eqv_reflexive(a);
-        assert(exists|s: Self| s.eqv_spec(a) && s.denom_nat() <= a.denom_nat()) by {
+        assert(exists|s: Self| #![auto] s.eqv_spec(a) && s.denom_nat() <= a.denom_nat()) by {
             assert(a.eqv_spec(a));
             assert(a.denom_nat() <= a.denom_nat());
         };
