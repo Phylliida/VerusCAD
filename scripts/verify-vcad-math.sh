@@ -24,5 +24,11 @@ nix-shell -p rustup --run "
   export PATH='$VERUS_SOURCE/target-verus/release':\$PATH
   export VERUS_Z3_PATH='$VERUS_SOURCE/z3'
   cd '$ROOT_DIR'
-  cargo verus verify --manifest-path crates/vcad-math/Cargo.toml -p vcad-math
+  LOG_FILE=\$(mktemp)
+  trap 'rm -f \"\$LOG_FILE\"' EXIT
+  cargo verus focus --manifest-path crates/vcad-math/Cargo.toml -p vcad-math -- --time-expanded --triggers-mode silent 2>&1 | tee \"\$LOG_FILE\"
+  if ! rg -q '^verification results:: [0-9]+ verified, [0-9]+ errors$' \"\$LOG_FILE\"; then
+    echo 'error: verus did not report verification results; proof checks may not have run.'
+    exit 1
+  fi
 "
