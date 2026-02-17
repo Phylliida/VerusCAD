@@ -66,6 +66,12 @@ impl RuntimePoint3 {
 #[cfg(verus_keep_ghost)]
 verus! {
 impl RuntimePoint3 {
+    pub open spec fn witness_wf_spec(&self) -> bool {
+        &&& self.x.witness_wf_spec()
+        &&& self.y.witness_wf_spec()
+        &&& self.z.witness_wf_spec()
+    }
+
     pub fn new(x: RuntimeScalar, y: RuntimeScalar, z: RuntimeScalar) -> (out: Self)
         ensures
             out@ == (Point3 { x: x@, y: y@, z: z@ }),

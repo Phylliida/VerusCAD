@@ -51,6 +51,35 @@ pub fn scale_point_from_origin(p: &RuntimePoint2, k: &RuntimeScalar) -> RuntimeP
 
 #[cfg(verus_keep_ghost)]
 verus! {
+fn orient2d_wf(a: &RuntimePoint2, b: &RuntimePoint2, c: &RuntimePoint2) -> (out: RuntimeScalar)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
+    ensures
+        out@ == orient2d_spec(a@, b@, c@),
+        out.witness_wf_spec(),
+{
+    let bax = b.x.sub_wf(&a.x);
+    let bay = b.y.sub_wf(&a.y);
+    let cax = c.x.sub_wf(&a.x);
+    let cay = c.y.sub_wf(&a.y);
+    let left = bax.mul_wf(&cay);
+    let right = bay.mul_wf(&cax);
+    let out = left.sub_wf(&right);
+    proof {
+        assert(bax@ == b@.x.sub_spec(a@.x));
+        assert(bay@ == b@.y.sub_spec(a@.y));
+        assert(cax@ == c@.x.sub_spec(a@.x));
+        assert(cay@ == c@.y.sub_spec(a@.y));
+        assert(left@ == bax@.mul_spec(cay@));
+        assert(right@ == bay@.mul_spec(cax@));
+        assert(out@ == left@.sub_spec(right@));
+        assert(out@ == orient2d_spec(a@, b@, c@));
+    }
+    out
+}
+
 pub fn scale_point_from_origin(p: &RuntimePoint2, k: &RuntimeScalar) -> (out: RuntimePoint2)
     ensures
         out@ == crate::orientation::scale_point_from_origin_spec(p@, k@),
@@ -115,11 +144,15 @@ pub fn orientation(a: &RuntimePoint2, b: &RuntimePoint2, c: &RuntimePoint2) -> R
 #[cfg(verus_keep_ghost)]
 verus! {
 pub fn orientation(a: &RuntimePoint2, b: &RuntimePoint2, c: &RuntimePoint2) -> (out: RuntimeOrientation)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
     ensures
         out@ == orientation_spec(a@, b@, c@),
 {
-    let det = orient2d(a, b, c);
-    let sign = det.sign();
+    let det = orient2d_wf(a, b, c);
+    let sign = det.sign_from_witness();
     match sign {
         RuntimeSign::Positive => {
             proof {

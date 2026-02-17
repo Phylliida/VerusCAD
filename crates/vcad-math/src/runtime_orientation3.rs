@@ -57,6 +57,73 @@ pub fn scale_point_from_origin3(p: &RuntimePoint3, k: &RuntimeScalar) -> Runtime
 
 #[cfg(verus_keep_ghost)]
 verus! {
+fn orient3d_wf(a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3, d: &RuntimePoint3) -> (out: RuntimeScalar)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
+        d.witness_wf_spec(),
+    ensures
+        out@ == orient3d_spec(a@, b@, c@, d@),
+        out.witness_wf_spec(),
+{
+    let bax = b.x.sub_wf(&a.x);
+    let bay = b.y.sub_wf(&a.y);
+    let baz = b.z.sub_wf(&a.z);
+    let cax = c.x.sub_wf(&a.x);
+    let cay = c.y.sub_wf(&a.y);
+    let caz = c.z.sub_wf(&a.z);
+    let dax = d.x.sub_wf(&a.x);
+    let day = d.y.sub_wf(&a.y);
+    let daz = d.z.sub_wf(&a.z);
+
+    let cad_x_l = cay.mul_wf(&daz);
+    let cad_x_r = caz.mul_wf(&day);
+    let cad_x = cad_x_l.sub_wf(&cad_x_r);
+    let cad_y_l = caz.mul_wf(&dax);
+    let cad_y_r = cax.mul_wf(&daz);
+    let cad_y = cad_y_l.sub_wf(&cad_y_r);
+    let cad_z_l = cax.mul_wf(&day);
+    let cad_z_r = cay.mul_wf(&dax);
+    let cad_z = cad_z_l.sub_wf(&cad_z_r);
+
+    let term_x = bax.mul_wf(&cad_x);
+    let term_y = bay.mul_wf(&cad_y);
+    let term_z = baz.mul_wf(&cad_z);
+    let sum_xy = term_x.add_wf(&term_y);
+    let out = sum_xy.add_wf(&term_z);
+
+    proof {
+        assert(bax@ == b@.x.sub_spec(a@.x));
+        assert(bay@ == b@.y.sub_spec(a@.y));
+        assert(baz@ == b@.z.sub_spec(a@.z));
+        assert(cax@ == c@.x.sub_spec(a@.x));
+        assert(cay@ == c@.y.sub_spec(a@.y));
+        assert(caz@ == c@.z.sub_spec(a@.z));
+        assert(dax@ == d@.x.sub_spec(a@.x));
+        assert(day@ == d@.y.sub_spec(a@.y));
+        assert(daz@ == d@.z.sub_spec(a@.z));
+
+        assert(cad_x_l@ == cay@.mul_spec(daz@));
+        assert(cad_x_r@ == caz@.mul_spec(day@));
+        assert(cad_x@ == cad_x_l@.sub_spec(cad_x_r@));
+        assert(cad_y_l@ == caz@.mul_spec(dax@));
+        assert(cad_y_r@ == cax@.mul_spec(daz@));
+        assert(cad_y@ == cad_y_l@.sub_spec(cad_y_r@));
+        assert(cad_z_l@ == cax@.mul_spec(day@));
+        assert(cad_z_r@ == cay@.mul_spec(dax@));
+        assert(cad_z@ == cad_z_l@.sub_spec(cad_z_r@));
+
+        assert(term_x@ == bax@.mul_spec(cad_x@));
+        assert(term_y@ == bay@.mul_spec(cad_y@));
+        assert(term_z@ == baz@.mul_spec(cad_z@));
+        assert(sum_xy@ == term_x@.add_spec(term_y@));
+        assert(out@ == sum_xy@.add_spec(term_z@));
+        assert(out@ == orient3d_spec(a@, b@, c@, d@));
+    }
+    out
+}
+
 pub fn scale_point_from_origin3(p: &RuntimePoint3, k: &RuntimeScalar) -> (out: RuntimePoint3)
     ensures
         out@ == crate::orientation3::scale_point_from_origin3_spec(p@, k@),
@@ -131,11 +198,16 @@ pub fn orientation3(a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3, d: 
 #[cfg(verus_keep_ghost)]
 verus! {
 pub fn orientation3(a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3, d: &RuntimePoint3) -> (out: RuntimeOrientation3)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
+        d.witness_wf_spec(),
     ensures
         out@ == orientation3_spec(a@, b@, c@, d@),
 {
-    let det = orient3d(a, b, c, d);
-    let sign = det.sign();
+    let det = orient3d_wf(a, b, c, d);
+    let sign = det.sign_from_witness();
     match sign {
         RuntimeSign::Positive => {
             proof {

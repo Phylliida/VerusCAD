@@ -479,6 +479,135 @@ impl RuntimeScalar {
         }
     }
 
+    proof fn lemma_signed_from_parts_scale(sign: RuntimeSign, abs: nat, scale: nat)
+        ensures
+            Self::signed_from_parts_spec(sign, abs * scale)
+                == Self::signed_from_parts_spec(sign, abs) * (scale as int),
+    {
+        match sign {
+            RuntimeSign::Positive => {
+                assert(Self::signed_from_parts_spec(sign, abs * scale) == (abs * scale) as int);
+                assert(Self::signed_from_parts_spec(sign, abs) == abs as int);
+                assert((abs * scale) as int == (abs as int) * (scale as int)) by (nonlinear_arith);
+            }
+            RuntimeSign::Negative => {
+                assert(Self::signed_from_parts_spec(sign, abs * scale) == -((abs * scale) as int));
+                assert(Self::signed_from_parts_spec(sign, abs) == -(abs as int));
+                assert((abs * scale) as int == (abs as int) * (scale as int)) by (nonlinear_arith);
+                assert((-(abs as int)) * (scale as int)
+                    == -((abs as int) * (scale as int))) by (nonlinear_arith);
+            }
+            RuntimeSign::Zero => {
+                assert(Self::signed_from_parts_spec(sign, abs * scale) == 0);
+                assert(Self::signed_from_parts_spec(sign, abs) == 0);
+                assert(Self::signed_from_parts_spec(sign, abs) * (scale as int) == 0);
+            }
+        }
+    }
+
+    proof fn lemma_sign_parts_wf_scale(sign: RuntimeSign, abs: nat, scale: nat)
+        requires
+            Self::sign_parts_wf_spec(sign, abs),
+            scale > 0,
+        ensures
+            Self::sign_parts_wf_spec(sign, abs * scale),
+    {
+        match sign {
+            RuntimeSign::Positive => {
+                Self::lemma_abs_positive_from_sign_parts(sign, abs);
+                Self::lemma_nat_product_positive(abs, scale);
+                assert(Self::signed_from_parts_spec(sign, abs * scale) == (abs * scale) as int);
+                assert((abs * scale) as int > 0);
+                assert(Self::sign_parts_wf_spec(sign, abs * scale));
+            }
+            RuntimeSign::Negative => {
+                Self::lemma_abs_positive_from_sign_parts(sign, abs);
+                Self::lemma_nat_product_positive(abs, scale);
+                assert(Self::signed_from_parts_spec(sign, abs * scale) == -((abs * scale) as int));
+                assert((abs * scale) as int > 0);
+                Self::lemma_int_pos_negates_to_neg((abs * scale) as int);
+                assert(Self::sign_parts_wf_spec(sign, abs * scale));
+            }
+            RuntimeSign::Zero => {
+                assert(Self::sign_parts_wf_spec(sign, abs * scale));
+            }
+        }
+    }
+
+    proof fn lemma_signed_from_parts_same_sign_add(sign: RuntimeSign, a: nat, b: nat)
+        ensures
+            Self::signed_from_parts_spec(sign, a + b)
+                == Self::signed_from_parts_spec(sign, a) + Self::signed_from_parts_spec(sign, b),
+    {
+        match sign {
+            RuntimeSign::Positive => {
+                assert(Self::signed_from_parts_spec(sign, a + b) == (a + b) as int);
+                assert(Self::signed_from_parts_spec(sign, a) == a as int);
+                assert(Self::signed_from_parts_spec(sign, b) == b as int);
+                assert((a + b) as int == (a as int) + (b as int)) by (nonlinear_arith);
+            }
+            RuntimeSign::Negative => {
+                assert(Self::signed_from_parts_spec(sign, a + b) == -((a + b) as int));
+                assert(Self::signed_from_parts_spec(sign, a) == -(a as int));
+                assert(Self::signed_from_parts_spec(sign, b) == -(b as int));
+                assert((a + b) as int == (a as int) + (b as int)) by (nonlinear_arith);
+                assert(-((a + b) as int) == -(a as int) + -(b as int)) by (nonlinear_arith);
+            }
+            RuntimeSign::Zero => {
+                assert(Self::signed_from_parts_spec(sign, a + b) == 0);
+                assert(Self::signed_from_parts_spec(sign, a) == 0);
+                assert(Self::signed_from_parts_spec(sign, b) == 0);
+            }
+        }
+    }
+
+    proof fn lemma_sign_parts_wf_same_sign_add(sign: RuntimeSign, a: nat, b: nat)
+        requires
+            Self::sign_parts_wf_spec(sign, a),
+            Self::sign_parts_wf_spec(sign, b),
+        ensures
+            Self::sign_parts_wf_spec(sign, a + b),
+    {
+        match sign {
+            RuntimeSign::Positive => {
+                Self::lemma_abs_positive_from_sign_parts(sign, a);
+                Self::lemma_abs_positive_from_sign_parts(sign, b);
+                assert(a + b > 0);
+                assert(Self::signed_from_parts_spec(sign, a + b) == (a + b) as int);
+                assert((a + b) as int > 0);
+                assert(Self::sign_parts_wf_spec(sign, a + b));
+            }
+            RuntimeSign::Negative => {
+                Self::lemma_abs_positive_from_sign_parts(sign, a);
+                Self::lemma_abs_positive_from_sign_parts(sign, b);
+                assert(a + b > 0);
+                assert(Self::signed_from_parts_spec(sign, a + b) == -((a + b) as int));
+                assert((a + b) as int > 0);
+                Self::lemma_int_pos_negates_to_neg((a + b) as int);
+                assert(Self::sign_parts_wf_spec(sign, a + b));
+            }
+            RuntimeSign::Zero => {
+                assert(Self::sign_parts_wf_spec(sign, a + b));
+            }
+        }
+    }
+
+    proof fn lemma_nat_add_as_int(a: nat, b: nat)
+        ensures
+            (a + b) as int == (a as int) + (b as int),
+    {
+        assert((a + b) as int == (a as int) + (b as int)) by (nonlinear_arith);
+    }
+
+    proof fn lemma_nat_sub_as_int(a: nat, b: nat)
+        requires
+            b <= a,
+        ensures
+            (a - b) as int == (a as int) - (b as int),
+    {
+        assert((a - b) as int == (a as int) - (b as int)) by (nonlinear_arith);
+    }
+
     fn add_signed_witness(
         lhs_sign: RuntimeSign,
         lhs_num_abs: &RuntimeBigNatWitness,
@@ -515,6 +644,433 @@ impl RuntimeScalar {
                     (RuntimeSign::Positive, rhs_scaled.sub_limbwise_small_total(&lhs_scaled))
                 } else {
                     (RuntimeSign::Zero, RuntimeBigNatWitness::zero())
+                }
+            }
+        }
+    }
+
+    fn add_signed_witness_wf(
+        lhs_sign: RuntimeSign,
+        lhs_num_abs: &RuntimeBigNatWitness,
+        lhs_den: &RuntimeBigNatWitness,
+        rhs_sign: RuntimeSign,
+        rhs_num_abs: &RuntimeBigNatWitness,
+        rhs_den: &RuntimeBigNatWitness,
+    ) -> (out: (RuntimeSign, RuntimeBigNatWitness))
+        requires
+            lhs_num_abs.wf_spec(),
+            lhs_den.wf_spec(),
+            rhs_num_abs.wf_spec(),
+            rhs_den.wf_spec(),
+            lhs_den.model@ > 0,
+            rhs_den.model@ > 0,
+            Self::sign_parts_wf_spec(lhs_sign, lhs_num_abs.model@),
+            Self::sign_parts_wf_spec(rhs_sign, rhs_num_abs.model@),
+        ensures
+            out.1.wf_spec(),
+            Self::sign_parts_wf_spec(out.0, out.1.model@),
+            Self::signed_from_parts_spec(out.0, out.1.model@)
+                == Self::signed_from_parts_spec(lhs_sign, lhs_num_abs.model@) * (rhs_den.model@ as int)
+                    + Self::signed_from_parts_spec(rhs_sign, rhs_num_abs.model@) * (lhs_den.model@ as int),
+    {
+        let lhs_scaled = lhs_num_abs.mul_limbwise_small_total(rhs_den);
+        let rhs_scaled = rhs_num_abs.mul_limbwise_small_total(lhs_den);
+        proof {
+            assert(lhs_scaled.model@ == lhs_num_abs.model@ * rhs_den.model@);
+            assert(rhs_scaled.model@ == rhs_num_abs.model@ * lhs_den.model@);
+            Self::lemma_signed_from_parts_scale(lhs_sign, lhs_num_abs.model@, rhs_den.model@);
+            Self::lemma_signed_from_parts_scale(rhs_sign, rhs_num_abs.model@, lhs_den.model@);
+        }
+        match (lhs_sign, rhs_sign) {
+            (RuntimeSign::Zero, _) => {
+                let out = (rhs_sign, rhs_scaled);
+                proof {
+                    assert(out.1.wf_spec());
+                    assert(out.1.model@ == rhs_num_abs.model@ * lhs_den.model@);
+                    Self::lemma_sign_parts_wf_scale(rhs_sign, rhs_num_abs.model@, lhs_den.model@);
+                    assert(Self::sign_parts_wf_spec(out.0, out.1.model@));
+                    assert(
+                        Self::signed_from_parts_spec(out.0, out.1.model@)
+                            == Self::signed_from_parts_spec(rhs_sign, rhs_num_abs.model@) * (lhs_den.model@ as int)
+                    );
+                    assert(Self::signed_from_parts_spec(lhs_sign, lhs_num_abs.model@) == 0);
+                    assert(
+                        Self::signed_from_parts_spec(lhs_sign, lhs_num_abs.model@) * (rhs_den.model@ as int)
+                            == 0
+                    );
+                    assert(
+                        Self::signed_from_parts_spec(out.0, out.1.model@)
+                            == Self::signed_from_parts_spec(lhs_sign, lhs_num_abs.model@) * (rhs_den.model@ as int)
+                                + Self::signed_from_parts_spec(rhs_sign, rhs_num_abs.model@) * (lhs_den.model@ as int)
+                    );
+                }
+                out
+            }
+            (_, RuntimeSign::Zero) => {
+                let out = (lhs_sign, lhs_scaled);
+                proof {
+                    assert(out.1.wf_spec());
+                    assert(out.1.model@ == lhs_num_abs.model@ * rhs_den.model@);
+                    Self::lemma_sign_parts_wf_scale(lhs_sign, lhs_num_abs.model@, rhs_den.model@);
+                    assert(Self::sign_parts_wf_spec(out.0, out.1.model@));
+                    assert(
+                        Self::signed_from_parts_spec(out.0, out.1.model@)
+                            == Self::signed_from_parts_spec(lhs_sign, lhs_num_abs.model@) * (rhs_den.model@ as int)
+                    );
+                    assert(Self::signed_from_parts_spec(rhs_sign, rhs_num_abs.model@) == 0);
+                    assert(
+                        Self::signed_from_parts_spec(rhs_sign, rhs_num_abs.model@) * (lhs_den.model@ as int)
+                            == 0
+                    );
+                    assert(
+                        Self::signed_from_parts_spec(out.0, out.1.model@)
+                            == Self::signed_from_parts_spec(lhs_sign, lhs_num_abs.model@) * (rhs_den.model@ as int)
+                                + Self::signed_from_parts_spec(rhs_sign, rhs_num_abs.model@) * (lhs_den.model@ as int)
+                    );
+                }
+                out
+            }
+            (RuntimeSign::Positive, RuntimeSign::Positive)
+            | (RuntimeSign::Negative, RuntimeSign::Negative) => {
+                let sum_abs = lhs_scaled.add_limbwise_small_total(&rhs_scaled);
+                let out = (lhs_sign, sum_abs);
+                proof {
+                    assert(out.1.wf_spec());
+                    assert(out.1.model@ == lhs_scaled.model@ + rhs_scaled.model@);
+                    Self::lemma_sign_parts_wf_scale(lhs_sign, lhs_num_abs.model@, rhs_den.model@);
+                    Self::lemma_sign_parts_wf_scale(rhs_sign, rhs_num_abs.model@, lhs_den.model@);
+                    assert(Self::sign_parts_wf_spec(lhs_sign, lhs_scaled.model@));
+                    assert(Self::sign_parts_wf_spec(rhs_sign, rhs_scaled.model@));
+                    Self::lemma_sign_parts_wf_same_sign_add(lhs_sign, lhs_scaled.model@, rhs_scaled.model@);
+                    assert(Self::sign_parts_wf_spec(out.0, out.1.model@));
+                    Self::lemma_signed_from_parts_same_sign_add(lhs_sign, lhs_scaled.model@, rhs_scaled.model@);
+                    assert(
+                        Self::signed_from_parts_spec(out.0, out.1.model@)
+                            == Self::signed_from_parts_spec(lhs_sign, lhs_scaled.model@)
+                                + Self::signed_from_parts_spec(rhs_sign, rhs_scaled.model@)
+                    );
+                    assert(
+                        Self::signed_from_parts_spec(lhs_sign, lhs_scaled.model@)
+                            == Self::signed_from_parts_spec(lhs_sign, lhs_num_abs.model@) * (rhs_den.model@ as int)
+                    );
+                    assert(
+                        Self::signed_from_parts_spec(rhs_sign, rhs_scaled.model@)
+                            == Self::signed_from_parts_spec(rhs_sign, rhs_num_abs.model@) * (lhs_den.model@ as int)
+                    );
+                    assert(
+                        Self::signed_from_parts_spec(out.0, out.1.model@)
+                            == Self::signed_from_parts_spec(lhs_sign, lhs_num_abs.model@) * (rhs_den.model@ as int)
+                                + Self::signed_from_parts_spec(rhs_sign, rhs_num_abs.model@) * (lhs_den.model@ as int)
+                    );
+                }
+                out
+            }
+            (RuntimeSign::Positive, RuntimeSign::Negative) => {
+                let cmp = lhs_scaled.cmp_limbwise_small_total(&rhs_scaled);
+                if cmp == 1 {
+                    let diff_abs = lhs_scaled.sub_limbwise_small_total(&rhs_scaled);
+                    let out = (RuntimeSign::Positive, diff_abs);
+                    proof {
+                        assert(out.1.wf_spec());
+                        assert(lhs_scaled.model@ > rhs_scaled.model@);
+                        assert(out.1.model@ == lhs_scaled.model@ - rhs_scaled.model@);
+                        assert(out.1.model@ > 0);
+                        assert(Self::sign_parts_wf_spec(out.0, out.1.model@));
+                        assert(Self::signed_from_parts_spec(out.0, out.1.model@) == out.1.model@ as int);
+                        assert(rhs_scaled.model@ <= lhs_scaled.model@);
+                        Self::lemma_nat_sub_as_int(lhs_scaled.model@, rhs_scaled.model@);
+                        assert(out.1.model@ as int == (lhs_scaled.model@ - rhs_scaled.model@) as int);
+                        assert(
+                            (lhs_scaled.model@ - rhs_scaled.model@) as int
+                                == (lhs_scaled.model@ as int) - (rhs_scaled.model@ as int)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(out.0, out.1.model@)
+                                == (lhs_scaled.model@ as int) - (rhs_scaled.model@ as int)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(lhs_sign, lhs_scaled.model@)
+                                == lhs_scaled.model@ as int
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(rhs_sign, rhs_scaled.model@)
+                                == -(rhs_scaled.model@ as int)
+                        );
+                        assert(
+                            (lhs_scaled.model@ as int) - (rhs_scaled.model@ as int)
+                                == (lhs_scaled.model@ as int) + (-(rhs_scaled.model@ as int))
+                        ) by (nonlinear_arith);
+                        assert(
+                            Self::signed_from_parts_spec(out.0, out.1.model@)
+                                == Self::signed_from_parts_spec(lhs_sign, lhs_scaled.model@)
+                                    + Self::signed_from_parts_spec(rhs_sign, rhs_scaled.model@)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(lhs_sign, lhs_scaled.model@)
+                                == Self::signed_from_parts_spec(lhs_sign, lhs_num_abs.model@) * (rhs_den.model@ as int)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(rhs_sign, rhs_scaled.model@)
+                                == Self::signed_from_parts_spec(rhs_sign, rhs_num_abs.model@) * (lhs_den.model@ as int)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(out.0, out.1.model@)
+                                == Self::signed_from_parts_spec(lhs_sign, lhs_num_abs.model@) * (rhs_den.model@ as int)
+                                    + Self::signed_from_parts_spec(rhs_sign, rhs_num_abs.model@) * (lhs_den.model@ as int)
+                        );
+                    }
+                    out
+                } else if cmp == -1 {
+                    let diff_abs = rhs_scaled.sub_limbwise_small_total(&lhs_scaled);
+                    let out = (RuntimeSign::Negative, diff_abs);
+                    proof {
+                        assert(out.1.wf_spec());
+                        assert(lhs_scaled.model@ < rhs_scaled.model@);
+                        assert(out.1.model@ == rhs_scaled.model@ - lhs_scaled.model@);
+                        assert(out.1.model@ > 0);
+                        assert(Self::sign_parts_wf_spec(out.0, out.1.model@));
+                        assert(Self::signed_from_parts_spec(out.0, out.1.model@) == -(out.1.model@ as int));
+                        assert(lhs_scaled.model@ <= rhs_scaled.model@);
+                        Self::lemma_nat_sub_as_int(rhs_scaled.model@, lhs_scaled.model@);
+                        assert(out.1.model@ as int == (rhs_scaled.model@ - lhs_scaled.model@) as int);
+                        assert(
+                            (rhs_scaled.model@ - lhs_scaled.model@) as int
+                                == (rhs_scaled.model@ as int) - (lhs_scaled.model@ as int)
+                        );
+                        assert(
+                            -(out.1.model@ as int)
+                                == -((rhs_scaled.model@ as int) - (lhs_scaled.model@ as int))
+                        );
+                        assert(
+                            -((rhs_scaled.model@ as int) - (lhs_scaled.model@ as int))
+                                == (lhs_scaled.model@ as int) - (rhs_scaled.model@ as int)
+                        ) by (nonlinear_arith);
+                        assert(
+                            Self::signed_from_parts_spec(out.0, out.1.model@)
+                                == (lhs_scaled.model@ as int) - (rhs_scaled.model@ as int)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(lhs_sign, lhs_scaled.model@)
+                                == lhs_scaled.model@ as int
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(rhs_sign, rhs_scaled.model@)
+                                == -(rhs_scaled.model@ as int)
+                        );
+                        assert(
+                            (lhs_scaled.model@ as int) - (rhs_scaled.model@ as int)
+                                == (lhs_scaled.model@ as int) + (-(rhs_scaled.model@ as int))
+                        ) by (nonlinear_arith);
+                        assert(
+                            Self::signed_from_parts_spec(out.0, out.1.model@)
+                                == Self::signed_from_parts_spec(lhs_sign, lhs_scaled.model@)
+                                    + Self::signed_from_parts_spec(rhs_sign, rhs_scaled.model@)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(lhs_sign, lhs_scaled.model@)
+                                == Self::signed_from_parts_spec(lhs_sign, lhs_num_abs.model@) * (rhs_den.model@ as int)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(rhs_sign, rhs_scaled.model@)
+                                == Self::signed_from_parts_spec(rhs_sign, rhs_num_abs.model@) * (lhs_den.model@ as int)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(out.0, out.1.model@)
+                                == Self::signed_from_parts_spec(lhs_sign, lhs_num_abs.model@) * (rhs_den.model@ as int)
+                                    + Self::signed_from_parts_spec(rhs_sign, rhs_num_abs.model@) * (lhs_den.model@ as int)
+                        );
+                    }
+                    out
+                } else {
+                    let out = (RuntimeSign::Zero, RuntimeBigNatWitness::zero());
+                    proof {
+                        assert(lhs_scaled.model@ == rhs_scaled.model@);
+                        assert(out.1.wf_spec());
+                        assert(out.1.model@ == 0);
+                        assert(Self::sign_parts_wf_spec(out.0, out.1.model@));
+                        assert(Self::signed_from_parts_spec(out.0, out.1.model@) == 0);
+                        assert(
+                            Self::signed_from_parts_spec(lhs_sign, lhs_scaled.model@)
+                                == lhs_scaled.model@ as int
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(rhs_sign, rhs_scaled.model@)
+                                == -(rhs_scaled.model@ as int)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(lhs_sign, lhs_scaled.model@)
+                                + Self::signed_from_parts_spec(rhs_sign, rhs_scaled.model@)
+                                == 0
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(lhs_sign, lhs_scaled.model@)
+                                == Self::signed_from_parts_spec(lhs_sign, lhs_num_abs.model@) * (rhs_den.model@ as int)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(rhs_sign, rhs_scaled.model@)
+                                == Self::signed_from_parts_spec(rhs_sign, rhs_num_abs.model@) * (lhs_den.model@ as int)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(out.0, out.1.model@)
+                                == Self::signed_from_parts_spec(lhs_sign, lhs_num_abs.model@) * (rhs_den.model@ as int)
+                                    + Self::signed_from_parts_spec(rhs_sign, rhs_num_abs.model@) * (lhs_den.model@ as int)
+                        );
+                    }
+                    out
+                }
+            }
+            (RuntimeSign::Negative, RuntimeSign::Positive) => {
+                let cmp = lhs_scaled.cmp_limbwise_small_total(&rhs_scaled);
+                if cmp == 1 {
+                    let diff_abs = lhs_scaled.sub_limbwise_small_total(&rhs_scaled);
+                    let out = (RuntimeSign::Negative, diff_abs);
+                    proof {
+                        assert(out.1.wf_spec());
+                        assert(lhs_scaled.model@ > rhs_scaled.model@);
+                        assert(out.1.model@ == lhs_scaled.model@ - rhs_scaled.model@);
+                        assert(out.1.model@ > 0);
+                        assert(Self::sign_parts_wf_spec(out.0, out.1.model@));
+                        assert(Self::signed_from_parts_spec(out.0, out.1.model@) == -(out.1.model@ as int));
+                        assert(rhs_scaled.model@ <= lhs_scaled.model@);
+                        Self::lemma_nat_sub_as_int(lhs_scaled.model@, rhs_scaled.model@);
+                        assert(out.1.model@ as int == (lhs_scaled.model@ - rhs_scaled.model@) as int);
+                        assert(
+                            (lhs_scaled.model@ - rhs_scaled.model@) as int
+                                == (lhs_scaled.model@ as int) - (rhs_scaled.model@ as int)
+                        );
+                        assert(
+                            -(out.1.model@ as int)
+                                == -((lhs_scaled.model@ as int) - (rhs_scaled.model@ as int))
+                        );
+                        assert(
+                            -((lhs_scaled.model@ as int) - (rhs_scaled.model@ as int))
+                                == (rhs_scaled.model@ as int) - (lhs_scaled.model@ as int)
+                        ) by (nonlinear_arith);
+                        assert(
+                            Self::signed_from_parts_spec(out.0, out.1.model@)
+                                == (rhs_scaled.model@ as int) - (lhs_scaled.model@ as int)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(lhs_sign, lhs_scaled.model@)
+                                == -(lhs_scaled.model@ as int)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(rhs_sign, rhs_scaled.model@)
+                                == rhs_scaled.model@ as int
+                        );
+                        assert(
+                            (rhs_scaled.model@ as int) - (lhs_scaled.model@ as int)
+                                == (-(lhs_scaled.model@ as int)) + (rhs_scaled.model@ as int)
+                        ) by (nonlinear_arith);
+                        assert(
+                            Self::signed_from_parts_spec(out.0, out.1.model@)
+                                == Self::signed_from_parts_spec(lhs_sign, lhs_scaled.model@)
+                                    + Self::signed_from_parts_spec(rhs_sign, rhs_scaled.model@)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(lhs_sign, lhs_scaled.model@)
+                                == Self::signed_from_parts_spec(lhs_sign, lhs_num_abs.model@) * (rhs_den.model@ as int)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(rhs_sign, rhs_scaled.model@)
+                                == Self::signed_from_parts_spec(rhs_sign, rhs_num_abs.model@) * (lhs_den.model@ as int)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(out.0, out.1.model@)
+                                == Self::signed_from_parts_spec(lhs_sign, lhs_num_abs.model@) * (rhs_den.model@ as int)
+                                    + Self::signed_from_parts_spec(rhs_sign, rhs_num_abs.model@) * (lhs_den.model@ as int)
+                        );
+                    }
+                    out
+                } else if cmp == -1 {
+                    let diff_abs = rhs_scaled.sub_limbwise_small_total(&lhs_scaled);
+                    let out = (RuntimeSign::Positive, diff_abs);
+                    proof {
+                        assert(out.1.wf_spec());
+                        assert(lhs_scaled.model@ < rhs_scaled.model@);
+                        assert(out.1.model@ == rhs_scaled.model@ - lhs_scaled.model@);
+                        assert(out.1.model@ > 0);
+                        assert(Self::sign_parts_wf_spec(out.0, out.1.model@));
+                        assert(Self::signed_from_parts_spec(out.0, out.1.model@) == out.1.model@ as int);
+                        assert(lhs_scaled.model@ <= rhs_scaled.model@);
+                        Self::lemma_nat_sub_as_int(rhs_scaled.model@, lhs_scaled.model@);
+                        assert(out.1.model@ as int == (rhs_scaled.model@ - lhs_scaled.model@) as int);
+                        assert(
+                            (rhs_scaled.model@ - lhs_scaled.model@) as int
+                                == (rhs_scaled.model@ as int) - (lhs_scaled.model@ as int)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(out.0, out.1.model@)
+                                == (rhs_scaled.model@ as int) - (lhs_scaled.model@ as int)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(lhs_sign, lhs_scaled.model@)
+                                == -(lhs_scaled.model@ as int)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(rhs_sign, rhs_scaled.model@)
+                                == rhs_scaled.model@ as int
+                        );
+                        assert(
+                            (rhs_scaled.model@ as int) - (lhs_scaled.model@ as int)
+                                == (-(lhs_scaled.model@ as int)) + (rhs_scaled.model@ as int)
+                        ) by (nonlinear_arith);
+                        assert(
+                            Self::signed_from_parts_spec(out.0, out.1.model@)
+                                == Self::signed_from_parts_spec(lhs_sign, lhs_scaled.model@)
+                                    + Self::signed_from_parts_spec(rhs_sign, rhs_scaled.model@)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(lhs_sign, lhs_scaled.model@)
+                                == Self::signed_from_parts_spec(lhs_sign, lhs_num_abs.model@) * (rhs_den.model@ as int)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(rhs_sign, rhs_scaled.model@)
+                                == Self::signed_from_parts_spec(rhs_sign, rhs_num_abs.model@) * (lhs_den.model@ as int)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(out.0, out.1.model@)
+                                == Self::signed_from_parts_spec(lhs_sign, lhs_num_abs.model@) * (rhs_den.model@ as int)
+                                    + Self::signed_from_parts_spec(rhs_sign, rhs_num_abs.model@) * (lhs_den.model@ as int)
+                        );
+                    }
+                    out
+                } else {
+                    let out = (RuntimeSign::Zero, RuntimeBigNatWitness::zero());
+                    proof {
+                        assert(lhs_scaled.model@ == rhs_scaled.model@);
+                        assert(out.1.wf_spec());
+                        assert(out.1.model@ == 0);
+                        assert(Self::sign_parts_wf_spec(out.0, out.1.model@));
+                        assert(Self::signed_from_parts_spec(out.0, out.1.model@) == 0);
+                        assert(
+                            Self::signed_from_parts_spec(lhs_sign, lhs_scaled.model@)
+                                == -(lhs_scaled.model@ as int)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(rhs_sign, rhs_scaled.model@)
+                                == rhs_scaled.model@ as int
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(lhs_sign, lhs_scaled.model@)
+                                + Self::signed_from_parts_spec(rhs_sign, rhs_scaled.model@)
+                                == 0
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(lhs_sign, lhs_scaled.model@)
+                                == Self::signed_from_parts_spec(lhs_sign, lhs_num_abs.model@) * (rhs_den.model@ as int)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(rhs_sign, rhs_scaled.model@)
+                                == Self::signed_from_parts_spec(rhs_sign, rhs_num_abs.model@) * (lhs_den.model@ as int)
+                        );
+                        assert(
+                            Self::signed_from_parts_spec(out.0, out.1.model@)
+                                == Self::signed_from_parts_spec(lhs_sign, lhs_num_abs.model@) * (rhs_den.model@ as int)
+                                    + Self::signed_from_parts_spec(rhs_sign, rhs_num_abs.model@) * (lhs_den.model@ as int)
+                        );
+                    }
+                    out
                 }
             }
         }
@@ -641,6 +1197,113 @@ impl RuntimeScalar {
         out
     }
 
+    pub fn add_wf(&self, rhs: &Self) -> (out: Self)
+        requires
+            self.witness_wf_spec(),
+            rhs.witness_wf_spec(),
+        ensures
+            out@ == self@.add_spec(rhs@),
+            out.witness_wf_spec(),
+    {
+        proof {
+            self.lemma_sign_parts_wf_from_witness_wf();
+            rhs.lemma_sign_parts_wf_from_witness_wf();
+        }
+        let ghost model = self@.add_spec(rhs@);
+        let (sign_witness, num_abs_witness) = Self::add_signed_witness_wf(
+            self.sign_witness,
+            &self.num_abs_witness,
+            &self.den_witness,
+            rhs.sign_witness,
+            &rhs.num_abs_witness,
+            &rhs.den_witness,
+        );
+        let den_witness = self.den_witness.mul_limbwise_small_total(&rhs.den_witness);
+        let out = RuntimeScalar {
+            sign_witness,
+            num_abs_witness,
+            den_witness,
+            model: Ghost(model),
+        };
+        proof {
+            let ghost s1 = self.signed_num_witness_spec();
+            let ghost s2 = rhs.signed_num_witness_spec();
+            let ghost so = out.signed_num_witness_spec();
+            let ghost d1 = self.den_witness.model@ as int;
+            let ghost d2 = rhs.den_witness.model@ as int;
+            let ghost a = self@.denom();
+            let ghost b = rhs@.denom();
+            let ghost n1 = self@.num;
+            let ghost n2 = rhs@.num;
+            assert(out@ == self@.add_spec(rhs@));
+            assert(out.num_abs_witness.wf_spec());
+            assert(out.den_witness.wf_spec());
+            assert(out.num_abs_witness.model@ == num_abs_witness.model@);
+            assert(out.den_witness.model@ == self.den_witness.model@ * rhs.den_witness.model@);
+            assert(self.den_witness.model@ > 0);
+            assert(rhs.den_witness.model@ > 0);
+            Self::lemma_nat_product_positive(self.den_witness.model@, rhs.den_witness.model@);
+            assert(out.den_witness.model@ > 0);
+            assert(Self::sign_parts_wf_spec(sign_witness, out.num_abs_witness.model@));
+            assert(
+                so
+                    == Self::signed_from_parts_spec(sign_witness, out.num_abs_witness.model@)
+            );
+            assert(
+                so
+                    == Self::signed_from_parts_spec(self.sign_witness, self.num_abs_witness.model@)
+                        * d2
+                        + Self::signed_from_parts_spec(rhs.sign_witness, rhs.num_abs_witness.model@)
+                            * d1
+            );
+            assert(Self::signed_from_parts_spec(self.sign_witness, self.num_abs_witness.model@) == s1);
+            assert(Self::signed_from_parts_spec(rhs.sign_witness, rhs.num_abs_witness.model@) == s2);
+            assert(so == s1 * d2 + s2 * d1);
+
+            ScalarModel::lemma_add_denom_product_int(self@, rhs@);
+            assert(out@.denom() == a * b);
+            assert(out@.num == n1 * b + n2 * a);
+            assert(s1 * a == n1 * d1);
+            assert(s2 * b == n2 * d2);
+            assert(
+                (so * out@.denom())
+                    == (s1 * d2 + s2 * d1) * (a * b)
+            );
+            assert(
+                (s1 * d2 + s2 * d1) * (a * b)
+                    == (s1 * d2) * (a * b) + (s2 * d1) * (a * b)
+            ) by (nonlinear_arith);
+            assert((s1 * d2) * (a * b) == (s1 * a) * (d2 * b)) by (nonlinear_arith);
+            assert((s2 * d1) * (a * b) == (s2 * b) * (d1 * a)) by (nonlinear_arith);
+            assert((s1 * a) * (d2 * b) == (n1 * d1) * (d2 * b));
+            assert((s2 * b) * (d1 * a) == (n2 * d2) * (d1 * a));
+            assert((n1 * d1) * (d2 * b) == (n1 * b) * (d1 * d2)) by (nonlinear_arith);
+            assert((n2 * d2) * (d1 * a) == (n2 * a) * (d1 * d2)) by (nonlinear_arith);
+            assert(
+                (n1 * b) * (d1 * d2) + (n2 * a) * (d1 * d2)
+                    == (n1 * b + n2 * a) * (d1 * d2)
+            ) by (nonlinear_arith);
+            assert(
+                (s1 * d2 + s2 * d1) * (a * b)
+                    == (n1 * b + n2 * a) * (d1 * d2)
+            );
+            assert(
+                (self.den_witness.model@ * rhs.den_witness.model@) as int
+                    == (self.den_witness.model@ as int) * (rhs.den_witness.model@ as int)
+            ) by (nonlinear_arith);
+            assert((self.den_witness.model@ as int) * (rhs.den_witness.model@ as int) == d1 * d2);
+            assert(out.den_witness.model@ as int == d1 * d2);
+            assert(
+                out@.num * (out.den_witness.model@ as int)
+                    == (n1 * b + n2 * a) * (d1 * d2)
+            );
+            assert((so * out@.denom()) == (n1 * b + n2 * a) * (d1 * d2));
+            assert(so * out@.denom() == out@.num * (out.den_witness.model@ as int));
+            assert(out.witness_wf_spec());
+        }
+        out
+    }
+
     pub fn sub(&self, rhs: &Self) -> (out: Self)
         ensures
             out@ == self@.sub_spec(rhs@),
@@ -663,6 +1326,25 @@ impl RuntimeScalar {
             model: Ghost(model),
         };
         proof {
+            assert(out@ == self@.sub_spec(rhs@));
+        }
+        out
+    }
+
+    pub fn sub_wf(&self, rhs: &Self) -> (out: Self)
+        requires
+            self.witness_wf_spec(),
+            rhs.witness_wf_spec(),
+        ensures
+            out@ == self@.sub_spec(rhs@),
+            out.witness_wf_spec(),
+    {
+        let neg_rhs = rhs.neg_wf();
+        let out = self.add_wf(&neg_rhs);
+        proof {
+            ScalarModel::lemma_sub_is_add_neg(self@, rhs@);
+            assert(neg_rhs@ == rhs@.neg_spec());
+            assert(out@ == self@.add_spec(neg_rhs@));
             assert(out@ == self@.sub_spec(rhs@));
         }
         out
@@ -870,19 +1552,14 @@ impl RuntimeScalar {
     }
 
     pub fn sign(&self) -> (out: RuntimeSign)
+        requires
+            self.witness_wf_spec(),
         ensures
             (out is Positive) == (self@.signum() == 1),
             (out is Negative) == (self@.signum() == -1),
             (out is Zero) == (self@.signum() == 0),
     {
-        let s = self.signum_i8();
-        if s == 1 {
-            RuntimeSign::Positive
-        } else if s == -1 {
-            RuntimeSign::Negative
-        } else {
-            RuntimeSign::Zero
-        }
+        self.sign_from_witness()
     }
 
     pub fn sign_from_witness(&self) -> (out: RuntimeSign)
@@ -900,6 +1577,8 @@ impl RuntimeScalar {
     }
 
     pub fn recip(&self) -> (out: Option<Self>)
+        requires
+            self.witness_wf_spec(),
         ensures
             out.is_none() == self@.eqv_spec(ScalarModel::from_int_spec(0)),
             match out {
@@ -911,7 +1590,7 @@ impl RuntimeScalar {
                 },
             },
     {
-        let sign = self.sign();
+        let sign = self.sign_from_witness();
         match sign {
             RuntimeSign::Zero => {
                 proof {
@@ -1061,70 +1740,6 @@ impl RuntimeScalar {
         out
     }
 
-    /// Proof-only sign extraction from the scalar model.
-    ///
-    /// This is the migration target for verus-mode callers that currently
-    /// depend on the trusted exec `signum_i8` bridge.
-    pub proof fn signum_i8_proof(&self) -> (out: i8)
-        ensures
-            (out == 1) == (self@.signum() == 1),
-            (out == -1) == (self@.signum() == -1),
-            (out == 0) == (self@.signum() == 0),
-    {
-        if self@.signum() == 1 {
-            1i8
-        } else if self@.signum() == -1 {
-            -1i8
-        } else {
-            ScalarModel::lemma_signum_cases(self@);
-            assert(self@.signum() == 0);
-            0i8
-        }
-    }
-
-    /// Canonical bridge lemma from the exec signum contract to the proof signum witness.
-    pub proof fn lemma_signum_i8_matches_proof(&self, s: i8) -> (sp: i8)
-        requires
-            (s == 1) == (self@.signum() == 1),
-            (s == -1) == (self@.signum() == -1),
-            (s == 0) == (self@.signum() == 0),
-        ensures
-            (sp == 1) == (self@.signum() == 1),
-            (sp == -1) == (self@.signum() == -1),
-            (sp == 0) == (self@.signum() == 0),
-            s == sp,
-    {
-        let sp = self.signum_i8_proof();
-        ScalarModel::lemma_signum_cases(self@);
-        if self@.signum() == 1 {
-            assert((s == 1) == (self@.signum() == 1));
-            assert((sp == 1) == (self@.signum() == 1));
-            assert(s == 1);
-            assert(sp == 1);
-        } else if self@.signum() == -1 {
-            assert((s == -1) == (self@.signum() == -1));
-            assert((sp == -1) == (self@.signum() == -1));
-            assert(s == -1);
-            assert(sp == -1);
-        } else {
-            assert(self@.signum() == 0);
-            assert((s == 0) == (self@.signum() == 0));
-            assert((sp == 0) == (self@.signum() == 0));
-            assert(s == 0);
-            assert(sp == 0);
-        }
-        sp
-    }
-
-    #[verifier::external_body]
-    pub fn signum_i8(&self) -> (out: i8)
-        ensures
-            (out == 1) == (self@.signum() == 1),
-            (out == -1) == (self@.signum() == -1),
-            (out == 0) == (self@.signum() == 0),
-    {
-        0
-    }
 }
 }
 
