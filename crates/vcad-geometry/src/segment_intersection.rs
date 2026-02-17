@@ -312,6 +312,9 @@ pub open spec fn point_on_both_segments_spec(
 }
 
 fn scalar_sign(a: &RuntimeScalar, b: &RuntimeScalar) -> (out: i8)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
     ensures
         out as int == scalar_sign_spec(a@, b@),
         out == 1 || out == -1 || out == 0,
@@ -319,8 +322,8 @@ fn scalar_sign(a: &RuntimeScalar, b: &RuntimeScalar) -> (out: i8)
         (out < 0) == (scalar_sign_spec(a@, b@) < 0),
         (out <= 0) == (scalar_sign_spec(a@, b@) <= 0),
 {
-    let diff = a.sub(b);
-    let sign = diff.sign();
+    let diff = a.sub_wf(b);
+    let sign = diff.sign_from_witness();
     let out = match sign {
         RuntimeSign::Positive => 1,
         RuntimeSign::Negative => -1,
@@ -360,6 +363,9 @@ fn scalar_sign(a: &RuntimeScalar, b: &RuntimeScalar) -> (out: i8)
 }
 
 fn scalar_eq(a: &RuntimeScalar, b: &RuntimeScalar) -> (out: bool)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
     ensures
         out == scalar_eq_sign_spec(a@, b@),
 {
@@ -373,6 +379,9 @@ fn scalar_eq(a: &RuntimeScalar, b: &RuntimeScalar) -> (out: bool)
 }
 
 fn scalar_le(a: &RuntimeScalar, b: &RuntimeScalar) -> (out: bool)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
     ensures
         out == scalar_le_sign_spec(a@, b@),
 {
@@ -386,6 +395,9 @@ fn scalar_le(a: &RuntimeScalar, b: &RuntimeScalar) -> (out: bool)
 }
 
 fn scalar_lt(a: &RuntimeScalar, b: &RuntimeScalar) -> (out: bool)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
     ensures
         out == scalar_lt_sign_spec(a@, b@),
 {
@@ -399,6 +411,9 @@ fn scalar_lt(a: &RuntimeScalar, b: &RuntimeScalar) -> (out: bool)
 }
 
 fn scalar_min<'a>(a: &'a RuntimeScalar, b: &'a RuntimeScalar) -> (out: &'a RuntimeScalar)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
     ensures
         out@ == scalar_min_spec(a@, b@),
 {
@@ -419,6 +434,9 @@ fn scalar_min<'a>(a: &'a RuntimeScalar, b: &'a RuntimeScalar) -> (out: &'a Runti
 }
 
 fn scalar_max<'a>(a: &'a RuntimeScalar, b: &'a RuntimeScalar) -> (out: &'a RuntimeScalar)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
     ensures
         out@ == scalar_max_spec(a@, b@),
 {
@@ -443,6 +461,10 @@ fn point_on_segment_inclusive_runtime(
     a: &RuntimePoint2,
     b: &RuntimePoint2,
 ) -> (out: bool)
+    requires
+        p.witness_wf_spec(),
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
     ensures
         out == point_on_segment_inclusive_spec(p@, a@, b@),
 {
@@ -488,6 +510,11 @@ fn collinear_overlap_dimension_kind(
     b1: &RuntimeScalar,
     b2: &RuntimeScalar,
 ) -> (out: i8)
+    requires
+        a1.witness_wf_spec(),
+        a2.witness_wf_spec(),
+        b1.witness_wf_spec(),
+        b2.witness_wf_spec(),
     ensures
         out as int == collinear_overlap_dimension_kind_spec(a1@, a2@, b1@, b2@),
 {
@@ -530,6 +557,11 @@ pub fn segment_intersection_kind_2d(
     c: &RuntimePoint2,
     d: &RuntimePoint2,
 ) -> (out: SegmentIntersection2dKind)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
+        d.witness_wf_spec(),
     ensures
         out@ == segment_intersection_kind_spec(a@, b@, c@, d@),
 {

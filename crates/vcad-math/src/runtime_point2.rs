@@ -100,6 +100,25 @@ impl RuntimePoint2 {
         out
     }
 
+    pub fn add_vec_wf(&self, v: &RuntimeVec2) -> (out: Self)
+        requires
+            self.witness_wf_spec(),
+            v.witness_wf_spec(),
+        ensures
+            out@ == self@.add_vec_spec(v@),
+            out.witness_wf_spec(),
+    {
+        let x = self.x.add_wf(&v.x);
+        let y = self.y.add_wf(&v.y);
+        let out = Self { x, y };
+        proof {
+            assert(out@ == Point2 { x: self@.x.add_spec(v@.x), y: self@.y.add_spec(v@.y) });
+            assert(out@ == self@.add_vec_spec(v@));
+            assert(out.witness_wf_spec());
+        }
+        out
+    }
+
     pub fn sub(&self, rhs: &Self) -> (out: RuntimeVec2)
         ensures
             out@ == self@.sub_spec(rhs@),

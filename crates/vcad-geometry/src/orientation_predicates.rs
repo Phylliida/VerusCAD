@@ -64,6 +64,10 @@ pub fn orient2d_sign(a: &RuntimePoint2, b: &RuntimePoint2, c: &RuntimePoint2) ->
 #[cfg(verus_keep_ghost)]
 verus! {
 pub fn orient2d_sign(a: &RuntimePoint2, b: &RuntimePoint2, c: &RuntimePoint2) -> (out: i8)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
     ensures
         (out == 1) == (orient2d_spec(a@, b@, c@).signum() == 1),
         (out == -1) == (orient2d_spec(a@, b@, c@).signum() == -1),
@@ -130,6 +134,11 @@ pub fn orient3d_sign(
     c: &RuntimePoint3,
     d: &RuntimePoint3,
 ) -> (out: i8)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
+        d.witness_wf_spec(),
     ensures
         (out == 1) == (orient3d_spec(a@, b@, c@, d@).signum() == 1),
         (out == -1) == (orient3d_spec(a@, b@, c@, d@).signum() == -1),
@@ -182,6 +191,10 @@ pub fn orient2d_class(a: &RuntimePoint2, b: &RuntimePoint2, c: &RuntimePoint2) -
 #[cfg(verus_keep_ghost)]
 verus! {
 pub fn orient2d_class(a: &RuntimePoint2, b: &RuntimePoint2, c: &RuntimePoint2) -> (out: RuntimeOrientation)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
     ensures
         out@ == orientation_spec(a@, b@, c@),
 {
@@ -207,6 +220,11 @@ pub fn orient3d_class(
     c: &RuntimePoint3,
     d: &RuntimePoint3,
 ) -> (out: RuntimeOrientation3)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
+        d.witness_wf_spec(),
     ensures
         out@ == orientation3_spec(a@, b@, c@, d@),
 {

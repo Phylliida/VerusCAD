@@ -184,6 +184,26 @@ pub fn scale_point_from_origin3(p: &RuntimePoint3, k: &RuntimeScalar) -> (out: R
     }
     out
 }
+
+pub fn scale_point_from_origin3_wf(p: &RuntimePoint3, k: &RuntimeScalar) -> (out: RuntimePoint3)
+    requires
+        p.witness_wf_spec(),
+        k.witness_wf_spec(),
+    ensures
+        out@ == crate::orientation3::scale_point_from_origin3_spec(p@, k@),
+        out.witness_wf_spec(),
+{
+    let x = p.x.mul_wf(k);
+    let y = p.y.mul_wf(k);
+    let z = p.z.mul_wf(k);
+    let out = RuntimePoint3 { x, y, z };
+    proof {
+        assert(out@ == Point3 { x: p@.x.mul_spec(k@), y: p@.y.mul_spec(k@), z: p@.z.mul_spec(k@) });
+        assert(out@ == crate::orientation3::scale_point_from_origin3_spec(p@, k@));
+        assert(out.witness_wf_spec());
+    }
+    out
+}
 }
 
 #[cfg(not(verus_keep_ghost))]

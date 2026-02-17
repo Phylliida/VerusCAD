@@ -29,6 +29,10 @@ pub fn runtime_orientation_swap_pair(a: &RuntimePoint2, b: &RuntimePoint2, c: &R
     RuntimeOrientation,
     RuntimeOrientation,
 ))
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
     ensures
         pair.0@ == orientation_spec(a@, b@, c@),
         pair.1@ == orientation_spec(a@, c@, b@),
@@ -128,14 +132,19 @@ pub fn runtime_orientation_translation_invariant(
     RuntimeOrientation,
     RuntimeOrientation,
 ))
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
+        t.witness_wf_spec(),
     ensures
         pair.0@ == orientation_spec(a@.add_vec_spec(t@), b@.add_vec_spec(t@), c@.add_vec_spec(t@)),
         pair.1@ == orientation_spec(a@, b@, c@),
         pair.0@ == pair.1@,
 {
-    let at = a.add_vec(t);
-    let bt = b.add_vec(t);
-    let ct = c.add_vec(t);
+    let at = a.add_vec_wf(t);
+    let bt = b.add_vec_wf(t);
+    let ct = c.add_vec_wf(t);
     let lhs = runtime_orientation::orientation(&at, &bt, &ct);
     let rhs = runtime_orientation::orientation(a, b, c);
     proof {
@@ -160,6 +169,10 @@ pub fn runtime_orientation_scale_nonzero_preserves(
     RuntimeOrientation,
 ))
     requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
+        k.witness_wf_spec(),
         !k@.eqv_spec(Scalar::from_int_spec(0)),
     ensures
         pair.0@ == orientation_spec(
@@ -170,9 +183,9 @@ pub fn runtime_orientation_scale_nonzero_preserves(
         pair.1@ == orientation_spec(a@, b@, c@),
         pair.0@ == pair.1@,
 {
-    let sa = runtime_orientation::scale_point_from_origin(a, k);
-    let sb = runtime_orientation::scale_point_from_origin(b, k);
-    let sc = runtime_orientation::scale_point_from_origin(c, k);
+    let sa = runtime_orientation::scale_point_from_origin_wf(a, k);
+    let sb = runtime_orientation::scale_point_from_origin_wf(b, k);
+    let sc = runtime_orientation::scale_point_from_origin_wf(c, k);
     let lhs = runtime_orientation::orientation(&sa, &sb, &sc);
     let rhs = runtime_orientation::orientation(a, b, c);
     proof {
@@ -202,6 +215,10 @@ pub fn runtime_orientation_scale_zero_collinear(
     k: &RuntimeScalar,
 ) -> (out: RuntimeOrientation)
     requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
+        k.witness_wf_spec(),
         k@.eqv_spec(Scalar::from_int_spec(0)),
     ensures
         out@ == orientation_spec(
@@ -211,9 +228,9 @@ pub fn runtime_orientation_scale_zero_collinear(
         ),
         out@ is Collinear,
 {
-    let sa = runtime_orientation::scale_point_from_origin(a, k);
-    let sb = runtime_orientation::scale_point_from_origin(b, k);
-    let sc = runtime_orientation::scale_point_from_origin(c, k);
+    let sa = runtime_orientation::scale_point_from_origin_wf(a, k);
+    let sb = runtime_orientation::scale_point_from_origin_wf(b, k);
+    let sc = runtime_orientation::scale_point_from_origin_wf(c, k);
     let out = runtime_orientation::orientation(&sa, &sb, &sc);
     proof {
         Scalar::lemma_eqv_zero_iff_num_zero(k@);

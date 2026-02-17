@@ -19,6 +19,10 @@ pub fn collinear2d(a: &RuntimePoint2, b: &RuntimePoint2, c: &RuntimePoint2) -> b
 #[cfg(verus_keep_ghost)]
 verus! {
 pub fn collinear2d(a: &RuntimePoint2, b: &RuntimePoint2, c: &RuntimePoint2) -> (out: bool)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
     ensures
         out == is_collinear(a@, b@, c@),
 {
@@ -41,24 +45,62 @@ pub fn collinear3d(a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3) -> b
 #[cfg(verus_keep_ghost)]
 verus! {
 pub fn collinear3d(a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3) -> (out: bool)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
     ensures
         out == (b@.sub_spec(a@).cross_spec(c@.sub_spec(a@)).norm2_spec().signum() == 0),
 {
-    let ba = b.sub(a);
-    let ca = c.sub(a);
-    let cross = ba.cross(&ca);
-    let n2 = cross.norm2();
-    let sign = n2.sign();
+    let bax = b.x.sub_wf(&a.x);
+    let bay = b.y.sub_wf(&a.y);
+    let baz = b.z.sub_wf(&a.z);
+    let cax = c.x.sub_wf(&a.x);
+    let cay = c.y.sub_wf(&a.y);
+    let caz = c.z.sub_wf(&a.z);
+
+    let cx_l = bay.mul_wf(&caz);
+    let cx_r = baz.mul_wf(&cay);
+    let cx = cx_l.sub_wf(&cx_r);
+    let cy_l = baz.mul_wf(&cax);
+    let cy_r = bax.mul_wf(&caz);
+    let cy = cy_l.sub_wf(&cy_r);
+    let cz_l = bax.mul_wf(&cay);
+    let cz_r = bay.mul_wf(&cax);
+    let cz = cz_l.sub_wf(&cz_r);
+
+    let n2x = cx.mul_wf(&cx);
+    let n2y = cy.mul_wf(&cy);
+    let n2z = cz.mul_wf(&cz);
+    let n2xy = n2x.add_wf(&n2y);
+    let n2 = n2xy.add_wf(&n2z);
+    let sign = n2.sign_from_witness();
     let out = match sign {
         RuntimeSign::Zero => true,
         RuntimeSign::Negative | RuntimeSign::Positive => false,
     };
     proof {
         assert((sign is Zero) == (n2@.signum() == 0));
-        assert(ba@ == b@.sub_spec(a@));
-        assert(ca@ == c@.sub_spec(a@));
-        assert(cross@ == ba@.cross_spec(ca@));
-        assert(n2@ == cross@.norm2_spec());
+        assert(bax@ == b@.x.sub_spec(a@.x));
+        assert(bay@ == b@.y.sub_spec(a@.y));
+        assert(baz@ == b@.z.sub_spec(a@.z));
+        assert(cax@ == c@.x.sub_spec(a@.x));
+        assert(cay@ == c@.y.sub_spec(a@.y));
+        assert(caz@ == c@.z.sub_spec(a@.z));
+        assert(cx_l@ == bay@.mul_spec(caz@));
+        assert(cx_r@ == baz@.mul_spec(cay@));
+        assert(cx@ == cx_l@.sub_spec(cx_r@));
+        assert(cy_l@ == baz@.mul_spec(cax@));
+        assert(cy_r@ == bax@.mul_spec(caz@));
+        assert(cy@ == cy_l@.sub_spec(cy_r@));
+        assert(cz_l@ == bax@.mul_spec(cay@));
+        assert(cz_r@ == bay@.mul_spec(cax@));
+        assert(cz@ == cz_l@.sub_spec(cz_r@));
+        assert(n2x@ == cx@.mul_spec(cx@));
+        assert(n2y@ == cy@.mul_spec(cy@));
+        assert(n2z@ == cz@.mul_spec(cz@));
+        assert(n2xy@ == n2x@.add_spec(n2y@));
+        assert(n2@ == n2xy@.add_spec(n2z@));
         assert(n2@ == b@.sub_spec(a@).cross_spec(c@.sub_spec(a@)).norm2_spec());
     }
     out
@@ -73,6 +115,11 @@ pub fn coplanar(a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3, d: &Run
 #[cfg(verus_keep_ghost)]
 verus! {
 pub fn coplanar(a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3, d: &RuntimePoint3) -> (out: bool)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
+        d.witness_wf_spec(),
     ensures
         out == is_coplanar(a@, b@, c@, d@),
 {

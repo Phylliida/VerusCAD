@@ -58,6 +58,10 @@ pub fn runtime_orient2d_class_matches_sign(
     b: &RuntimePoint2,
     c: &RuntimePoint2,
 ) -> (pair: (RuntimeOrientation, RuntimeScalar))
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
     ensures
         pair.0@ == orientation_spec(a@, b@, c@),
         pair.1@ == orient2d_spec(a@, b@, c@),
@@ -89,6 +93,11 @@ pub fn runtime_orient3d_class_matches_sign(
     c: &RuntimePoint3,
     d: &RuntimePoint3,
 ) -> (pair: (RuntimeOrientation3, RuntimeScalar))
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
+        d.witness_wf_spec(),
     ensures
         pair.0@ == orientation3_spec(a@, b@, c@, d@),
         pair.1@ == orient3d_spec(a@, b@, c@, d@),

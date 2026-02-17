@@ -35,6 +35,12 @@ pub fn runtime_orientation3_translation_invariant(
     RuntimeOrientation3,
     RuntimeOrientation3,
 ))
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
+        d.witness_wf_spec(),
+        t.witness_wf_spec(),
     ensures
         pair.0@ == orientation3_spec(
             a@.add_vec_spec(t@),
@@ -45,10 +51,10 @@ pub fn runtime_orientation3_translation_invariant(
         pair.1@ == orientation3_spec(a@, b@, c@, d@),
         pair.0@ == pair.1@,
 {
-    let at = a.add_vec(t);
-    let bt = b.add_vec(t);
-    let ct = c.add_vec(t);
-    let dt = d.add_vec(t);
+    let at = a.add_vec_wf(t);
+    let bt = b.add_vec_wf(t);
+    let ct = c.add_vec_wf(t);
+    let dt = d.add_vec_wf(t);
     let lhs = runtime_orientation3::orientation3(&at, &bt, &ct, &dt);
     let rhs = runtime_orientation3::orientation3(a, b, c, d);
     proof {
@@ -73,6 +79,11 @@ pub fn runtime_orientation3_exclusive(
     c: &RuntimePoint3,
     d: &RuntimePoint3,
 ) -> (out: RuntimeOrientation3)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
+        d.witness_wf_spec(),
     ensures
         out@ == orientation3_spec(a@, b@, c@, d@),
         (out@ is Positive) || (out@ is Negative) || (out@ is Coplanar),
@@ -94,6 +105,11 @@ pub fn runtime_orientation3_swap_cd(
     c: &RuntimePoint3,
     d: &RuntimePoint3,
 ) -> (pair: (RuntimeOrientation3, RuntimeOrientation3))
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
+        d.witness_wf_spec(),
     ensures
         pair.0@ == orientation3_spec(a@, b@, c@, d@),
         pair.1@ == orientation3_spec(a@, b@, d@, c@),
@@ -121,6 +137,11 @@ pub fn runtime_orientation3_scale_zero_coplanar(
     k: &RuntimeScalar,
 ) -> (out: RuntimeOrientation3)
     requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
+        d.witness_wf_spec(),
+        k.witness_wf_spec(),
         k@.eqv_spec(Scalar::from_int_spec(0)),
     ensures
         out@ == orientation3_spec(
@@ -131,10 +152,10 @@ pub fn runtime_orientation3_scale_zero_coplanar(
         ),
         out@ is Coplanar,
 {
-    let sa = runtime_orientation3::scale_point_from_origin3(a, k);
-    let sb = runtime_orientation3::scale_point_from_origin3(b, k);
-    let sc = runtime_orientation3::scale_point_from_origin3(c, k);
-    let sd = runtime_orientation3::scale_point_from_origin3(d, k);
+    let sa = runtime_orientation3::scale_point_from_origin3_wf(a, k);
+    let sb = runtime_orientation3::scale_point_from_origin3_wf(b, k);
+    let sc = runtime_orientation3::scale_point_from_origin3_wf(c, k);
+    let sd = runtime_orientation3::scale_point_from_origin3_wf(d, k);
     let out = runtime_orientation3::orientation3(&sa, &sb, &sc, &sd);
     proof {
         Scalar::lemma_eqv_zero_iff_num_zero(k@);
@@ -160,6 +181,11 @@ pub fn runtime_orientation3_scale_nonzero_behavior(
     k: &RuntimeScalar,
 ) -> (pair: (RuntimeOrientation3, RuntimeOrientation3))
     requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
+        d.witness_wf_spec(),
+        k.witness_wf_spec(),
         !k@.eqv_spec(Scalar::from_int_spec(0)),
     ensures
         pair.0@ == orientation3_spec(
@@ -175,10 +201,10 @@ pub fn runtime_orientation3_scale_nonzero_behavior(
         (k@.signum() == -1) ==> ((pair.0@ is Negative) == (pair.1@ is Positive)),
         (k@.signum() == -1) ==> ((pair.0@ is Coplanar) == (pair.1@ is Coplanar)),
 {
-    let sa = runtime_orientation3::scale_point_from_origin3(a, k);
-    let sb = runtime_orientation3::scale_point_from_origin3(b, k);
-    let sc = runtime_orientation3::scale_point_from_origin3(c, k);
-    let sd = runtime_orientation3::scale_point_from_origin3(d, k);
+    let sa = runtime_orientation3::scale_point_from_origin3_wf(a, k);
+    let sb = runtime_orientation3::scale_point_from_origin3_wf(b, k);
+    let sc = runtime_orientation3::scale_point_from_origin3_wf(c, k);
+    let sd = runtime_orientation3::scale_point_from_origin3_wf(d, k);
     let lhs = runtime_orientation3::orientation3(&sa, &sb, &sc, &sd);
     let rhs = runtime_orientation3::orientation3(a, b, c, d);
     proof {
@@ -242,6 +268,10 @@ pub fn runtime_orientation3_degenerate_repeated_points(
     b: &RuntimePoint3,
     c: &RuntimePoint3,
 ) -> (pair: (RuntimeOrientation3, RuntimeOrientation3))
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
     ensures
         pair.0@ == orientation3_spec(a@, a@, b@, c@),
         pair.1@ == orientation3_spec(a@, b@, c@, c@),

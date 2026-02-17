@@ -130,6 +130,25 @@ pub fn scale_point_from_origin(p: &RuntimePoint2, k: &RuntimeScalar) -> (out: Ru
     }
     out
 }
+
+pub fn scale_point_from_origin_wf(p: &RuntimePoint2, k: &RuntimeScalar) -> (out: RuntimePoint2)
+    requires
+        p.witness_wf_spec(),
+        k.witness_wf_spec(),
+    ensures
+        out@ == crate::orientation::scale_point_from_origin_spec(p@, k@),
+        out.witness_wf_spec(),
+{
+    let x = p.x.mul_wf(k);
+    let y = p.y.mul_wf(k);
+    let out = RuntimePoint2 { x, y };
+    proof {
+        assert(out@ == Point2 { x: p@.x.mul_spec(k@), y: p@.y.mul_spec(k@) });
+        assert(out@ == crate::orientation::scale_point_from_origin_spec(p@, k@));
+        assert(out.witness_wf_spec());
+    }
+    out
+}
 }
 
 #[cfg(not(verus_keep_ghost))]
