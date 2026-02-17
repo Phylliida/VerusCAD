@@ -403,10 +403,23 @@ pub open spec fn input_face_from_vertex_spec(face_cycles: Seq<Seq<int>>, f: int,
     }
 }
 
+pub open spec fn input_face_next_local_index_spec(face_cycles: Seq<Seq<int>>, f: int, i: int) -> int {
+    let n = face_cycles[f].len() as int;
+    if n > 0 {
+        if i + 1 < n {
+            i + 1
+        } else {
+            0
+        }
+    } else {
+        0
+    }
+}
+
 pub open spec fn input_face_to_vertex_spec(face_cycles: Seq<Seq<int>>, f: int, i: int) -> int {
     let n = face_cycles[f].len() as int;
     if n > 0 {
-        face_cycles[f][(i + 1) % n]
+        face_cycles[f][input_face_next_local_index_spec(face_cycles, f, i)]
     } else {
         0
     }
@@ -415,7 +428,11 @@ pub open spec fn input_face_to_vertex_spec(face_cycles: Seq<Seq<int>>, f: int, i
 pub open spec fn input_face_prev_local_index_spec(face_cycles: Seq<Seq<int>>, f: int, i: int) -> int {
     let n = face_cycles[f].len() as int;
     if n > 0 {
-        (i + n - 1) % n
+        if i == 0 {
+            n - 1
+        } else {
+            i - 1
+        }
     } else {
         0
     }
@@ -479,6 +496,51 @@ pub open spec fn face_cycles_exec_to_model_spec(face_cycles: Seq<Vec<usize>>) ->
     })
 }
 
+pub proof fn lemma_face_cycles_exec_to_model_len(face_cycles: Seq<Vec<usize>>)
+    ensures
+        face_cycles_exec_to_model_spec(face_cycles).len() == face_cycles.len(),
+{
+    assert(face_cycles_exec_to_model_spec(face_cycles).len() == face_cycles.len());
+}
+
+pub proof fn lemma_face_cycles_exec_to_model_face_len(face_cycles: Seq<Vec<usize>>, f: int)
+    requires
+        0 <= f < face_cycles.len() as int,
+    ensures
+        face_cycles_exec_to_model_spec(face_cycles)[f].len() == face_cycles[f]@.len() as int,
+{
+    assert(face_cycles_exec_to_model_spec(face_cycles)[f]
+        == Seq::new(face_cycles[f]@.len(), |i: int| face_cycles[f]@[i] as int));
+}
+
+pub proof fn lemma_vec_usize_view_len(v: &Vec<usize>)
+    ensures
+        v@.len() == v.len(),
+{
+    assert(v@.len() == v.len());
+}
+
+pub proof fn lemma_face_cycles_exec_to_model_face_len_exec(
+    face_cycles: &[Vec<usize>],
+    f: usize,
+    face: &Vec<usize>,
+    n: usize,
+)
+    requires
+        f < face_cycles.len(),
+        *face == face_cycles@.index(f as int),
+        n == face.len(),
+    ensures
+        face_cycles_exec_to_model_spec(face_cycles@)[f as int].len() == n as int,
+{
+    lemma_face_cycles_exec_to_model_face_len(face_cycles@, f as int);
+    lemma_vec_usize_view_len(face);
+    assert(face_cycles@.index(f as int) == face_cycles@[f as int]);
+    assert(face_cycles@[f as int] == *face);
+    assert(face_cycles@[f as int]@.len() == (*face)@.len());
+    assert((*face)@.len() == n);
+}
+
 pub open spec fn mesh_half_edge_from_vertex_spec(m: MeshModel, h: int) -> int {
     m.half_edges[h].vertex
 }
@@ -514,7 +576,7 @@ pub open spec fn from_face_cycles_incidence_model_spec(
         input_face_local_index_valid_spec(face_cycles, f, i) ==> {
             let n = face_cycles[f].len() as int;
             let h = input_face_half_edge_index_spec(face_cycles, f, i);
-            let next_i = (i + 1) % n;
+            let next_i = input_face_next_local_index_spec(face_cycles, f, i);
             let prev_i = input_face_prev_local_index_spec(face_cycles, f, i);
             &&& m.half_edges[h].face == f
             &&& m.half_edges[h].vertex == input_face_from_vertex_spec(face_cycles, f, i)
@@ -567,7 +629,7 @@ pub open spec fn from_face_cycles_next_prev_face_at_spec(
 ) -> bool {
     let n = face_cycles[f].len() as int;
     let h = input_face_half_edge_index_spec(face_cycles, f, i);
-    let next_i = (i + 1) % n;
+    let next_i = input_face_next_local_index_spec(face_cycles, f, i);
     let prev_i = input_face_prev_local_index_spec(face_cycles, f, i);
     &&& m.half_edges[h].face == f
     &&& m.half_edges[h].next == input_face_half_edge_index_spec(face_cycles, f, next_i)
@@ -657,73 +719,141 @@ pub fn runtime_check_from_face_cycles_next_prev_face_coherent(
 {
     let ghost model_cycles = face_cycles_exec_to_model_spec(face_cycles@);
 
-    let mut ok = true;
+    proof {
+        lemma_face_cycles_exec_to_model_len(face_cycles@);
+        assert(model_cycles.len() == face_cycles.len() as int);
+    }
+
     let mut start: usize = 0;
     let mut f: usize = 0;
     while f < face_cycles.len()
         invariant
             0 <= f <= face_cycles.len(),
+            model_cycles == face_cycles_exec_to_model_spec(face_cycles@),
+            model_cycles.len() == face_cycles.len() as int,
             start as int == input_face_cycle_start_spec(model_cycles, f as int),
-            ok ==> forall|fp: int, ip: int|
+            forall|fp: int, ip: int|
                 0 <= fp < f as int && input_face_local_index_valid_spec(model_cycles, fp, ip)
                     ==> from_face_cycles_next_prev_face_at_spec(model_cycles, m@, fp, ip),
     {
-        let n = face_cycles[f].len();
+        let face = vstd::slice::slice_index_get(face_cycles, f);
+        let n = face.len();
+        proof {
+            assert(*face == face_cycles@.index(f as int));
+        }
+        if n == 0 {
+            return false;
+        }
+        if n > usize::MAX - start {
+            return false;
+        }
+        proof {
+            lemma_face_cycles_exec_to_model_face_len_exec(face_cycles, f, face, n);
+            assert(model_cycles == face_cycles_exec_to_model_spec(face_cycles@));
+            assert(model_cycles[f as int].len() == n as int);
+        }
+
         let mut i: usize = 0;
         while i < n
             invariant
                 0 <= f < face_cycles.len(),
                 0 <= i <= n,
+                model_cycles == face_cycles_exec_to_model_spec(face_cycles@),
+                model_cycles.len() == face_cycles.len() as int,
+                model_cycles[f as int].len() == n as int,
                 start as int == input_face_cycle_start_spec(model_cycles, f as int),
-                ok ==> forall|fp: int, ip: int|
+                forall|fp: int, ip: int|
                     0 <= fp < f as int && input_face_local_index_valid_spec(model_cycles, fp, ip)
                         ==> from_face_cycles_next_prev_face_at_spec(model_cycles, m@, fp, ip),
-                ok ==> forall|ip: int|
+                forall|ip: int|
                     0 <= ip < i as int && input_face_local_index_valid_spec(model_cycles, f as int, ip)
                         ==> from_face_cycles_next_prev_face_at_spec(model_cycles, m@, f as int, ip),
         {
-            let h = start + i;
-            let next_i = (i + 1) % n;
-            let prev_i = (i + n - 1) % n;
+            let next_i = if i + 1 < n { i + 1 } else { 0 };
+            let prev_i = if i == 0 { n - 1 } else { i - 1 };
+
+            assert(next_i < n);
+            assert(prev_i < n);
+
+            let h = match start.checked_add(i) {
+                Some(v) => v,
+                None => return false,
+            };
+            let expected_next = match start.checked_add(next_i) {
+                Some(v) => v,
+                None => return false,
+            };
+            let expected_prev = match start.checked_add(prev_i) {
+                Some(v) => v,
+                None => return false,
+            };
+
             if h >= m.half_edges.len() {
-                ok = false;
-            } else {
-                let he = &m.half_edges[h];
-                if he.face != f || he.next != start + next_i || he.prev != start + prev_i {
-                    ok = false;
+                return false;
+            }
+
+            let he = &m.half_edges[h];
+            if he.face != f || he.next != expected_next || he.prev != expected_prev {
+                return false;
+            }
+
+            proof {
+                assert(0 <= i as int && (i as int) < (n as int));
+                assert(input_face_local_index_valid_spec(model_cycles, f as int, i as int));
+                assert(h as int == input_face_half_edge_index_spec(model_cycles, f as int, i as int));
+                if i + 1 < n {
+                    assert(next_i == i + 1);
+                } else {
+                    assert(next_i == 0);
                 }
-                proof {
-                    if ok {
-                        assert(n > 0);
-                        assert(n as int == model_cycles[f as int].len());
-                        assert(0 <= (i as int) && (i as int) < (n as int));
-                        assert(input_face_local_index_valid_spec(model_cycles, f as int, i as int));
-                        assert(h as int == input_face_half_edge_index_spec(model_cycles, f as int, i as int));
-                        assert(next_i as int == (i as int + 1) % (n as int));
-                        assert(prev_i as int == (i as int + n as int - 1) % (n as int));
-                        assert(m.half_edges@[h as int].face == he.face as int);
-                        assert(m.half_edges@[h as int].next == he.next as int);
-                        assert(m.half_edges@[h as int].prev == he.prev as int);
-                        assert(from_face_cycles_next_prev_face_at_spec(model_cycles, m@, f as int, i as int));
-                    }
+                assert(next_i as int == input_face_next_local_index_spec(model_cycles, f as int, i as int));
+                if i == 0 {
+                    assert(prev_i == n - 1);
+                } else {
+                    assert(prev_i == i - 1);
                 }
+                assert(prev_i as int == input_face_prev_local_index_spec(model_cycles, f as int, i as int));
+                assert(expected_next as int == input_face_half_edge_index_spec(model_cycles, f as int, next_i as int));
+                assert(expected_prev as int == input_face_half_edge_index_spec(model_cycles, f as int, prev_i as int));
+                assert(m.half_edges@[h as int].face == he.face as int);
+                assert(m.half_edges@[h as int].next == he.next as int);
+                assert(m.half_edges@[h as int].prev == he.prev as int);
+                assert(from_face_cycles_next_prev_face_at_spec(model_cycles, m@, f as int, i as int));
             }
 
             i += 1;
         }
+
+        proof {
+            assert(model_cycles[f as int].len() == n as int);
+            assert(i == n);
+            assert forall|fp: int, ip: int|
+                0 <= fp < (f + 1) as int && input_face_local_index_valid_spec(model_cycles, fp, ip)
+                    implies from_face_cycles_next_prev_face_at_spec(model_cycles, m@, fp, ip) by {
+                if 0 <= fp < f as int {
+                    assert(from_face_cycles_next_prev_face_at_spec(model_cycles, m@, fp, ip));
+                } else {
+                    assert(fp == f as int);
+                    assert(0 <= ip < i as int);
+                    assert(from_face_cycles_next_prev_face_at_spec(model_cycles, m@, f as int, ip));
+                }
+            };
+            assert(input_face_cycle_start_spec(model_cycles, f as int + 1)
+                == input_face_cycle_start_spec(model_cycles, f as int) + model_cycles[f as int].len() as int);
+            assert((start + n) as int == start as int + n as int);
+        }
+
         start += n;
         f += 1;
     }
 
-    if ok {
-        proof {
-            assert(forall|fp: int, ip: int|
-                0 <= fp < face_cycles.len() as int && input_face_local_index_valid_spec(model_cycles, fp, ip)
-                    ==> from_face_cycles_next_prev_face_at_spec(model_cycles, m@, fp, ip));
-            assert(from_face_cycles_next_prev_face_coherent_spec(model_cycles, m@));
-        }
+    proof {
+        assert(forall|fp: int, ip: int|
+            0 <= fp < face_cycles.len() as int && input_face_local_index_valid_spec(model_cycles, fp, ip)
+                ==> from_face_cycles_next_prev_face_at_spec(model_cycles, m@, fp, ip));
+        assert(from_face_cycles_next_prev_face_coherent_spec(model_cycles, m@));
     }
-    ok
+    true
 }
 
 #[allow(dead_code)]
