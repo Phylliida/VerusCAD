@@ -76,6 +76,47 @@ pub open spec fn polygon_has_zero_edge_sign_spec(p: Point2, polygon: Seq<Runtime
     polygon_prefix_has_zero_edge_sign_spec(p, polygon, polygon.len() as int)
 }
 
+pub open spec fn point2_seq_wf_spec(points: Seq<RuntimePoint2>) -> bool {
+    forall|j: int| 0 <= j < points.len() ==> points[j].witness_wf_spec()
+}
+
+pub open spec fn point2_seq_prefix_wf_spec(points: Seq<RuntimePoint2>, upto: int) -> bool
+    recommends
+        0 <= upto <= points.len(),
+{
+    forall|j: int| 0 <= j < upto ==> points[j].witness_wf_spec()
+}
+
+proof fn lemma_point2_seq_wf_implies_prefix(points: Seq<RuntimePoint2>, upto: int)
+    requires
+        point2_seq_wf_spec(points),
+        0 <= upto <= points.len(),
+    ensures
+        point2_seq_prefix_wf_spec(points, upto),
+{
+    assert(point2_seq_prefix_wf_spec(points, upto));
+}
+
+proof fn lemma_point2_seq_prefix_wf_index(points: Seq<RuntimePoint2>, upto: int, j: int)
+    requires
+        point2_seq_prefix_wf_spec(points, upto),
+        0 <= j < upto,
+    ensures
+        points[j].witness_wf_spec(),
+{
+    assert(points[j].witness_wf_spec());
+}
+
+proof fn lemma_point2_seq_wf_index(points: Seq<RuntimePoint2>, j: int)
+    requires
+        point2_seq_wf_spec(points),
+        0 <= j < points.len(),
+    ensures
+        points[j].witness_wf_spec(),
+{
+    assert(points[j].witness_wf_spec());
+}
+
 pub open spec fn point_in_convex_polygon_boundary_inclusive_spec(p: Point2, polygon: Seq<RuntimePoint2>) -> bool {
     &&& polygon.len() >= 3
     &&& !(polygon_has_positive_edge_sign_spec(p, polygon) && polygon_has_negative_edge_sign_spec(p, polygon))
@@ -216,7 +257,7 @@ verus! {
 pub fn point_in_convex_polygon_2d(p: &RuntimePoint2, polygon: &[RuntimePoint2]) -> (out: bool)
     requires
         p.witness_wf_spec(),
-        forall|j: int| 0 <= j < polygon@.len() ==> polygon@[j].witness_wf_spec(),
+        point2_seq_wf_spec(polygon@),
     ensures
         out == point_in_convex_polygon_boundary_inclusive_spec(p@, polygon@),
 {
@@ -228,6 +269,9 @@ pub fn point_in_convex_polygon_2d(p: &RuntimePoint2, polygon: &[RuntimePoint2]) 
     let mut saw_pos = false;
     let mut saw_neg = false;
     let mut i: usize = 0;
+    proof {
+        lemma_point2_seq_wf_implies_prefix(polygon@, n as int);
+    }
 
     while i < n
         invariant
@@ -235,7 +279,7 @@ pub fn point_in_convex_polygon_2d(p: &RuntimePoint2, polygon: &[RuntimePoint2]) 
             n >= 3,
             0 <= i <= n,
             p.witness_wf_spec(),
-            forall|j: int| 0 <= j < n as int ==> polygon@[j].witness_wf_spec(),
+            point2_seq_prefix_wf_spec(polygon@, n as int),
             saw_pos == polygon_prefix_has_positive_edge_sign_spec(p@, polygon@, i as int),
             saw_neg == polygon_prefix_has_negative_edge_sign_spec(p@, polygon@, i as int),
         decreases n as int - i as int,
@@ -243,6 +287,19 @@ pub fn point_in_convex_polygon_2d(p: &RuntimePoint2, polygon: &[RuntimePoint2]) 
         let a = &polygon[i];
         let next = if i + 1 < n { i + 1 } else { 0 };
         let b = &polygon[next];
+        proof {
+            let idx = i as int;
+            assert(0 <= idx < n as int);
+            lemma_point2_seq_prefix_wf_index(polygon@, n as int, idx);
+            assert(a@ == polygon@[idx]@);
+            assert(a.witness_wf_spec());
+
+            let next_idx = next as int;
+            assert(0 <= next_idx < n as int);
+            lemma_point2_seq_prefix_wf_index(polygon@, n as int, next_idx);
+            assert(b@ == polygon@[next_idx]@);
+            assert(b.witness_wf_spec());
+        }
         let s = orient2d_sign(a, b, p);
         let prev_i = i;
         let pos_now = s == 1;
@@ -339,7 +396,7 @@ verus! {
 pub fn point_strictly_in_convex_polygon_2d(p: &RuntimePoint2, polygon: &[RuntimePoint2]) -> (out: bool)
     requires
         p.witness_wf_spec(),
-        forall|j: int| 0 <= j < polygon@.len() ==> polygon@[j].witness_wf_spec(),
+        point2_seq_wf_spec(polygon@),
     ensures
         out == point_strictly_in_convex_polygon_edge_sign_consistent_spec(p@, polygon@),
 {
@@ -352,6 +409,9 @@ pub fn point_strictly_in_convex_polygon_2d(p: &RuntimePoint2, polygon: &[Runtime
     let mut saw_neg = false;
     let mut saw_zero = false;
     let mut i: usize = 0;
+    proof {
+        lemma_point2_seq_wf_implies_prefix(polygon@, n as int);
+    }
 
     while i < n
         invariant
@@ -359,7 +419,7 @@ pub fn point_strictly_in_convex_polygon_2d(p: &RuntimePoint2, polygon: &[Runtime
             n >= 3,
             0 <= i <= n,
             p.witness_wf_spec(),
-            forall|j: int| 0 <= j < n as int ==> polygon@[j].witness_wf_spec(),
+            point2_seq_prefix_wf_spec(polygon@, n as int),
             saw_pos == polygon_prefix_has_positive_edge_sign_spec(p@, polygon@, i as int),
             saw_neg == polygon_prefix_has_negative_edge_sign_spec(p@, polygon@, i as int),
             saw_zero == polygon_prefix_has_zero_edge_sign_spec(p@, polygon@, i as int),
@@ -368,6 +428,19 @@ pub fn point_strictly_in_convex_polygon_2d(p: &RuntimePoint2, polygon: &[Runtime
         let a = &polygon[i];
         let next = if i + 1 < n { i + 1 } else { 0 };
         let b = &polygon[next];
+        proof {
+            let idx = i as int;
+            assert(0 <= idx < n as int);
+            lemma_point2_seq_prefix_wf_index(polygon@, n as int, idx);
+            assert(a@ == polygon@[idx]@);
+            assert(a.witness_wf_spec());
+
+            let next_idx = next as int;
+            assert(0 <= next_idx < n as int);
+            lemma_point2_seq_prefix_wf_index(polygon@, n as int, next_idx);
+            assert(b@ == polygon@[next_idx]@);
+            assert(b.witness_wf_spec());
+        }
         let s = orient2d_sign(a, b, p);
         let prev_i = i;
         let pos_now = s == 1;

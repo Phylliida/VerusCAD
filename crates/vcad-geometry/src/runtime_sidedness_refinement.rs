@@ -5,6 +5,7 @@ use vcad_math::orientation3::{orient3d_spec, orientation3_spec, Orientation3};
 use vcad_math::point3::Point3;
 use vcad_math::runtime_point3::RuntimePoint3;
 use vcad_math::runtime_scalar::RuntimeScalar;
+use vcad_math::runtime_wf as wf;
 use vcad_math::scalar::Scalar;
 use vstd::prelude::*;
 
@@ -373,10 +374,7 @@ pub fn runtime_plane_side_partition(
     c: &RuntimePoint3,
 ) -> (triple: (bool, bool, bool))
     requires
-        p.witness_wf_spec(),
-        a.witness_wf_spec(),
-        b.witness_wf_spec(),
-        c.witness_wf_spec(),
+        wf::point3_wf4_spec(p, a, b, c),
     ensures
         triple.0 == (orientation3_spec(a@, b@, c@, p@) is Positive),
         triple.1 == (orientation3_spec(a@, b@, c@, p@) is Negative),
@@ -413,10 +411,7 @@ pub fn runtime_orient3d_positive_iff_point_above_noncollinear(
     c: &RuntimePoint3,
 ) -> (out: bool)
     requires
-        d.witness_wf_spec(),
-        a.witness_wf_spec(),
-        b.witness_wf_spec(),
-        c.witness_wf_spec(),
+        wf::point3_wf4_spec(d, a, b, c),
         base_plane_noncollinear3_spec(a@, b@, c@),
     ensures
         out == point_on_positive_side_of_plane_spec(a@, b@, c@, d@),
@@ -445,11 +440,7 @@ pub fn runtime_segment_crosses_plane_from_opposite_sides(
     c: &RuntimePoint3,
 ) -> (out: bool)
     requires
-        d.witness_wf_spec(),
-        e.witness_wf_spec(),
-        a.witness_wf_spec(),
-        b.witness_wf_spec(),
-        c.witness_wf_spec(),
+        wf::point3_wf5_spec(d, e, a, b, c),
         (orientation3_spec(a@, b@, c@, d@) is Positive),
         (orientation3_spec(a@, b@, c@, e@) is Negative),
     ensures
@@ -471,11 +462,7 @@ pub fn runtime_segment_crosses_plane_from_opposite_sides_swapped(
     c: &RuntimePoint3,
 ) -> (out: bool)
     requires
-        d.witness_wf_spec(),
-        e.witness_wf_spec(),
-        a.witness_wf_spec(),
-        b.witness_wf_spec(),
-        c.witness_wf_spec(),
+        wf::point3_wf5_spec(d, e, a, b, c),
         (orientation3_spec(a@, b@, c@, d@) is Negative),
         (orientation3_spec(a@, b@, c@, e@) is Positive),
     ensures
@@ -497,11 +484,7 @@ pub fn runtime_segment_crossing_implies_not_on_plane_endpoints(
     c: &RuntimePoint3,
 ) -> (triple: (bool, bool, bool))
     requires
-        d.witness_wf_spec(),
-        e.witness_wf_spec(),
-        a.witness_wf_spec(),
-        b.witness_wf_spec(),
-        c.witness_wf_spec(),
+        wf::point3_wf5_spec(d, e, a, b, c),
     ensures
         triple.0 == strict_opposite_sides_spec(a@, b@, c@, d@, e@),
         triple.1 == (orientation3_spec(a@, b@, c@, d@) is Coplanar),
@@ -540,11 +523,7 @@ pub fn runtime_crossing_implies_intersection_parameter_exists(
     c: &RuntimePoint3,
 ) -> (out: Option<RuntimeScalar>)
     requires
-        d.witness_wf_spec(),
-        e.witness_wf_spec(),
-        a.witness_wf_spec(),
-        b.witness_wf_spec(),
-        c.witness_wf_spec(),
+        wf::point3_wf5_spec(d, e, a, b, c),
         strict_opposite_sides_spec(a@, b@, c@, d@, e@),
     ensures
         out.is_some(),
@@ -562,11 +541,7 @@ pub fn runtime_crossing_parameter_open_unit_interval(
     c: &RuntimePoint3,
 ) -> (out: Option<RuntimeScalar>)
     requires
-        d.witness_wf_spec(),
-        e.witness_wf_spec(),
-        a.witness_wf_spec(),
-        b.witness_wf_spec(),
-        c.witness_wf_spec(),
+        wf::point3_wf5_spec(d, e, a, b, c),
         strict_opposite_sides_spec(a@, b@, c@, d@, e@),
     ensures
         out.is_some(),
@@ -588,11 +563,7 @@ pub fn runtime_crossing_implies_intersection_point_has_parameter(
     c: &RuntimePoint3,
 ) -> (out: Option<RuntimePoint3>)
     requires
-        d.witness_wf_spec(),
-        e.witness_wf_spec(),
-        a.witness_wf_spec(),
-        b.witness_wf_spec(),
-        c.witness_wf_spec(),
+        wf::point3_wf5_spec(d, e, a, b, c),
         strict_opposite_sides_spec(a@, b@, c@, d@, e@),
     ensures
         out.is_some(),
@@ -635,11 +606,7 @@ pub fn runtime_no_crossing_implies_no_intersection_parameter(
     c: &RuntimePoint3,
 ) -> (out: Option<RuntimeScalar>)
     requires
-        d.witness_wf_spec(),
-        e.witness_wf_spec(),
-        a.witness_wf_spec(),
-        b.witness_wf_spec(),
-        c.witness_wf_spec(),
+        wf::point3_wf5_spec(d, e, a, b, c),
         !strict_opposite_sides_spec(a@, b@, c@, d@, e@),
     ensures
         out.is_none(),

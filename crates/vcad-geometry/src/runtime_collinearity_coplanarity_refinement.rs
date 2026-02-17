@@ -10,6 +10,7 @@ use vcad_math::orientation3::{
 use vcad_math::point3::Point3;
 use vcad_math::runtime_point2::RuntimePoint2;
 use vcad_math::runtime_point3::RuntimePoint3;
+use vcad_math::runtime_wf as wf;
 use vstd::prelude::*;
 
 verus! {
@@ -52,9 +53,7 @@ pub fn runtime_collinear2d_matches_orient_zero(
     c: &RuntimePoint2,
 ) -> (out: bool)
     requires
-        a.witness_wf_spec(),
-        b.witness_wf_spec(),
-        c.witness_wf_spec(),
+        wf::point2_wf3_spec(a, b, c),
     ensures
         out == (orient2d_spec(a@, b@, c@).signum() == 0),
 {
@@ -72,9 +71,7 @@ pub fn runtime_collinear2d_iff_linear_dependent(
     c: &RuntimePoint2,
 ) -> (out: bool)
     requires
-        a.witness_wf_spec(),
-        b.witness_wf_spec(),
-        c.witness_wf_spec(),
+        wf::point2_wf3_spec(a, b, c),
     ensures
         out == edge_vectors2_linear_dependent_spec(a@, b@, c@),
 {
@@ -93,10 +90,7 @@ pub fn runtime_coplanar_matches_orient_zero(
     d: &RuntimePoint3,
 ) -> (out: bool)
     requires
-        a.witness_wf_spec(),
-        b.witness_wf_spec(),
-        c.witness_wf_spec(),
-        d.witness_wf_spec(),
+        wf::point3_wf4_spec(a, b, c, d),
     ensures
         out == (orient3d_spec(a@, b@, c@, d@).signum() == 0),
 {
@@ -112,10 +106,7 @@ pub fn runtime_coplanar_iff_linear_dependent(
     d: &RuntimePoint3,
 ) -> (out: bool)
     requires
-        a.witness_wf_spec(),
-        b.witness_wf_spec(),
-        c.witness_wf_spec(),
-        d.witness_wf_spec(),
+        wf::point3_wf4_spec(a, b, c, d),
     ensures
         out == edge_vectors3_linear_dependent_spec(a@, b@, c@, d@),
 {
@@ -135,11 +126,7 @@ pub fn runtime_coplanarity_extension_wrt_base(
     e: &RuntimePoint3,
 ) -> (pair: (bool, bool))
     requires
-        a.witness_wf_spec(),
-        b.witness_wf_spec(),
-        c.witness_wf_spec(),
-        d.witness_wf_spec(),
-        e.witness_wf_spec(),
+        wf::point3_wf5_spec(a, b, c, d, e),
         is_coplanar(a@, b@, c@, d@),
         is_coplanar(a@, b@, c@, e@),
         base_plane_noncollinear3_spec(a@, b@, c@),
@@ -167,11 +154,7 @@ pub fn runtime_coplanarity_extension_set_level(
     e: &RuntimePoint3,
 ) -> (out: bool)
     requires
-        a.witness_wf_spec(),
-        b.witness_wf_spec(),
-        c.witness_wf_spec(),
-        d.witness_wf_spec(),
-        e.witness_wf_spec(),
+        wf::point3_wf5_spec(a, b, c, d, e),
         is_coplanar(a@, b@, c@, d@),
         is_coplanar(a@, b@, c@, e@),
         base_plane_noncollinear3_spec(a@, b@, c@),

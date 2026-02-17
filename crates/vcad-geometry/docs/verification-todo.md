@@ -58,6 +58,11 @@ File: `src/runtime_convex_polygon_refinement.rs`
   - Reuse helper lemmas for existential witness construction in sidedness refinements.
   - Keep explicit `#[trigger]` terms on witness point-parameter predicates.
 
+## F2. WF Ergonomics Backlog
+- [x] Level 1: replace repeated raw `forall ... witness_wf_spec()` contracts with shared helper specs/lemmas in convex polygon code paths.
+- [ ] Level 2: strengthen runtime constructors/helpers so WF is preserved by default (`ensures out.witness_wf_spec()`), and expand `_wf` convenience APIs to reduce call-site precondition clutter.
+- [ ] Level 3: prototype invariant-carrying wrapper types (`WfPoint2`, `WfPoint3`, `WfScalar`) for proof-facing APIs so WF is established once and reused transitively.
+
 ## G. Next Geometry Kernel Backlog (2026-02-14)
 Goal: add high-value geometric predicates/constructions that are currently not covered by `vcad-topology` (which focuses on combinatorial half-edge validity).
 

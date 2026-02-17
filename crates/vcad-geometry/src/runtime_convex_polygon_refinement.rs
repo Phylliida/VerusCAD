@@ -824,7 +824,7 @@ pub fn runtime_point_in_convex_polygon_matches_spec(
 ) -> (out: bool)
     requires
         p.witness_wf_spec(),
-        forall|j: int| 0 <= j < polygon@.len() ==> polygon@[j].witness_wf_spec(),
+        convex_polygon::point2_seq_wf_spec(polygon@),
     ensures
         out == point_in_convex_polygon_edge_sign_consistent_spec(p@, polygon@),
         out == point_in_convex_polygon_boundary_inclusive_spec(p@, polygon@),
@@ -847,7 +847,7 @@ pub fn runtime_point_in_convex_polygon_short_polygon_false(
 ) -> (out: bool)
     requires
         p.witness_wf_spec(),
-        forall|j: int| 0 <= j < polygon@.len() ==> polygon@[j].witness_wf_spec(),
+        convex_polygon::point2_seq_wf_spec(polygon@),
         polygon@.len() < 3,
     ensures
         !out,
@@ -873,7 +873,7 @@ pub fn runtime_point_in_convex_polygon_true_implies_no_mixed_signs(
 ) -> (out: bool)
     requires
         p.witness_wf_spec(),
-        forall|j: int| 0 <= j < polygon@.len() ==> polygon@[j].witness_wf_spec(),
+        convex_polygon::point2_seq_wf_spec(polygon@),
     ensures
         out == point_in_convex_polygon_boundary_inclusive_spec(p@, polygon@),
         out ==> !(polygon_has_positive_edge_sign_spec(p@, polygon@) && polygon_has_negative_edge_sign_spec(
@@ -904,7 +904,7 @@ pub fn runtime_point_strictly_in_convex_polygon_matches_spec(
 ) -> (out: bool)
     requires
         p.witness_wf_spec(),
-        forall|j: int| 0 <= j < polygon@.len() ==> polygon@[j].witness_wf_spec(),
+        convex_polygon::point2_seq_wf_spec(polygon@),
     ensures
         out == point_strictly_in_convex_polygon_edge_sign_consistent_spec(p@, polygon@),
 {
@@ -924,7 +924,7 @@ pub fn runtime_point_in_convex_polygon_convex_geometric_iff(
 ) -> (out: bool)
     requires
         p.witness_wf_spec(),
-        forall|j: int| 0 <= j < polygon@.len() ==> polygon@[j].witness_wf_spec(),
+        convex_polygon::point2_seq_wf_spec(polygon@),
         polygon_convex_consistent_order_spec(polygon@),
     ensures
         out == point_in_convex_polygon_geometric_spec(p@, polygon@),
@@ -958,7 +958,7 @@ pub fn runtime_point_strictly_in_convex_polygon_convex_geometric_iff(
 ) -> (out: bool)
     requires
         p.witness_wf_spec(),
-        forall|j: int| 0 <= j < polygon@.len() ==> polygon@[j].witness_wf_spec(),
+        convex_polygon::point2_seq_wf_spec(polygon@),
         polygon_strict_convex_consistent_order_spec(polygon@),
     ensures
         out == point_strictly_in_convex_polygon_geometric_spec(p@, polygon@),

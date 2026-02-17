@@ -43,6 +43,8 @@ pub use runtime_orientation3::RuntimeOrientation3;
 #[cfg(verus_keep_ghost)]
 mod runtime_orientation3_refinement;
 
+pub mod runtime_wf;
+
 pub mod runtime_vec4;
 pub use runtime_vec4::RuntimeVec4;
 #[cfg(verus_keep_ghost)]

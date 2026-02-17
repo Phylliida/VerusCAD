@@ -8,6 +8,7 @@ use vcad_math::runtime_orientation3::RuntimeOrientation3;
 use vcad_math::runtime_point2::RuntimePoint2;
 use vcad_math::runtime_point3::RuntimePoint3;
 use vcad_math::runtime_scalar::RuntimeScalar;
+use vcad_math::runtime_wf as wf;
 use vstd::prelude::*;
 use vstd::view::View;
 
@@ -20,9 +21,7 @@ pub fn runtime_orient2d_value_matches_signed_area2_poly(
     c: &RuntimePoint2,
 ) -> (out: RuntimeScalar)
     requires
-        a.witness_wf_spec(),
-        b.witness_wf_spec(),
-        c.witness_wf_spec(),
+        wf::point2_wf3_spec(a, b, c),
     ensures
         out@ == orient2d_spec(a@, b@, c@),
         out@ == signed_area2_poly_spec(a@, b@, c@),
@@ -44,10 +43,7 @@ pub fn runtime_orient3d_value_matches_signed_volume3_poly(
     d: &RuntimePoint3,
 ) -> (out: RuntimeScalar)
     requires
-        a.witness_wf_spec(),
-        b.witness_wf_spec(),
-        c.witness_wf_spec(),
-        d.witness_wf_spec(),
+        wf::point3_wf4_spec(a, b, c, d),
     ensures
         out@ == orient3d_spec(a@, b@, c@, d@),
         out@ == signed_volume3_poly_spec(a@, b@, c@, d@),
@@ -68,9 +64,7 @@ pub fn runtime_orient2d_class_matches_sign(
     c: &RuntimePoint2,
 ) -> (pair: (RuntimeOrientation, RuntimeScalar))
     requires
-        a.witness_wf_spec(),
-        b.witness_wf_spec(),
-        c.witness_wf_spec(),
+        wf::point2_wf3_spec(a, b, c),
     ensures
         pair.0@ == orientation_spec(a@, b@, c@),
         pair.1@ == orient2d_spec(a@, b@, c@),
@@ -103,10 +97,7 @@ pub fn runtime_orient3d_class_matches_sign(
     d: &RuntimePoint3,
 ) -> (pair: (RuntimeOrientation3, RuntimeScalar))
     requires
-        a.witness_wf_spec(),
-        b.witness_wf_spec(),
-        c.witness_wf_spec(),
-        d.witness_wf_spec(),
+        wf::point3_wf4_spec(a, b, c, d),
     ensures
         pair.0@ == orientation3_spec(a@, b@, c@, d@),
         pair.1@ == orient3d_spec(a@, b@, c@, d@),

@@ -2,6 +2,7 @@
 
 use crate::segment_intersection::{self, SegmentIntersection2dKind, SegmentIntersection2dKindSpec};
 use vcad_math::runtime_point2::RuntimePoint2;
+use vcad_math::runtime_wf as wf;
 use vstd::prelude::*;
 use vstd::view::View;
 
@@ -126,10 +127,7 @@ pub fn runtime_segment_intersection_kind_refines_spec(
     d: &RuntimePoint2,
 ) -> (out: SegmentIntersection2dKind)
     requires
-        a.witness_wf_spec(),
-        b.witness_wf_spec(),
-        c.witness_wf_spec(),
-        d.witness_wf_spec(),
+        wf::point2_wf4_spec(a, b, c, d),
     ensures
         out@ == segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@),
 {
@@ -144,10 +142,7 @@ pub fn runtime_segment_intersection_kind_total_from_classifier(
     d: &RuntimePoint2,
 ) -> (out: SegmentIntersection2dKind)
     requires
-        a.witness_wf_spec(),
-        b.witness_wf_spec(),
-        c.witness_wf_spec(),
-        d.witness_wf_spec(),
+        wf::point2_wf4_spec(a, b, c, d),
     ensures
         (out@ is Disjoint) || (out@ is Proper) || (out@ is EndpointTouch) || (out@ is CollinearOverlap),
 {
@@ -166,10 +161,7 @@ pub fn runtime_segment_intersection_kind_disjointness_from_classifier(
     d: &RuntimePoint2,
 ) -> (out: SegmentIntersection2dKind)
     requires
-        a.witness_wf_spec(),
-        b.witness_wf_spec(),
-        c.witness_wf_spec(),
-        d.witness_wf_spec(),
+        wf::point2_wf4_spec(a, b, c, d),
     ensures
         !((out@ is Disjoint) && (out@ is Proper)),
         !((out@ is Disjoint) && (out@ is EndpointTouch)),

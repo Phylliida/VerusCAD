@@ -7,6 +7,8 @@ use vcad_math::orientation::is_collinear;
 #[cfg(verus_keep_ghost)]
 use vcad_math::orientation3::is_coplanar;
 #[cfg(verus_keep_ghost)]
+use vcad_math::runtime_wf as wf;
+#[cfg(verus_keep_ghost)]
 use vstd::prelude::*;
 #[cfg(verus_keep_ghost)]
 use vstd::view::View;
@@ -20,9 +22,7 @@ pub fn collinear2d(a: &RuntimePoint2, b: &RuntimePoint2, c: &RuntimePoint2) -> b
 verus! {
 pub fn collinear2d(a: &RuntimePoint2, b: &RuntimePoint2, c: &RuntimePoint2) -> (out: bool)
     requires
-        a.witness_wf_spec(),
-        b.witness_wf_spec(),
-        c.witness_wf_spec(),
+        wf::point2_wf3_spec(a, b, c),
     ensures
         out == is_collinear(a@, b@, c@),
 {
@@ -46,9 +46,7 @@ pub fn collinear3d(a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3) -> b
 verus! {
 pub fn collinear3d(a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3) -> (out: bool)
     requires
-        a.witness_wf_spec(),
-        b.witness_wf_spec(),
-        c.witness_wf_spec(),
+        wf::point3_wf3_spec(a, b, c),
     ensures
         out == (b@.sub_spec(a@).cross_spec(c@.sub_spec(a@)).norm2_spec().signum() == 0),
 {
@@ -116,10 +114,7 @@ pub fn coplanar(a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3, d: &Run
 verus! {
 pub fn coplanar(a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3, d: &RuntimePoint3) -> (out: bool)
     requires
-        a.witness_wf_spec(),
-        b.witness_wf_spec(),
-        c.witness_wf_spec(),
-        d.witness_wf_spec(),
+        wf::point3_wf4_spec(a, b, c, d),
     ensures
         out == is_coplanar(a@, b@, c@, d@),
 {
