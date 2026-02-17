@@ -20,10 +20,15 @@ pub fn orient2d_value(a: &RuntimePoint2, b: &RuntimePoint2, c: &RuntimePoint2) -
 #[cfg(verus_keep_ghost)]
 verus! {
 pub fn orient2d_value(a: &RuntimePoint2, b: &RuntimePoint2, c: &RuntimePoint2) -> (out: RuntimeScalar)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
     ensures
         out@ == orient2d_spec(a@, b@, c@),
+        out.witness_wf_spec(),
 {
-    runtime_orientation::orient2d(a, b, c)
+    runtime_orientation::orient2d_wf(a, b, c)
 }
 }
 
@@ -45,10 +50,16 @@ pub fn orient3d_value(
     c: &RuntimePoint3,
     d: &RuntimePoint3,
 ) -> (out: RuntimeScalar)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
+        d.witness_wf_spec(),
     ensures
         out@ == orient3d_spec(a@, b@, c@, d@),
+        out.witness_wf_spec(),
 {
-    runtime_orientation3::orient3d(a, b, c, d)
+    runtime_orientation3::orient3d_wf(a, b, c, d)
 }
 }
 

@@ -19,6 +19,10 @@ pub fn runtime_orient2d_value_matches_signed_area2_poly(
     b: &RuntimePoint2,
     c: &RuntimePoint2,
 ) -> (out: RuntimeScalar)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
     ensures
         out@ == orient2d_spec(a@, b@, c@),
         out@ == signed_area2_poly_spec(a@, b@, c@),
@@ -39,6 +43,11 @@ pub fn runtime_orient3d_value_matches_signed_volume3_poly(
     c: &RuntimePoint3,
     d: &RuntimePoint3,
 ) -> (out: RuntimeScalar)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
+        d.witness_wf_spec(),
     ensures
         out@ == orient3d_spec(a@, b@, c@, d@),
         out@ == signed_volume3_poly_spec(a@, b@, c@, d@),

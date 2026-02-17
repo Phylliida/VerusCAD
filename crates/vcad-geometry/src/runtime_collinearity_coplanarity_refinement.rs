@@ -51,6 +51,10 @@ pub fn runtime_collinear2d_matches_orient_zero(
     b: &RuntimePoint2,
     c: &RuntimePoint2,
 ) -> (out: bool)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
     ensures
         out == (orient2d_spec(a@, b@, c@).signum() == 0),
 {
@@ -67,6 +71,10 @@ pub fn runtime_collinear2d_iff_linear_dependent(
     b: &RuntimePoint2,
     c: &RuntimePoint2,
 ) -> (out: bool)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
     ensures
         out == edge_vectors2_linear_dependent_spec(a@, b@, c@),
 {
@@ -84,6 +92,11 @@ pub fn runtime_coplanar_matches_orient_zero(
     c: &RuntimePoint3,
     d: &RuntimePoint3,
 ) -> (out: bool)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
+        d.witness_wf_spec(),
     ensures
         out == (orient3d_spec(a@, b@, c@, d@).signum() == 0),
 {
@@ -98,6 +111,11 @@ pub fn runtime_coplanar_iff_linear_dependent(
     c: &RuntimePoint3,
     d: &RuntimePoint3,
 ) -> (out: bool)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
+        d.witness_wf_spec(),
     ensures
         out == edge_vectors3_linear_dependent_spec(a@, b@, c@, d@),
 {
@@ -117,6 +135,11 @@ pub fn runtime_coplanarity_extension_wrt_base(
     e: &RuntimePoint3,
 ) -> (pair: (bool, bool))
     requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
+        d.witness_wf_spec(),
+        e.witness_wf_spec(),
         is_coplanar(a@, b@, c@, d@),
         is_coplanar(a@, b@, c@, e@),
         base_plane_noncollinear3_spec(a@, b@, c@),
@@ -144,6 +167,11 @@ pub fn runtime_coplanarity_extension_set_level(
     e: &RuntimePoint3,
 ) -> (out: bool)
     requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
+        d.witness_wf_spec(),
+        e.witness_wf_spec(),
         is_coplanar(a@, b@, c@, d@),
         is_coplanar(a@, b@, c@, e@),
         base_plane_noncollinear3_spec(a@, b@, c@),

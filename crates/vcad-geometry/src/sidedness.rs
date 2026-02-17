@@ -20,6 +20,11 @@ pub fn point_above_plane(p: &RuntimePoint3, a: &RuntimePoint3, b: &RuntimePoint3
 #[cfg(verus_keep_ghost)]
 verus! {
 pub fn point_above_plane(p: &RuntimePoint3, a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3) -> (out: bool)
+    requires
+        p.witness_wf_spec(),
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
     ensures
         out == (orient3d_spec(a@, b@, c@, p@).signum() == 1),
 {
@@ -35,6 +40,11 @@ pub fn point_below_plane(p: &RuntimePoint3, a: &RuntimePoint3, b: &RuntimePoint3
 #[cfg(verus_keep_ghost)]
 verus! {
 pub fn point_below_plane(p: &RuntimePoint3, a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3) -> (out: bool)
+    requires
+        p.witness_wf_spec(),
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
     ensures
         out == (orient3d_spec(a@, b@, c@, p@).signum() == -1),
 {
@@ -50,6 +60,11 @@ pub fn point_on_plane(p: &RuntimePoint3, a: &RuntimePoint3, b: &RuntimePoint3, c
 #[cfg(verus_keep_ghost)]
 verus! {
 pub fn point_on_plane(p: &RuntimePoint3, a: &RuntimePoint3, b: &RuntimePoint3, c: &RuntimePoint3) -> (out: bool)
+    requires
+        p.witness_wf_spec(),
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
     ensures
         out == (orient3d_spec(a@, b@, c@, p@).signum() == 0),
 {
@@ -79,6 +94,12 @@ pub fn segment_crosses_plane_strict(
     b: &RuntimePoint3,
     c: &RuntimePoint3,
 ) -> (out: bool)
+    requires
+        d.witness_wf_spec(),
+        e.witness_wf_spec(),
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
     ensures
         out == (((orientation3_spec(a@, b@, c@, d@) is Positive) && (orientation3_spec(a@, b@, c@, e@) is Negative))
             || ((orientation3_spec(a@, b@, c@, d@) is Negative) && (orientation3_spec(a@, b@, c@, e@) is Positive))),
@@ -125,6 +146,12 @@ pub fn segment_plane_intersection_parameter_strict(
     b: &RuntimePoint3,
     c: &RuntimePoint3,
 ) -> (out: Option<RuntimeScalar>)
+    requires
+        d.witness_wf_spec(),
+        e.witness_wf_spec(),
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
     ensures
         out.is_some() == (((orientation3_spec(a@, b@, c@, d@) is Positive) && (orientation3_spec(a@, b@, c@, e@) is Negative))
             || ((orientation3_spec(a@, b@, c@, d@) is Negative) && (orientation3_spec(a@, b@, c@, e@) is Positive))),
@@ -146,7 +173,7 @@ pub fn segment_plane_intersection_parameter_strict(
 
     let od = orient3d_value(a, b, c, d);
     let oe = orient3d_value(a, b, c, e);
-    let den = od.sub(&oe); // od - oe
+    let den = od.sub_wf(&oe); // od - oe
     let inv_opt = den.recip();
 
     proof {
@@ -360,6 +387,12 @@ pub fn segment_plane_intersection_point_strict(
     b: &RuntimePoint3,
     c: &RuntimePoint3,
 ) -> (out: Option<RuntimePoint3>)
+    requires
+        d.witness_wf_spec(),
+        e.witness_wf_spec(),
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
     ensures
         out.is_some() == (((orientation3_spec(a@, b@, c@, d@) is Positive) && (orientation3_spec(a@, b@, c@, e@) is Negative))
             || ((orientation3_spec(a@, b@, c@, d@) is Negative) && (orientation3_spec(a@, b@, c@, e@) is Positive))),

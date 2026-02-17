@@ -125,6 +125,11 @@ pub fn runtime_segment_intersection_kind_refines_spec(
     c: &RuntimePoint2,
     d: &RuntimePoint2,
 ) -> (out: SegmentIntersection2dKind)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
+        d.witness_wf_spec(),
     ensures
         out@ == segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@),
 {
@@ -138,6 +143,11 @@ pub fn runtime_segment_intersection_kind_total_from_classifier(
     c: &RuntimePoint2,
     d: &RuntimePoint2,
 ) -> (out: SegmentIntersection2dKind)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
+        d.witness_wf_spec(),
     ensures
         (out@ is Disjoint) || (out@ is Proper) || (out@ is EndpointTouch) || (out@ is CollinearOverlap),
 {
@@ -155,6 +165,11 @@ pub fn runtime_segment_intersection_kind_disjointness_from_classifier(
     c: &RuntimePoint2,
     d: &RuntimePoint2,
 ) -> (out: SegmentIntersection2dKind)
+    requires
+        a.witness_wf_spec(),
+        b.witness_wf_spec(),
+        c.witness_wf_spec(),
+        d.witness_wf_spec(),
     ensures
         !((out@ is Disjoint) && (out@ is Proper)),
         !((out@ is Disjoint) && (out@ is EndpointTouch)),

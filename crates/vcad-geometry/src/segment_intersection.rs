@@ -416,18 +416,21 @@ fn scalar_min<'a>(a: &'a RuntimeScalar, b: &'a RuntimeScalar) -> (out: &'a Runti
         b.witness_wf_spec(),
     ensures
         out@ == scalar_min_spec(a@, b@),
+        out.witness_wf_spec(),
 {
     let le = scalar_le(a, b);
     if le {
         proof {
             assert(scalar_le_sign_spec(a@, b@));
             assert(scalar_min_spec(a@, b@) == a@);
+            assert(a.witness_wf_spec());
         }
         a
     } else {
         proof {
             assert(!scalar_le_sign_spec(a@, b@));
             assert(scalar_min_spec(a@, b@) == b@);
+            assert(b.witness_wf_spec());
         }
         b
     }
@@ -439,18 +442,21 @@ fn scalar_max<'a>(a: &'a RuntimeScalar, b: &'a RuntimeScalar) -> (out: &'a Runti
         b.witness_wf_spec(),
     ensures
         out@ == scalar_max_spec(a@, b@),
+        out.witness_wf_spec(),
 {
     let le = scalar_le(a, b);
     if le {
         proof {
             assert(scalar_le_sign_spec(a@, b@));
             assert(scalar_max_spec(a@, b@) == b@);
+            assert(b.witness_wf_spec());
         }
         b
     } else {
         proof {
             assert(!scalar_le_sign_spec(a@, b@));
             assert(scalar_max_spec(a@, b@) == a@);
+            assert(a.witness_wf_spec());
         }
         a
     }

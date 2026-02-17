@@ -51,7 +51,7 @@ pub fn scale_point_from_origin(p: &RuntimePoint2, k: &RuntimeScalar) -> RuntimeP
 
 #[cfg(verus_keep_ghost)]
 verus! {
-fn orient2d_wf(a: &RuntimePoint2, b: &RuntimePoint2, c: &RuntimePoint2) -> (out: RuntimeScalar)
+pub fn orient2d_wf(a: &RuntimePoint2, b: &RuntimePoint2, c: &RuntimePoint2) -> (out: RuntimeScalar)
     requires
         a.witness_wf_spec(),
         b.witness_wf_spec(),
