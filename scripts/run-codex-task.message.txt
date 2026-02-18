@@ -1,1 +1,1 @@
-Revalidated vcad-topology exit-condition with clean trust-surface scans and a fully passing verifier and cargo test matrix in this sandbox.
+Logged a fresh vcad-topology exit-condition snapshot with clean trust-surface scans and a fully passing verifier and cargo test matrix.
