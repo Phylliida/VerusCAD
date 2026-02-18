@@ -7831,6 +7831,7 @@ pub fn from_face_cycles_constructive_edge_exactly_two_half_edges(
 pub fn runtime_check_vertex_representative_valid_nonisolated(m: &Mesh) -> (out: bool)
     ensures
         out ==> mesh_vertex_representative_valid_nonisolated_spec(m@),
+        !out ==> !mesh_vertex_representative_valid_nonisolated_spec(m@),
 {
     let hcnt = m.half_edges.len();
     let mut v: usize = 0;
@@ -7845,10 +7846,45 @@ pub fn runtime_check_vertex_representative_valid_nonisolated(m: &Mesh) -> (out: 
     {
         let h = m.vertices[v].half_edge;
         if h >= hcnt {
+            proof {
+                let vi = v as int;
+                assert(mesh_vertex_count_spec(m@) == m.vertices.len() as int);
+                assert(0 <= vi < mesh_vertex_count_spec(m@));
+                assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+                assert(m@.vertex_half_edges[vi] == h as int);
+                assert(!(0 <= m@.vertex_half_edges[vi] < mesh_half_edge_count_spec(m@)));
+                assert(!mesh_vertex_representative_valid_nonisolated_spec(m@)) by {
+                    if mesh_vertex_representative_valid_nonisolated_spec(m@) {
+                        assert(0 <= m@.vertex_half_edges[vi] < mesh_half_edge_count_spec(m@));
+                        assert(false);
+                    }
+                };
+            }
             return false;
         }
         let hv = m.half_edges[h].vertex;
         if hv != v {
+            proof {
+                let vi = v as int;
+                assert(mesh_vertex_count_spec(m@) == m.vertices.len() as int);
+                assert(0 <= vi < mesh_vertex_count_spec(m@));
+                assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+                assert(m@.vertex_half_edges[vi] == h as int);
+                assert(0 <= h as int);
+                assert((h as int) < mesh_half_edge_count_spec(m@));
+                assert(m@.half_edges[h as int].vertex == m.half_edges@[h as int].vertex);
+                assert(m.half_edges@[h as int].vertex == hv as int);
+                assert(hv != v);
+                assert(m@.half_edges[h as int].vertex != vi);
+                assert(m@.half_edges[m@.vertex_half_edges[vi]].vertex == m@.half_edges[h as int].vertex);
+                assert(m@.half_edges[m@.vertex_half_edges[vi]].vertex != vi);
+                assert(!mesh_vertex_representative_valid_nonisolated_spec(m@)) by {
+                    if mesh_vertex_representative_valid_nonisolated_spec(m@) {
+                        assert(m@.half_edges[m@.vertex_half_edges[vi]].vertex == vi);
+                        assert(false);
+                    }
+                };
+            }
             return false;
         }
 

@@ -1,1 +1,1 @@
-Replayed the vcad-topology exit-condition matrix with fallback verification and documented a fully green trust-surface, proof, and test run in the burndown log.
+Hardened the vertex-representative checker to prove full two-way spec equivalence and recorded a green vcad-topology verification/test replay in the burndown log.

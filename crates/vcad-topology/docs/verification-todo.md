@@ -802,6 +802,30 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`159 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`159 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`194 verified, 0 errors`).
+  - burndown update (2026-02-18, vertex-representative checker completeness hardening):
+    - selected task in this pass:
+      strengthen `runtime_check_vertex_representative_valid_nonisolated` from
+      one-way soundness to two-way executable/spec linkage.
+    - strengthened checker contract in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      - `out ==> mesh_vertex_representative_valid_nonisolated_spec(m@)`,
+      - `!out ==> !mesh_vertex_representative_valid_nonisolated_spec(m@)`.
+    - proof-shape note:
+      negative-direction witness packaging was added on both early-failure
+      returns (`h >= half_edge_count` and `half_edges[h].vertex != v`) by
+      constructing the failing vertex index and contradicting the spec's
+      universal clause directly.
+    - failed attempts:
+      none in this pass.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_vertex_representative_valid_nonisolated`
+      passed (`2 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`192 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh`
+      passed (`227 verified, 0 errors`);
+      `cargo test -p vcad-topology`
+      passed (`4 passed, 0 failed`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 
