@@ -884,6 +884,47 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
   - file: `src/halfedge_mesh.rs`
 - [x] Verify `check_twin_involution`.
   - in `verus-proofs` builds, this is delegated to verified kernel checker.
+  - burndown update (2026-02-18, twin-involution negative-regression hardening + matrix replay):
+    - selected task in this pass:
+      harden the completed `check_twin_involution` boundary with an explicit
+      negative runtime regression, then replay the full `vcad-topology`
+      verification/test matrix.
+    - run timestamp:
+      `2026-02-18T09:04:25-08:00`.
+    - code hardening:
+      in `src/halfedge_mesh.rs`, added
+      `broken_twin_involution_fails_twin_check`.
+      the test builds an index-valid mesh with non-involutive twin mapping
+      (`h0.twin = h1`, `h1.twin = h1`) and asserts:
+      - `check_twin_involution()` is `false`,
+      - `check_twin_involution_via_kernel()` is also `false` in
+        `verus-proofs` builds.
+    - failed attempts:
+      first targeted verifier command used a stale function name:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_twin_involution`
+      failed with
+      `could not find function runtime_check_twin_involution specified by --verify-function`;
+      reran with kernel target
+      `verified_checker_kernels kernel_check_twin_involution`.
+    - warning-scope note:
+      all `cargo test -p vcad-topology` invocations in this pass emitted
+      warnings only from dependency crates (`vstd`, `vcad-math`,
+      `vcad-geometry`), with no warnings from `vcad-topology`.
+    - verification checks:
+      `cargo test -p vcad-topology broken_twin_involution_fails_twin_check -- --nocapture`
+      passed (`1 passed, 0 failed`);
+      `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels kernel_check_twin_involution`
+      passed (`2 verified, 0 errors` partial);
+      `./scripts/verify-vcad-topology-matrix.sh`
+      passed:
+      - trust-surface guard passed,
+      - fast verification passed (`192 verified, 0 errors` partial),
+      - full verification passed (`227 verified, 0 errors`),
+      - `cargo test -p vcad-topology` passed (`10 passed, 0 failed`),
+      - `cargo test -p vcad-topology --features geometry-checks` passed
+        (`11 passed, 0 failed`),
+      - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+        passed (`12 passed, 0 failed`).
   - file: `src/halfedge_mesh.rs`
 - [x] Verify `check_prev_inverse_of_next`.
   - in `verus-proofs` builds, this is delegated to verified kernel checker.

@@ -892,6 +892,40 @@ mod tests {
     }
 
     #[test]
+    fn broken_twin_involution_fails_twin_check() {
+        let mesh = Mesh {
+            vertices: vec![super::Vertex {
+                position: RuntimePoint3::from_ints(0, 0, 0),
+                half_edge: 0,
+            }],
+            edges: vec![super::Edge { half_edge: 0 }],
+            faces: vec![super::Face { half_edge: 0 }],
+            half_edges: vec![
+                super::HalfEdge {
+                    vertex: 0,
+                    twin: 1,
+                    next: 0,
+                    prev: 0,
+                    edge: 0,
+                    face: 0,
+                },
+                super::HalfEdge {
+                    vertex: 0,
+                    twin: 1,
+                    next: 1,
+                    prev: 1,
+                    edge: 0,
+                    face: 0,
+                },
+            ],
+        };
+
+        assert!(!mesh.check_twin_involution());
+        #[cfg(feature = "verus-proofs")]
+        assert!(!mesh.check_twin_involution_via_kernel());
+    }
+
+    #[test]
     fn edge_with_three_incident_half_edges_fails_edge_cardinality_check() {
         let mesh = Mesh {
             vertices: vec![super::Vertex {

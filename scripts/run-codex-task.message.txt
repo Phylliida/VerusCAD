@@ -1,1 +1,1 @@
-Added a three-half-edge edge-cardinality regression test in vcad-topology, documented the pass in the burndown, and reran the full topology verification matrix successfully.
+Added a twin-involution negative regression test and revalidated the full vcad-topology verification matrix.
