@@ -1,1 +1,1 @@
-Revalidated the vertex-representative checker’s two-way proof contract and replayed the full vcad-topology verification/test matrix with all checks passing.
+Revalidated the vcad-topology Exit Condition by replaying the full verification/test matrix and confirming trust-surface scans remain clean.
