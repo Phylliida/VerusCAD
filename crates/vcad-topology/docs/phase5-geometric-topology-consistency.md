@@ -14,7 +14,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 ## Dependencies and Ground Rules
 - [x] Keep Phase 4 validity (`Mesh::is_valid`) as a required precondition for all Phase 5 geometric theorems/checkers.
 - [x] Reuse `vcad-geometry` predicates/lemmas (`orient2d`, `orient3d`, coplanarity, side tests, intersection helpers) rather than duplicating math proofs in `vcad-topology`.
-- [ ] Keep exact arithmetic path only (`RuntimePoint3`/`Scalar`); do not add floating-point fallback logic in verified paths.
+- [x] Keep exact arithmetic path only (`RuntimePoint3`/`Scalar`); do not add floating-point fallback logic in verified paths.
 - [ ] Remove trusted boundaries for any new Phase 5 APIs (no new `assume_specification` debt).
 
 ## P5.0 Geometry Model Surface
@@ -90,7 +90,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [x] Add Phase 5 bridge lemmas alongside `src/runtime_halfedge_mesh_refinement/kernel_bridge_lemmas.rs`.
 - [x] Add runtime constructive check wrappers analogous to current structural check wrappers.
 - [ ] If kernelized checkers are added, extend `src/verified_checker_kernels.rs` and prove bridge equivalence.
-- [ ] Ensure new proof modules are included from `src/runtime_halfedge_mesh_refinement.rs`.
+- [x] Ensure new proof modules are included from `src/runtime_halfedge_mesh_refinement.rs`.
 
 ## P5.9 Tests and Counterexamples
 - [x] Positive fixtures: tetrahedron, cube, triangular prism pass Phase 5 gate.
@@ -177,6 +177,20 @@ Current rigid-transform policy (runtime behavior locked by tests):
 - reflection transforms with determinant `-1` preserve local geometric checks, but intentionally flip outward-orientation-sensitive outcomes (`check_outward_face_normals`, aggregate geometric-consistency gate, and `is_valid_with_geometry`).
 
 ## Burndown Log
+- 2026-02-18: Completed a P5.8/ground-rules guardrail pass in `src/halfedge_mesh/tests.rs`:
+  - added `runtime_refinement_include_list_covers_all_refinement_modules` (`--features "geometry-checks,verus-proofs"`), which enforces that `src/runtime_halfedge_mesh_refinement.rs` `include!` entries exactly match `src/runtime_halfedge_mesh_refinement/*.rs`;
+  - added `topology_sources_remain_exact_arithmetic_only`, which recursively scans `crates/vcad-topology/src` (excluding `tests.rs`) and fails on `f32`/`f64` identifier tokens to block floating-point fallback paths in Phase 5 code;
+  - marked checklist items complete for:
+    - exact-arithmetic-only Phase 5 paths;
+    - refinement proof-module inclusion wiring from `src/runtime_halfedge_mesh_refinement.rs`.
+- 2026-02-18: Failed attempts in this P5.8/ground-rules guardrail pass: none.
+- 2026-02-18: Revalidated after the guardrail additions:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (215 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (250 verified, 0 errors)
 - 2026-02-18: Completed a P5.5 adjacency-exemption tightening and boundary-overlap rejection pass in `src/halfedge_mesh/validation.rs` and `src/halfedge_mesh/tests.rs`:
   - replaced broad "shared vertex => skip pair" logic in `Mesh::check_no_forbidden_face_face_intersections()`/diagnostic path with an explicit allowed-contact runtime relation:
     - allowed: disjoint boundary, exactly one shared vertex, or exactly one shared edge;

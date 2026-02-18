@@ -1,4 +1,8 @@
 use super::{Mesh, MeshBuildError};
+use std::fs;
+use std::path::{Path, PathBuf};
+#[cfg(feature = "verus-proofs")]
+use std::collections::BTreeSet;
 #[cfg(feature = "geometry-checks")]
 use super::GeometricTopologicalConsistencyFailure;
 #[cfg(feature = "geometry-checks")]
@@ -10,6 +14,29 @@ use vcad_math::runtime_point3::RuntimePoint3;
 use vcad_math::runtime_scalar::RuntimeScalar;
 #[cfg(feature = "geometry-checks")]
 use vcad_math::runtime_vec3::RuntimeVec3;
+
+fn is_rust_identifier_char(c: char) -> bool {
+    c.is_ascii_alphanumeric() || c == '_'
+}
+
+fn has_identifier_token(contents: &str, token: &str) -> bool {
+    contents
+        .split(|c: char| !is_rust_identifier_char(c))
+        .any(|piece| piece == token)
+}
+
+fn collect_rs_files_recursively(dir: &Path, out: &mut Vec<PathBuf>) {
+    let entries = fs::read_dir(dir).expect("source directory should be readable");
+    for entry_result in entries {
+        let entry = entry_result.expect("directory entry should be readable");
+        let path = entry.path();
+        if path.is_dir() {
+            collect_rs_files_recursively(&path, out);
+        } else if path.extension().and_then(|e| e.to_str()) == Some("rs") {
+            out.push(path);
+        }
+    }
+}
 
 #[cfg(feature = "geometry-checks")]
 fn append_translated_tetrahedron(
@@ -2041,5 +2068,88 @@ fn diagnostic_witness_is_real_counterexample(
         assert_eq!(
             p.check_euler_formula_closed_components(),
             p.check_euler_formula_closed_components_raw()
+        );
+    }
+
+    #[cfg(feature = "verus-proofs")]
+    #[test]
+    fn runtime_refinement_include_list_covers_all_refinement_modules() {
+        let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let refinement_root = manifest_dir.join("src/runtime_halfedge_mesh_refinement");
+        let refinement_include_root =
+            manifest_dir.join("src/runtime_halfedge_mesh_refinement.rs");
+
+        let include_contents = fs::read_to_string(&refinement_include_root)
+            .expect("runtime refinement include file should be readable");
+        let include_prefix = "include!(\"runtime_halfedge_mesh_refinement/";
+        let mut included_files = BTreeSet::new();
+        for line in include_contents.lines() {
+            let trimmed = line.trim();
+            if let Some(rest) = trimmed.strip_prefix(include_prefix) {
+                if let Some(file) = rest.strip_suffix("\");") {
+                    included_files.insert(file.to_string());
+                }
+            }
+        }
+
+        let mut module_files = BTreeSet::new();
+        let entries = fs::read_dir(&refinement_root)
+            .expect("runtime refinement module directory should be readable");
+        for entry_result in entries {
+            let entry = entry_result.expect("directory entry should be readable");
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) == Some("rs") {
+                module_files.insert(
+                    path.file_name()
+                        .expect("module file should have file name")
+                        .to_str()
+                        .expect("module file name should be UTF-8")
+                        .to_string(),
+                );
+            }
+        }
+
+        assert_eq!(
+            included_files, module_files,
+            "runtime_halfedge_mesh_refinement.rs include! list must match src/runtime_halfedge_mesh_refinement/*.rs exactly"
+        );
+    }
+
+    #[test]
+    fn topology_sources_remain_exact_arithmetic_only() {
+        let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let source_root = manifest_dir.join("src");
+
+        let mut source_files = Vec::new();
+        collect_rs_files_recursively(&source_root, &mut source_files);
+        source_files.sort();
+
+        let mut offenders = Vec::new();
+        for source_file in source_files {
+            let source_name = source_file
+                .file_name()
+                .and_then(|name| name.to_str())
+                .unwrap_or_default();
+            if source_name == "tests.rs" {
+                continue;
+            }
+
+            let contents = fs::read_to_string(&source_file)
+                .expect("Rust source file should be readable");
+            if has_identifier_token(&contents, "f32") || has_identifier_token(&contents, "f64") {
+                offenders.push(
+                    source_file
+                        .strip_prefix(&manifest_dir)
+                        .expect("source file should be inside crate manifest dir")
+                        .display()
+                        .to_string(),
+                );
+            }
+        }
+
+        assert!(
+            offenders.is_empty(),
+            "floating-point type tokens found in vcad-topology source: {:?}",
+            offenders
         );
     }
