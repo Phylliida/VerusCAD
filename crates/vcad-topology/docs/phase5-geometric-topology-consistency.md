@@ -158,7 +158,7 @@ Current complexity notes (runtime implementation in `src/halfedge_mesh/validatio
 - [x] Connected-component interaction policy:
   - explicitly define whether disconnected closed components may touch at vertex/edge/face contact;
   - enforce that policy in intersection/outwardness gate behavior.
-- [ ] Witness-grade failure APIs:
+- [x] Witness-grade failure APIs:
   - add optional first-failure witness payloads (offending face/edge/face-pair + reason code);
   - add witness-validity tests proving returned witnesses are real counterexamples.
 - [ ] Differential/property-based verification harness:
@@ -173,6 +173,27 @@ Current connected-component interaction policy (runtime behavior locked by tests
 - disconnected components touching at a vertex, along an edge, or across a face (with distinct vertex indices) are rejected by `check_no_forbidden_face_face_intersections` and therefore by the aggregate Phase 5 gate.
 
 ## Burndown Log
+- 2026-02-18: Completed a P5.12 witness-grade failure validation pass in `src/halfedge_mesh/tests.rs`:
+  - added helper `diagnostic_witness_is_real_counterexample`, which validates diagnostic payloads against concrete geometric/topological conditions (zero-length edge endpoints, collinear corner witness, non-coplanar witness corner, non-convex turn witness, forbidden pair witness shape, and non-outward component signed-volume witness);
+  - expanded `geometric_consistency_diagnostic_returns_first_failure_witness` to assert witness validity for:
+    - `Phase4Validity`;
+    - `ZeroLengthGeometricEdge`;
+    - `FaceCornerCollinear`;
+    - `FaceNonCoplanar`;
+    - `FaceNonConvex`;
+    - `ForbiddenFaceFaceIntersection`;
+    - `InwardOrDegenerateComponent`;
+  - added `geometric_consistency_diagnostic_rejects_fabricated_witnesses`, locking that fabricated `FacePlaneInconsistent`, `SharedEdgeOrientationInconsistent`, and `InternalInconsistency` payloads are rejected on a valid tetrahedron;
+  - marked the P5.12 witness-grade failure API checklist item complete.
+- 2026-02-18: Failed attempt in this P5.12 witness-grade pass:
+  - first revision of the test helper called private `validation.rs` internals (`check_index_bounds`, `ordered_face_vertex_cycle`, `face_pair_has_forbidden_intersection`, and others), which broke `cargo test -p vcad-topology --features geometry-checks`; fixed by replacing those calls with test-local geometry computations plus public checker APIs.
+- 2026-02-18: Revalidated after the P5.12 witness-grade additions:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (215 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (250 verified, 0 errors)
 - 2026-02-18: Completed a P5.12 connected-component interaction policy pass in `src/halfedge_mesh/validation.rs` and `src/halfedge_mesh/tests.rs`:
   - in `Mesh::check_no_forbidden_face_face_intersections()` docs, clarified that disconnected-component geometric contact is non-exempt for vertex, edge, and face contact (when vertex indices are distinct);
   - added `edge_touch_only_components_policy_is_rejected`, locking that disconnected tetrahedra that touch only along a geometric edge fail the intersection checker and return `ForbiddenFaceFaceIntersection` in the diagnostic gate;
