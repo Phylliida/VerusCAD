@@ -3,6 +3,7 @@
 use crate::halfedge_mesh::{Edge, Face, HalfEdge, Mesh, MeshBuildError, Vertex};
 use crate::verified_checker_kernels as kernels;
 use vcad_math::runtime_point3::RuntimePoint3;
+use vcad_math::scalar::Scalar;
 use vstd::prelude::*;
 use vstd::view::View;
 
@@ -135,6 +136,27 @@ pub open spec fn mesh_face_count_spec(m: MeshModel) -> int {
 
 pub open spec fn mesh_half_edge_count_spec(m: MeshModel) -> int {
     m.half_edges.len() as int
+}
+
+proof fn lemma_usize_loop_exit_eq(idx: usize, bound: usize)
+    requires
+        idx <= bound,
+        !(idx < bound),
+    ensures
+        idx == bound,
+{
+    if bound == 0 {
+        assert(idx == 0);
+    } else {
+        assert(!(idx <= bound - 1)) by {
+            if idx <= bound - 1 {
+                assert(idx < bound);
+                assert(false);
+            }
+        };
+        Scalar::lemma_nat_le_and_not_le_prev_implies_eq(idx as nat, bound as nat);
+        assert(idx == bound);
+    }
 }
 
 pub open spec fn mesh_index_bounds_spec(m: MeshModel) -> bool {
@@ -7058,7 +7080,8 @@ pub fn runtime_check_vertex_representative_valid_nonisolated(m: &Mesh) -> (out: 
     }
 
     proof {
-        assert(v == m.vertices.len());
+        assert(!(v < m.vertices.len()));
+        lemma_usize_loop_exit_eq(v, m.vertices.len());
         assert(mesh_vertex_count_spec(m@) == m.vertices.len() as int);
         assert(forall|vp: int| 0 <= vp < mesh_vertex_count_spec(m@) ==> {
             &&& 0 <= #[trigger] m@.vertex_half_edges[vp] < mesh_half_edge_count_spec(m@)
@@ -8243,7 +8266,8 @@ pub fn runtime_check_euler_characteristics_per_component(
     }
 
     proof {
-        assert(c == components.len());
+        assert(!(c < components.len()));
+        lemma_usize_loop_exit_eq(c, components.len());
         assert(mesh_euler_characteristics_per_component_spec(m@, components@, chis@));
     }
     true
@@ -8778,7 +8802,8 @@ pub fn runtime_check_half_edge_components_partition(
 
     proof {
         assert(h == hcnt);
-        assert(c == components.len());
+        assert(!(c < components.len()));
+        lemma_usize_loop_exit_eq(c, components.len());
         assert(mesh_half_edge_count_spec(m@) == hcnt as int);
         assert(forall|hp: int| 0 <= hp < mesh_half_edge_count_spec(m@) ==> global_seen@[hp]) by {
             assert forall|hp: int|
@@ -9168,7 +9193,8 @@ pub fn runtime_check_half_edge_components_neighbor_closed(
     }
 
     proof {
-        assert(c == components.len());
+        assert(!(c < components.len()));
+        lemma_usize_loop_exit_eq(c, components.len());
         assert(mesh_half_edge_components_neighbor_closed_spec(m@, components@)) by {
             assert forall|cp: int|
                 #![trigger components@[cp]@]
@@ -9475,7 +9501,8 @@ pub fn runtime_check_half_edge_components_representative_connected(
     }
 
     proof {
-        assert(c == components.len());
+        assert(!(c < components.len()));
+        lemma_usize_loop_exit_eq(c, components.len());
         assert(mesh_half_edge_components_representative_connected_spec(m@, components@)) by {
             assert forall|cp: int|
                 #![trigger components@[cp]@]
@@ -9620,7 +9647,8 @@ pub fn runtime_check_half_edge_components_representative_minimal(
     }
 
     proof {
-        assert(c == components.len());
+        assert(!(c < components.len()));
+        lemma_usize_loop_exit_eq(c, components.len());
         assert(mesh_half_edge_components_representative_minimal_spec(m@, components@)) by {
             assert forall|cp: int|
                 #![trigger components@[cp]@]
@@ -10098,7 +10126,8 @@ pub fn runtime_check_half_edge_components_representative_complete(
     }
 
     proof {
-        assert(c == components.len());
+        assert(!(c < components.len()));
+        lemma_usize_loop_exit_eq(c, components.len());
         assert(mesh_half_edge_components_representative_complete_spec(m@, components@)) by {
             assert forall|cp: int|
                 #![trigger components@[cp]@]
@@ -10399,7 +10428,8 @@ pub fn check_euler_formula_closed_components_constructive(
     };
 
     proof {
-        assert(c == chis.len());
+        assert(!(c < chis.len()));
+        lemma_usize_loop_exit_eq(c, chis.len());
         assert(w.api_ok == formula_ok);
         assert(euler_formula_closed_components_gate_witness_spec(w));
         if w.chis_all_two {

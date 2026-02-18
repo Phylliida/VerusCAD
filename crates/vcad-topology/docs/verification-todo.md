@@ -2181,7 +2181,32 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 
 ## H. Reuse-Focused Hardening (No Reinventing)
-- [ ] Reuse `vcad-math` proof surfaces for arithmetic/cardinality/order where applicable.
+- [x] Reuse `vcad-math` proof surfaces for arithmetic/cardinality/order where applicable.
+  - burndown update (2026-02-18, loop-exit arithmetic reuse pass):
+    - reused `vcad-math` scalar nat-order proof surface in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      imported `vcad_math::scalar::Scalar` and added reusable helper
+      `lemma_usize_loop_exit_eq`.
+    - helper proof shape:
+      - discharges `idx == bound` from loop-exit facts
+        (`idx <= bound` and `!(idx < bound)`),
+      - routes the positive-bound case through
+        `Scalar::lemma_nat_le_and_not_le_prev_implies_eq(...)`.
+    - threaded the helper through repeated loop-exit packaging sites
+      (vertex representative checker, component/Euler checker closeouts), replacing
+      ad-hoc direct `assert(idx == len)` equalities with the shared vcad-math-backed lemma.
+    - outcome:
+      arithmetic/order closeout reasoning now reuses the vcad-math proof surface
+      in the topology verification path.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`173 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh`
+      passed (`173 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh`
+      passed (`208 verified, 0 errors`);
+      `cargo test -p vcad-topology`
+      passed (`4 passed, 0 failed`).
 - [ ] Reuse `vcad-geometry` predicates for optional geometric non-degeneracy extensions (face area > 0, etc.).
 
 ## Exit Condition
