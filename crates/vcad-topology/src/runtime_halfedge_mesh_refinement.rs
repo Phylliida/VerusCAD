@@ -14,7 +14,6 @@ verus! {
 pub struct ExMesh(Mesh);
 
 #[verifier::external_type_specification]
-#[verifier::external_body]
 pub struct ExMeshBuildError(MeshBuildError);
 
 #[verifier::external_type_specification]
