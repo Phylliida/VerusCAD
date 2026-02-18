@@ -1555,6 +1555,33 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `./scripts/verify-vcad-topology-fast.sh` passed (`173 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`208 verified, 0 errors`);
       `cargo test -p vcad-topology` passed (`4 passed, 0 failed`).
+  - burndown update (2026-02-18, runtime regression coverage hardening):
+    - added two runtime regression tests in `src/halfedge_mesh.rs` to harden
+      the already-completed constructive component/Euler linkage:
+      - `disconnected_closed_components_have_expected_component_and_euler_counts`:
+        builds two disconnected tetrahedral components in one mesh and checks
+        `component_count() == 2`, Euler vector length `== 2`, each component
+        Euler characteristic is `2`, and
+        `check_euler_formula_closed_components()` remains true.
+      - `empty_mesh_fails_euler_gate`:
+        validates the empty-mesh edge case (`component_count() == 0`,
+        empty Euler vector, Euler gate false, and full validity false).
+    - rationale:
+      this adds executable regression coverage for multi-component behavior and
+      the non-empty Euler-gate guard, complementing the formal proof surface.
+    - failed attempts:
+      none in this pass.
+    - verification checks:
+      `cargo test -p vcad-topology` passed (`6 passed, 0 failed`);
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`8 passed, 0 failed`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`192 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_edge_exactly_two_half_edges`
+      passed (`3 verified, 0 errors` partial);
+      `./scripts/verify-vcad-topology.sh` passed (`227 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-matrix.sh` passed
+      (fast `192 verified`, full `227 verified`, tests `6/7/8` passing across
+      default, `geometry-checks`, and `geometry-checks,verus-proofs`).
   - file: `src/halfedge_mesh.rs`
 - [x] Verify `euler_characteristics_per_component` computes `V - E + F` per BFS component.
   - burndown update (2026-02-18):
@@ -5269,6 +5296,36 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
     - verification checks:
       `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels kernel_check_face_cycles`
       passed (`4 verified, 0 errors` partial);
+      `./scripts/verify-vcad-topology-matrix.sh`
+      passed:
+      - trust-surface guard passed,
+      - fast verification passed (`192 verified, 0 errors` partial),
+      - full verification passed (`227 verified, 0 errors`),
+      - `cargo test -p vcad-topology` passed (`4 passed, 0 failed`),
+      - `cargo test -p vcad-topology --features geometry-checks` passed
+        (`5 passed, 0 failed`),
+      - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+        passed (`6 passed, 0 failed`).
+  - burndown update (2026-02-18, edge-two-half-edges checker revalidation + matrix replay):
+    - selected task in this pass:
+      revalidate the completed
+      `runtime_check_edge_exactly_two_half_edges` proof boundary, then replay
+      the full `vcad-topology` verification/test matrix on the current tree.
+    - run timestamp:
+      `2026-02-18T08:52:19-08:00`.
+    - trust-surface scans:
+      - `./scripts/check-vcad-topology-trust-surface.sh`
+        passed; `external_type_specification` markers remained constrained to
+        `runtime_halfedge_mesh_refinement.rs` with count `6`.
+    - warning-scope note:
+      all `cargo test -p vcad-topology` invocations in this pass emitted
+      warnings only from dependency crates (`vstd`, `vcad-math`,
+      `vcad-geometry`), with no warnings from `vcad-topology`.
+    - failed attempts:
+      none in this pass.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_edge_exactly_two_half_edges`
+      passed (`3 verified, 0 errors` partial);
       `./scripts/verify-vcad-topology-matrix.sh`
       passed:
       - trust-surface guard passed,

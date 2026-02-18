@@ -1,1 +1,1 @@
-Revalidated kernel_check_face_cycles and replayed the vcad-topology verification matrix, with trust-surface scans and all checks passing.
+Added disconnected-component and empty-mesh Euler regression coverage for vcad-topology, updated the burndown log, and reran the full topology verification matrix successfully.

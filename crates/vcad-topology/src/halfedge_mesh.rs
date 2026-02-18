@@ -805,6 +805,56 @@ mod tests {
         assert_eq!(mesh.euler_characteristics_per_component(), vec![2]);
     }
 
+    #[test]
+    fn disconnected_closed_components_have_expected_component_and_euler_counts() {
+        let vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(0, 1, 0),
+            RuntimePoint3::from_ints(0, 0, 1),
+            RuntimePoint3::from_ints(10, 0, 0),
+            RuntimePoint3::from_ints(11, 0, 0),
+            RuntimePoint3::from_ints(10, 1, 0),
+            RuntimePoint3::from_ints(10, 0, 1),
+        ];
+        let faces = vec![
+            vec![0, 1, 2],
+            vec![0, 3, 1],
+            vec![1, 3, 2],
+            vec![2, 3, 0],
+            vec![4, 5, 6],
+            vec![4, 7, 5],
+            vec![5, 7, 6],
+            vec![6, 7, 4],
+        ];
+
+        let mesh = Mesh::from_face_cycles(vertices, &faces)
+            .expect("two disconnected tetrahedra should build as a closed mesh");
+        assert!(mesh.is_structurally_valid());
+        assert!(mesh.is_valid());
+        assert_eq!(mesh.component_count(), 2);
+
+        let chis = mesh.euler_characteristics_per_component();
+        assert_eq!(chis.len(), 2);
+        assert!(chis.into_iter().all(|chi| chi == 2));
+        assert!(mesh.check_euler_formula_closed_components());
+    }
+
+    #[test]
+    fn empty_mesh_fails_euler_gate() {
+        let mesh = Mesh {
+            vertices: vec![],
+            edges: vec![],
+            faces: vec![],
+            half_edges: vec![],
+        };
+        assert!(!mesh.is_structurally_valid());
+        assert_eq!(mesh.component_count(), 0);
+        assert_eq!(mesh.euler_characteristics_per_component(), Vec::<isize>::new());
+        assert!(!mesh.check_euler_formula_closed_components());
+        assert!(!mesh.is_valid());
+    }
+
     #[cfg(feature = "geometry-checks")]
     #[test]
     fn collinear_triangle_faces_fail_geometric_nondegeneracy() {
