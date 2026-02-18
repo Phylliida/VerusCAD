@@ -1,1 +1,1 @@
-Hardened vcad-topology's constructive from_face_cycles failure bridge by replacing panic with process abort, documented the burndown update, and revalidated fast/full verification plus test feature matrices.
+Removed seven unused external-body kernel bridge wrappers in vcad-topology and revalidated fast/full verification plus topology tests.

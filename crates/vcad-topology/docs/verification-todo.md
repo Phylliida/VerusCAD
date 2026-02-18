@@ -360,8 +360,11 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
     - strengthened `from_face_cycles_structural_core_spec` and
       `from_face_cycles_constructive_next_prev_face` so `Ok(m)` now exports the
       twin-endpoint correspondence clause as part of the constructor core.
-    - failed attempts:
-      none in this pass.
+    - failed attempt (tooling/environment):
+      running `/home/bepis/Documents/verifycad/VerusCAD/scripts/run-codex-task.sh`
+      from this sandbox failed with
+      `curl: (7) failed to open socket: Operation not permitted`.
+      this does not affect topology verification status.
     - remaining gap:
       constructor-level linkage to full
       `from_face_cycles_success_spec` / `from_face_cycles_failure_spec`
