@@ -38,6 +38,60 @@ fn build_disconnected_translated_tetrahedra_mesh(component_origins: &[(i64, i64,
         .expect("disconnected translated tetrahedra stress fixture should build")
 }
 
+#[cfg(feature = "geometry-checks")]
+fn phase5_checker_signature(mesh: &Mesh) -> [bool; 10] {
+    [
+        mesh.check_no_zero_length_geometric_edges(),
+        mesh.check_face_corner_non_collinearity(),
+        mesh.check_face_coplanarity(),
+        mesh.check_face_convexity(),
+        mesh.check_face_plane_consistency(),
+        mesh.check_shared_edge_local_orientation_consistency(),
+        mesh.check_no_forbidden_face_face_intersections(),
+        mesh.check_outward_face_normals(),
+        mesh.check_geometric_topological_consistency(),
+        mesh.is_valid_with_geometry(),
+    ]
+}
+
+#[cfg(feature = "geometry-checks")]
+fn relabel_vertices_in_face_cycles(
+    vertices: &[RuntimePoint3],
+    faces: &[Vec<usize>],
+    old_to_new: &[usize],
+) -> (Vec<RuntimePoint3>, Vec<Vec<usize>>) {
+    assert_eq!(
+        vertices.len(),
+        old_to_new.len(),
+        "old_to_new must map every old vertex index exactly once"
+    );
+
+    let mut seen = vec![false; vertices.len()];
+    for &new_idx in old_to_new {
+        assert!(
+            new_idx < vertices.len(),
+            "old_to_new contains out-of-bounds new vertex index"
+        );
+        assert!(!seen[new_idx], "old_to_new must be a bijection");
+        seen[new_idx] = true;
+    }
+    assert!(
+        seen.into_iter().all(|visited| visited),
+        "old_to_new must assign each new index exactly once"
+    );
+
+    let mut relabeled_vertices = vertices.to_vec();
+    for (old_idx, &new_idx) in old_to_new.iter().enumerate() {
+        relabeled_vertices[new_idx] = vertices[old_idx].clone();
+    }
+
+    let relabeled_faces = faces
+        .iter()
+        .map(|cycle| cycle.iter().map(|&v| old_to_new[v]).collect())
+        .collect();
+    (relabeled_vertices, relabeled_faces)
+}
+
     #[test]
     fn tetrahedron_is_valid() {
         let mesh = Mesh::tetrahedron();
@@ -192,6 +246,130 @@ fn build_disconnected_translated_tetrahedra_mesh(component_origins: &[(i64, i64,
         );
         assert!(original.check_geometric_topological_consistency());
         assert!(rotated.check_geometric_topological_consistency());
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn phase5_checks_are_invariant_under_face_iteration_order() {
+        let vertices = vec![
+            RuntimePoint3::from_ints(-1, -1, -1),
+            RuntimePoint3::from_ints(1, -1, -1),
+            RuntimePoint3::from_ints(1, 1, -1),
+            RuntimePoint3::from_ints(-1, 1, -1),
+            RuntimePoint3::from_ints(-1, -1, 1),
+            RuntimePoint3::from_ints(1, -1, 1),
+            RuntimePoint3::from_ints(1, 1, 1),
+            RuntimePoint3::from_ints(-1, 1, 1),
+        ];
+        let faces = vec![
+            vec![0, 1, 2, 3],
+            vec![4, 7, 6, 5],
+            vec![0, 4, 5, 1],
+            vec![3, 2, 6, 7],
+            vec![0, 3, 7, 4],
+            vec![1, 5, 6, 2],
+        ];
+        let reordered_faces = vec![
+            faces[3].clone(),
+            faces[5].clone(),
+            faces[0].clone(),
+            faces[2].clone(),
+            faces[4].clone(),
+            faces[1].clone(),
+        ];
+
+        let original = Mesh::from_face_cycles(vertices.clone(), &faces)
+            .expect("original face ordering should build");
+        let reordered = Mesh::from_face_cycles(vertices, &reordered_faces)
+            .expect("reordered face ordering should build");
+
+        assert!(original.is_valid());
+        assert!(reordered.is_valid());
+        assert_eq!(
+            phase5_checker_signature(&original),
+            phase5_checker_signature(&reordered)
+        );
+        assert!(original.check_geometric_topological_consistency());
+        assert!(reordered.check_geometric_topological_consistency());
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn phase5_checks_are_invariant_under_consistent_vertex_index_relabeling() {
+        let cube_vertices = vec![
+            RuntimePoint3::from_ints(-1, -1, -1),
+            RuntimePoint3::from_ints(1, -1, -1),
+            RuntimePoint3::from_ints(1, 1, -1),
+            RuntimePoint3::from_ints(-1, 1, -1),
+            RuntimePoint3::from_ints(-1, -1, 1),
+            RuntimePoint3::from_ints(1, -1, 1),
+            RuntimePoint3::from_ints(1, 1, 1),
+            RuntimePoint3::from_ints(-1, 1, 1),
+        ];
+        let cube_faces = vec![
+            vec![0, 1, 2, 3],
+            vec![4, 7, 6, 5],
+            vec![0, 4, 5, 1],
+            vec![3, 2, 6, 7],
+            vec![0, 3, 7, 4],
+            vec![1, 5, 6, 2],
+        ];
+        let cube_permutation = vec![7, 2, 5, 1, 6, 0, 3, 4];
+        let (cube_relabeled_vertices, cube_relabeled_faces) =
+            relabel_vertices_in_face_cycles(&cube_vertices, &cube_faces, &cube_permutation);
+
+        let cube_original =
+            Mesh::from_face_cycles(cube_vertices, &cube_faces).expect("original cube should build");
+        let cube_relabeled = Mesh::from_face_cycles(cube_relabeled_vertices, &cube_relabeled_faces)
+            .expect("vertex-relabeled cube should build");
+        assert_eq!(
+            phase5_checker_signature(&cube_original),
+            phase5_checker_signature(&cube_relabeled)
+        );
+        assert!(cube_original.check_geometric_topological_consistency());
+        assert!(cube_relabeled.check_geometric_topological_consistency());
+
+        let intersecting_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(4, 0, 0),
+            RuntimePoint3::from_ints(0, 4, 0),
+            RuntimePoint3::from_ints(0, 0, 4),
+            RuntimePoint3::from_ints(1, 1, 1),
+            RuntimePoint3::from_ints(5, 1, 1),
+            RuntimePoint3::from_ints(1, 5, 1),
+            RuntimePoint3::from_ints(1, 1, 5),
+        ];
+        let intersecting_faces = vec![
+            vec![0, 1, 2],
+            vec![0, 3, 1],
+            vec![1, 3, 2],
+            vec![2, 3, 0],
+            vec![4, 5, 6],
+            vec![4, 7, 5],
+            vec![5, 7, 6],
+            vec![6, 7, 4],
+        ];
+        let intersecting_permutation = vec![3, 5, 7, 1, 0, 4, 2, 6];
+        let (intersecting_relabeled_vertices, intersecting_relabeled_faces) =
+            relabel_vertices_in_face_cycles(
+                &intersecting_vertices,
+                &intersecting_faces,
+                &intersecting_permutation,
+            );
+
+        let intersecting_original = Mesh::from_face_cycles(intersecting_vertices, &intersecting_faces)
+            .expect("original intersecting fixture should build");
+        let intersecting_relabeled = Mesh::from_face_cycles(
+            intersecting_relabeled_vertices,
+            &intersecting_relabeled_faces,
+        )
+        .expect("vertex-relabeled intersecting fixture should build");
+        assert_eq!(
+            phase5_checker_signature(&intersecting_original),
+            phase5_checker_signature(&intersecting_relabeled)
+        );
+        assert!(!intersecting_original.check_geometric_topological_consistency());
+        assert!(!intersecting_relabeled.check_geometric_topological_consistency());
     }
 
     #[test]

@@ -150,7 +150,7 @@ Current complexity notes (runtime implementation in `src/halfedge_mesh/validatio
   - `check_geometric_topological_consistency_diagnostic` is dominated by plane/intersection stages and is currently `O(FH + F^2 * d_max^2)` worst-case.
 
 ## P5.12 Invariance, Policy, and Phase-6 Readiness
-- [ ] Checker-result invariance:
+- [x] Checker-result invariance:
   - prove/tests that Phase 5 outcomes are invariant under face-cycle start index changes, face iteration order changes, and consistent mesh index relabeling.
 - [ ] Rigid-transform invariance:
   - prove/tests that translation + rotation preserve all Phase 5 checks;
@@ -169,6 +169,20 @@ Current complexity notes (runtime implementation in `src/halfedge_mesh/validatio
   - document which Euler-operator preconditions must preserve geometric invariants versus recheck them.
 
 ## Burndown Log
+- 2026-02-18: Completed a P5.12 checker-result invariance test pass in `src/halfedge_mesh/tests.rs`:
+  - added helper `phase5_checker_signature` to compare full Phase 5 runtime outcomes (`check_*` stage checks, aggregate geometric-consistency gate, and `is_valid_with_geometry`) across equivalent meshes;
+  - added helper `relabel_vertices_in_face_cycles` to construct consistently vertex-reindexed face-cycle fixtures;
+  - added `phase5_checks_are_invariant_under_face_iteration_order`, proving Phase 5 outcomes are unchanged when face-cycle list order is permuted;
+  - added `phase5_checks_are_invariant_under_consistent_vertex_index_relabeling`, proving Phase 5 outcomes are unchanged under a consistent vertex-index bijection for both a passing cube and a failing intersecting-components fixture.
+  - marked the P5.12 checker-result invariance checklist item complete (cycle-start invariance already covered by `phase5_checks_are_invariant_under_face_cycle_start_rotation`).
+- 2026-02-18: Failed attempts in this P5.12 invariance pass: none.
+- 2026-02-18: Revalidated after the P5.12 invariance additions:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (215 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (250 verified, 0 errors)
 - 2026-02-18: Completed a P5.11 scalability/complexity pass:
   - in `src/halfedge_mesh/tests.rs`, added high-face-count stress fixtures and tests:
     - `stress_many_disconnected_components_geometric_consistency_passes` (24 disconnected tetrahedra; 96 faces) to lock large positive behavior;

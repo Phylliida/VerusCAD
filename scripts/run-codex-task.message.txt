@@ -1,1 +1,1 @@
-Completed a P5.11 scalability pass by adding high-face-count geometric stress fixtures and documenting current Phase 5 checker asymptotic bounds, with full vcad-topology tests and Verus verification passing (250 verified, 0 errors).
+Completed P5.12 checker-result invariance by adding face-order and vertex-relabel Phase 5 invariance tests in vcad-topology, updating the burndown doc, and revalidating all tests/proofs (250 verified, 0 errors).
