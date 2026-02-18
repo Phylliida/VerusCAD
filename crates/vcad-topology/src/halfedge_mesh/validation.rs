@@ -9,6 +9,8 @@ use vcad_geometry::orientation_predicates::{orient3d_sign, orient3d_value};
 use vcad_math::runtime_point3::RuntimePoint3;
 #[cfg(feature = "geometry-checks")]
 use vcad_math::runtime_scalar::RuntimeScalar;
+#[cfg(feature = "geometry-checks")]
+use vcad_math::runtime_vec3::RuntimeVec3;
 #[cfg(feature = "verus-proofs")]
 use crate::verified_checker_kernels::{
     kernel_check_edge_has_exactly_two_half_edges, kernel_check_face_cycles, kernel_check_index_bounds,
@@ -117,6 +119,9 @@ impl Mesh {
         if !self.check_index_bounds() || !self.check_face_cycles() {
             return false;
         }
+        if !self.check_face_corner_non_collinearity() {
+            return false;
+        }
 
         let hcnt = self.half_edges.len();
         for face in &self.faces {
@@ -204,6 +209,117 @@ impl Mesh {
                 h = he.next;
                 steps += 1;
                 if h == h0 {
+                    break;
+                }
+                if steps > hcnt {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn plane_offset_relative_to_origin(normal: &RuntimeVec3, point: &RuntimePoint3) -> RuntimeScalar {
+        let origin = RuntimePoint3::from_ints(0, 0, 0);
+        normal.dot(&point.sub(&origin))
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn point_plane_value_relative_to_origin(
+        normal: &RuntimeVec3,
+        offset: &RuntimeScalar,
+        point: &RuntimePoint3,
+    ) -> RuntimeScalar {
+        let origin = RuntimePoint3::from_ints(0, 0, 0);
+        normal.dot(&point.sub(&origin)).sub(offset)
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    /// Optional geometric extension: compute a face plane `(normal, offset)`
+    /// in the equation `normal . p = offset`, using exact arithmetic.
+    ///
+    /// Plane seed selection is robust: this scans the face cycle and picks the
+    /// first non-collinear consecutive triple.
+    pub fn compute_face_plane(&self, face_id: usize) -> Option<(RuntimeVec3, RuntimeScalar)> {
+        if !self.is_valid() {
+            return None;
+        }
+        if face_id >= self.faces.len() {
+            return None;
+        }
+        if !self.check_index_bounds() || !self.check_face_cycles() {
+            return None;
+        }
+
+        let hcnt = self.half_edges.len();
+        let start = self.faces[face_id].half_edge;
+        let mut h = start;
+        let mut steps = 0usize;
+        loop {
+            let h1 = self.half_edges[h].next;
+            let h2 = self.half_edges[h1].next;
+
+            let p0 = &self.vertices[self.half_edges[h].vertex].position;
+            let p1 = &self.vertices[self.half_edges[h1].vertex].position;
+            let p2 = &self.vertices[self.half_edges[h2].vertex].position;
+
+            let e01 = p1.sub(p0);
+            let e12 = p2.sub(p1);
+            let normal = e01.cross(&e12);
+            if normal.norm2().signum_i8() != 0 {
+                let offset = Self::plane_offset_relative_to_origin(&normal, p0);
+                return Some((normal, offset));
+            }
+
+            h = self.half_edges[h].next;
+            steps += 1;
+            if h == start {
+                break;
+            }
+            if steps > hcnt {
+                return None;
+            }
+        }
+
+        None
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    /// Optional geometric extension: each computed face plane must contain all
+    /// vertices in that face cycle.
+    pub fn check_face_plane_consistency(&self) -> bool {
+        if !self.is_valid() {
+            return false;
+        }
+        if !self.check_index_bounds() || !self.check_face_cycles() {
+            return false;
+        }
+        if !self.check_face_coplanarity() || !self.check_face_corner_non_collinearity() {
+            return false;
+        }
+
+        let hcnt = self.half_edges.len();
+        for face_id in 0..self.faces.len() {
+            let (normal, offset) = match self.compute_face_plane(face_id) {
+                Some(plane) => plane,
+                None => return false,
+            };
+
+            let start = self.faces[face_id].half_edge;
+            let mut h = start;
+            let mut steps = 0usize;
+            loop {
+                let p = &self.vertices[self.half_edges[h].vertex].position;
+                let side = Self::point_plane_value_relative_to_origin(&normal, &offset, p);
+                if side.signum_i8() != 0 {
+                    return false;
+                }
+
+                h = self.half_edges[h].next;
+                steps += 1;
+                if h == start {
                     break;
                 }
                 if steps > hcnt {
@@ -308,6 +424,7 @@ impl Mesh {
             && self.check_face_corner_non_collinearity()
             && self.check_face_coplanarity()
             && self.check_face_convexity()
+            && self.check_face_plane_consistency()
             && self.check_outward_face_normals()
     }
 

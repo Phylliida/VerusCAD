@@ -1,1 +1,1 @@
-Implemented Phase 5 face convexity checking in vcad-topology with exact orient3d-based validation, wired it into the geometric consistency gate, added concavity/coverage tests, and revalidated all vcad-topology test and verification scripts.
+Implemented exact-arithmetic face-plane computation and plane-consistency checks in vcad-topology, tightened coplanarity to require non-degenerate face triples, updated Phase 5 tests/docs, and re-verified the full vcad-topology matrix.

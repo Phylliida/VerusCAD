@@ -23,7 +23,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
   - shared vertex
   - shared edge
   - disjoint boundary
-- [ ] Add per-face non-degeneracy preconditions needed by Phase 5 predicates (at least one non-collinear triple per face).
+- [x] Add per-face non-degeneracy preconditions needed by Phase 5 predicates (at least one non-collinear triple per face).
 - [ ] Add bridge specs from runtime mesh to any kernel geometry checker representation used for proofs.
 
 ## P5.1 Invariant: Face Coplanarity (Roadmap)
@@ -63,8 +63,8 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [ ] Proof: shared-edge and shared-vertex contacts are never misclassified as forbidden intersections.
 
 ## P5.6 Plane Computation (Roadmap)
-- [ ] Runtime API: compute face plane `(normal, offset)` from face vertices via cross product + dot product.
-- [ ] Handle face-normal seed selection robustly (first non-collinear triple or explicit precondition).
+- [x] Runtime API: compute face plane `(normal, offset)` from face vertices via cross product + dot product.
+- [x] Handle face-normal seed selection robustly (first non-collinear triple or explicit precondition).
 - [ ] Spec: `face_plane_contains_vertex_spec` for every vertex on the face.
 - [ ] Proof: computed plane contains all vertices of that face (using coplanarity invariant).
 - [ ] Proof: computed normal direction matches face orientation/winding.
@@ -98,6 +98,19 @@ This doc expands those targets into executable TODOs aligned with the current `v
   - `--features "geometry-checks,verus-proofs"`
 
 ## Burndown Log
+- 2026-02-18: Implemented P5.6 runtime plane computation in `src/halfedge_mesh/validation.rs`:
+  - added `Mesh::compute_face_plane(face_id) -> Option<(RuntimeVec3, RuntimeScalar)>`, computing `normal . p = offset` in exact arithmetic;
+  - seed selection now scans each face cycle for the first non-collinear consecutive triple and returns `None` when no such triple exists.
+- 2026-02-18: Added `Mesh::check_face_plane_consistency()` and integrated it into `Mesh::check_geometric_topological_consistency()`, requiring every face vertex to satisfy its computed plane equation.
+- 2026-02-18: Extended `src/halfedge_mesh/tests.rs` for P5.6 runtime coverage:
+  - positive fixtures (`tetrahedron`, `cube`, `triangular_prism`) now assert `check_face_plane_consistency()`;
+  - added `compute_face_plane_returns_expected_values_for_cube_bottom_face`;
+  - strengthened degeneracy tests to assert `compute_face_plane(..).is_none()` and plane-consistency failure when no valid plane seed exists.
+- 2026-02-18: Failed attempts from this P5.6 pass: none.
+- 2026-02-18: Tightened `Mesh::check_face_coplanarity()` to require face non-degeneracy (`check_face_corner_non_collinearity()`) before testing coplanarity, so degenerate collinear faces no longer vacuously pass due a collinear base triple.
+- 2026-02-18: Updated degeneracy tests in `src/halfedge_mesh/tests.rs` to match the stronger coplanarity precondition:
+  - `collinear_triangle_faces_fail_geometric_nondegeneracy` now expects `check_face_coplanarity() == false`;
+  - `coincident_edge_endpoints_fail_zero_length_geometric_edge_check` now expects `check_face_coplanarity() == false`.
 - 2026-02-18: Normalized built-in positive fixtures to the outward-orientation convention used by `check_outward_face_normals()` by reversing all face cycles in `Mesh::cube()` and `Mesh::triangular_prism()` (in `src/halfedge_mesh/construction.rs`), so `tetrahedron`, `cube`, and `triangular_prism` now agree on the same signed-volume polarity.
 - 2026-02-18: Extended `src/halfedge_mesh/tests.rs` outward-orientation coverage:
   - positive fixtures now assert `check_outward_face_normals()`;
@@ -127,7 +140,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - 2026-02-18: Extended `src/halfedge_mesh/tests.rs`:
   - positive fixtures (`tetrahedron`, `cube`, `triangular_prism`) now assert `check_face_coplanarity()` and the aggregate checker;
   - added `noncoplanar_quad_faces_fail_face_coplanarity` negative test;
-  - strengthened collinear negative test to assert coplanarity can still pass while aggregate fails.
+  - strengthened collinear negative test coverage for aggregate failure (later tightened so coplanarity itself fails under the explicit non-degeneracy precondition).
 - 2026-02-18: Implemented `Mesh::check_no_zero_length_geometric_edges()` in `src/halfedge_mesh/validation.rs`, rejecting any half-edge whose endpoint vertex positions are exactly equal in `RuntimePoint3` exact arithmetic.
 - 2026-02-18: Updated `Mesh::check_geometric_topological_consistency()` to require `check_no_zero_length_geometric_edges() && check_face_corner_non_collinearity() && check_face_coplanarity()`.
 - 2026-02-18: Extended `src/halfedge_mesh/tests.rs` geometry coverage:

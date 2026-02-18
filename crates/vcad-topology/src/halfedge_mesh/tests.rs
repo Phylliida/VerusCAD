@@ -1,5 +1,7 @@
 use super::{Mesh, MeshBuildError};
 use vcad_math::runtime_point3::RuntimePoint3;
+#[cfg(feature = "geometry-checks")]
+use vcad_math::runtime_scalar::RuntimeScalar;
 
     #[test]
     fn tetrahedron_is_valid() {
@@ -12,6 +14,7 @@ use vcad_math::runtime_point3::RuntimePoint3;
             assert!(mesh.check_face_corner_non_collinearity());
             assert!(mesh.check_face_coplanarity());
             assert!(mesh.check_face_convexity());
+            assert!(mesh.check_face_plane_consistency());
             assert!(mesh.check_outward_face_normals());
             assert!(mesh.check_geometric_topological_consistency());
             assert!(mesh.is_valid_with_geometry());
@@ -35,6 +38,7 @@ use vcad_math::runtime_point3::RuntimePoint3;
             assert!(mesh.check_face_corner_non_collinearity());
             assert!(mesh.check_face_coplanarity());
             assert!(mesh.check_face_convexity());
+            assert!(mesh.check_face_plane_consistency());
             assert!(mesh.check_outward_face_normals());
             assert!(mesh.check_geometric_topological_consistency());
             assert!(mesh.is_valid_with_geometry());
@@ -58,6 +62,7 @@ use vcad_math::runtime_point3::RuntimePoint3;
             assert!(mesh.check_face_corner_non_collinearity());
             assert!(mesh.check_face_coplanarity());
             assert!(mesh.check_face_convexity());
+            assert!(mesh.check_face_plane_consistency());
             assert!(mesh.check_outward_face_normals());
             assert!(mesh.check_geometric_topological_consistency());
             assert!(mesh.is_valid_with_geometry());
@@ -155,6 +160,7 @@ use vcad_math::runtime_point3::RuntimePoint3;
         assert!(!mesh.check_face_corner_non_collinearity());
         assert!(!mesh.check_face_coplanarity());
         assert!(!mesh.check_face_convexity());
+        assert!(!mesh.check_face_plane_consistency());
         assert!(!mesh.check_outward_face_normals());
         assert!(!mesh.check_geometric_topological_consistency());
         assert!(!mesh.is_valid_with_geometry());
@@ -176,8 +182,11 @@ use vcad_math::runtime_point3::RuntimePoint3;
         assert!(mesh.is_valid());
         assert!(mesh.check_no_zero_length_geometric_edges());
         assert!(!mesh.check_face_corner_non_collinearity());
-        assert!(mesh.check_face_coplanarity());
+        assert!(!mesh.check_face_coplanarity());
+        assert!(mesh.compute_face_plane(0).is_none());
+        assert!(mesh.compute_face_plane(1).is_none());
         assert!(!mesh.check_face_convexity());
+        assert!(!mesh.check_face_plane_consistency());
         assert!(!mesh.check_geometric_topological_consistency());
         assert!(!mesh.is_valid_with_geometry());
     }
@@ -198,8 +207,9 @@ use vcad_math::runtime_point3::RuntimePoint3;
         assert!(mesh.is_valid());
         assert!(!mesh.check_no_zero_length_geometric_edges());
         assert!(!mesh.check_face_corner_non_collinearity());
-        assert!(mesh.check_face_coplanarity());
+        assert!(!mesh.check_face_coplanarity());
         assert!(!mesh.check_face_convexity());
+        assert!(!mesh.check_face_plane_consistency());
         assert!(!mesh.check_geometric_topological_consistency());
         assert!(!mesh.is_valid_with_geometry());
     }
@@ -223,6 +233,7 @@ use vcad_math::runtime_point3::RuntimePoint3;
         assert!(mesh.check_face_corner_non_collinearity());
         assert!(!mesh.check_face_coplanarity());
         assert!(!mesh.check_face_convexity());
+        assert!(!mesh.check_face_plane_consistency());
         assert!(!mesh.check_geometric_topological_consistency());
         assert!(!mesh.is_valid_with_geometry());
     }
@@ -247,8 +258,22 @@ use vcad_math::runtime_point3::RuntimePoint3;
         assert!(mesh.check_face_corner_non_collinearity());
         assert!(mesh.check_face_coplanarity());
         assert!(!mesh.check_face_convexity());
+        assert!(mesh.check_face_plane_consistency());
         assert!(!mesh.check_geometric_topological_consistency());
         assert!(!mesh.is_valid_with_geometry());
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn compute_face_plane_returns_expected_values_for_cube_bottom_face() {
+        let mesh = Mesh::cube();
+        assert!(mesh.is_valid());
+
+        let (normal, offset) = mesh.compute_face_plane(0).expect("cube bottom face should yield a plane");
+        assert_eq!(*normal.x(), RuntimeScalar::from_int(0));
+        assert_eq!(*normal.y(), RuntimeScalar::from_int(0));
+        assert_eq!(*normal.z(), RuntimeScalar::from_int(4));
+        assert_eq!(offset, RuntimeScalar::from_int(-4));
     }
 
     #[cfg(feature = "geometry-checks")]
@@ -270,6 +295,7 @@ use vcad_math::runtime_point3::RuntimePoint3;
         assert!(mesh.check_face_corner_non_collinearity());
         assert!(mesh.check_face_coplanarity());
         assert!(mesh.check_face_convexity());
+        assert!(mesh.check_face_plane_consistency());
         assert!(!mesh.check_outward_face_normals());
         assert!(!mesh.check_geometric_topological_consistency());
         assert!(!mesh.is_valid_with_geometry());
