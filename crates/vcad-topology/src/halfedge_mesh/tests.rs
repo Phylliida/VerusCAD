@@ -992,6 +992,98 @@ fn relabel_vertices_in_face_cycles(
 
     #[cfg(feature = "geometry-checks")]
     #[test]
+    fn edge_touch_only_components_policy_is_rejected() {
+        let vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(0, 1, 0),
+            RuntimePoint3::from_ints(0, 0, 1),
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(0, -1, 0),
+            RuntimePoint3::from_ints(0, 0, -1),
+        ];
+        let faces = vec![
+            vec![0, 1, 2],
+            vec![0, 3, 1],
+            vec![1, 3, 2],
+            vec![2, 3, 0],
+            vec![4, 5, 6],
+            vec![4, 7, 5],
+            vec![5, 7, 6],
+            vec![6, 7, 4],
+        ];
+
+        let mesh = Mesh::from_face_cycles(vertices, &faces)
+            .expect("edge-touch-only tetrahedra should still build topologically");
+        assert!(mesh.is_structurally_valid());
+        assert!(mesh.is_valid());
+        assert!(mesh.check_no_zero_length_geometric_edges());
+        assert!(mesh.check_face_corner_non_collinearity());
+        assert!(mesh.check_face_coplanarity());
+        assert!(mesh.check_face_convexity());
+        assert!(mesh.check_face_plane_consistency());
+        assert!(mesh.check_shared_edge_local_orientation_consistency());
+        assert!(!mesh.check_no_forbidden_face_face_intersections());
+        let failure = mesh
+            .check_geometric_topological_consistency_diagnostic()
+            .expect_err("edge-touch-only components should fail geometric consistency");
+        assert!(matches!(
+            failure,
+            GeometricTopologicalConsistencyFailure::ForbiddenFaceFaceIntersection { .. }
+        ));
+        assert!(!mesh.check_geometric_topological_consistency());
+        assert!(!mesh.is_valid_with_geometry());
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn face_touch_only_components_policy_is_rejected() {
+        let vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(0, 1, 0),
+            RuntimePoint3::from_ints(0, 0, 1),
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(0, 1, 0),
+            RuntimePoint3::from_ints(0, 0, -1),
+        ];
+        let faces = vec![
+            vec![0, 1, 2],
+            vec![0, 3, 1],
+            vec![1, 3, 2],
+            vec![2, 3, 0],
+            vec![4, 5, 6],
+            vec![4, 7, 5],
+            vec![5, 7, 6],
+            vec![6, 7, 4],
+        ];
+
+        let mesh = Mesh::from_face_cycles(vertices, &faces)
+            .expect("face-touch-only tetrahedra should still build topologically");
+        assert!(mesh.is_structurally_valid());
+        assert!(mesh.is_valid());
+        assert!(mesh.check_no_zero_length_geometric_edges());
+        assert!(mesh.check_face_corner_non_collinearity());
+        assert!(mesh.check_face_coplanarity());
+        assert!(mesh.check_face_convexity());
+        assert!(mesh.check_face_plane_consistency());
+        assert!(mesh.check_shared_edge_local_orientation_consistency());
+        assert!(!mesh.check_no_forbidden_face_face_intersections());
+        let failure = mesh
+            .check_geometric_topological_consistency_diagnostic()
+            .expect_err("face-touch-only components should fail geometric consistency");
+        assert!(matches!(
+            failure,
+            GeometricTopologicalConsistencyFailure::ForbiddenFaceFaceIntersection { .. }
+        ));
+        assert!(!mesh.check_geometric_topological_consistency());
+        assert!(!mesh.is_valid_with_geometry());
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
     fn zero_volume_policy_nonzero_tetrahedron_is_accepted() {
         let mesh = Mesh::tetrahedron();
         assert!(mesh.is_valid());

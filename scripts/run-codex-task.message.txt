@@ -1,1 +1,1 @@
-Completed P5.12 checker-result invariance by adding face-order and vertex-relabel Phase 5 invariance tests in vcad-topology, updating the burndown doc, and revalidating all tests/proofs (250 verified, 0 errors).
+Completed P5.12 connected-component interaction policy hardening by adding edge-touch and face-touch rejection tests, clarifying the intersection checker contract, updating the burndown checklist/log, and revalidating all vcad-topology tests/proofs (250 verified, 0 errors).

@@ -763,7 +763,8 @@ impl Mesh {
     /// - adjacency exemptions are index-based: if two face cycles share any
     ///   vertex index, this checker skips that pair;
     /// - geometric position coincidence with different vertex indices is not
-    ///   exempt (for example, disconnected components touching at one point);
+    ///   exempt (for example, disconnected components touching at a vertex,
+    ///   along an edge, or across an entire face);
     /// - exact arithmetic is used throughout (no epsilon tolerance path).
     pub fn check_no_forbidden_face_face_intersections(&self) -> bool {
         if !self.is_valid() {

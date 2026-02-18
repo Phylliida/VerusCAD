@@ -155,7 +155,7 @@ Current complexity notes (runtime implementation in `src/halfedge_mesh/validatio
 - [ ] Rigid-transform invariance:
   - prove/tests that translation + rotation preserve all Phase 5 checks;
   - document and test expected behavior under reflection (orientation-sensitive checks should flip as intended).
-- [ ] Connected-component interaction policy:
+- [x] Connected-component interaction policy:
   - explicitly define whether disconnected closed components may touch at vertex/edge/face contact;
   - enforce that policy in intersection/outwardness gate behavior.
 - [ ] Witness-grade failure APIs:
@@ -168,7 +168,24 @@ Current complexity notes (runtime implementation in `src/halfedge_mesh/validatio
   - state/prove preservation lemmas for Phase 5 invariants under topology-only edits that do not move coordinates;
   - document which Euler-operator preconditions must preserve geometric invariants versus recheck them.
 
+Current connected-component interaction policy (runtime behavior locked by tests):
+- disconnected closed components are accepted only when geometrically disjoint;
+- disconnected components touching at a vertex, along an edge, or across a face (with distinct vertex indices) are rejected by `check_no_forbidden_face_face_intersections` and therefore by the aggregate Phase 5 gate.
+
 ## Burndown Log
+- 2026-02-18: Completed a P5.12 connected-component interaction policy pass in `src/halfedge_mesh/validation.rs` and `src/halfedge_mesh/tests.rs`:
+  - in `Mesh::check_no_forbidden_face_face_intersections()` docs, clarified that disconnected-component geometric contact is non-exempt for vertex, edge, and face contact (when vertex indices are distinct);
+  - added `edge_touch_only_components_policy_is_rejected`, locking that disconnected tetrahedra that touch only along a geometric edge fail the intersection checker and return `ForbiddenFaceFaceIntersection` in the diagnostic gate;
+  - added `face_touch_only_components_policy_is_rejected`, locking the same behavior for disconnected tetrahedra that touch across an entire geometric face;
+  - marked the P5.12 connected-component interaction policy checklist item complete and documented the explicit accept/reject policy under `## P5.12`.
+- 2026-02-18: Failed attempts in this P5.12 connected-component policy pass: none.
+- 2026-02-18: Revalidated after the P5.12 connected-component policy additions:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (215 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (250 verified, 0 errors)
 - 2026-02-18: Completed a P5.12 checker-result invariance test pass in `src/halfedge_mesh/tests.rs`:
   - added helper `phase5_checker_signature` to compare full Phase 5 runtime outcomes (`check_*` stage checks, aggregate geometric-consistency gate, and `is_valid_with_geometry`) across equivalent meshes;
   - added helper `relabel_vertices_in_face_cycles` to construct consistently vertex-reindexed face-cycle fixtures;
