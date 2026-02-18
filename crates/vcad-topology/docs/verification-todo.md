@@ -540,6 +540,42 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       (`23 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`23 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`57 verified, 0 errors`).
+  - burndown update (2026-02-18, checker completeness + solver-stability hardening):
+    - strengthened
+      `runtime_check_twin_assignment_total_involution` in
+      `src/runtime_halfedge_mesh_refinement.rs` from one-way soundness to
+      two-way executable/spec linkage:
+      - `out ==> from_face_cycles_twin_assignment_total_involution_spec(m@)`,
+      - `!out ==> !from_face_cycles_twin_assignment_total_involution_spec(m@)`.
+    - proof-shape stabilization:
+      - refactored the total twin predicate into an index-local helper
+        `from_face_cycles_twin_assignment_total_involution_at_spec`,
+      - added bridge lemma
+        `lemma_twin_assignment_total_involution_implies_mesh_twin_involution`,
+      - reused that bridge in
+        `lemma_structural_validity_gate_witness_api_ok_implies_mesh_structurally_valid`
+        to avoid brittle direct quantifier lifting at that call site.
+    - failed attempts (rolled back during this pass):
+      - direct false-branch contradiction via ad-hoc helper lemmas
+        (`lemma_twin_assignment_spec_implies_*`) failed trigger instantiation
+        and was removed,
+      - a temporary `#[verifier::rlimit(800)]` on
+        `lemma_structural_validity_gate_witness_api_ok_implies_mesh_structurally_valid`
+        avoided immediate rlimit failures but caused non-convergent/very long
+        solver runs in this workspace state; the `rlimit` override was removed.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement lemma_twin_assignment_total_involution_implies_mesh_twin_involution`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_twin_assignment_total_involution`
+      passed (`2 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement lemma_structural_validity_gate_witness_api_ok_implies_mesh_structurally_valid`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh`
+      passed (`192 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh`
+      passed (`227 verified, 0 errors`);
+      `cargo test -p vcad-topology`
+      passed (`4 passed, 0 failed`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 - [x] Prove undirected-edge grouping induces exactly-two-half-edges per edge.
