@@ -2887,3 +2887,36 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`4 passed, 0 failed`);
       `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
       passed (`6 passed, 0 failed`).
+  - burndown update (2026-02-18, kernel checker lint suppression cleanup):
+    - selected task in this pass:
+      maintain Exit Condition quality by removing remaining targeted
+      `unused_variables` / `unused_assignments` suppressions in
+      `src/verified_checker_kernels.rs`.
+    - code hardening:
+      removed five `#[allow(unused_variables, unused_assignments)]`
+      annotations from:
+      - `kernel_check_next_prev_inverse`,
+      - `kernel_check_prev_next_inverse`,
+      - `kernel_check_face_cycles`,
+      - `kernel_check_vertex_manifold_single_cycle`,
+      - `kernel_check_edge_has_exactly_two_half_edges`.
+      replaced those suppressions with explicit runtime witness-local reads at
+      stable join points (`let _ = ...`) so rustc test-mode no longer reports
+      local unused warnings for proof-only witness variables.
+    - failed attempt (stabilized in-pass):
+      first removed the annotations without adding explicit witness-local
+      reads; rustc test-mode then surfaced expected local warnings
+      (`bad_idx`, `h_prev/steps_prev`, `bad_e`, `h2`, `twin0/twin1`, `rep`).
+      stabilized by adding explicit runtime reads for those locals while
+      keeping proof structure unchanged.
+    - verification checks:
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`6 passed, 0 failed`);
+      `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels`
+      passed (`35 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`191 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh`
+      passed (`191 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh`
+      passed (`226 verified, 0 errors`).

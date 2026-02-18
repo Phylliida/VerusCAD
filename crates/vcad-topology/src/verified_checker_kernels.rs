@@ -618,7 +618,6 @@ pub fn kernel_check_twin_involution(m: &KernelMesh) -> (out: bool)
 }
 
 #[verifier::exec_allows_no_decreases_clause]
-#[allow(unused_variables, unused_assignments)]
 pub fn kernel_check_next_prev_inverse(m: &KernelMesh) -> (out: bool)
     ensures
         out == (kernel_index_bounds_spec(m) && kernel_next_prev_inverse_only_spec(m)),
@@ -650,6 +649,7 @@ pub fn kernel_check_next_prev_inverse(m: &KernelMesh) -> (out: bool)
         }
         i += 1;
     }
+    let _ = bad_idx;
 
     proof {
         assert(bounds_ok);
@@ -669,7 +669,6 @@ pub fn kernel_check_next_prev_inverse(m: &KernelMesh) -> (out: bool)
 }
 
 #[verifier::exec_allows_no_decreases_clause]
-#[allow(unused_variables, unused_assignments)]
 pub fn kernel_check_prev_next_inverse(m: &KernelMesh) -> (out: bool)
     ensures
         out == (kernel_index_bounds_spec(m) && kernel_prev_next_inverse_only_spec(m)),
@@ -701,6 +700,7 @@ pub fn kernel_check_prev_next_inverse(m: &KernelMesh) -> (out: bool)
         }
         i += 1;
     }
+    let _ = bad_idx;
 
     proof {
         assert(bounds_ok);
@@ -779,7 +779,6 @@ pub fn kernel_check_no_degenerate_edges(m: &KernelMesh) -> (out: bool)
 }
 
 #[verifier::exec_allows_no_decreases_clause]
-#[allow(unused_variables, unused_assignments)]
 pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
     ensures
         out ==> kernel_face_representative_cycles_cover_all_half_edges_total_spec(m),
@@ -911,6 +910,7 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
                 return false;
             }
             steps += 1;
+            let _ = (h_prev, steps_prev);
 
             proof {
                 assert(steps == steps_prev + 1);
@@ -1556,7 +1556,6 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
 }
 
 #[verifier::exec_allows_no_decreases_clause]
-#[allow(unused_variables, unused_assignments)]
 pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
     ensures
         out ==> kernel_vertex_manifold_single_cycle_total_spec(m),
@@ -1672,6 +1671,7 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
                 return false;
             }
             steps += 1;
+            let _ = (h_prev, steps_prev);
 
             proof {
                 assert(steps == steps_prev + 1);
@@ -2112,7 +2112,6 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
 }
 
 #[verifier::exec_allows_no_decreases_clause]
-#[allow(unused_variables, unused_assignments)]
 pub fn kernel_check_edge_has_exactly_two_half_edges(m: &KernelMesh) -> (out: bool)
     ensures
         out == kernel_edge_exactly_two_half_edges_total_spec(m),
@@ -2333,7 +2332,9 @@ pub fn kernel_check_edge_has_exactly_two_half_edges(m: &KernelMesh) -> (out: boo
         }
 
         e += 1;
+        let _ = (h2, twin0, twin1, rep);
     }
+    let _ = bad_e;
 
     proof {
         if ok {
