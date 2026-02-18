@@ -432,6 +432,148 @@ pub proof fn lemma_mesh_next_iter_in_bounds(m: MeshModel, h: int, n: nat)
     }
 }
 
+pub proof fn lemma_face_bridge_witness_implies_face_cycle_coverage(
+    m: MeshModel,
+    face_cycle_lens: Seq<usize>,
+    covered: Seq<bool>,
+    f: int,
+)
+    requires
+        mesh_index_bounds_spec(m),
+        mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_witness_spec(
+            m,
+            face_cycle_lens,
+            covered,
+        ),
+        0 <= f < mesh_face_count_spec(m),
+    ensures
+        forall|h: int|
+            0 <= h < mesh_half_edge_count_spec(m) && #[trigger] m.half_edges[h].face == f
+                ==> exists|i: int| {
+                    &&& 0 <= i < face_cycle_lens[f] as int
+                    &&& #[trigger] mesh_next_iter_spec(m, m.face_half_edges[f], i as nat) == h
+                },
+{
+    let hcnt = mesh_half_edge_count_spec(m);
+    let k = face_cycle_lens[f] as int;
+    assert(forall|h: int|
+        0 <= h < hcnt && #[trigger] m.half_edges[h].face == f ==> exists|i: int| {
+            &&& 0 <= i < k
+            &&& #[trigger] mesh_next_iter_spec(m, m.face_half_edges[f], i as nat) == h
+        }) by {
+        assert forall|h: int|
+            0 <= h < hcnt && #[trigger] m.half_edges[h].face == f implies exists|i: int| {
+                &&& 0 <= i < k
+                &&& #[trigger] mesh_next_iter_spec(m, m.face_half_edges[f], i as nat) == h
+            } by {
+            assert(covered[h]);
+            let (fw, iw) = choose|fw: int, iw: int| {
+                &&& 0 <= fw < mesh_face_count_spec(m)
+                &&& 0 <= iw < face_cycle_lens[fw] as int
+                &&& #[trigger] mesh_next_iter_spec(m, m.face_half_edges[fw], iw as nat) == h
+            };
+            assert(0 <= fw < mesh_face_count_spec(m));
+            assert(0 <= iw < face_cycle_lens[fw] as int);
+            assert(mesh_face_representative_cycle_kernel_bridge_witness_spec(
+                m,
+                fw,
+                face_cycle_lens[fw] as int,
+            ));
+            assert(#[trigger] m.half_edges[mesh_next_iter_spec(
+                m,
+                m.face_half_edges[fw],
+                iw as nat,
+            )].face == fw);
+            assert(mesh_next_iter_spec(m, m.face_half_edges[fw], iw as nat) == h);
+            assert(m.half_edges[h].face == fw);
+            assert(m.half_edges[h].face == f);
+            assert(fw == f);
+            assert(0 <= iw < k);
+            assert(exists|i: int| {
+                &&& 0 <= i < k
+                &&& #[trigger] mesh_next_iter_spec(m, m.face_half_edges[f], i as nat) == h
+            }) by {
+                let i = iw;
+                assert(0 <= i < k);
+                assert(mesh_next_iter_spec(m, m.face_half_edges[f], i as nat) == h);
+            };
+        };
+    };
+}
+
+pub proof fn lemma_face_bridge_witness_implies_face_cycle_witness(
+    m: MeshModel,
+    face_cycle_lens: Seq<usize>,
+    covered: Seq<bool>,
+    f: int,
+)
+    requires
+        mesh_index_bounds_spec(m),
+        mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_witness_spec(
+            m,
+            face_cycle_lens,
+            covered,
+        ),
+        0 <= f < mesh_face_count_spec(m),
+    ensures
+        mesh_face_cycle_witness_spec(m, f, face_cycle_lens[f] as int),
+{
+    let hcnt = mesh_half_edge_count_spec(m);
+    let k = face_cycle_lens[f] as int;
+    let start = m.face_half_edges[f];
+    assert(mesh_face_representative_cycle_kernel_bridge_witness_spec(m, f, k));
+    assert(0 <= start < hcnt);
+
+    assert(forall|i: int|
+        0 <= i < k ==> 0 <= #[trigger] mesh_next_iter_spec(m, start, i as nat) < hcnt) by {
+        assert forall|i: int|
+            0 <= i < k implies 0 <= #[trigger] mesh_next_iter_spec(m, start, i as nat) < hcnt by {
+            lemma_mesh_next_iter_in_bounds(m, start, i as nat);
+        };
+    };
+    assert(forall|i: int|
+        0 <= i < k ==> #[trigger] m.half_edges[mesh_next_iter_spec(m, start, i as nat)].face == f);
+
+    lemma_face_bridge_witness_implies_face_cycle_coverage(m, face_cycle_lens, covered, f);
+    assert(forall|h: int|
+        0 <= h < hcnt && #[trigger] m.half_edges[h].face == f ==> exists|i: int| {
+            &&& 0 <= i < k
+            &&& #[trigger] mesh_next_iter_spec(m, start, i as nat) == h
+        });
+
+    assert(mesh_face_cycle_witness_spec(m, f, k)) by {
+        assert(3 <= k <= hcnt);
+        assert(mesh_next_iter_spec(m, start, k as nat) == start);
+        assert(forall|i: int|
+            0 <= i < k ==> {
+                let h = mesh_next_iter_spec(m, start, i as nat);
+                &&& 0 <= h < hcnt
+                &&& #[trigger] m.half_edges[mesh_next_iter_spec(m, start, i as nat)].face == f
+            }) by {
+            assert forall|i: int|
+                0 <= i < k implies {
+                    let h = mesh_next_iter_spec(m, start, i as nat);
+                    &&& 0 <= h < hcnt
+                    &&& #[trigger] m.half_edges[mesh_next_iter_spec(m, start, i as nat)].face == f
+                } by {
+                assert(0 <= mesh_next_iter_spec(m, start, i as nat) < hcnt);
+                assert(#[trigger] m.half_edges[mesh_next_iter_spec(m, start, i as nat)].face == f);
+            };
+        };
+        assert(forall|i: int, j: int|
+            #![trigger mesh_next_iter_spec(m, start, i as nat), mesh_next_iter_spec(m, start, j as nat)]
+            0 <= i < j < k ==> mesh_next_iter_spec(m, start, i as nat) != mesh_next_iter_spec(
+                m,
+                start,
+                j as nat,
+            ));
+        assert(forall|h: int|
+            0 <= h < hcnt && #[trigger] m.half_edges[h].face == f ==> exists|i: int|
+                #![trigger mesh_next_iter_spec(m, start, i as nat)]
+                0 <= i < k && mesh_next_iter_spec(m, start, i as nat) == h);
+    };
+}
+
 pub open spec fn kernel_face_cover_step_witness_spec(
     km: &kernels::KernelMesh,
     face_cycle_lens: Seq<usize>,

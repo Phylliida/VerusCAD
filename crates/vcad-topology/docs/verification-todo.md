@@ -1589,6 +1589,38 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`149 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`149 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`183 verified, 0 errors`).
+  - burndown update (2026-02-18, face-cycle implication helper groundwork + packaging rollback):
+    - landed reusable face-side helper lemmas in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      - `lemma_face_bridge_witness_implies_face_cycle_coverage`,
+      - `lemma_face_bridge_witness_implies_face_cycle_witness`.
+      these provide stable per-face lifting from
+      `mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_witness_spec`
+      to full fixed-face `mesh_face_cycle_witness_spec`.
+    - attempted strengthening (rolled back in this pass):
+      - prove
+        `mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_total_spec`
+        implies `mesh_face_next_cycles_spec`,
+      - thread the stronger clause into
+        `structural_validity_gate_model_link_spec`
+        (`w.face_cycles_ok ==> mesh_face_next_cycles_spec(m@)`).
+    - rollback reason:
+      final quantified packaging at the
+      `forall f. exists k` layer remained trigger-sensitive/brittle in this
+      workspace state, even after stabilizing the per-face witness path.
+    - stable state retained:
+      structural model-link export remains at the face-cycle bridge predicate
+      surface, while the new per-face helper lemmas remain in-tree as reusable
+      scaffolding for a future retry.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement lemma_face_bridge_witness_implies_face_cycle_coverage`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement lemma_face_bridge_witness_implies_face_cycle_witness`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`152 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`152 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`186 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
 - [ ] Verify `is_valid` exactly matches `is_structurally_valid && check_euler_formula_closed_components`.
   - burndown update (2026-02-18):
