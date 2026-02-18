@@ -1,1 +1,1 @@
-Revalidated vcad-topology exit conditions with clean trust-surface scans and fully green verification and test runs.
+Completed an exit-condition burndown rerun for vcad-topology with clean trust-surface scans and fully green verification and test runs.
