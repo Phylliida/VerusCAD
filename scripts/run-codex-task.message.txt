@@ -1,1 +1,1 @@
-Completed P5.8 in vcad-topology by adding verified Phase 5 runtime-geometry bridge lemmas in kernel_bridge_lemmas and revalidating the full test/verification matrix (238 proofs verified).
+Completed the P5.0 runtime-to-kernel geometry bridge task in vcad-topology by adding a verified kernel/runtime geometry bridge spec + constructive wrapper and revalidating the full matrix (240 proofs verified).

@@ -976,6 +976,22 @@ pub proof fn lemma_mesh_runtime_geometry_bridge_holds(m: &Mesh)
 }
 
 #[cfg(verus_keep_ghost)]
+pub proof fn lemma_kernel_mesh_runtime_geometry_bridge_holds(
+    km: &kernels::KernelMesh,
+    m: &Mesh,
+)
+    requires
+        kernel_mesh_matches_mesh_model_spec(km, m@),
+    ensures
+        kernel_mesh_runtime_geometry_bridge_spec(km, m),
+{
+    lemma_mesh_runtime_geometry_bridge_holds(m);
+    assert(kernel_mesh_matches_mesh_model_spec(km, m@));
+    assert(mesh_runtime_geometry_bridge_spec(m));
+    assert(kernel_mesh_runtime_geometry_bridge_spec(km, m));
+}
+
+#[cfg(verus_keep_ghost)]
 pub proof fn lemma_mesh_face_cycle_half_edge_or_default_matches_model(
     m: MeshModel,
     f: int,

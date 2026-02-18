@@ -760,6 +760,15 @@ pub open spec fn kernel_mesh_matches_mesh_model_spec(km: &kernels::KernelMesh, m
     }
 }
 
+#[cfg(verus_keep_ghost)]
+pub open spec fn kernel_mesh_runtime_geometry_bridge_spec(
+    km: &kernels::KernelMesh,
+    m: &Mesh,
+) -> bool {
+    &&& kernel_mesh_matches_mesh_model_spec(km, m@)
+    &&& mesh_runtime_geometry_bridge_spec(m)
+}
+
 pub open spec fn mesh_face_representative_cycle_kernel_bridge_witness_spec(
     m: MeshModel,
     f: int,

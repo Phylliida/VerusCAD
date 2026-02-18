@@ -24,7 +24,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
   - shared edge
   - disjoint boundary
 - [x] Add per-face non-degeneracy preconditions needed by Phase 5 predicates (at least one non-collinear triple per face).
-- [ ] Add bridge specs from runtime mesh to any kernel geometry checker representation used for proofs.
+- [x] Add bridge specs from runtime mesh to any kernel geometry checker representation used for proofs.
 
 ## P5.1 Invariant: Face Coplanarity (Roadmap)
 - [x] Spec: define `mesh_face_coplanar_spec(m, f)` (equivalent to orient3d = 0 for all face-vertex quadruples).
@@ -139,6 +139,18 @@ This doc expands those targets into executable TODOs aligned with the current `v
   - document which Euler-operator preconditions must preserve geometric invariants versus recheck them.
 
 ## Burndown Log
+- 2026-02-18: Completed the P5.0 runtime-to-kernel geometry bridge-spec item across the refinement layer:
+  - in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`, added `kernel_mesh_runtime_geometry_bridge_spec(km, m)` to model a combined kernel-topology/runtime-geometry bridge for kernel geometry-checker inputs;
+  - in `src/runtime_halfedge_mesh_refinement/kernel_bridge_lemmas.rs`, added `lemma_kernel_mesh_runtime_geometry_bridge_holds`, deriving the new bridge spec from `kernel_mesh_matches_mesh_model_spec` plus `lemma_mesh_runtime_geometry_bridge_holds`;
+  - in `src/runtime_halfedge_mesh_refinement/kernel_component_runtime_checks.rs`, added constructive wrapper `runtime_mesh_to_kernel_mesh_geometry_bridge` that returns a kernel mesh with the new geometry bridge guarantee.
+- 2026-02-18: Failed attempts in this P5.0 pass: none.
+- 2026-02-18: Revalidated after the P5.0 bridge-spec additions:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (205 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology.sh` (240 verified, 0 errors)
 - 2026-02-18: Completed the P5.8 Phase 5 bridge-lemma item in `src/runtime_halfedge_mesh_refinement/kernel_bridge_lemmas.rs`:
   - added runtime geometry bridge lemma `lemma_mesh_runtime_geometry_bridge_holds`, proving `mesh_runtime_geometry_bridge_spec(m)`;
   - added face-cycle bridge lemmas tying model cycle iteration to runtime geometry sequences:

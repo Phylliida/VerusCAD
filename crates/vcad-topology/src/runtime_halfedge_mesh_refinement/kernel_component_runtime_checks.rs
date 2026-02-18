@@ -269,6 +269,20 @@ pub fn runtime_mesh_to_kernel_mesh(m: &Mesh) -> (km: kernels::KernelMesh)
     km
 }
 
+#[cfg(verus_keep_ghost)]
+#[allow(dead_code)]
+pub fn runtime_mesh_to_kernel_mesh_geometry_bridge(m: &Mesh) -> (km: kernels::KernelMesh)
+    ensures
+        kernel_mesh_runtime_geometry_bridge_spec(&km, m),
+{
+    let km = runtime_mesh_to_kernel_mesh(m);
+    proof {
+        assert(kernel_mesh_matches_mesh_model_spec(&km, m@));
+        lemma_kernel_mesh_runtime_geometry_bridge_holds(&km, m);
+    }
+    km
+}
+
 #[allow(dead_code)]
 pub fn runtime_check_face_cycles_kernel_bridge(m: &Mesh) -> (out: bool)
     ensures
