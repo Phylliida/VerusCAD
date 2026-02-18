@@ -4985,6 +4985,44 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `vcad-geometry`), with no warnings from `vcad-topology`.
     - failed attempts:
       none in this pass.
+  - burndown update (2026-02-18, exit-condition maintenance rerun + matrix replay refresh):
+    - selected task in this pass:
+      rerun Exit Condition trust-surface scans and replay the full
+      `vcad-topology` verification/test matrix on the current workspace tree.
+    - run timestamp:
+      `2026-02-18T08:43:58-08:00`.
+    - trust-surface scans:
+      - `./scripts/check-vcad-topology-trust-surface.sh`
+        passed; `external_type_specification` markers remained constrained to
+        `runtime_halfedge_mesh_refinement.rs` with count `6`.
+      - `rg -n "assume_specification|external_fn_specification|\\buninterpreted\\b|admit\\(|assume\\(" crates/vcad-topology/src`
+        returned no matches (`0` lines).
+      - `rg -n "\\[verifier::external_body\\]" crates/vcad-topology/src`
+        returned no matches (`0` lines).
+      - `rg -n "\\[verifier::external_type_specification\\]" crates/vcad-topology/src/runtime_halfedge_mesh_refinement.rs`
+        returned 6 expected proof-facing type shims (`ExMesh`,
+        `ExMeshBuildError`, `ExHalfEdge`, `ExVertex`, `ExEdge`, `ExFace`).
+    - warning-scope note:
+      all `cargo test -p vcad-topology` invocations in this pass emitted
+      warnings only from dependency crates (`vstd`, `vcad-math`,
+      `vcad-geometry`), with no warnings from `vcad-topology`.
+    - operational note:
+      `cargo test -p vcad-topology` printed
+      `Blocking waiting for file lock on build directory` once and then
+      continued to successful completion.
+    - failed attempts:
+      none in this pass.
+    - verification checks:
+      `./scripts/verify-vcad-topology-matrix.sh`
+      passed:
+      - trust-surface guard passed,
+      - fast verification passed (`192 verified, 0 errors` partial),
+      - full verification passed (`227 verified, 0 errors`),
+      - `cargo test -p vcad-topology` passed (`4 passed, 0 failed`),
+      - `cargo test -p vcad-topology --features geometry-checks` passed
+        (`5 passed, 0 failed`),
+      - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+        passed (`6 passed, 0 failed`).
     - verification checks:
       `./scripts/verify-vcad-topology-matrix.sh`
       passed:
@@ -5146,3 +5184,30 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
         passed (`6 passed, 0 failed`).
     - failed attempts:
       none in this pass.
+  - burndown update (2026-02-18, exit-condition maintenance rerun + direct command replay):
+    - selected task in this pass:
+      rerun Exit Condition trust-surface validation and replay the full
+      `vcad-topology` verification/test matrix with direct entrypoint commands.
+    - run timestamp:
+      `2026-02-18T08:45:18-08:00`.
+    - trust-surface scans:
+      - `./scripts/check-vcad-topology-trust-surface.sh`
+        passed; `external_type_specification` markers remained constrained to
+        `runtime_halfedge_mesh_refinement.rs` with count `6`.
+    - warning-scope note:
+      all `cargo test -p vcad-topology` invocations in this pass emitted
+      warnings only from dependency crates (`vstd`, `vcad-math`,
+      `vcad-geometry`), with no warnings from `vcad-topology`.
+    - failed attempts:
+      none in this pass.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh`
+      passed (`192 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh`
+      passed (`227 verified, 0 errors`);
+      `cargo test -p vcad-topology`
+      passed (`4 passed, 0 failed`);
+      `cargo test -p vcad-topology --features geometry-checks`
+      passed (`5 passed, 0 failed`);
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`6 passed, 0 failed`).
