@@ -435,7 +435,7 @@ impl Mesh {
         kernel_check_vertex_manifold_single_cycle(&km)
     }
 
-    #[cfg(feature = "verus-proofs")]
+    #[cfg(all(test, feature = "verus-proofs"))]
     pub(crate) fn bridge_index_and_twin_checks_agree(&self) -> bool {
         let runtime_index_ok = self.check_index_bounds();
         let kernel_index_ok = self.check_index_bounds_via_kernel();

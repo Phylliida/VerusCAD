@@ -2920,3 +2920,28 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`191 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh`
       passed (`226 verified, 0 errors`).
+  - burndown update (2026-02-18, vcad-topology dead-code warning cleanup):
+    - selected task in this pass:
+      keep Exit Condition maintenance tight by eliminating remaining
+      `vcad-topology` rustc test-mode dead-code warnings in combined
+      feature builds.
+    - code hardening:
+      - in `src/halfedge_mesh.rs`, tightened
+        `bridge_index_and_twin_checks_agree` to
+        `#[cfg(all(test, feature = "verus-proofs"))]` since it is a
+        proof-bridge regression helper used only by tests.
+      - in `src/runtime_halfedge_mesh_refinement.rs`, added
+        `#[cfg_attr(not(verus_keep_ghost), allow(dead_code))]` to the six
+        `#[verifier::external_type_specification]` wrapper structs
+        (`ExMesh`, `ExMeshBuildError`, `ExHalfEdge`, `ExVertex`, `ExEdge`,
+        `ExFace`) so rustc test-mode no longer reports dead-code noise for
+        proof-only external-type shims.
+    - failed attempts:
+      none in this pass.
+    - verification checks:
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`6 passed, 0 failed`) with no `vcad-topology` warnings;
+      `./scripts/verify-vcad-topology-fast.sh`
+      passed (`191 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh`
+      passed (`226 verified, 0 errors`).

@@ -10,21 +10,27 @@ use vstd::view::View;
 
 verus! {
 
+#[cfg_attr(not(verus_keep_ghost), allow(dead_code))]
 #[verifier::external_type_specification]
 pub struct ExMesh(Mesh);
 
+#[cfg_attr(not(verus_keep_ghost), allow(dead_code))]
 #[verifier::external_type_specification]
 pub struct ExMeshBuildError(MeshBuildError);
 
+#[cfg_attr(not(verus_keep_ghost), allow(dead_code))]
 #[verifier::external_type_specification]
 pub struct ExHalfEdge(HalfEdge);
 
+#[cfg_attr(not(verus_keep_ghost), allow(dead_code))]
 #[verifier::external_type_specification]
 pub struct ExVertex(Vertex);
 
+#[cfg_attr(not(verus_keep_ghost), allow(dead_code))]
 #[verifier::external_type_specification]
 pub struct ExEdge(Edge);
 
+#[cfg_attr(not(verus_keep_ghost), allow(dead_code))]
 #[verifier::external_type_specification]
 pub struct ExFace(Face);
 
