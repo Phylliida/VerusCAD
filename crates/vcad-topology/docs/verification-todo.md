@@ -2245,6 +2245,22 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       (`173 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed
       (`208 verified, 0 errors`).
+  - burndown update (2026-02-18, validation rerun in this pass):
+    - reran geometry-extension tests:
+      `cargo test -p vcad-topology --features geometry-checks`
+      passed (`5 passed, 0 failed`).
+    - reran topology verification scripts:
+      `./scripts/verify-vcad-topology-fast.sh` passed
+      (`173 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed
+      (`208 verified, 0 errors`).
+    - failed attempt (tooling/config only):
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      failed in rustc test mode with unresolved import
+      `vcad_math::scalar::Scalar` from
+      `src/runtime_halfedge_mesh_refinement.rs` (`E0432`).
+      this is tracked as a cargo-test-mode cfg mismatch and does not block
+      Verus-script verification flows for `verus-proofs`.
 
 ## Exit Condition
 - [x] No `assume_specification` remains in `vcad-topology` for runtime mesh behavior.

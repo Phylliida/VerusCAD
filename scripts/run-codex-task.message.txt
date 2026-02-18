@@ -1,1 +1,1 @@
-Reused vcad-math Scalar nat-order lemmas for loop-exit arithmetic in runtime_halfedge_mesh_refinement and documented the completed hardening pass with passing 173/208 verification results.
+Validated and documented the vcad-topology vcad-geometry hardening item with passing geometry-check tests, fresh 173/208 Verus verification runs, and a recorded combined-feature cargo-test cfg mismatch.
