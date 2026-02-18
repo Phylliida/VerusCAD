@@ -3123,6 +3123,7 @@ pub open spec fn from_face_cycles_success_spec(
     &&& from_face_cycles_all_oriented_edges_have_twin_spec(face_cycles)
     &&& from_face_cycles_no_isolated_vertices_spec(vertex_count, face_cycles)
     &&& from_face_cycles_incidence_model_spec(vertex_count, face_cycles, m)
+    &&& from_face_cycles_vertex_representatives_spec(m)
 }
 
 pub proof fn lemma_from_face_cycles_incidence_implies_next_prev_face_coherent(

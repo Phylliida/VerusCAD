@@ -564,7 +564,7 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`150 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
-- [ ] Prove vertex representative (`vertex.half_edge`) is valid and non-isolated.
+- [x] Prove vertex representative (`vertex.half_edge`) is valid and non-isolated.
   - burndown update (2026-02-18):
     - landed explicit refinement predicate in `src/runtime_halfedge_mesh_refinement.rs`:
       `mesh_vertex_representative_valid_nonisolated_spec`.
@@ -582,6 +582,20 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `./scripts/verify-vcad-topology.sh` passed (`54 verified, 0 errors`).
     - remaining gap: direct untrusted linkage from the raw `Mesh::from_face_cycles`
       implementation to full constructor success semantics is still tracked under section C.
+  - burndown update (2026-02-18, constructor-success spec linkage completion):
+    - strengthened `from_face_cycles_success_spec(...)` in
+      `src/runtime_halfedge_mesh_refinement.rs` to include
+      `from_face_cycles_vertex_representatives_spec(m)` explicitly.
+    - this makes vertex-representative validity/non-isolation a direct clause
+      of exported constructor-success semantics (in addition to the existing
+      constructive checker/wrapper path).
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement from_face_cycles_structural_core_implies_success`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`159 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`159 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`194 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 

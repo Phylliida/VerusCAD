@@ -1,1 +1,1 @@
-Completed vcad-topology Section C burndown by proving structural-core constructor outputs imply from_face_cycles_success_spec, documenting the remaining failure-link gap, and keeping fast and full verification green.
+Completed the Section C vertex-representative burndown item by strengthening constructor success semantics and keeping full vcad-topology verification green.
