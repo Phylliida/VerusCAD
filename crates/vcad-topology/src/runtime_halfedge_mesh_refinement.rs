@@ -800,13 +800,20 @@ pub open spec fn from_face_cycles_all_oriented_edges_have_twin_spec(face_cycles:
         }
 }
 
-pub open spec fn from_face_cycles_no_isolated_vertices_spec(vertex_count: int, face_cycles: Seq<Seq<int>>) -> bool {
-    forall|v: int|
-        #![trigger v + 0]
-        0 <= v < vertex_count ==> exists|f: int, i: int| {
+pub open spec fn from_face_cycles_vertex_has_incident_spec(
+    face_cycles: Seq<Seq<int>>,
+    v: int,
+) -> bool {
+    exists|f: int, i: int| {
         &&& input_face_local_index_valid_spec(face_cycles, f, i)
         &&& #[trigger] input_face_from_vertex_spec(face_cycles, f, i) == v
     }
+}
+
+pub open spec fn from_face_cycles_no_isolated_vertices_spec(vertex_count: int, face_cycles: Seq<Seq<int>>) -> bool {
+    forall|v: int|
+        #![trigger from_face_cycles_vertex_has_incident_spec(face_cycles, v)]
+        0 <= v < vertex_count ==> from_face_cycles_vertex_has_incident_spec(face_cycles, v)
 }
 
 pub open spec fn from_face_cycles_prefix_contains_vertex_spec(
@@ -1116,6 +1123,7 @@ pub open spec fn from_face_cycles_structural_core_spec(
     m: MeshModel,
 ) -> bool {
     &&& from_face_cycles_basic_input_spec(vertex_count, face_cycles)
+    &&& from_face_cycles_no_isolated_vertices_spec(vertex_count, face_cycles)
     &&& from_face_cycles_next_prev_face_coherent_spec(face_cycles, m)
     &&& from_face_cycles_twin_assignment_total_involution_spec(m)
     &&& mesh_edge_exactly_two_half_edges_spec(m)
@@ -1401,7 +1409,13 @@ pub fn runtime_check_from_face_cycles_basic_input(
 pub fn runtime_check_from_face_cycles_no_isolated_vertices(
     vertex_count: usize,
     face_cycles: &[Vec<usize>],
-) -> (out: bool) {
+) -> (out: bool)
+    ensures
+        out ==> from_face_cycles_no_isolated_vertices_spec(
+            vertex_count as int,
+            face_cycles_exec_to_model_spec(face_cycles@),
+        ),
+{
     if vertex_count == 0 {
         return false;
     }
@@ -1628,6 +1642,50 @@ pub fn runtime_check_from_face_cycles_no_isolated_vertices(
         v += 1;
     }
 
+    proof {
+        assert(v == vertex_count);
+        assert(forall|vp: int|
+            0 <= vp < vertex_count as int
+                ==> from_face_cycles_prefix_contains_vertex_spec(
+                    model_cycles,
+                    face_cycles.len() as int,
+                    0,
+                    vp,
+                )) by {
+            assert forall|vp: int|
+                0 <= vp < vertex_count as int
+                    implies from_face_cycles_prefix_contains_vertex_spec(
+                        model_cycles,
+                        face_cycles.len() as int,
+                        0,
+                        vp,
+                    ) by {
+                assert(vertex_count as int == v as int);
+                assert(0 <= vp < v as int);
+            };
+        }
+        assert(from_face_cycles_no_isolated_vertices_spec(vertex_count as int, model_cycles)) by {
+            assert forall|vp: int|
+                #![trigger from_face_cycles_vertex_has_incident_spec(model_cycles, vp)]
+                0 <= vp < vertex_count as int
+                    implies from_face_cycles_vertex_has_incident_spec(model_cycles, vp) by {
+                assert(from_face_cycles_prefix_contains_vertex_spec(
+                    model_cycles,
+                    face_cycles.len() as int,
+                    0,
+                    vp,
+                ));
+                lemma_from_face_cycles_prefix_contains_vertex_implies_contains(
+                    model_cycles,
+                    face_cycles.len() as int,
+                    0,
+                    vp,
+                );
+                assert(from_face_cycles_vertex_has_incident_spec(model_cycles, vp));
+            };
+        }
+    }
+
     true
 }
 
@@ -1819,7 +1877,9 @@ pub fn from_face_cycles_constructive_next_prev_face(
                         } else {
                             proof {
                                 assert(input_ok);
+                                assert(no_isolated_ok);
                                 assert(from_face_cycles_basic_input_spec(vertex_count as int, model_cycles));
+                                assert(from_face_cycles_no_isolated_vertices_spec(vertex_count as int, model_cycles));
                                 assert(from_face_cycles_next_prev_face_coherent_spec(model_cycles, m@));
                                 assert(from_face_cycles_twin_assignment_total_involution_spec(m@));
                                 assert(mesh_edge_exactly_two_half_edges_spec(m@));

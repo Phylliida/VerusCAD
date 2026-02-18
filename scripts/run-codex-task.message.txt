@@ -1,1 +1,1 @@
-Strengthened vcad-topology structural-validity constructive verification to export twin and edge model-link guarantees and documented the rolled-back unstable prev/no-degenerate proof attempt in the burndown.
+Exported no-isolated-vertex input guarantees into the from_face_cycles constructive core spec, stabilized trigger behavior with a helper predicate, and documented the completed burndown increment with verification results.
