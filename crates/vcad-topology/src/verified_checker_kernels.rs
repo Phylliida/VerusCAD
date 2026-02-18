@@ -378,13 +378,27 @@ pub open spec fn kernel_face_representative_closed_min_length_total_spec(m: &Ker
 }
 
 pub open spec fn kernel_vertex_representative_cycle_witness_spec(m: &KernelMesh, v: int, k: int) -> bool {
+    let hcnt = kernel_half_edge_count_spec(m);
     let start = m.vertex_half_edges@[v] as int;
-    &&& 1 <= k <= kernel_half_edge_count_spec(m)
+    &&& 1 <= k <= hcnt
     &&& kernel_vertex_ring_iter_spec(m, start, k as nat) == start
     &&& forall|i: int|
         0 <= i < k ==> {
             #[trigger] m.half_edges@[kernel_vertex_ring_iter_spec(m, start, i as nat)].vertex as int == v
         }
+    &&& forall|i: int, j: int|
+        #![trigger kernel_vertex_ring_iter_spec(m, start, i as nat), kernel_vertex_ring_iter_spec(
+            m,
+            start,
+            j as nat,
+        )]
+        0 <= i < j < k
+            ==> kernel_vertex_ring_iter_spec(m, start, i as nat)
+                != kernel_vertex_ring_iter_spec(m, start, j as nat)
+    &&& forall|h: int|
+        0 <= h < hcnt && #[trigger] m.half_edges@[h].vertex as int == v ==> exists|i: int|
+            #![trigger kernel_vertex_ring_iter_spec(m, start, i as nat)]
+            0 <= i < k && kernel_vertex_ring_iter_spec(m, start, i as nat) == h
 }
 
 pub open spec fn kernel_vertex_manifold_single_cycle_basic_spec(m: &KernelMesh) -> bool {
@@ -1612,20 +1626,39 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
             invariant
                 kernel_index_bounds_spec(m),
                 hcnt == m.half_edges.len(),
+                start < hcnt,
                 0 <= steps <= expected + 1,
                 local_seen@.len() == hcnt as int,
                 0 <= h < hcnt,
                 h as int == kernel_vertex_ring_iter_spec(m, start as int, steps as nat),
                 closed ==> h == start,
+                forall|hp: int|
+                    0 <= hp < hcnt as int && #[trigger] local_seen@[hp]
+                        ==> exists|i: int| {
+                            &&& 0 <= i < steps as int
+                            &&& #[trigger] kernel_vertex_ring_iter_spec(m, start as int, i as nat) == hp
+                        },
+                forall|i: int|
+                    0 <= i < steps as int ==> #[trigger] local_seen@[kernel_vertex_ring_iter_spec(
+                        m,
+                        start as int,
+                        i as nat,
+                    )],
                 forall|i: int|
                     0 <= i < steps as int ==> #[trigger] m.half_edges@[kernel_vertex_ring_iter_spec(
                         m,
                         start as int,
                         i as nat,
                     )].vertex as int == v as int,
+                forall|i: int, j: int|
+                    #![trigger kernel_vertex_ring_iter_spec(m, start as int, i as nat), kernel_vertex_ring_iter_spec(m, start as int, j as nat)]
+                    0 <= i < j < steps as int
+                        ==> kernel_vertex_ring_iter_spec(m, start as int, i as nat)
+                            != kernel_vertex_ring_iter_spec(m, start as int, j as nat),
         {
             let h_prev = h;
             let steps_prev = steps;
+            let ghost local_seen_before = local_seen@;
 
             if local_seen[h] {
                 return false;
@@ -1643,6 +1676,7 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
             proof {
                 assert(steps == steps_prev + 1);
                 assert(h_prev as int == kernel_vertex_ring_iter_spec(m, start as int, steps_prev as nat));
+                assert(local_seen@ == local_seen_before.update(h_prev as int, true));
 
                 assert(0 <= h_prev as int);
                 assert((h_prev as int) < (hcnt as int));
@@ -1685,6 +1719,104 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
                         }
                     };
                 };
+                assert(forall|i: int|
+                    0 <= i < steps as int ==> #[trigger] local_seen@[kernel_vertex_ring_iter_spec(
+                        m,
+                        start as int,
+                        i as nat,
+                    )]) by {
+                    assert forall|i: int|
+                        0 <= i < steps as int implies #[trigger] local_seen@[kernel_vertex_ring_iter_spec(
+                            m,
+                            start as int,
+                            i as nat,
+                        )] by {
+                        if i < steps_prev as int {
+                            let hi = kernel_vertex_ring_iter_spec(m, start as int, i as nat);
+                            lemma_kernel_vertex_ring_iter_in_bounds(m, start as int, i as nat);
+                            assert(0 <= hi < hcnt as int);
+                            assert(local_seen_before[hi]);
+                            if hi == h_prev as int {
+                                assert(local_seen@[hi]);
+                            } else {
+                                assert(local_seen@[hi]
+                                    == local_seen_before.update(h_prev as int, true)[hi]);
+                                assert(local_seen_before.update(h_prev as int, true)[hi]
+                                    == local_seen_before[hi]);
+                                assert(local_seen@[hi]);
+                            }
+                        } else {
+                            assert(i == steps_prev as int);
+                            assert(kernel_vertex_ring_iter_spec(m, start as int, i as nat)
+                                == kernel_vertex_ring_iter_spec(m, start as int, steps_prev as nat));
+                            assert(kernel_vertex_ring_iter_spec(m, start as int, steps_prev as nat)
+                                == h_prev as int);
+                            assert(local_seen@[h_prev as int]);
+                            assert(local_seen@[kernel_vertex_ring_iter_spec(m, start as int, i as nat)]);
+                        }
+                    };
+                };
+                assert(forall|hp: int|
+                    0 <= hp < hcnt as int && #[trigger] local_seen@[hp]
+                        ==> exists|i: int| {
+                            &&& 0 <= i < steps as int
+                            &&& #[trigger] kernel_vertex_ring_iter_spec(m, start as int, i as nat) == hp
+                        }) by {
+                    assert forall|hp: int|
+                        0 <= hp < hcnt as int && #[trigger] local_seen@[hp]
+                            implies exists|i: int| {
+                                &&& 0 <= i < steps as int
+                                &&& #[trigger] kernel_vertex_ring_iter_spec(m, start as int, i as nat) == hp
+                            } by {
+                        if hp == h_prev as int {
+                            let i = steps_prev as int;
+                            assert(0 <= i < steps as int);
+                            assert(kernel_vertex_ring_iter_spec(m, start as int, i as nat) == hp);
+                        } else {
+                            assert(local_seen@[hp] == local_seen_before[hp]);
+                            assert(local_seen_before[hp]);
+                            assert(exists|i: int| {
+                                &&& 0 <= i < steps_prev as int
+                                &&& #[trigger] kernel_vertex_ring_iter_spec(m, start as int, i as nat) == hp
+                            });
+                            let i = choose|i: int| {
+                                &&& 0 <= i < steps_prev as int
+                                &&& #[trigger] kernel_vertex_ring_iter_spec(m, start as int, i as nat) == hp
+                            };
+                            assert(0 <= i < steps as int);
+                            assert(kernel_vertex_ring_iter_spec(m, start as int, i as nat) == hp);
+                        }
+                    };
+                };
+                assert(forall|i: int, j: int|
+                    #![trigger kernel_vertex_ring_iter_spec(m, start as int, i as nat), kernel_vertex_ring_iter_spec(m, start as int, j as nat)]
+                    0 <= i < j < steps as int
+                        ==> kernel_vertex_ring_iter_spec(m, start as int, i as nat)
+                            != kernel_vertex_ring_iter_spec(m, start as int, j as nat)) by {
+                    assert forall|i: int, j: int|
+                        #![trigger kernel_vertex_ring_iter_spec(m, start as int, i as nat), kernel_vertex_ring_iter_spec(m, start as int, j as nat)]
+                        0 <= i < j < steps as int
+                            implies kernel_vertex_ring_iter_spec(m, start as int, i as nat)
+                                != kernel_vertex_ring_iter_spec(m, start as int, j as nat) by {
+                        if j < steps_prev as int {
+                        } else {
+                            assert(j == steps_prev as int);
+                            assert(i < steps_prev as int);
+                            assert(local_seen_before[kernel_vertex_ring_iter_spec(
+                                m,
+                                start as int,
+                                i as nat,
+                            )]);
+                            assert(!local_seen_before[h_prev as int]);
+                            assert(kernel_vertex_ring_iter_spec(m, start as int, j as nat)
+                                == kernel_vertex_ring_iter_spec(m, start as int, steps_prev as nat));
+                            assert(kernel_vertex_ring_iter_spec(m, start as int, steps_prev as nat)
+                                == h_prev as int);
+                            assert(kernel_vertex_ring_iter_spec(m, start as int, i as nat)
+                                != kernel_vertex_ring_iter_spec(m, start as int, j as nat));
+                        }
+                    };
+                };
             }
 
             if h == start {
@@ -1701,6 +1833,49 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
         if steps != expected {
             return false;
         }
+
+        let mut scan_h: usize = 0;
+        while scan_h < hcnt
+            invariant
+                kernel_index_bounds_spec(m),
+                hcnt == m.half_edges.len(),
+                start < hcnt,
+                0 <= scan_h <= hcnt,
+                local_seen@.len() == hcnt as int,
+                forall|hp: int|
+                    0 <= hp < hcnt as int && #[trigger] local_seen@[hp]
+                        ==> exists|i: int| {
+                            &&& 0 <= i < steps as int
+                            &&& #[trigger] kernel_vertex_ring_iter_spec(m, start as int, i as nat) == hp
+                        },
+                forall|i: int|
+                    0 <= i < steps as int ==> #[trigger] local_seen@[kernel_vertex_ring_iter_spec(
+                        m,
+                        start as int,
+                        i as nat,
+                    )],
+                forall|i: int|
+                    0 <= i < steps as int ==> #[trigger] m.half_edges@[kernel_vertex_ring_iter_spec(
+                        m,
+                        start as int,
+                        i as nat,
+                    )].vertex as int == v as int,
+                forall|i: int, j: int|
+                    #![trigger kernel_vertex_ring_iter_spec(m, start as int, i as nat), kernel_vertex_ring_iter_spec(m, start as int, j as nat)]
+                    0 <= i < j < steps as int
+                        ==> kernel_vertex_ring_iter_spec(m, start as int, i as nat)
+                            != kernel_vertex_ring_iter_spec(m, start as int, j as nat),
+                forall|hp: int|
+                    #![trigger hp + 0]
+                    0 <= hp < scan_h as int
+                        && #[trigger] m.half_edges@[hp].vertex as int == v as int ==> local_seen@[hp],
+        {
+            if m.half_edges[scan_h].vertex == v && !local_seen[scan_h] {
+                return false;
+            }
+            scan_h += 1;
+        }
+
         vertex_cycle_lens.push(steps);
 
         proof {
@@ -1792,6 +1967,53 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
                                     s,
                                     i as nat,
                                 )].vertex as int == v as int);
+                            assert(forall|i: int, j: int|
+                                #![trigger kernel_vertex_ring_iter_spec(m, s, i as nat), kernel_vertex_ring_iter_spec(m, s, j as nat)]
+                                0 <= i < j < steps as int
+                                    ==> kernel_vertex_ring_iter_spec(m, s, i as nat)
+                                        != kernel_vertex_ring_iter_spec(m, s, j as nat));
+                            assert(scan_h == hcnt);
+                            assert(forall|h0: int|
+                                0 <= h0 < kernel_half_edge_count_spec(m)
+                                    && #[trigger] m.half_edges@[h0].vertex as int == v as int
+                                    ==> exists|i: int|
+                                        #![trigger kernel_vertex_ring_iter_spec(m, s, i as nat)]
+                                        0 <= i < steps as int
+                                            && kernel_vertex_ring_iter_spec(m, s, i as nat) == h0) by {
+                                assert forall|h0: int|
+                                    0 <= h0 < kernel_half_edge_count_spec(m)
+                                        && #[trigger] m.half_edges@[h0].vertex as int == v as int
+                                        implies exists|i: int|
+                                            #![trigger kernel_vertex_ring_iter_spec(m, s, i as nat)]
+                                            0 <= i < steps as int
+                                                && kernel_vertex_ring_iter_spec(m, s, i as nat) == h0
+                                    by {
+                                    assert(kernel_half_edge_count_spec(m) == hcnt as int);
+                                    assert(0 <= h0 < scan_h as int);
+                                    assert(local_seen@[h0]);
+                                    assert(exists|i: int| {
+                                        &&& 0 <= i < steps as int
+                                        &&& #[trigger] kernel_vertex_ring_iter_spec(
+                                            m,
+                                            start as int,
+                                            i as nat,
+                                        ) == h0
+                                    });
+                                    let i0 = choose|i: int| {
+                                        &&& 0 <= i < steps as int
+                                        &&& #[trigger] kernel_vertex_ring_iter_spec(
+                                            m,
+                                            start as int,
+                                            i as nat,
+                                        ) == h0
+                                    };
+                                    assert(0 <= i0 < steps as int);
+                                    assert(kernel_vertex_ring_iter_spec(m, start as int, i0 as nat) == h0);
+                                    assert(kernel_vertex_ring_iter_spec(m, s, i0 as nat)
+                                        == kernel_vertex_ring_iter_spec(m, start as int, i0 as nat));
+                                    assert(kernel_vertex_ring_iter_spec(m, s, i0 as nat) == h0);
+                                };
+                            };
                         }
                         assert(kernel_vertex_representative_cycle_witness_spec(
                             m,

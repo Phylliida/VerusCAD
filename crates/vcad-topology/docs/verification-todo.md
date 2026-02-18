@@ -1363,7 +1363,7 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 
 ## F. Verify Top-Level APIs
-- [ ] Verify `is_structurally_valid` exactly matches conjunction of structural invariants.
+- [x] Verify `is_structurally_valid` exactly matches conjunction of structural invariants.
   - burndown update (2026-02-18):
     - landed constructive gate-equivalence scaffolding in
       `src/runtime_halfedge_mesh_refinement.rs`:
@@ -1656,6 +1656,63 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`153 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`153 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`187 verified, 0 errors`).
+  - burndown update (2026-02-18, vertex-manifold model-link completion):
+    - completed the remaining vertex-side structural model-link gap using a
+      kernel-direct lift in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      - added lemmas
+        `lemma_kernel_vertex_cycle_witness_implies_mesh_vertex_ring_witness`
+        and
+        `lemma_kernel_vertex_manifold_total_implies_mesh_vertex_manifold`,
+      - strengthened
+        `runtime_check_vertex_manifold_kernel_bridge` contract from
+        `out ==> mesh_vertex_representative_cycles_kernel_bridge_total_spec(m@)`
+        to
+        `out ==> mesh_vertex_manifold_single_cycle_spec(m@)`.
+    - strengthened the top-level structural model-link export:
+      - `structural_validity_gate_model_link_spec` now carries
+        `w.vertex_manifold_ok ==> mesh_vertex_manifold_single_cycle_spec(m)`,
+      - `is_structurally_valid_constructive` now exports the strengthened
+        vertex-manifold clause directly from
+        `runtime_check_vertex_manifold_kernel_bridge`.
+    - stabilization/refactor that made this pass converge:
+      refactored `mesh_vertex_manifold_single_cycle_spec` to a
+      witness-sequence shape via
+      `mesh_vertex_manifold_single_cycle_witness_spec` (mirroring the
+      stabilized face-side packaging shape).
+    - supporting kernel strengthening in
+      `src/verified_checker_kernels.rs`:
+      `kernel_vertex_representative_cycle_witness_spec` now includes
+      per-cycle uniqueness + per-vertex coverage clauses, and
+      `kernel_check_vertex_manifold_single_cycle` now proves that stronger
+      witness.
+    - failed attempt kept documented:
+      first tried to close the gap by strengthening the runtime bridge witness
+      surface directly and proving the old direct
+      `forall v. exists k` packaging at function exit; this proof shape was
+      rolled back after final packaging remained trigger-sensitive/brittle.
+      the kept solution uses the kernel-direct lift plus witness-sequence
+      packaging.
+    - outcome:
+      this closes the remaining vertex-side gap for
+      `is_structurally_valid`; the item is now complete.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels kernel_check_vertex_manifold_single_cycle`
+      passed (`5 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement lemma_kernel_vertex_cycle_witness_implies_mesh_vertex_ring_witness`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement lemma_kernel_vertex_manifold_total_implies_mesh_vertex_manifold`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_vertex_manifold_kernel_bridge`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement is_structurally_valid_constructive`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`155 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels`
+      passed (`35 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`155 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`190 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
 - [ ] Verify `is_valid` exactly matches `is_structurally_valid && check_euler_formula_closed_components`.
   - burndown update (2026-02-18):
