@@ -2207,6 +2207,11 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`208 verified, 0 errors`);
       `cargo test -p vcad-topology`
       passed (`4 passed, 0 failed`).
+    - failed attempt (tooling only):
+      initially invoked `scripts/run-codex-task.sh` with a positional
+      sentence argument; script rejected it (`error: expected zero arguments`).
+      stable usage is to write the sentence to
+      `scripts/run-codex-task.message.txt` and invoke the script with no args.
 - [ ] Reuse `vcad-geometry` predicates for optional geometric non-degeneracy extensions (face area > 0, etc.).
 
 ## Exit Condition
