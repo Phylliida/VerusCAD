@@ -1,1 +1,1 @@
-Revalidated vcad-topology exit-condition trust-surface scans and refreshed the full verification and test matrix with all checks passing.
+Revalidated vcad-topology exit-condition scans across full src and replayed the full verification/test matrix, with results recorded in verification-todo.md.
