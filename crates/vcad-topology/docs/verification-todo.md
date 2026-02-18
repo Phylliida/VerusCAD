@@ -689,6 +689,46 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `./scripts/verify-vcad-topology-fast.sh` passed (`173 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`208 verified, 0 errors`);
       `cargo test -p vcad-topology` passed (`4 passed, 0 failed`).
+  - burndown update (2026-02-18, all-twins/no-isolated failure-path totalization increment):
+    - strengthened
+      `runtime_check_from_face_cycles_all_oriented_edges_have_twin` in
+      `src/runtime_halfedge_mesh_refinement.rs` to export a two-way result:
+      - `out ==> from_face_cycles_all_oriented_edges_have_twin_spec(...)`, and
+      - `!out ==> !from_face_cycles_all_oriented_edges_have_twin_spec(...)`.
+    - strengthened
+      `runtime_check_from_face_cycles_no_isolated_vertices` negative-path
+      export to a usable disjunction:
+      - `!out ==> !from_face_cycles_basic_input_spec(...) || !from_face_cycles_no_isolated_vertices_spec(...)`.
+      this keeps the checker stable for non-basic inputs while enabling
+      constructor-wrapper failure export under the already-proven
+      `input_ok/basic_input` gate.
+    - used the new negative guarantees to harden
+      `from_face_cycles_constructive_next_prev_face`:
+      - `!all_twin_ok` now returns
+        `Err(mesh_build_error_empty_face_set())` with a proven
+        `from_face_cycles_failure_spec(...)` witness,
+      - `!no_isolated_ok` now returns
+        `Err(mesh_build_error_empty_face_set())` with a proven
+        `from_face_cycles_failure_spec(...)` witness,
+      - both paths no longer use `ex_from_face_cycles_constructive_abort`.
+    - remaining gap:
+      abort-based handling is now reduced to post-constructor checker-failure
+      packaging in `from_face_cycles_constructive_next_prev_face`.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_from_face_cycles_all_oriented_edges_have_twin`
+      passed (`5 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_from_face_cycles_no_isolated_vertices`
+      passed (`4 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement from_face_cycles_constructive_next_prev_face`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`173 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh`
+      passed (`173 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh`
+      passed (`208 verified, 0 errors`);
+      `cargo test -p vcad-topology`
+      passed (`4 passed, 0 failed`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 - [x] Prove vertex representative (`vertex.half_edge`) is valid and non-isolated.
