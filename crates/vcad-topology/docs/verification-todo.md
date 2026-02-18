@@ -5249,3 +5249,33 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
         (`5 passed, 0 failed`),
       - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
         passed (`6 passed, 0 failed`).
+  - burndown update (2026-02-18, check_face_cycles revalidation + matrix replay):
+    - selected task in this pass:
+      revalidate the completed `check_face_cycles` kernel proof boundary, then
+      replay the full `vcad-topology` verification/test matrix on the current
+      tree.
+    - run timestamp:
+      `2026-02-18T08:49:35-08:00`.
+    - trust-surface scans:
+      - `./scripts/check-vcad-topology-trust-surface.sh`
+        passed; `external_type_specification` markers remained constrained to
+        `runtime_halfedge_mesh_refinement.rs` with count `6`.
+    - warning-scope note:
+      all `cargo test -p vcad-topology` invocations in this pass emitted
+      warnings only from dependency crates (`vstd`, `vcad-math`,
+      `vcad-geometry`), with no warnings from `vcad-topology`.
+    - failed attempts:
+      none in this pass.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels kernel_check_face_cycles`
+      passed (`4 verified, 0 errors` partial);
+      `./scripts/verify-vcad-topology-matrix.sh`
+      passed:
+      - trust-surface guard passed,
+      - fast verification passed (`192 verified, 0 errors` partial),
+      - full verification passed (`227 verified, 0 errors`),
+      - `cargo test -p vcad-topology` passed (`4 passed, 0 failed`),
+      - `cargo test -p vcad-topology --features geometry-checks` passed
+        (`5 passed, 0 failed`),
+      - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+        passed (`6 passed, 0 failed`).

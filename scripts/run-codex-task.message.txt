@@ -1,1 +1,1 @@
-Replayed the vcad-topology Exit Condition trust-surface scans and full verification matrix, then logged the current-pass results in verification-todo.md.
+Revalidated kernel_check_face_cycles and replayed the vcad-topology verification matrix, with trust-surface scans and all checks passing.
