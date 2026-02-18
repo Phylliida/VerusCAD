@@ -4,7 +4,11 @@ use std::collections::HashSet;
 #[cfg(feature = "geometry-checks")]
 use vcad_geometry::collinearity_coplanarity::{collinear3d, coplanar};
 #[cfg(feature = "geometry-checks")]
-use vcad_geometry::orientation_predicates::orient3d_sign;
+use vcad_geometry::orientation_predicates::{orient3d_sign, orient3d_value};
+#[cfg(feature = "geometry-checks")]
+use vcad_math::runtime_point3::RuntimePoint3;
+#[cfg(feature = "geometry-checks")]
+use vcad_math::runtime_scalar::RuntimeScalar;
 #[cfg(feature = "verus-proofs")]
 use crate::verified_checker_kernels::{
     kernel_check_edge_has_exactly_two_half_edges, kernel_check_face_cycles, kernel_check_index_bounds,
@@ -43,6 +47,9 @@ impl Mesh {
     /// This intentionally stays outside `is_structurally_valid`/`is_valid` so
     /// the core topology gate remains purely combinatorial.
     pub fn check_face_corner_non_collinearity(&self) -> bool {
+        if !self.is_valid() {
+            return false;
+        }
         if !self.check_index_bounds() || !self.check_face_cycles() {
             return false;
         }
@@ -83,6 +90,9 @@ impl Mesh {
     /// Optional geometric extension: each oriented half-edge must span a
     /// non-zero geometric segment between its endpoint vertices.
     pub fn check_no_zero_length_geometric_edges(&self) -> bool {
+        if !self.is_valid() {
+            return false;
+        }
         if !self.check_index_bounds() || !self.check_face_cycles() {
             return false;
         }
@@ -101,6 +111,9 @@ impl Mesh {
     #[cfg(feature = "geometry-checks")]
     /// Optional geometric extension: each face cycle's vertices are coplanar.
     pub fn check_face_coplanarity(&self) -> bool {
+        if !self.is_valid() {
+            return false;
+        }
         if !self.check_index_bounds() || !self.check_face_cycles() {
             return false;
         }
@@ -142,6 +155,9 @@ impl Mesh {
     /// - choose a deterministic reference normal from the first face corner;
     /// - compare every corner turn orientation sign against that reference.
     pub fn check_face_convexity(&self) -> bool {
+        if !self.is_valid() {
+            return false;
+        }
         if !self.check_index_bounds() || !self.check_face_cycles() {
             return false;
         }
@@ -200,11 +216,99 @@ impl Mesh {
     }
 
     #[cfg(feature = "geometry-checks")]
+    fn face_signed_volume_six_relative_to_origin(&self, face_id: usize) -> RuntimeScalar {
+        let origin = RuntimePoint3::from_ints(0, 0, 0);
+        let hcnt = self.half_edges.len();
+
+        let h0 = self.faces[face_id].half_edge;
+        let p0 = &self.vertices[self.half_edges[h0].vertex].position;
+        let mut hi = self.half_edges[h0].next;
+        let mut hj = self.half_edges[hi].next;
+
+        let mut sum = RuntimeScalar::from_int(0);
+        let mut steps = 0usize;
+        while hj != h0 {
+            let pi = &self.vertices[self.half_edges[hi].vertex].position;
+            let pj = &self.vertices[self.half_edges[hj].vertex].position;
+            let det = orient3d_value(&origin, p0, pi, pj);
+            sum = sum.add(&det);
+
+            hi = hj;
+            hj = self.half_edges[hj].next;
+            steps += 1;
+            if steps > hcnt {
+                return RuntimeScalar::from_int(0);
+            }
+        }
+
+        sum
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    /// Optional geometric extension: each connected component must have
+    /// strictly negative signed volume under face winding.
+    ///
+    /// This treats negative signed volume as the outward-orientation
+    /// convention for closed components.
+    pub fn check_outward_face_normals(&self) -> bool {
+        if !self.is_valid() {
+            return false;
+        }
+        if self.faces.is_empty() || self.half_edges.is_empty() {
+            return false;
+        }
+        if !self.check_index_bounds() || !self.check_face_cycles() {
+            return false;
+        }
+        if !self.check_face_coplanarity() || !self.check_face_corner_non_collinearity() {
+            return false;
+        }
+
+        let mut visited = vec![false; self.half_edges.len()];
+        for start in 0..self.half_edges.len() {
+            if visited[start] {
+                continue;
+            }
+
+            let mut queue = std::collections::VecDeque::new();
+            let mut seen_faces = std::collections::HashSet::new();
+            let mut signed_volume6 = RuntimeScalar::from_int(0);
+
+            queue.push_back(start);
+            visited[start] = true;
+
+            while let Some(h) = queue.pop_front() {
+                let he = &self.half_edges[h];
+
+                if seen_faces.insert(he.face) {
+                    let face_volume6 = self.face_signed_volume_six_relative_to_origin(he.face);
+                    signed_volume6 = signed_volume6.add(&face_volume6);
+                }
+
+                for n in [he.twin, he.next, he.prev] {
+                    if !visited[n] {
+                        visited[n] = true;
+                        queue.push_back(n);
+                    }
+                }
+            }
+
+            if signed_volume6.signum_i8() >= 0 {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    #[cfg(feature = "geometry-checks")]
     pub fn check_geometric_topological_consistency(&self) -> bool {
-        self.check_no_zero_length_geometric_edges()
+        self.is_valid()
+            && self.check_no_zero_length_geometric_edges()
             && self.check_face_corner_non_collinearity()
             && self.check_face_coplanarity()
             && self.check_face_convexity()
+            && self.check_outward_face_normals()
     }
 
     #[cfg(feature = "geometry-checks")]

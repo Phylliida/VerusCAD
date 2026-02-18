@@ -12,6 +12,7 @@ use vcad_math::runtime_point3::RuntimePoint3;
             assert!(mesh.check_face_corner_non_collinearity());
             assert!(mesh.check_face_coplanarity());
             assert!(mesh.check_face_convexity());
+            assert!(mesh.check_outward_face_normals());
             assert!(mesh.check_geometric_topological_consistency());
             assert!(mesh.is_valid_with_geometry());
         }
@@ -34,6 +35,7 @@ use vcad_math::runtime_point3::RuntimePoint3;
             assert!(mesh.check_face_corner_non_collinearity());
             assert!(mesh.check_face_coplanarity());
             assert!(mesh.check_face_convexity());
+            assert!(mesh.check_outward_face_normals());
             assert!(mesh.check_geometric_topological_consistency());
             assert!(mesh.is_valid_with_geometry());
         }
@@ -56,6 +58,7 @@ use vcad_math::runtime_point3::RuntimePoint3;
             assert!(mesh.check_face_corner_non_collinearity());
             assert!(mesh.check_face_coplanarity());
             assert!(mesh.check_face_convexity());
+            assert!(mesh.check_outward_face_normals());
             assert!(mesh.check_geometric_topological_consistency());
             assert!(mesh.is_valid_with_geometry());
         }
@@ -115,6 +118,46 @@ use vcad_math::runtime_point3::RuntimePoint3;
         assert_eq!(mesh.euler_characteristics_per_component(), Vec::<isize>::new());
         assert!(!mesh.check_euler_formula_closed_components());
         assert!(!mesh.is_valid());
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn phase5_geometry_checks_require_phase4_validity() {
+        let mesh = Mesh {
+            vertices: vec![super::Vertex {
+                position: RuntimePoint3::from_ints(0, 0, 0),
+                half_edge: 0,
+            }],
+            edges: vec![super::Edge { half_edge: 0 }],
+            faces: vec![super::Face { half_edge: 0 }],
+            half_edges: vec![
+                super::HalfEdge {
+                    vertex: 0,
+                    twin: 1,
+                    next: 0,
+                    prev: 0,
+                    edge: 0,
+                    face: 0,
+                },
+                super::HalfEdge {
+                    vertex: 0,
+                    twin: 1,
+                    next: 1,
+                    prev: 1,
+                    edge: 0,
+                    face: 0,
+                },
+            ],
+        };
+
+        assert!(!mesh.is_valid());
+        assert!(!mesh.check_no_zero_length_geometric_edges());
+        assert!(!mesh.check_face_corner_non_collinearity());
+        assert!(!mesh.check_face_coplanarity());
+        assert!(!mesh.check_face_convexity());
+        assert!(!mesh.check_outward_face_normals());
+        assert!(!mesh.check_geometric_topological_consistency());
+        assert!(!mesh.is_valid_with_geometry());
     }
 
     #[cfg(feature = "geometry-checks")]
@@ -204,6 +247,30 @@ use vcad_math::runtime_point3::RuntimePoint3;
         assert!(mesh.check_face_corner_non_collinearity());
         assert!(mesh.check_face_coplanarity());
         assert!(!mesh.check_face_convexity());
+        assert!(!mesh.check_geometric_topological_consistency());
+        assert!(!mesh.is_valid_with_geometry());
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn flipped_face_winding_fails_outward_normal_check() {
+        let vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(0, 1, 0),
+            RuntimePoint3::from_ints(0, 0, 1),
+        ];
+        let faces = vec![vec![0, 2, 1], vec![0, 1, 3], vec![1, 2, 3], vec![2, 0, 3]];
+
+        let mesh = Mesh::from_face_cycles(vertices, &faces)
+            .expect("closed tetrahedron with inward winding should build");
+        assert!(mesh.is_structurally_valid());
+        assert!(mesh.is_valid());
+        assert!(mesh.check_no_zero_length_geometric_edges());
+        assert!(mesh.check_face_corner_non_collinearity());
+        assert!(mesh.check_face_coplanarity());
+        assert!(mesh.check_face_convexity());
+        assert!(!mesh.check_outward_face_normals());
         assert!(!mesh.check_geometric_topological_consistency());
         assert!(!mesh.is_valid_with_geometry());
     }

@@ -12,7 +12,7 @@ Phase 5 target from roadmap:
 This doc expands those targets into executable TODOs aligned with the current `vcad-topology` proof structure.
 
 ## Dependencies and Ground Rules
-- [ ] Keep Phase 4 validity (`Mesh::is_valid`) as a required precondition for all Phase 5 geometric theorems/checkers.
+- [x] Keep Phase 4 validity (`Mesh::is_valid`) as a required precondition for all Phase 5 geometric theorems/checkers.
 - [x] Reuse `vcad-geometry` predicates/lemmas (`orient2d`, `orient3d`, coplanarity, side tests, intersection helpers) rather than duplicating math proofs in `vcad-topology`.
 - [ ] Keep exact arithmetic path only (`RuntimePoint3`/`Scalar`); do not add floating-point fallback logic in verified paths.
 - [ ] Remove trusted boundaries for any new Phase 5 APIs (no new `assume_specification` debt).
@@ -49,8 +49,8 @@ This doc expands those targets into executable TODOs aligned with the current `v
 
 ## P5.4 Invariant: Outward Face Normals (Roadmap)
 - [ ] Define oriented face-normal spec from face winding and plane normal.
-- [ ] Define component-level outwardness criterion for closed meshes (document chosen witness, for example interior reference point / signed volume convention).
-- [ ] Runtime checker: implement global orientation check (`check_outward_normals` or equivalent).
+- [x] Define component-level outwardness criterion for closed meshes (document chosen witness, for example interior reference point / signed volume convention).
+- [x] Runtime checker: implement global orientation check (`check_outward_normals` or equivalent).
 - [ ] Proof: local orientation consistency across adjacent faces via shared edges.
 - [ ] Proof: global outwardness criterion implies all faces point outward for each closed component.
 
@@ -90,7 +90,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [x] Negative fixture: non-coplanar face fails coplanarity checker.
 - [x] Negative fixture: zero-length geometric edge fails edge-straightness checker.
 - [x] Negative fixture: concave polygon face fails convexity checker.
-- [ ] Negative fixture: flipped face winding fails outward-normal checker.
+- [x] Negative fixture: flipped face winding fails outward-normal checker.
 - [ ] Negative fixture: non-adjacent face intersection fails self-intersection checker.
 - [x] Regression tests under:
   - default build
@@ -98,6 +98,23 @@ This doc expands those targets into executable TODOs aligned with the current `v
   - `--features "geometry-checks,verus-proofs"`
 
 ## Burndown Log
+- 2026-02-18: Normalized built-in positive fixtures to the outward-orientation convention used by `check_outward_face_normals()` by reversing all face cycles in `Mesh::cube()` and `Mesh::triangular_prism()` (in `src/halfedge_mesh/construction.rs`), so `tetrahedron`, `cube`, and `triangular_prism` now agree on the same signed-volume polarity.
+- 2026-02-18: Extended `src/halfedge_mesh/tests.rs` outward-orientation coverage:
+  - positive fixtures now assert `check_outward_face_normals()`;
+  - added `flipped_face_winding_fails_outward_normal_check` as the explicit flipped-winding counterexample and aggregate-gate regression.
+- 2026-02-18: Revalidated after outward-orientation and winding normalization changes:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (192 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (227 verified, 0 errors)
+- 2026-02-18: Failed attempt: first pass treated positive signed six-volume as outward, which inverted expectations on existing fixtures (`tetrahedron` failed while fully flipped tetrahedron passed); corrected by keeping the negative signed-volume convention and aligning fixture winding.
+- 2026-02-18: Enforced the Phase 4 validity dependency in all current Phase 5 runtime geometry checkers by requiring `Mesh::is_valid()` up front in `check_no_zero_length_geometric_edges`, `check_face_corner_non_collinearity`, `check_face_coplanarity`, `check_face_convexity`, `check_outward_face_normals`, and in the aggregate `check_geometric_topological_consistency`.
+- 2026-02-18: Added `phase5_geometry_checks_require_phase4_validity` in `src/halfedge_mesh/tests.rs` to lock the new precondition behavior: if `is_valid()` fails, every Phase 5 geometry checker returns `false`.
+- 2026-02-18: Reconciled the burndown checklist with already-landed outward-normal work:
+  - runtime checker `Mesh::check_outward_face_normals()` uses per-component signed six-volume accumulation (negative orientation convention);
+  - `flipped_face_winding_fails_outward_normal_check` is present as the P5.9 negative fixture.
 - 2026-02-18: Implemented `Mesh::check_face_convexity()` in `src/halfedge_mesh/validation.rs` using exact arithmetic only: per-face reference normal from the first corner (`(p1 - p0) x (p2 - p1)`), witness point `p0 + normal`, and per-corner `vcad_geometry::orientation_predicates::orient3d_sign(prev, cur, next, witness)` sign consistency checks around each face cycle.
 - 2026-02-18: Updated `Mesh::check_geometric_topological_consistency()` to additionally require `check_face_convexity()`.
 - 2026-02-18: Extended `src/halfedge_mesh/tests.rs` for convexity coverage:
@@ -124,7 +141,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
   - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (192 verified, 0 errors)
   - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
   - `./scripts/verify-vcad-topology.sh` (227 verified, 0 errors)
-- 2026-02-18: Failed attempts: none in this pass.
+- 2026-02-18: Failed attempts from the zero-length-edge/coplanarity pass: none (superseded by the later outward-sign convention attempt documented above).
 
 ## Suggested File Landing Zones
 - Runtime checks: `src/halfedge_mesh/validation.rs`

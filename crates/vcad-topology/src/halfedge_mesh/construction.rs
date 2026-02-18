@@ -161,12 +161,12 @@ impl Mesh {
             RuntimePoint3::from_ints(-1, 1, 1),
         ];
         let faces = vec![
-            vec![0, 3, 2, 1],
-            vec![4, 5, 6, 7],
-            vec![0, 1, 5, 4],
-            vec![3, 7, 6, 2],
-            vec![0, 4, 7, 3],
-            vec![1, 2, 6, 5],
+            vec![0, 1, 2, 3],
+            vec![4, 7, 6, 5],
+            vec![0, 4, 5, 1],
+            vec![3, 2, 6, 7],
+            vec![0, 3, 7, 4],
+            vec![1, 5, 6, 2],
         ];
         Self::from_face_cycles(vertices, &faces).expect("cube face cycles should build")
     }
@@ -181,11 +181,11 @@ impl Mesh {
             RuntimePoint3::from_ints(1, 2, 1),
         ];
         let faces = vec![
-            vec![0, 2, 1],
-            vec![3, 4, 5],
-            vec![0, 1, 4, 3],
-            vec![1, 2, 5, 4],
-            vec![2, 0, 3, 5],
+            vec![0, 1, 2],
+            vec![3, 5, 4],
+            vec![0, 3, 4, 1],
+            vec![1, 4, 5, 2],
+            vec![2, 5, 3, 0],
         ];
         Self::from_face_cycles(vertices, &faces).expect("triangular prism face cycles should build")
     }
