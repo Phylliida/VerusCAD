@@ -1,1 +1,1 @@
-Replayed vcad-topology Exit Condition trust-surface scans and the full verification/test matrix, then logged the green results in the burndown file.
+Replayed vcad-topology Exit Condition scans and full verification/test matrix (192/227 proofs and all tests green) and recorded the pass in verification-todo.md.
