@@ -8,6 +8,7 @@ use vcad_math::runtime_point3::RuntimePoint3;
         assert!(mesh.is_valid());
         #[cfg(feature = "geometry-checks")]
         {
+            assert!(mesh.check_no_zero_length_geometric_edges());
             assert!(mesh.check_face_corner_non_collinearity());
             assert!(mesh.check_face_coplanarity());
             assert!(mesh.check_geometric_topological_consistency());
@@ -28,6 +29,7 @@ use vcad_math::runtime_point3::RuntimePoint3;
         assert!(mesh.is_valid());
         #[cfg(feature = "geometry-checks")]
         {
+            assert!(mesh.check_no_zero_length_geometric_edges());
             assert!(mesh.check_face_corner_non_collinearity());
             assert!(mesh.check_face_coplanarity());
             assert!(mesh.check_geometric_topological_consistency());
@@ -48,6 +50,7 @@ use vcad_math::runtime_point3::RuntimePoint3;
         assert!(mesh.is_valid());
         #[cfg(feature = "geometry-checks")]
         {
+            assert!(mesh.check_no_zero_length_geometric_edges());
             assert!(mesh.check_face_corner_non_collinearity());
             assert!(mesh.check_face_coplanarity());
             assert!(mesh.check_geometric_topological_consistency());
@@ -125,6 +128,28 @@ use vcad_math::runtime_point3::RuntimePoint3;
             .expect("closed opposite-orientation collinear triangles should build");
         assert!(mesh.is_structurally_valid());
         assert!(mesh.is_valid());
+        assert!(mesh.check_no_zero_length_geometric_edges());
+        assert!(!mesh.check_face_corner_non_collinearity());
+        assert!(mesh.check_face_coplanarity());
+        assert!(!mesh.check_geometric_topological_consistency());
+        assert!(!mesh.is_valid_with_geometry());
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn coincident_edge_endpoints_fail_zero_length_geometric_edge_check() {
+        let vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+        ];
+        let faces = vec![vec![0, 1, 2], vec![0, 2, 1]];
+
+        let mesh = Mesh::from_face_cycles(vertices, &faces)
+            .expect("closed opposite-orientation triangle pair should build");
+        assert!(mesh.is_structurally_valid());
+        assert!(mesh.is_valid());
+        assert!(!mesh.check_no_zero_length_geometric_edges());
         assert!(!mesh.check_face_corner_non_collinearity());
         assert!(mesh.check_face_coplanarity());
         assert!(!mesh.check_geometric_topological_consistency());
@@ -146,6 +171,7 @@ use vcad_math::runtime_point3::RuntimePoint3;
             .expect("closed opposite-orientation noncoplanar quad faces should build");
         assert!(mesh.is_structurally_valid());
         assert!(mesh.is_valid());
+        assert!(mesh.check_no_zero_length_geometric_edges());
         assert!(mesh.check_face_corner_non_collinearity());
         assert!(!mesh.check_face_coplanarity());
         assert!(!mesh.check_geometric_topological_consistency());

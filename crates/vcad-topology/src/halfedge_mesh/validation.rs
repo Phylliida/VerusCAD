@@ -78,6 +78,25 @@ impl Mesh {
     }
 
     #[cfg(feature = "geometry-checks")]
+    /// Optional geometric extension: each oriented half-edge must span a
+    /// non-zero geometric segment between its endpoint vertices.
+    pub fn check_no_zero_length_geometric_edges(&self) -> bool {
+        if !self.check_index_bounds() || !self.check_face_cycles() {
+            return false;
+        }
+
+        for he in &self.half_edges {
+            let a = &self.vertices[he.vertex].position;
+            let b = &self.vertices[self.half_edges[he.next].vertex].position;
+            if a == b {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    #[cfg(feature = "geometry-checks")]
     /// Optional geometric extension: each face cycle's vertices are coplanar.
     pub fn check_face_coplanarity(&self) -> bool {
         if !self.check_index_bounds() || !self.check_face_cycles() {
@@ -115,7 +134,9 @@ impl Mesh {
 
     #[cfg(feature = "geometry-checks")]
     pub fn check_geometric_topological_consistency(&self) -> bool {
-        self.check_face_corner_non_collinearity() && self.check_face_coplanarity()
+        self.check_no_zero_length_geometric_edges()
+            && self.check_face_corner_non_collinearity()
+            && self.check_face_coplanarity()
     }
 
     #[cfg(feature = "geometry-checks")]

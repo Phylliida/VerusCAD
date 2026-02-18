@@ -36,7 +36,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 ## P5.2 Invariant: Edge Straightness (Implied by Phase 5 Intro)
 - [ ] Spec: each half-edge geometrically denotes the segment between `vertex(h)` and `vertex(next(h))`.
 - [ ] Spec: twin half-edges denote the same segment with opposite orientation.
-- [ ] Runtime checker: reject zero-length geometric edges (in addition to topological non-degeneracy).
+- [x] Runtime checker: reject zero-length geometric edges (in addition to topological non-degeneracy).
 - [ ] Proof: edge-geometry facts are derivable from mesh model + vertex positions.
 
 ## P5.3 Invariant: Face Convexity (Roadmap)
@@ -75,7 +75,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
   - `mesh_geometric_topological_consistency_spec`
   - `Mesh::check_geometric_topological_consistency()`
 - [x] Define final gate composition (for example `is_valid_phase5 = is_valid && geometric_consistency`).
-- [ ] Keep existing optional `geometry-checks` feature behavior coherent with new verified gate (document if Phase 5 stays feature-gated or becomes default).
+- [x] Keep existing optional `geometry-checks` feature behavior coherent with new verified gate (document if Phase 5 stays feature-gated or becomes default).
 - [ ] Prove aggregate checker equivalence to aggregate Phase 5 spec.
 
 ## P5.8 Proof-Layer Integration (Current Refinement Layout)
@@ -86,8 +86,9 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [ ] Ensure new proof modules are included from `src/runtime_halfedge_mesh_refinement.rs`.
 
 ## P5.9 Tests and Counterexamples
-- [ ] Positive fixtures: tetrahedron, cube, triangular prism pass Phase 5 gate.
+- [x] Positive fixtures: tetrahedron, cube, triangular prism pass Phase 5 gate.
 - [x] Negative fixture: non-coplanar face fails coplanarity checker.
+- [x] Negative fixture: zero-length geometric edge fails edge-straightness checker.
 - [ ] Negative fixture: concave polygon face fails convexity checker.
 - [ ] Negative fixture: flipped face winding fails outward-normal checker.
 - [ ] Negative fixture: non-adjacent face intersection fails self-intersection checker.
@@ -98,11 +99,17 @@ This doc expands those targets into executable TODOs aligned with the current `v
 
 ## Burndown Log
 - 2026-02-18: Implemented `Mesh::check_face_coplanarity()` in `src/halfedge_mesh/validation.rs`, using `vcad_geometry::collinearity_coplanarity::coplanar` on each face cycle with a fixed local `(a,b,c)` plane basis and checking all remaining face vertices against that plane.
-- 2026-02-18: Added `Mesh::check_geometric_topological_consistency()` as a Phase-5-in-progress aggregate checker (`corner_non_collinearity && face_coplanarity`) and updated `Mesh::is_valid_with_geometry()` to require this aggregate.
+- 2026-02-18: Added `Mesh::check_geometric_topological_consistency()` as a Phase-5-in-progress aggregate checker (initially `corner_non_collinearity && face_coplanarity`) and updated `Mesh::is_valid_with_geometry()` to require this aggregate.
 - 2026-02-18: Extended `src/halfedge_mesh/tests.rs`:
   - positive fixtures (`tetrahedron`, `cube`, `triangular_prism`) now assert `check_face_coplanarity()` and the aggregate checker;
   - added `noncoplanar_quad_faces_fail_face_coplanarity` negative test;
   - strengthened collinear negative test to assert coplanarity can still pass while aggregate fails.
+- 2026-02-18: Implemented `Mesh::check_no_zero_length_geometric_edges()` in `src/halfedge_mesh/validation.rs`, rejecting any half-edge whose endpoint vertex positions are exactly equal in `RuntimePoint3` exact arithmetic.
+- 2026-02-18: Updated `Mesh::check_geometric_topological_consistency()` to require `check_no_zero_length_geometric_edges() && check_face_corner_non_collinearity() && check_face_coplanarity()`.
+- 2026-02-18: Extended `src/halfedge_mesh/tests.rs` geometry coverage:
+  - positive fixtures now also assert `check_no_zero_length_geometric_edges()`;
+  - added `coincident_edge_endpoints_fail_zero_length_geometric_edge_check` as a P5.2 negative fixture;
+  - documented that Phase 5 runtime geometric checks remain opt-in behind `--features geometry-checks` (core `Mesh::is_valid()` stays topology-only).
 - 2026-02-18: Verification/test commands run after changes:
   - `cargo test -p vcad-topology`
   - `cargo test -p vcad-topology --features geometry-checks`
@@ -125,8 +132,8 @@ This doc expands those targets into executable TODOs aligned with the current `v
 ## Exit Criteria
 - [ ] Every roadmap Phase 5 checkbox is implemented and proved in `vcad-topology`.
 - [ ] No trusted assumptions remain for Phase 5 APIs.
-- [ ] Verification passes:
+- [x] Verification passes:
   - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
   - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels`
   - `./scripts/verify-vcad-topology.sh`
-- [ ] Runtime tests pass for all relevant feature combinations.
+- [x] Runtime tests pass for all relevant feature combinations.
