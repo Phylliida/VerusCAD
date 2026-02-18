@@ -322,23 +322,27 @@ pub open spec fn kernel_face_representative_closed_min_length_total_spec(m: &Ker
 }
 
 pub open spec fn kernel_vertex_representative_cycle_witness_spec(m: &KernelMesh, v: int, k: int) -> bool {
-    let hcnt = kernel_half_edge_count_spec(m);
     let start = m.vertex_half_edges@[v] as int;
-    &&& 1 <= k <= hcnt
+    &&& 1 <= k <= kernel_half_edge_count_spec(m)
     &&& kernel_vertex_ring_iter_spec(m, start, k as nat) == start
     &&& forall|i: int|
         0 <= i < k ==> {
-            let h = kernel_vertex_ring_iter_spec(m, start, i as nat);
-            &&& 0 <= h < hcnt
-            &&& #[trigger] m.half_edges@[kernel_vertex_ring_iter_spec(m, start, i as nat)].vertex as int == v
+            #[trigger] m.half_edges@[kernel_vertex_ring_iter_spec(m, start, i as nat)].vertex as int == v
         }
 }
 
 pub open spec fn kernel_vertex_manifold_single_cycle_basic_spec(m: &KernelMesh) -> bool {
-    forall|v: int|
-        #![trigger m.vertex_half_edges@[v]]
-        0 <= v < kernel_vertex_count_spec(m)
-            ==> exists|k: int| kernel_vertex_representative_cycle_witness_spec(m, v, k)
+    exists|vertex_cycle_lens: Seq<usize>| {
+        &&& vertex_cycle_lens.len() == kernel_vertex_count_spec(m)
+        &&& forall|v: int|
+            #![trigger vertex_cycle_lens[v]]
+            0 <= v < kernel_vertex_count_spec(m)
+                ==> kernel_vertex_representative_cycle_witness_spec(
+                    m,
+                    v,
+                    vertex_cycle_lens[v] as int,
+                )
+    }
 }
 
 pub open spec fn kernel_vertex_manifold_single_cycle_total_spec(m: &KernelMesh) -> bool {
@@ -981,7 +985,7 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
 #[allow(unused_variables, unused_assignments)]
 pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
     ensures
-        out ==> kernel_vertex_representative_closed_nonempty_total_spec(m),
+        out ==> kernel_vertex_manifold_single_cycle_total_spec(m),
 {
     let bounds_ok = kernel_check_index_bounds(m);
     if !bounds_ok {
@@ -1007,7 +1011,7 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
             forall|vp: int|
                 #![trigger vertex_cycle_lens@[vp]]
                 0 <= vp < v as int
-                    ==> kernel_vertex_representative_closed_nonempty_witness_spec(
+                    ==> kernel_vertex_representative_cycle_witness_spec(
                         m,
                         vp,
                         vertex_cycle_lens@[vp] as int,
@@ -1043,7 +1047,8 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
         let mut local_seen: Vec<bool> = vec![false; hcnt];
         let mut h = start;
         let mut steps: usize = 0;
-        while steps <= expected
+        let mut closed = false;
+        while steps <= expected && !closed
             invariant
                 kernel_index_bounds_spec(m),
                 hcnt == m.half_edges.len(),
@@ -1051,6 +1056,13 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
                 local_seen@.len() == hcnt as int,
                 0 <= h < hcnt,
                 h as int == kernel_vertex_ring_iter_spec(m, start as int, steps as nat),
+                closed ==> h == start,
+                forall|i: int|
+                    0 <= i < steps as int ==> #[trigger] m.half_edges@[kernel_vertex_ring_iter_spec(
+                        m,
+                        start as int,
+                        i as nat,
+                    )].vertex as int == v as int,
         {
             let h_prev = h;
             let steps_prev = steps;
@@ -1080,13 +1092,49 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
                     == m.half_edges@[m.half_edges@[h_prev as int].twin as int].next as int);
                 lemma_kernel_vertex_ring_iter_step(m, start as int, steps_prev as nat);
                 assert(h as int == kernel_vertex_ring_iter_spec(m, start as int, steps as nat));
+                assert(forall|i: int|
+                    0 <= i < steps as int ==> #[trigger] m.half_edges@[kernel_vertex_ring_iter_spec(
+                        m,
+                        start as int,
+                        i as nat,
+                    )].vertex as int == v as int) by {
+                    assert forall|i: int|
+                        0 <= i < steps as int implies #[trigger] m.half_edges@[kernel_vertex_ring_iter_spec(
+                            m,
+                            start as int,
+                            i as nat,
+                        )].vertex as int == v as int by {
+                        if i < steps_prev as int {
+                            assert((#[trigger] m.half_edges@[kernel_vertex_ring_iter_spec(
+                                m,
+                                start as int,
+                                i as nat,
+                            )].vertex as int) == v as int);
+                        } else {
+                            assert(i == steps_prev as int);
+                            assert(kernel_vertex_ring_iter_spec(m, start as int, i as nat)
+                                == kernel_vertex_ring_iter_spec(m, start as int, steps_prev as nat));
+                            assert(kernel_vertex_ring_iter_spec(m, start as int, steps_prev as nat)
+                                == h_prev as int);
+                            assert((m.half_edges@[h_prev as int].vertex as int) == v as int);
+                            assert((#[trigger] m.half_edges@[kernel_vertex_ring_iter_spec(
+                                m,
+                                start as int,
+                                i as nat,
+                            )].vertex as int) == v as int);
+                        }
+                    };
+                };
             }
 
             if h == start {
-                break;
+                closed = true;
             }
         }
 
+        if !closed {
+            return false;
+        }
         if h != start {
             return false;
         }
@@ -1117,7 +1165,7 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
             assert(forall|vp: int|
                 #![trigger vertex_cycle_lens@[vp]]
                 0 <= vp < (v + 1) as int
-                    ==> kernel_vertex_representative_closed_nonempty_witness_spec(
+                    ==> kernel_vertex_representative_cycle_witness_spec(
                         m,
                         vp,
                         vertex_cycle_lens@[vp] as int,
@@ -1125,13 +1173,13 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
                 assert forall|vp: int|
                     #![trigger vertex_cycle_lens@[vp]]
                     0 <= vp < (v + 1) as int
-                        implies kernel_vertex_representative_closed_nonempty_witness_spec(
+                        implies kernel_vertex_representative_cycle_witness_spec(
                             m,
                             vp,
                             vertex_cycle_lens@[vp] as int,
                         ) by {
                     if vp < v as int {
-                        assert(kernel_vertex_representative_closed_nonempty_witness_spec(
+                        assert(kernel_vertex_representative_cycle_witness_spec(
                             m,
                             vp,
                             vertex_cycle_lens@[vp] as int,
@@ -1147,13 +1195,45 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
                         assert(h as int == start as int);
                         assert(h as int == kernel_vertex_ring_iter_spec(m, start as int, steps as nat));
                         assert(kernel_vertex_ring_iter_spec(m, start as int, steps as nat) == start as int);
-                        assert(start as int == m.vertex_half_edges@[v as int] as int);
-                        assert(kernel_vertex_representative_closed_nonempty_witness_spec(
+                        let s = m.vertex_half_edges@[v as int] as int;
+                        assert(s == start as int);
+                        assert(kernel_half_edge_count_spec(m) == hcnt as int);
+                        assert(0 <= s < kernel_half_edge_count_spec(m));
+                        assert(forall|i: int|
+                            0 <= i < steps as int ==> #[trigger] m.half_edges@[kernel_vertex_ring_iter_spec(
+                                m,
+                                s,
+                                i as nat,
+                            )].vertex as int == v as int) by {
+                            assert forall|i: int|
+                                0 <= i < steps as int implies #[trigger] m.half_edges@[kernel_vertex_ring_iter_spec(
+                                    m,
+                                    s,
+                                    i as nat,
+                                )].vertex as int == v as int by {
+                                assert(s == start as int);
+                                assert((#[trigger] m.half_edges@[kernel_vertex_ring_iter_spec(
+                                    m,
+                                    start as int,
+                                    i as nat,
+                                )].vertex as int) == v as int);
+                            };
+                        }
+                        assert(kernel_vertex_representative_cycle_witness_spec(
                             m,
                             v as int,
                             steps as int,
-                        ));
-                        assert(kernel_vertex_representative_closed_nonempty_witness_spec(
+                        )) by {
+                            assert(1 <= steps as int <= kernel_half_edge_count_spec(m));
+                            assert(kernel_vertex_ring_iter_spec(m, s, steps as nat) == s);
+                            assert(forall|i: int|
+                                0 <= i < steps as int ==> #[trigger] m.half_edges@[kernel_vertex_ring_iter_spec(
+                                    m,
+                                    s,
+                                    i as nat,
+                                )].vertex as int == v as int);
+                        }
+                        assert(kernel_vertex_representative_cycle_witness_spec(
                             m,
                             vp,
                             vertex_cycle_lens@[vp] as int,
@@ -1168,6 +1248,8 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
     proof {
         assert(bounds_ok);
         assert(v == vcnt);
+        assert(vertex_cycle_lens@.len() == v as int);
+        assert(vertex_cycle_lens@.len() == kernel_vertex_count_spec(m));
         assert(kernel_vertex_has_incident_half_edge_spec(m)) by {
             assert forall|vp: int|
                 #![trigger m.vertex_half_edges@[vp]]
@@ -1183,18 +1265,13 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
                 assert((#[trigger] m.half_edges@[m.vertex_half_edges@[vp] as int].vertex as int) == vp);
             };
         }
-        assert(kernel_vertex_has_incident_half_edge_total_spec(m));
-        assert(kernel_vertex_representative_closed_nonempty_spec(m)) by {
+        assert(kernel_vertex_manifold_single_cycle_basic_spec(m)) by {
             let cycle_lens = vertex_cycle_lens@;
-            assert(cycle_lens.len() == kernel_vertex_count_spec(m)) by {
-                assert(cycle_lens.len() == v as int);
-                assert(kernel_vertex_count_spec(m) == vcnt as int);
-                assert(v == vcnt);
-            }
+            assert(cycle_lens.len() == kernel_vertex_count_spec(m));
             assert(forall|vp: int|
                 #![trigger cycle_lens[vp]]
                 0 <= vp < kernel_vertex_count_spec(m)
-                    ==> kernel_vertex_representative_closed_nonempty_witness_spec(
+                    ==> kernel_vertex_representative_cycle_witness_spec(
                         m,
                         vp,
                         cycle_lens[vp] as int,
@@ -1202,7 +1279,7 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
                 assert forall|vp: int|
                     #![trigger cycle_lens[vp]]
                     0 <= vp < kernel_vertex_count_spec(m)
-                        implies kernel_vertex_representative_closed_nonempty_witness_spec(
+                        implies kernel_vertex_representative_cycle_witness_spec(
                             m,
                             vp,
                             cycle_lens[vp] as int,
@@ -1210,13 +1287,14 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
                     assert(kernel_vertex_count_spec(m) == vcnt as int);
                     assert(vp < vcnt as int);
                     assert(vp < v as int);
+                    assert(vp < cycle_lens.len());
                     assert(cycle_lens[vp] == vertex_cycle_lens@[vp]);
-                    assert(kernel_vertex_representative_closed_nonempty_witness_spec(
+                    assert(kernel_vertex_representative_cycle_witness_spec(
                         m,
                         vp,
                         vertex_cycle_lens@[vp] as int,
                     ));
-                    assert(kernel_vertex_representative_closed_nonempty_witness_spec(
+                    assert(kernel_vertex_representative_cycle_witness_spec(
                         m,
                         vp,
                         cycle_lens[vp] as int,
@@ -1228,7 +1306,7 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
                 &&& forall|vp: int|
                     #![trigger cycle_lens[vp]]
                     0 <= vp < kernel_vertex_count_spec(m)
-                        ==> kernel_vertex_representative_closed_nonempty_witness_spec(
+                        ==> kernel_vertex_representative_cycle_witness_spec(
                             m,
                             vp,
                             cycle_lens[vp] as int,
@@ -1239,14 +1317,14 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
                 assert(forall|vp: int|
                     #![trigger cycle_lens[vp]]
                     0 <= vp < kernel_vertex_count_spec(m)
-                        ==> kernel_vertex_representative_closed_nonempty_witness_spec(
+                        ==> kernel_vertex_representative_cycle_witness_spec(
                             m,
                             vp,
                             cycle_lens[vp] as int,
                         ));
             };
         }
-        assert(kernel_vertex_representative_closed_nonempty_total_spec(m));
+        assert(kernel_vertex_manifold_single_cycle_total_spec(m));
     }
     true
 }

@@ -190,18 +190,10 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
 - [x] Verify `check_no_degenerate_edges`.
   - in `verus-proofs` builds, this is delegated to verified kernel checker.
   - file: `src/halfedge_mesh.rs`
-- [ ] Verify `check_vertex_manifold_single_cycle`.
-  - in `verus-proofs` builds, this now delegates to kernel executable `kernel_check_vertex_manifold_single_cycle`.
-  - semantic contract strengthening in kernel proof is still pending.
-  - next substeps:
-    - groundwork landed in `src/verified_checker_kernels.rs`:
-      `lemma_kernel_vertex_ring_iter_step`, `lemma_kernel_vertex_ring_succ_or_self_in_bounds`,
-      `lemma_kernel_vertex_ring_iter_in_bounds` to support bounded ring-iteration witness construction.
-    - strengthen `kernel_check_vertex_manifold_single_cycle` postcondition from the current stable intermediate
-      `out ==> kernel_vertex_representative_closed_nonempty_total_spec(m)` to
-      `out ==> kernel_vertex_manifold_single_cycle_total_spec`.
-    - add per-vertex cycle witness threading invariant (`forall vp < v. exists k ...`) in outer loop.
-    - prove representative-ring witness construction at vertex loop boundary (`k = steps`).
+- [x] Verify `check_vertex_manifold_single_cycle`.
+  - in `verus-proofs` builds, this delegates to kernel executable `kernel_check_vertex_manifold_single_cycle`.
+  - kernel contract is now verified at
+    `out ==> kernel_vertex_manifold_single_cycle_total_spec(m)`.
   - burndown update (2026-02-17):
     - attempted re-strengthening of `kernel_check_vertex_manifold_single_cycle` to
       `out ==> kernel_vertex_manifold_single_cycle_total_spec`; this was rolled back after
@@ -254,6 +246,30 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       and lifts them to an existential spec-level witness sequence, yielding a stable guarantee that
       each vertex representative has a closed ring walk of length `>= 1` and `<= half_edge_count`
       while preserving representative-vertex incidence.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels kernel_check_vertex_manifold_single_cycle`
+      passed (`4 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` passed (`34 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`49 verified, 0 errors`).
+  - burndown update (2026-02-18, newest):
+    - attempted direct finalization of `kernel_vertex_manifold_single_cycle_total_spec` using a
+      `forall v. exists k` postcondition-lifting proof with explicit bounded per-step iterator witnesses
+      (`0 <= iter(i) < half_edge_count`) threaded in the final witness block.
+    - this proof shape was rolled back: the final existential-packaging step remained brittle/trigger-sensitive,
+      even after inner-loop witness invariants were stable.
+    - landed a stable completion in `src/verified_checker_kernels.rs`:
+      `kernel_check_vertex_manifold_single_cycle` now proves
+      `out ==> kernel_vertex_manifold_single_cycle_total_spec(m)` with:
+      - an invariant-preserving inner walk structure (`while steps <= expected && !closed`) that keeps
+        ring-iterator alignment available at loop exit,
+      - per-step ring-membership threading (`forall i < steps. vertex(iter(i)) == v`) through the executable loop,
+      - spec packaging via an existential witness sequence in
+        `kernel_vertex_manifold_single_cycle_basic_spec` (instead of brittle direct
+        `forall v. exists k` contract-lifting in the executable proof body).
+    - spec cleanup made alongside this completion:
+      `kernel_vertex_representative_cycle_witness_spec` now relies on total-spec index bounds and carries
+      representative closure + per-step vertex-membership obligations without an extra explicit in-witness
+      `0 <= iter(i) < half_edge_count` conjunct.
     - verification checks:
       `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels kernel_check_vertex_manifold_single_cycle`
       passed (`4 verified, 0 errors`);
