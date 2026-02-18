@@ -2084,6 +2084,21 @@ pub open spec fn from_face_cycles_twin_assignment_total_involution_spec(m: MeshM
     }
 }
 
+pub open spec fn from_face_cycles_counts_index_face_starts_spec(
+    vertex_count: int,
+    face_cycles: Seq<Seq<int>>,
+    m: MeshModel,
+) -> bool {
+    &&& mesh_vertex_count_spec(m) == vertex_count
+    &&& mesh_face_count_spec(m) == face_cycles.len() as int
+    &&& mesh_half_edge_count_spec(m) == input_half_edge_count_spec(face_cycles)
+    &&& mesh_index_bounds_spec(m)
+    &&& forall|f: int|
+        #![trigger m.face_half_edges[f]]
+        0 <= f < face_cycles.len() as int
+            ==> m.face_half_edges[f] == input_face_cycle_start_spec(face_cycles, f)
+}
+
 pub open spec fn from_face_cycles_structural_core_spec(
     vertex_count: int,
     face_cycles: Seq<Seq<int>>,
@@ -2093,6 +2108,7 @@ pub open spec fn from_face_cycles_structural_core_spec(
     &&& from_face_cycles_no_duplicate_oriented_edges_spec(face_cycles)
     &&& from_face_cycles_all_oriented_edges_have_twin_spec(face_cycles)
     &&& from_face_cycles_no_isolated_vertices_spec(vertex_count, face_cycles)
+    &&& from_face_cycles_counts_index_face_starts_spec(vertex_count, face_cycles, m)
     &&& from_face_cycles_next_prev_face_coherent_spec(face_cycles, m)
     &&& from_face_cycles_twin_assignment_total_involution_spec(m)
     &&& mesh_edge_exactly_two_half_edges_spec(m)
@@ -3576,6 +3592,139 @@ pub fn runtime_check_from_face_cycles_next_prev_face_coherent(
     true
 }
 
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
+pub fn runtime_check_from_face_cycles_counts_index_face_starts(
+    vertex_count: usize,
+    m: &Mesh,
+    face_cycles: &[Vec<usize>],
+) -> (out: bool)
+    ensures
+        out ==> from_face_cycles_counts_index_face_starts_spec(
+            vertex_count as int,
+            face_cycles_exec_to_model_spec(face_cycles@),
+            m@,
+        ),
+{
+    if m.vertices.len() != vertex_count {
+        return false;
+    }
+    if m.faces.len() != face_cycles.len() {
+        return false;
+    }
+
+    let ghost model_cycles = face_cycles_exec_to_model_spec(face_cycles@);
+
+    let mut start: usize = 0;
+    let mut f: usize = 0;
+    while f < face_cycles.len()
+        invariant
+            vertex_count == m.vertices.len(),
+            m.faces.len() == face_cycles.len(),
+            0 <= f <= face_cycles.len(),
+            model_cycles == face_cycles_exec_to_model_spec(face_cycles@),
+            model_cycles.len() == face_cycles.len() as int,
+            start as int == input_face_cycle_start_spec(model_cycles, f as int),
+            forall|fp: int|
+                #![trigger m@.face_half_edges[fp]]
+                0 <= fp < f as int
+                    ==> m@.face_half_edges[fp] == input_face_cycle_start_spec(model_cycles, fp),
+    {
+        let face = vstd::slice::slice_index_get(face_cycles, f);
+        let n = face.len();
+        let face_he = m.faces[f].half_edge;
+        if face_he != start {
+            return false;
+        }
+        let next_start = match start.checked_add(n) {
+            Some(v) => v,
+            None => return false,
+        };
+
+        proof {
+            assert(*face == face_cycles@.index(f as int));
+            lemma_face_cycles_exec_to_model_face_len_exec(face_cycles, f, face, n);
+            assert(model_cycles[f as int].len() == n as int);
+            assert(m@.face_half_edges[f as int] == face_he as int);
+            assert(face_he == start);
+            assert(input_face_cycle_start_spec(model_cycles, f as int) == start as int);
+            assert(m@.face_half_edges[f as int] == input_face_cycle_start_spec(model_cycles, f as int));
+            assert(forall|fp: int|
+                #![trigger m@.face_half_edges[fp]]
+                0 <= fp < (f + 1) as int
+                    ==> m@.face_half_edges[fp] == input_face_cycle_start_spec(model_cycles, fp)) by {
+                assert forall|fp: int|
+                    #![trigger m@.face_half_edges[fp]]
+                    0 <= fp < (f + 1) as int
+                        implies m@.face_half_edges[fp] == input_face_cycle_start_spec(model_cycles, fp) by {
+                    if fp < f as int {
+                    } else {
+                        assert(fp == f as int);
+                        assert(m@.face_half_edges[fp] == input_face_cycle_start_spec(model_cycles, fp));
+                    }
+                };
+            };
+            assert(input_face_cycle_start_spec(model_cycles, f as int + 1)
+                == input_face_cycle_start_spec(model_cycles, f as int) + model_cycles[f as int].len() as int);
+            assert(next_start as int == start as int + n as int);
+            assert(next_start as int == input_face_cycle_start_spec(model_cycles, (f + 1) as int));
+        }
+
+        start = next_start;
+        f += 1;
+    }
+
+    if m.half_edges.len() != start {
+        return false;
+    }
+
+    let index_ok = runtime_check_index_bounds(m);
+    if !index_ok {
+        return false;
+    }
+
+    proof {
+        assert(mesh_vertex_count_spec(m@) == m.vertices@.len() as int);
+        assert(m.vertices@.len() == m.vertices.len());
+        assert(m.vertices.len() == vertex_count);
+        assert(mesh_vertex_count_spec(m@) == vertex_count as int);
+
+        assert(mesh_face_count_spec(m@) == m.faces@.len() as int);
+        assert(m.faces@.len() == m.faces.len());
+        assert(m.faces.len() == face_cycles.len());
+        assert(mesh_face_count_spec(m@) == face_cycles.len() as int);
+
+        assert(mesh_half_edge_count_spec(m@) == m.half_edges@.len() as int);
+        assert(m.half_edges@.len() == m.half_edges.len());
+        assert(m.half_edges.len() == start);
+        assert(mesh_half_edge_count_spec(m@) == start as int);
+
+        assert(f == face_cycles.len());
+        assert(start as int == input_face_cycle_start_spec(model_cycles, f as int));
+        assert(input_half_edge_count_spec(model_cycles) == start as int);
+        assert(mesh_half_edge_count_spec(m@) == input_half_edge_count_spec(model_cycles));
+
+        assert(mesh_index_bounds_spec(m@));
+
+        assert(forall|fp: int|
+            #![trigger m@.face_half_edges[fp]]
+            0 <= fp < face_cycles.len() as int
+                ==> m@.face_half_edges[fp] == input_face_cycle_start_spec(model_cycles, fp)) by {
+            assert forall|fp: int|
+                #![trigger m@.face_half_edges[fp]]
+                0 <= fp < face_cycles.len() as int
+                    implies m@.face_half_edges[fp] == input_face_cycle_start_spec(model_cycles, fp) by {
+                assert(face_cycles.len() as int == f as int);
+                assert(0 <= fp < f as int);
+            };
+        };
+
+        assert(from_face_cycles_counts_index_face_starts_spec(vertex_count as int, model_cycles, m@));
+    }
+
+    true
+}
+
 #[allow(dead_code)]
 pub fn from_face_cycles_constructive_next_prev_face(
     vertex_positions: Vec<RuntimePoint3>,
@@ -3613,42 +3762,57 @@ pub fn from_face_cycles_constructive_next_prev_face(
     let out0 = ex_mesh_from_face_cycles(vertex_positions, face_cycles);
     match out0 {
         Result::Ok(m) => {
-            let next_prev_ok = runtime_check_from_face_cycles_next_prev_face_coherent(&m, face_cycles);
-            if !next_prev_ok {
+            let counts_index_face_starts_ok = runtime_check_from_face_cycles_counts_index_face_starts(
+                vertex_count,
+                &m,
+                face_cycles,
+            );
+            if !counts_index_face_starts_ok {
                 Result::Err(mesh_build_error_empty_face_set())
             } else {
-                let twin_ok = runtime_check_twin_assignment_total_involution(&m);
-                if !twin_ok {
+                let next_prev_ok = runtime_check_from_face_cycles_next_prev_face_coherent(&m, face_cycles);
+                if !next_prev_ok {
                     Result::Err(mesh_build_error_empty_face_set())
                 } else {
-                    let edge_ok = runtime_check_edge_exactly_two_half_edges(&m);
-                    if !edge_ok {
+                    let twin_ok = runtime_check_twin_assignment_total_involution(&m);
+                    if !twin_ok {
                         Result::Err(mesh_build_error_empty_face_set())
                     } else {
-                        let vertex_ok = runtime_check_vertex_representative_valid_nonisolated(&m);
-                        if !vertex_ok {
+                        let edge_ok = runtime_check_edge_exactly_two_half_edges(&m);
+                        if !edge_ok {
                             Result::Err(mesh_build_error_empty_face_set())
                         } else {
-                            proof {
-                                assert(input_ok);
-                                assert(no_duplicate_ok);
-                                assert(all_twin_ok);
-                                assert(no_isolated_ok);
-                                assert(from_face_cycles_basic_input_spec(vertex_count as int, model_cycles));
-                                assert(from_face_cycles_no_duplicate_oriented_edges_spec(model_cycles));
-                                assert(from_face_cycles_all_oriented_edges_have_twin_spec(model_cycles));
-                                assert(from_face_cycles_no_isolated_vertices_spec(vertex_count as int, model_cycles));
-                                assert(from_face_cycles_next_prev_face_coherent_spec(model_cycles, m@));
-                                assert(from_face_cycles_twin_assignment_total_involution_spec(m@));
-                                assert(mesh_edge_exactly_two_half_edges_spec(m@));
-                                assert(from_face_cycles_vertex_representatives_spec(m@));
-                                assert(from_face_cycles_structural_core_spec(
-                                    vertex_count as int,
-                                    model_cycles,
-                                    m@,
-                                ));
+                            let vertex_ok = runtime_check_vertex_representative_valid_nonisolated(&m);
+                            if !vertex_ok {
+                                Result::Err(mesh_build_error_empty_face_set())
+                            } else {
+                                proof {
+                                    assert(input_ok);
+                                    assert(no_duplicate_ok);
+                                    assert(all_twin_ok);
+                                    assert(no_isolated_ok);
+                                    assert(counts_index_face_starts_ok);
+                                    assert(from_face_cycles_basic_input_spec(vertex_count as int, model_cycles));
+                                    assert(from_face_cycles_no_duplicate_oriented_edges_spec(model_cycles));
+                                    assert(from_face_cycles_all_oriented_edges_have_twin_spec(model_cycles));
+                                    assert(from_face_cycles_no_isolated_vertices_spec(vertex_count as int, model_cycles));
+                                    assert(from_face_cycles_counts_index_face_starts_spec(
+                                        vertex_count as int,
+                                        model_cycles,
+                                        m@,
+                                    ));
+                                    assert(from_face_cycles_next_prev_face_coherent_spec(model_cycles, m@));
+                                    assert(from_face_cycles_twin_assignment_total_involution_spec(m@));
+                                    assert(mesh_edge_exactly_two_half_edges_spec(m@));
+                                    assert(from_face_cycles_vertex_representatives_spec(m@));
+                                    assert(from_face_cycles_structural_core_spec(
+                                        vertex_count as int,
+                                        model_cycles,
+                                        m@,
+                                    ));
+                                }
+                                Result::Ok(m)
                             }
-                            Result::Ok(m)
                         }
                     }
                 }
