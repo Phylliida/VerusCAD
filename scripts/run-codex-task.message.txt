@@ -1,1 +1,1 @@
-Reran vcad-topology Exit Condition trust-surface scans plus the full verification/test matrix (192/227 proofs, all tests green) and logged the results in verification-todo.md.
+Revalidated vcad-topology Exit Condition with clean trust scans, 192/227 proof passes, and a fully green cargo test matrix, and recorded the run in verification-todo.md.
