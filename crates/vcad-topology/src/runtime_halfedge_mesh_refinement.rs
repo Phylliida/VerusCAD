@@ -28,7 +28,6 @@ pub struct ExEdge(Edge);
 #[verifier::external_type_specification]
 pub struct ExFace(Face);
 
-#[verifier::external_body]
 fn mesh_build_error_empty_face_set() -> MeshBuildError {
     MeshBuildError::EmptyFaceSet
 }

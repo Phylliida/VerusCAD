@@ -2665,3 +2665,32 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`6 passed, 0 failed`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`173 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`208 verified, 0 errors`).
+  - burndown update (2026-02-18, external-body minimization rerun):
+    - selected task in this pass:
+      maintain Exit Condition and reduce trusted refinement bridge surface.
+    - code hardening:
+      in `src/runtime_halfedge_mesh_refinement.rs`, removed
+      `#[verifier::external_body]` from `mesh_build_error_empty_face_set` so
+      the helper verifies directly.
+    - trusted-boundary/interpreted-spec scans:
+      - `rg -n "assume_specification|external_fn_specification" crates/vcad-topology/src`
+        returned no matches.
+      - `rg -n "\\buninterpreted\\b|admit\\(|assume\\("` over
+        `runtime_halfedge_mesh_refinement.rs`,
+        `verified_checker_kernels.rs`, and `halfedge_mesh.rs`
+        returned no matches.
+      - `rg -n "\\[verifier::external_body\\]" crates/vcad-topology/src/runtime_halfedge_mesh_refinement.rs`
+        now reports four wrappers (down from five in the previous pass).
+    - failed attempt (rolled back in-pass):
+      removed `#[verifier::external_body]` from
+      `ex_from_face_cycles_constructive_abort`, but Verus rejected direct use
+      of `std::process::abort` in a verified body; the change was reverted to
+      avoid introducing a new assumed spec.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`174 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`174 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`209 verified, 0 errors`);
+      `cargo test -p vcad-topology` passed (`4 passed, 0 failed`);
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`6 passed, 0 failed`).
