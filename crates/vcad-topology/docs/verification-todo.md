@@ -139,6 +139,18 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       burndown steps remains in place.
     - post-rollback verification check: `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels`
       passed (`34 verified, 0 errors`).
+  - burndown update (2026-02-18):
+    - retried strengthening `kernel_check_face_cycles` toward
+      `out ==> kernel_face_representative_cycles_total_spec` with an inner-loop per-step
+      face-membership invariant (`forall i < steps. face(next_iter(i)) == f`) and explicit
+      quantified witness-lifting proof blocks.
+    - this attempt was rolled back: quantified invariant-preservation and witness-lifting obligations
+      remained trigger-sensitive/brittle, and keeping the partially strengthened proof would
+      regress verifier stability.
+    - no executable-proof behavior change was kept from this attempt; the function remains at the
+      stable contract `out ==> kernel_index_bounds_spec(m)`.
+    - post-rollback verification check: `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels`
+      passed (`34 verified, 0 errors`).
   - file: `src/verified_checker_kernels.rs`
 - [x] Verify `check_no_degenerate_edges`.
   - in `verus-proofs` builds, this is delegated to verified kernel checker.
