@@ -747,6 +747,120 @@ pub open spec fn from_face_cycles_no_isolated_vertices_spec(vertex_count: int, f
     }
 }
 
+pub open spec fn from_face_cycles_prefix_contains_vertex_spec(
+    face_cycles: Seq<Seq<int>>,
+    face_limit: int,
+    local_limit: int,
+    v: int,
+) -> bool {
+    exists|w: (int, int)| {
+        &&& input_face_local_index_valid_spec(face_cycles, w.0, w.1)
+        &&& (w.0 < face_limit || (w.0 == face_limit && w.1 < local_limit))
+        &&& #[trigger] input_face_from_vertex_spec(face_cycles, w.0, w.1) == v
+    }
+}
+
+pub proof fn lemma_from_face_cycles_prefix_contains_vertex_step_local(
+    face_cycles: Seq<Seq<int>>,
+    face_limit: int,
+    local_limit: int,
+    v: int,
+)
+    ensures
+        from_face_cycles_prefix_contains_vertex_spec(face_cycles, face_limit, local_limit, v)
+            ==> from_face_cycles_prefix_contains_vertex_spec(face_cycles, face_limit, local_limit + 1, v),
+{
+    if from_face_cycles_prefix_contains_vertex_spec(face_cycles, face_limit, local_limit, v) {
+        let w = choose|w: (int, int)| {
+            &&& input_face_local_index_valid_spec(face_cycles, w.0, w.1)
+            &&& (w.0 < face_limit || (w.0 == face_limit && w.1 < local_limit))
+            &&& #[trigger] input_face_from_vertex_spec(face_cycles, w.0, w.1) == v
+        };
+        let f = w.0;
+        let i = w.1;
+        assert(exists|f2: int, i2: int| {
+            &&& input_face_local_index_valid_spec(face_cycles, f2, i2)
+            &&& (f2 < face_limit || (f2 == face_limit && i2 < local_limit + 1))
+            &&& #[trigger] input_face_from_vertex_spec(face_cycles, f2, i2) == v
+        }) by {
+            assert(input_face_local_index_valid_spec(face_cycles, f, i));
+            if f < face_limit {
+            } else {
+                assert(f == face_limit);
+                assert(i < local_limit);
+                assert(i < local_limit + 1);
+            }
+            assert(input_face_from_vertex_spec(face_cycles, f, i) == v);
+        };
+    }
+}
+
+pub proof fn lemma_from_face_cycles_prefix_contains_vertex_promote_face(
+    face_cycles: Seq<Seq<int>>,
+    face_limit: int,
+    local_limit: int,
+    v: int,
+)
+    ensures
+        from_face_cycles_prefix_contains_vertex_spec(face_cycles, face_limit, local_limit, v)
+            ==> from_face_cycles_prefix_contains_vertex_spec(face_cycles, face_limit + 1, 0, v),
+{
+    if from_face_cycles_prefix_contains_vertex_spec(face_cycles, face_limit, local_limit, v) {
+        let w = choose|w: (int, int)| {
+            &&& input_face_local_index_valid_spec(face_cycles, w.0, w.1)
+            &&& (w.0 < face_limit || (w.0 == face_limit && w.1 < local_limit))
+            &&& #[trigger] input_face_from_vertex_spec(face_cycles, w.0, w.1) == v
+        };
+        let f = w.0;
+        let i = w.1;
+        assert(exists|f2: int, i2: int| {
+            &&& input_face_local_index_valid_spec(face_cycles, f2, i2)
+            &&& (f2 < face_limit + 1 || (f2 == face_limit + 1 && i2 < 0))
+            &&& #[trigger] input_face_from_vertex_spec(face_cycles, f2, i2) == v
+        }) by {
+            assert(input_face_local_index_valid_spec(face_cycles, f, i));
+            if f < face_limit {
+                assert(f < face_limit + 1);
+            } else {
+                assert(f == face_limit);
+                assert(f < face_limit + 1);
+            }
+            assert(input_face_from_vertex_spec(face_cycles, f, i) == v);
+        };
+    }
+}
+
+pub proof fn lemma_from_face_cycles_prefix_contains_vertex_implies_contains(
+    face_cycles: Seq<Seq<int>>,
+    face_limit: int,
+    local_limit: int,
+    v: int,
+)
+    ensures
+        from_face_cycles_prefix_contains_vertex_spec(face_cycles, face_limit, local_limit, v)
+            ==> exists|f: int, i: int| {
+                &&& input_face_local_index_valid_spec(face_cycles, f, i)
+                &&& #[trigger] input_face_from_vertex_spec(face_cycles, f, i) == v
+            },
+{
+    if from_face_cycles_prefix_contains_vertex_spec(face_cycles, face_limit, local_limit, v) {
+        let w = choose|w: (int, int)| {
+            &&& input_face_local_index_valid_spec(face_cycles, w.0, w.1)
+            &&& (w.0 < face_limit || (w.0 == face_limit && w.1 < local_limit))
+            &&& #[trigger] input_face_from_vertex_spec(face_cycles, w.0, w.1) == v
+        };
+        let f = w.0;
+        let i = w.1;
+        assert(exists|f2: int, i2: int| {
+            &&& input_face_local_index_valid_spec(face_cycles, f2, i2)
+            &&& #[trigger] input_face_from_vertex_spec(face_cycles, f2, i2) == v
+        }) by {
+            assert(input_face_local_index_valid_spec(face_cycles, f, i));
+            assert(input_face_from_vertex_spec(face_cycles, f, i) == v);
+        };
+    }
+}
+
 pub open spec fn from_face_cycles_failure_spec(vertex_count: int, face_cycles: Seq<Seq<int>>) -> bool {
     !from_face_cycles_basic_input_spec(vertex_count, face_cycles)
         || !from_face_cycles_no_duplicate_oriented_edges_spec(face_cycles)
@@ -1222,6 +1336,241 @@ pub fn runtime_check_from_face_cycles_basic_input(
 
 #[verifier::exec_allows_no_decreases_clause]
 #[allow(dead_code)]
+pub fn runtime_check_from_face_cycles_no_isolated_vertices(
+    vertex_count: usize,
+    face_cycles: &[Vec<usize>],
+) -> (out: bool) {
+    if vertex_count == 0 {
+        return false;
+    }
+
+    let ghost model_cycles = face_cycles_exec_to_model_spec(face_cycles@);
+    proof {
+        assert(model_cycles.len() == face_cycles.len() as int);
+    }
+
+    let mut seen = vec![false; vertex_count];
+    let mut f: usize = 0;
+    while f < face_cycles.len()
+        invariant
+            vertex_count > 0,
+            0 <= f <= face_cycles.len(),
+            model_cycles == face_cycles_exec_to_model_spec(face_cycles@),
+            model_cycles.len() == face_cycles.len() as int,
+            seen@.len() == vertex_count as int,
+            forall|vp: int|
+                0 <= vp < vertex_count as int && #[trigger] seen@[vp]
+                    ==> from_face_cycles_prefix_contains_vertex_spec(model_cycles, f as int, 0, vp),
+    {
+        let face = vstd::slice::slice_index_get(face_cycles, f);
+        let n = face.len();
+        proof {
+            assert(*face == face_cycles@.index(f as int));
+            lemma_face_cycles_exec_to_model_face_len_exec(face_cycles, f, face, n);
+            assert(model_cycles[f as int].len() == n as int);
+        }
+
+        let mut i: usize = 0;
+        while i < n
+            invariant
+                vertex_count > 0,
+                0 <= f < face_cycles.len(),
+                0 <= i <= n,
+                n == face.len(),
+                face@.len() == n as int,
+                *face == face_cycles@.index(f as int),
+                model_cycles == face_cycles_exec_to_model_spec(face_cycles@),
+                model_cycles.len() == face_cycles.len() as int,
+                model_cycles[f as int].len() == n as int,
+                seen@.len() == vertex_count as int,
+                forall|vp: int|
+                    0 <= vp < vertex_count as int && #[trigger] seen@[vp]
+                        ==> from_face_cycles_prefix_contains_vertex_spec(model_cycles, f as int, i as int, vp),
+        {
+            let v = face[i];
+            if v >= vertex_count {
+                return false;
+            }
+
+            let ghost seen_before = seen@;
+            seen[v] = true;
+
+            proof {
+                lemma_face_cycles_exec_to_model_face_entry_exec(face_cycles, f, face, i);
+                assert(model_cycles[f as int][i as int] == v as int);
+                assert(input_face_local_index_valid_spec(model_cycles, f as int, i as int));
+                assert(forall|vp: int|
+                    0 <= vp < vertex_count as int && #[trigger] seen@[vp]
+                        ==> from_face_cycles_prefix_contains_vertex_spec(
+                            model_cycles,
+                            f as int,
+                            (i + 1) as int,
+                            vp,
+                        )) by {
+                    assert forall|vp: int|
+                        0 <= vp < vertex_count as int && #[trigger] seen@[vp]
+                            implies from_face_cycles_prefix_contains_vertex_spec(
+                                model_cycles,
+                                f as int,
+                                (i + 1) as int,
+                                vp,
+                            ) by {
+                        if seen_before[vp] {
+                            assert(from_face_cycles_prefix_contains_vertex_spec(
+                                model_cycles,
+                                f as int,
+                                i as int,
+                                vp,
+                            ));
+                            lemma_from_face_cycles_prefix_contains_vertex_step_local(
+                                model_cycles,
+                                f as int,
+                                i as int,
+                                vp,
+                            );
+                        } else {
+                            assert(vp == v as int);
+                            assert(exists|w: (int, int)| {
+                                &&& input_face_local_index_valid_spec(model_cycles, w.0, w.1)
+                                &&& (w.0 < f as int || (w.0 == f as int && w.1 < (i + 1) as int))
+                                &&& #[trigger] input_face_from_vertex_spec(model_cycles, w.0, w.1) == vp
+                            }) by {
+                                let w = (f as int, i as int);
+                                assert(input_face_local_index_valid_spec(model_cycles, w.0, w.1));
+                                assert(w.0 == f as int);
+                                assert(w.1 == i as int);
+                                assert(w.0 == f as int && w.1 < (i + 1) as int);
+                                assert(input_face_from_vertex_spec(model_cycles, w.0, w.1) == v as int);
+                                assert(vp == v as int);
+                                assert(input_face_from_vertex_spec(model_cycles, w.0, w.1) == vp);
+                            };
+                            assert(from_face_cycles_prefix_contains_vertex_spec(
+                                model_cycles,
+                                f as int,
+                                (i + 1) as int,
+                                vp,
+                            ));
+                        }
+                    };
+                }
+            }
+
+            i += 1;
+        }
+
+        proof {
+            assert(i == n);
+            assert(forall|vp: int|
+                0 <= vp < vertex_count as int && #[trigger] seen@[vp]
+                    ==> from_face_cycles_prefix_contains_vertex_spec(
+                        model_cycles,
+                        (f + 1) as int,
+                        0,
+                        vp,
+                    )) by {
+                assert forall|vp: int|
+                    0 <= vp < vertex_count as int && #[trigger] seen@[vp]
+                        implies from_face_cycles_prefix_contains_vertex_spec(
+                            model_cycles,
+                            (f + 1) as int,
+                            0,
+                            vp,
+                        ) by {
+                    assert(from_face_cycles_prefix_contains_vertex_spec(
+                        model_cycles,
+                        f as int,
+                        i as int,
+                        vp,
+                    ));
+                    lemma_from_face_cycles_prefix_contains_vertex_promote_face(
+                        model_cycles,
+                        f as int,
+                        i as int,
+                        vp,
+                    );
+                };
+            }
+        }
+
+        f += 1;
+    }
+
+    let mut v: usize = 0;
+    while v < vertex_count
+        invariant
+            vertex_count > 0,
+            0 <= v <= vertex_count,
+            f == face_cycles.len(),
+            model_cycles == face_cycles_exec_to_model_spec(face_cycles@),
+            model_cycles.len() == face_cycles.len() as int,
+            seen@.len() == vertex_count as int,
+            forall|vp: int|
+                0 <= vp < vertex_count as int && #[trigger] seen@[vp]
+                    ==> from_face_cycles_prefix_contains_vertex_spec(
+                        model_cycles,
+                        face_cycles.len() as int,
+                        0,
+                        vp,
+                    ),
+            forall|vp: int|
+                0 <= vp < v as int
+                    ==> from_face_cycles_prefix_contains_vertex_spec(
+                        model_cycles,
+                        face_cycles.len() as int,
+                        0,
+                        vp,
+                    ),
+    {
+        if !seen[v] {
+            return false;
+        }
+
+        proof {
+            assert(seen@[v as int]);
+            assert(from_face_cycles_prefix_contains_vertex_spec(
+                model_cycles,
+                face_cycles.len() as int,
+                0,
+                v as int,
+            ));
+            assert(forall|vp: int|
+                0 <= vp < (v + 1) as int
+                    ==> from_face_cycles_prefix_contains_vertex_spec(
+                        model_cycles,
+                        face_cycles.len() as int,
+                        0,
+                        vp,
+                    )) by {
+                assert forall|vp: int|
+                    0 <= vp < (v + 1) as int
+                        implies from_face_cycles_prefix_contains_vertex_spec(
+                            model_cycles,
+                            face_cycles.len() as int,
+                            0,
+                            vp,
+                        ) by {
+                    if vp < v as int {
+                    } else {
+                        assert(vp == v as int);
+                        assert(from_face_cycles_prefix_contains_vertex_spec(
+                            model_cycles,
+                            face_cycles.len() as int,
+                            0,
+                            v as int,
+                        ));
+                    }
+                };
+            }
+        }
+
+        v += 1;
+    }
+
+    true
+}
+
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
 pub fn runtime_check_from_face_cycles_next_prev_face_coherent(
     m: &Mesh,
     face_cycles: &[Vec<usize>],
@@ -1380,6 +1729,10 @@ pub fn from_face_cycles_constructive_next_prev_face(
     let ghost model_cycles = face_cycles_exec_to_model_spec(face_cycles@);
     let input_ok = runtime_check_from_face_cycles_basic_input(vertex_count, face_cycles);
     if !input_ok {
+        return Result::Err(mesh_build_error_empty_face_set());
+    }
+    let no_isolated_ok = runtime_check_from_face_cycles_no_isolated_vertices(vertex_count, face_cycles);
+    if !no_isolated_ok {
         return Result::Err(mesh_build_error_empty_face_set());
     }
 

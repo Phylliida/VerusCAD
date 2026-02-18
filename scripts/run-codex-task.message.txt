@@ -1,1 +1,1 @@
-Documented and rolled back an unstable no-isolated input-export proof attempt while adding a reusable face-cycle model entry lemma and keeping vcad-topology verification green.
+Added and wired a stable runtime no-isolated-vertex gate for from_face_cycles with prefix-witness proof scaffolding, documented the rolled-back spec-export attempt, and kept vcad-topology verification green.
