@@ -796,6 +796,28 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
     vertex-membership linkage.
 - [x] Verify `check_index_bounds`.
   - in `verus-proofs` builds, this is delegated to verified kernel checker.
+  - burndown update (2026-02-18, checker completeness hardening):
+    - strengthened `runtime_check_index_bounds` in
+      `src/runtime_halfedge_mesh_refinement.rs` from one-way soundness to full
+      executable/spec equivalence:
+      - `out ==> mesh_index_bounds_spec(m@)` (existing),
+      - `!out ==> !mesh_index_bounds_spec(m@)` (new).
+    - added explicit counterexample packaging on every early-failure return
+      path (vertex, edge, face, and half-edge field bounds).
+    - failed attempt (kept documented):
+      first pass used chained assertions like
+      `0 <= x as int < ...` in new proof blocks; this failed rust parsing under
+      Verus expansion (`expected ','`) and was replaced with parenthesized-cast
+      comparison forms.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_index_bounds`
+      passed (`5 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`191 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh`
+      passed (`191 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh`
+      passed (`226 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
 - [x] Verify `check_twin_involution`.
   - in `verus-proofs` builds, this is delegated to verified kernel checker.

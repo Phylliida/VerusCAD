@@ -6524,6 +6524,7 @@ pub fn from_face_cycles_constructive_next_prev_face(
 pub fn runtime_check_index_bounds(m: &Mesh) -> (out: bool)
     ensures
         out ==> mesh_index_bounds_spec(m@),
+        !out ==> !mesh_index_bounds_spec(m@),
 {
     let vcnt = m.vertices.len();
     let ecnt = m.edges.len();
@@ -6542,6 +6543,28 @@ pub fn runtime_check_index_bounds(m: &Mesh) -> (out: bool)
     {
         let he = m.vertices[v].half_edge;
         if he >= hcnt {
+            proof {
+                assert(v < vcnt);
+                assert(mesh_vertex_count_spec(m@) == m@.vertex_half_edges.len() as int);
+                assert(m@.vertex_half_edges.len() == m.vertices@.len());
+                assert(m.vertices@.len() == m.vertices.len());
+                assert(mesh_vertex_count_spec(m@) == vcnt as int);
+
+                assert(mesh_half_edge_count_spec(m@) == m@.half_edges.len() as int);
+                assert(m@.half_edges.len() == m.half_edges@.len());
+                assert(m.half_edges@.len() == m.half_edges.len());
+                assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+
+                assert(0 <= v as int && (v as int) < mesh_vertex_count_spec(m@));
+                assert(m@.vertex_half_edges[v as int] == he as int);
+                assert(!(0 <= m@.vertex_half_edges[v as int] < mesh_half_edge_count_spec(m@)));
+                assert(!mesh_index_bounds_spec(m@)) by {
+                    if mesh_index_bounds_spec(m@) {
+                        assert(0 <= #[trigger] m@.vertex_half_edges[v as int] < mesh_half_edge_count_spec(m@));
+                        assert(false);
+                    }
+                };
+            }
             return false;
         }
 
@@ -6579,6 +6602,28 @@ pub fn runtime_check_index_bounds(m: &Mesh) -> (out: bool)
     {
         let he = m.edges[e].half_edge;
         if he >= hcnt {
+            proof {
+                assert(e < ecnt);
+                assert(mesh_edge_count_spec(m@) == m@.edge_half_edges.len() as int);
+                assert(m@.edge_half_edges.len() == m.edges@.len());
+                assert(m.edges@.len() == m.edges.len());
+                assert(mesh_edge_count_spec(m@) == ecnt as int);
+
+                assert(mesh_half_edge_count_spec(m@) == m@.half_edges.len() as int);
+                assert(m@.half_edges.len() == m.half_edges@.len());
+                assert(m.half_edges@.len() == m.half_edges.len());
+                assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+
+                assert(0 <= e as int && (e as int) < mesh_edge_count_spec(m@));
+                assert(m@.edge_half_edges[e as int] == he as int);
+                assert(!(0 <= m@.edge_half_edges[e as int] < mesh_half_edge_count_spec(m@)));
+                assert(!mesh_index_bounds_spec(m@)) by {
+                    if mesh_index_bounds_spec(m@) {
+                        assert(0 <= #[trigger] m@.edge_half_edges[e as int] < mesh_half_edge_count_spec(m@));
+                        assert(false);
+                    }
+                };
+            }
             return false;
         }
 
@@ -6616,6 +6661,28 @@ pub fn runtime_check_index_bounds(m: &Mesh) -> (out: bool)
     {
         let he = m.faces[f].half_edge;
         if he >= hcnt {
+            proof {
+                assert(f < fcnt);
+                assert(mesh_face_count_spec(m@) == m@.face_half_edges.len() as int);
+                assert(m@.face_half_edges.len() == m.faces@.len());
+                assert(m.faces@.len() == m.faces.len());
+                assert(mesh_face_count_spec(m@) == fcnt as int);
+
+                assert(mesh_half_edge_count_spec(m@) == m@.half_edges.len() as int);
+                assert(m@.half_edges.len() == m.half_edges@.len());
+                assert(m.half_edges@.len() == m.half_edges.len());
+                assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+
+                assert(0 <= f as int && (f as int) < mesh_face_count_spec(m@));
+                assert(m@.face_half_edges[f as int] == he as int);
+                assert(!(0 <= m@.face_half_edges[f as int] < mesh_half_edge_count_spec(m@)));
+                assert(!mesh_index_bounds_spec(m@)) by {
+                    if mesh_index_bounds_spec(m@) {
+                        assert(0 <= #[trigger] m@.face_half_edges[f as int] < mesh_half_edge_count_spec(m@));
+                        assert(false);
+                    }
+                };
+            }
             return false;
         }
 
@@ -6667,6 +6734,64 @@ pub fn runtime_check_index_bounds(m: &Mesh) -> (out: bool)
             || he.edge >= ecnt
             || he.face >= fcnt
         {
+            proof {
+                assert(h < hcnt);
+
+                assert(mesh_half_edge_count_spec(m@) == m@.half_edges.len() as int);
+                assert(m@.half_edges.len() == m.half_edges@.len());
+                assert(m.half_edges@.len() == m.half_edges.len());
+                assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+
+                assert(mesh_vertex_count_spec(m@) == m@.vertex_half_edges.len() as int);
+                assert(m@.vertex_half_edges.len() == m.vertices@.len());
+                assert(m.vertices@.len() == m.vertices.len());
+                assert(mesh_vertex_count_spec(m@) == vcnt as int);
+
+                assert(mesh_edge_count_spec(m@) == m@.edge_half_edges.len() as int);
+                assert(m@.edge_half_edges.len() == m.edges@.len());
+                assert(m.edges@.len() == m.edges.len());
+                assert(mesh_edge_count_spec(m@) == ecnt as int);
+
+                assert(mesh_face_count_spec(m@) == m@.face_half_edges.len() as int);
+                assert(m@.face_half_edges.len() == m.faces@.len());
+                assert(m.faces@.len() == m.faces.len());
+                assert(mesh_face_count_spec(m@) == fcnt as int);
+
+                assert(0 <= h as int && (h as int) < mesh_half_edge_count_spec(m@));
+                assert(m@.half_edges[h as int].twin == he.twin as int);
+                assert(m@.half_edges[h as int].next == he.next as int);
+                assert(m@.half_edges[h as int].prev == he.prev as int);
+                assert(m@.half_edges[h as int].vertex == he.vertex as int);
+                assert(m@.half_edges[h as int].edge == he.edge as int);
+                assert(m@.half_edges[h as int].face == he.face as int);
+
+                assert(!mesh_index_bounds_spec(m@)) by {
+                    if mesh_index_bounds_spec(m@) {
+                        assert(0 <= #[trigger] m@.half_edges[h as int].twin < mesh_half_edge_count_spec(m@));
+                        assert(0 <= #[trigger] m@.half_edges[h as int].next < mesh_half_edge_count_spec(m@));
+                        assert(0 <= #[trigger] m@.half_edges[h as int].prev < mesh_half_edge_count_spec(m@));
+                        assert(0 <= #[trigger] m@.half_edges[h as int].vertex < mesh_vertex_count_spec(m@));
+                        assert(0 <= #[trigger] m@.half_edges[h as int].edge < mesh_edge_count_spec(m@));
+                        assert(0 <= #[trigger] m@.half_edges[h as int].face < mesh_face_count_spec(m@));
+
+                        if he.twin >= hcnt {
+                            assert(!(0 <= m@.half_edges[h as int].twin < mesh_half_edge_count_spec(m@)));
+                        } else if he.next >= hcnt {
+                            assert(!(0 <= m@.half_edges[h as int].next < mesh_half_edge_count_spec(m@)));
+                        } else if he.prev >= hcnt {
+                            assert(!(0 <= m@.half_edges[h as int].prev < mesh_half_edge_count_spec(m@)));
+                        } else if he.vertex >= vcnt {
+                            assert(!(0 <= m@.half_edges[h as int].vertex < mesh_vertex_count_spec(m@)));
+                        } else if he.edge >= ecnt {
+                            assert(!(0 <= m@.half_edges[h as int].edge < mesh_edge_count_spec(m@)));
+                        } else {
+                            assert(he.face >= fcnt);
+                            assert(!(0 <= m@.half_edges[h as int].face < mesh_face_count_spec(m@)));
+                        }
+                        assert(false);
+                    }
+                };
+            }
             return false;
         }
 

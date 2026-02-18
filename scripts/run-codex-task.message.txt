@@ -1,1 +1,1 @@
-Revalidated vcad-topology exit-condition trust-surface scans and replayed the full verification/test matrix, recording this pass in verification-todo.md.
+Strengthened runtime_check_index_bounds to prove full executable/spec equivalence and documented the verified burndown update in verification-todo.md.
