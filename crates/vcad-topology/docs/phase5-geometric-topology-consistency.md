@@ -51,24 +51,31 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [ ] Define oriented face-normal spec from face winding and plane normal.
 - [x] Define component-level outwardness criterion for closed meshes (document chosen witness, for example interior reference point / signed volume convention).
 - [x] Runtime checker: implement global orientation check (`check_outward_normals` or equivalent).
+- [ ] Runtime checker: add explicit shared-edge local orientation consistency check (adjacent faces induce opposite direction on the same geometric edge).
 - [ ] Proof: local orientation consistency across adjacent faces via shared edges.
 - [ ] Proof: global outwardness criterion implies all faces point outward for each closed component.
+- [ ] Proof: signed-volume outwardness criterion is independent of the chosen reference origin.
 
 ## P5.5 Invariant: No Self-Intersection Except Shared Boundary (Roadmap)
 - [ ] Spec: define allowed contact relation between two faces (shared edge, shared vertex, or disjoint).
 - [ ] Spec: define forbidden intersection relation for non-adjacent face pairs.
 - [x] Runtime checker: implement pairwise face intersection check with adjacency exemptions.
+- [ ] Runtime checker: tighten adjacency exemptions to the exact allowed-contact spec (avoid broad "shared vertex => always exempt" behavior).
+- [ ] Runtime checker: reject adjacent-face overlap beyond declared shared boundary (for example coplanar interior overlap with shared edge/vertex).
 - [ ] Proof: checker soundness (if checker passes, forbidden intersections do not exist).
 - [ ] Proof: checker completeness for convex coplanar-face assumptions used by Phase 5.
 - [ ] Proof: shared-edge and shared-vertex contacts are never misclassified as forbidden intersections.
+- [ ] Proof: adjacency-exemption implementation is equivalent to the allowed-contact spec.
 
 ## P5.6 Plane Computation (Roadmap)
 - [x] Runtime API: compute face plane `(normal, offset)` from face vertices via cross product + dot product.
 - [x] Handle face-normal seed selection robustly (first non-collinear triple or explicit precondition).
 - [x] Spec: `face_plane_contains_vertex_spec` for every vertex on the face.
+- [ ] Define canonical face-plane representation for comparisons (`normal` sign/scale normalization policy).
 - [ ] Proof: computed plane contains all vertices of that face (using coplanarity invariant).
 - [ ] Proof: computed normal direction matches face orientation/winding.
 - [ ] Proof: twin/adjacent orientation interactions agree with plane-normal conventions.
+- [ ] Proof: canonicalized plane is stable under cyclic face reindexing and seed-triple choice.
 
 ## P5.7 Validity Gate Integration
 - [x] Add an explicit Phase 5 aggregate predicate/checker, for example:
@@ -96,6 +103,40 @@ This doc expands those targets into executable TODOs aligned with the current `v
   - default build
   - `--features geometry-checks`
   - `--features "geometry-checks,verus-proofs"`
+
+## P5.10 Degeneracy Policy and Contract Hardening
+- [ ] Write an explicit Phase 5 degeneracy policy (accepted vs rejected cases) for:
+  - coplanar neighboring faces
+  - vertex-touch-only contacts between components
+  - zero-volume or near-degenerate closed components (in exact arithmetic terms)
+- [ ] Ensure each runtime checker contract and precondition text matches that policy (no implicit checker-specific behavior).
+- [ ] Add policy-lock tests: at least one positive and one negative fixture for each documented boundary case.
+
+## P5.11 Diagnostics and Scalability Guardrails
+- [ ] Add diagnostic checker variants that return a first failing witness (face id / edge id / face-pair + reason), not only `bool`.
+- [ ] Prove diagnostic and boolean checker equivalence (diagnostic success iff boolean passes).
+- [ ] Document checker complexity and asymptotic bounds (especially face-pair intersection path).
+- [ ] Add broad-phase culling for face-pair checks (for example plane-side/AABB prefilters) with soundness proof (no false negatives).
+- [ ] Add stress fixtures (higher face counts) to lock checker behavior and runtime envelope.
+
+## P5.12 Invariance, Policy, and Phase-6 Readiness
+- [ ] Checker-result invariance:
+  - prove/tests that Phase 5 outcomes are invariant under face-cycle start index changes, face iteration order changes, and consistent mesh index relabeling.
+- [ ] Rigid-transform invariance:
+  - prove/tests that translation + rotation preserve all Phase 5 checks;
+  - document and test expected behavior under reflection (orientation-sensitive checks should flip as intended).
+- [ ] Connected-component interaction policy:
+  - explicitly define whether disconnected closed components may touch at vertex/edge/face contact;
+  - enforce that policy in intersection/outwardness gate behavior.
+- [ ] Witness-grade failure APIs:
+  - add optional first-failure witness payloads (offending face/edge/face-pair + reason code);
+  - add witness-validity tests proving returned witnesses are real counterexamples.
+- [ ] Differential/property-based verification harness:
+  - generate random valid closed meshes + adversarial perturbations;
+  - compare optimized runtime checkers against a simple brute-force oracle for consistency.
+- [ ] Phase 6 handoff lemmas:
+  - state/prove preservation lemmas for Phase 5 invariants under topology-only edits that do not move coordinates;
+  - document which Euler-operator preconditions must preserve geometric invariants versus recheck them.
 
 ## Burndown Log
 - 2026-02-18: Implemented P5.5 runtime self-intersection checker in `src/halfedge_mesh/validation.rs`:
@@ -202,6 +243,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 ## Exit Criteria
 - [ ] Every roadmap Phase 5 checkbox is implemented and proved in `vcad-topology`.
 - [ ] No trusted assumptions remain for Phase 5 APIs.
+- [ ] Phase 5 degeneracy policy and checker contracts are explicit and test-locked.
 - [x] Verification passes:
   - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
   - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels`
