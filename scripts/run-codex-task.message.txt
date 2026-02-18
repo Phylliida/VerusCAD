@@ -1,1 +1,1 @@
-Added a proof-facing half_edge_components bridge and a verified constructive partition checker for component outputs, and documented the remaining BFS soundness/completeness gap in the vcad-topology burndown.
+Added a constructive component_count partition witness bridge in vcad-topology and documented a rolled-back half_edge_components coverage proof retry.

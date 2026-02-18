@@ -398,6 +398,13 @@ pub open spec fn mesh_half_edge_components_partition_spec(
             ==> c1 == c2
 }
 
+pub open spec fn mesh_component_count_partition_witness_spec(m: MeshModel, count: int) -> bool {
+    exists|components: Seq<Vec<usize>>| {
+        &&& mesh_half_edge_components_partition_spec(m, components)
+        &&& count == components.len() as int
+    }
+}
+
 /// Euler relation under the current closed-component model:
 /// each connected closed component contributes characteristic `2`,
 /// so globally `V - E + F = 2 * component_count`.
@@ -1565,6 +1572,12 @@ pub fn ex_mesh_half_edge_components(m: &Mesh) -> (out: Vec<Vec<usize>>)
     m.half_edge_components_for_verification()
 }
 
+#[verifier::external_body]
+pub fn ex_mesh_component_count(m: &Mesh) -> (out: usize)
+{
+    m.component_count()
+}
+
 #[verifier::exec_allows_no_decreases_clause]
 #[allow(dead_code)]
 pub fn runtime_check_half_edge_components_partition(
@@ -2125,6 +2138,36 @@ pub fn half_edge_components_constructive(
     } else {
         Option::None
     }
+}
+
+#[allow(dead_code)]
+pub fn component_count_constructive(
+    m: &Mesh,
+) -> (out: Option<usize>)
+    ensures
+        match out {
+            Option::Some(count) => mesh_component_count_partition_witness_spec(m@, count as int),
+            Option::None => true,
+        },
+{
+    let components = ex_mesh_half_edge_components(m);
+    let components_ok = runtime_check_half_edge_components_partition(m, &components);
+    if !components_ok {
+        return Option::None;
+    }
+
+    let count = ex_mesh_component_count(m);
+    if count != components.len() {
+        return Option::None;
+    }
+
+    proof {
+        assert(mesh_half_edge_components_partition_spec(m@, components@));
+        assert(count as int == components@.len() as int);
+        assert(mesh_component_count_partition_witness_spec(m@, count as int));
+    }
+
+    Option::Some(count)
 }
 
 } // verus!

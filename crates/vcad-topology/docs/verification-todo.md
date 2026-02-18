@@ -570,8 +570,46 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
       passed (`35 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`69 verified, 0 errors`).
+  - burndown update (2026-02-18, retry):
+    - retried exporting global completeness directly in
+      `mesh_half_edge_components_partition_spec` with explicit witness-lifting
+      from the checker's final `global_seen` scan.
+    - attempted proof shapes (both rolled back):
+      - direct exit packaging (`forall h. exists component`) from
+        `global_seen ==> exists component`,
+      - strengthened final-scan invariant carrying explicit prefix coverage
+        (`forall h < scan_idx. exists component`).
+    - both variants remained trigger-sensitive/brittle in quantified existential
+      packaging, so the change was reverted to preserve verifier stability.
+    - stable state retained:
+      `runtime_check_half_edge_components_partition` still checks full runtime
+      coverage via `global_seen`, but exported proved spec remains the stable
+      partition/disjointness surface.
   - file: `src/halfedge_mesh.rs`
 - [ ] Verify `component_count` equals number of connected components.
+  - burndown update (2026-02-18):
+    - landed constructive count/partition bridge in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      - new spec witness predicate:
+        `mesh_component_count_partition_witness_spec`,
+      - new external-body bridge:
+        `ex_mesh_component_count`,
+      - new constructive wrapper:
+        `component_count_constructive`.
+    - proved stable intermediate guarantee:
+      `component_count_constructive` returns `Some(count)` only when `count`
+      matches a checked partition witness from `half_edge_components`
+      (`exists components. mesh_half_edge_components_partition_spec(...) &&
+      count == components.len()`).
+    - remaining gap:
+      this does not yet connect to the full connected-components model
+      (`mesh_component_count_spec`) until BFS soundness/completeness linkage is
+      exported at spec level.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`36 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`36 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`70 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
 - [ ] Verify `euler_characteristics_per_component` computes `V - E + F` per BFS component.
   - file: `src/halfedge_mesh.rs`
