@@ -1,1 +1,1 @@
-Removed seven unused external-body kernel bridge wrappers in vcad-topology and revalidated fast/full verification plus topology tests.
+Removed ex_mesh_is_structurally_valid/ex_mesh_is_valid bridge wrappers in vcad-topology and revalidated fast/full verification plus tests.
