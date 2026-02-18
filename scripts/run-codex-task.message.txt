@@ -1,1 +1,1 @@
-Exported the no-duplicate-oriented-edge input clause through from_face_cycles_constructive_next_prev_face in vcad-topology with a new verified runtime checker and updated burndown records.
+Exported the all-oriented-edges-have-twin input clause through from_face_cycles_constructive_next_prev_face in vcad-topology with a verified runtime checker and updated burndown records.
