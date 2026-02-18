@@ -106,7 +106,14 @@ This doc expands those targets into executable TODOs aligned with the current `v
   - positive fixtures (`tetrahedron`, `cube`, `triangular_prism`) now assert `check_face_plane_consistency()`;
   - added `compute_face_plane_returns_expected_values_for_cube_bottom_face`;
   - strengthened degeneracy tests to assert `compute_face_plane(..).is_none()` and plane-consistency failure when no valid plane seed exists.
-- 2026-02-18: Failed attempts from this P5.6 pass: none.
+- 2026-02-18: Failed attempt in this P5.6 pass: initially asserted concave coplanar faces should fail `check_face_plane_consistency()`, but this was incorrect (concavity does not invalidate plane containment); test expectation was corrected to pass plane-consistency while still failing convexity.
+- 2026-02-18: Revalidated after P5.6 runtime plane changes:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (192 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (227 verified, 0 errors)
 - 2026-02-18: Tightened `Mesh::check_face_coplanarity()` to require face non-degeneracy (`check_face_corner_non_collinearity()`) before testing coplanarity, so degenerate collinear faces no longer vacuously pass due a collinear base triple.
 - 2026-02-18: Updated degeneracy tests in `src/halfedge_mesh/tests.rs` to match the stronger coplanarity precondition:
   - `collinear_triangle_faces_fail_geometric_nondegeneracy` now expects `check_face_coplanarity() == false`;
