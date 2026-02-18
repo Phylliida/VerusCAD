@@ -7,6 +7,37 @@ use vcad_math::runtime_scalar::RuntimeScalar;
 #[cfg(feature = "geometry-checks")]
 use vcad_math::runtime_vec3::RuntimeVec3;
 
+#[cfg(feature = "geometry-checks")]
+fn append_translated_tetrahedron(
+    vertices: &mut Vec<RuntimePoint3>,
+    faces: &mut Vec<Vec<usize>>,
+    tx: i64,
+    ty: i64,
+    tz: i64,
+) {
+    let base = vertices.len();
+    vertices.push(RuntimePoint3::from_ints(tx, ty, tz));
+    vertices.push(RuntimePoint3::from_ints(tx + 1, ty, tz));
+    vertices.push(RuntimePoint3::from_ints(tx, ty + 1, tz));
+    vertices.push(RuntimePoint3::from_ints(tx, ty, tz + 1));
+
+    faces.push(vec![base, base + 1, base + 2]);
+    faces.push(vec![base, base + 3, base + 1]);
+    faces.push(vec![base + 1, base + 3, base + 2]);
+    faces.push(vec![base + 2, base + 3, base]);
+}
+
+#[cfg(feature = "geometry-checks")]
+fn build_disconnected_translated_tetrahedra_mesh(component_origins: &[(i64, i64, i64)]) -> Mesh {
+    let mut vertices = Vec::with_capacity(component_origins.len() * 4);
+    let mut faces = Vec::with_capacity(component_origins.len() * 4);
+    for &(tx, ty, tz) in component_origins {
+        append_translated_tetrahedron(&mut vertices, &mut faces, tx, ty, tz);
+    }
+    Mesh::from_face_cycles(vertices, &faces)
+        .expect("disconnected translated tetrahedra stress fixture should build")
+}
+
     #[test]
     fn tetrahedron_is_valid() {
         let mesh = Mesh::tetrahedron();
@@ -196,6 +227,51 @@ use vcad_math::runtime_vec3::RuntimeVec3;
         assert_eq!(chis.len(), 2);
         assert!(chis.into_iter().all(|chi| chi == 2));
         assert!(mesh.check_euler_formula_closed_components());
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn stress_many_disconnected_components_geometric_consistency_passes() {
+        const COMPONENTS: usize = 24;
+        let mut origins = Vec::with_capacity(COMPONENTS);
+        for i in 0..COMPONENTS {
+            origins.push((i as i64 * 10, 0, 0));
+        }
+
+        let mesh = build_disconnected_translated_tetrahedra_mesh(&origins);
+        assert_eq!(mesh.faces.len(), COMPONENTS * 4);
+        assert!(mesh.is_valid());
+        assert_eq!(mesh.component_count(), COMPONENTS);
+        assert!(mesh.check_no_forbidden_face_face_intersections());
+        assert!(mesh.check_geometric_topological_consistency());
+        assert_eq!(
+            mesh.check_geometric_topological_consistency(),
+            mesh.check_geometric_topological_consistency_diagnostic().is_ok()
+        );
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn stress_many_components_with_one_overlap_fails_intersection_checker() {
+        const COMPONENTS: usize = 24;
+        let mut origins = Vec::with_capacity(COMPONENTS);
+        for i in 0..(COMPONENTS - 1) {
+            origins.push((i as i64 * 10, 0, 0));
+        }
+        origins.push((0, 0, 0));
+
+        let mesh = build_disconnected_translated_tetrahedra_mesh(&origins);
+        assert_eq!(mesh.faces.len(), COMPONENTS * 4);
+        assert!(mesh.is_valid());
+        assert!(!mesh.check_no_forbidden_face_face_intersections());
+        assert!(!mesh.check_geometric_topological_consistency());
+        let failure = mesh
+            .check_geometric_topological_consistency_diagnostic()
+            .expect_err("overlapping stress fixture should fail");
+        assert!(matches!(
+            failure,
+            GeometricTopologicalConsistencyFailure::ForbiddenFaceFaceIntersection { .. }
+        ));
     }
 
     #[test]

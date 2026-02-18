@@ -127,9 +127,27 @@ Current explicit policy (runtime behavior locked by tests):
 ## P5.11 Diagnostics and Scalability Guardrails
 - [x] Add diagnostic checker variants that return a first failing witness (face id / edge id / face-pair + reason), not only `bool`.
 - [x] Prove diagnostic and boolean checker equivalence (diagnostic success iff boolean passes).
-- [ ] Document checker complexity and asymptotic bounds (especially face-pair intersection path).
+- [x] Document checker complexity and asymptotic bounds (especially face-pair intersection path).
 - [ ] Add broad-phase culling for face-pair checks (for example plane-side/AABB prefilters) with soundness proof (no false negatives).
-- [ ] Add stress fixtures (higher face counts) to lock checker behavior and runtime envelope.
+- [x] Add stress fixtures (higher face counts) to lock checker behavior and runtime envelope.
+
+Current complexity notes (runtime implementation in `src/halfedge_mesh/validation.rs`):
+- Symbols:
+  - `F` = number of faces;
+  - `H` = number of half-edges (`H = sum_f d_f`, where `d_f` is face `f` cycle length);
+  - `d_max` = `max_f d_f`.
+- Linear-time per-half-edge checks:
+  - `check_no_zero_length_geometric_edges`, `check_face_corner_non_collinearity`, `check_face_coplanarity`, `check_face_convexity`, and `check_shared_edge_local_orientation_consistency` each run in `O(H)` time with `O(1)` auxiliary space (excluding input mesh storage).
+- Plane consistency:
+  - `check_face_plane_consistency` is `O(F * C_plane + H)`, where `C_plane` is one `compute_face_plane` call.
+  - In the current implementation, `compute_face_plane` re-runs global validity guards, so `C_plane` is effectively `O(H)` and the stage is `O(FH)` worst-case.
+- Face-pair intersection path:
+  - `check_no_forbidden_face_face_intersections` performs per-face preprocessing plus all non-adjacent face pairs.
+  - Pair cost is `O(d_a * d_b)` for faces `a, b` (segment-vs-face tests + shared-vertex screening).
+  - Total pair cost is `O(sum_{a<b} d_a d_b)`, bounded by `O(F^2 * d_max^2)`; for bounded face degree this is `O(F^2)`.
+  - Auxiliary space is `O(H)` for cached per-face vertex cycles and normals.
+- Aggregate Phase 5 gate:
+  - `check_geometric_topological_consistency_diagnostic` is dominated by plane/intersection stages and is currently `O(FH + F^2 * d_max^2)` worst-case.
 
 ## P5.12 Invariance, Policy, and Phase-6 Readiness
 - [ ] Checker-result invariance:
@@ -151,6 +169,19 @@ Current explicit policy (runtime behavior locked by tests):
   - document which Euler-operator preconditions must preserve geometric invariants versus recheck them.
 
 ## Burndown Log
+- 2026-02-18: Completed a P5.11 scalability/complexity pass:
+  - in `src/halfedge_mesh/tests.rs`, added high-face-count stress fixtures and tests:
+    - `stress_many_disconnected_components_geometric_consistency_passes` (24 disconnected tetrahedra; 96 faces) to lock large positive behavior;
+    - `stress_many_components_with_one_overlap_fails_intersection_checker` (same scale, one intentional overlapping component) to lock large negative intersection behavior and diagnostic failure classification.
+  - in this Phase 5 burndown doc, marked the P5.11 complexity and stress-fixture checklist items complete and recorded explicit asymptotic bounds for the current runtime implementation (including face-pair intersection path).
+- 2026-02-18: Failed attempts in this P5.11 scalability/complexity pass: none.
+- 2026-02-18: Revalidated after the P5.11 scalability/complexity additions:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (215 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (250 verified, 0 errors)
 - 2026-02-18: Completed a P5.11 diagnostics pass in `src/halfedge_mesh/validation.rs` and `src/halfedge_mesh/mod.rs`:
   - added `GeometricTopologicalConsistencyFailure` with first-failure witness payloads (`half_edge`, `face`, `face_a/face_b`, and component-start witnesses);
   - added `Mesh::check_geometric_topological_consistency_diagnostic() -> Result<(), GeometricTopologicalConsistencyFailure>`;
