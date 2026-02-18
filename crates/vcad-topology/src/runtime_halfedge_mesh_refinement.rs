@@ -3287,6 +3287,165 @@ pub proof fn lemma_from_face_cycles_success_implies_vertex_representatives(
     }
 }
 
+pub proof fn lemma_from_face_cycles_structural_core_implies_incidence(
+    vertex_count: int,
+    face_cycles: Seq<Seq<int>>,
+    m: MeshModel,
+)
+    ensures
+        from_face_cycles_structural_core_spec(vertex_count, face_cycles, m)
+            ==> from_face_cycles_incidence_model_spec(vertex_count, face_cycles, m),
+{
+    if from_face_cycles_structural_core_spec(vertex_count, face_cycles, m) {
+        let fcnt = face_cycles.len() as int;
+        let hcnt = input_half_edge_count_spec(face_cycles);
+
+        assert(mesh_vertex_count_spec(m) == vertex_count);
+        assert(mesh_face_count_spec(m) == fcnt);
+        assert(mesh_half_edge_count_spec(m) == hcnt);
+        assert(mesh_index_bounds_spec(m));
+        assert(forall|f: int|
+            #![trigger m.face_half_edges[f]]
+            0 <= f < fcnt ==> m.face_half_edges[f] == input_face_cycle_start_spec(face_cycles, f));
+
+        assert(forall|f: int, i: int|
+            #![trigger m.half_edges[input_face_half_edge_index_spec(face_cycles, f, i)]]
+            input_face_local_index_valid_spec(face_cycles, f, i) ==> {
+                let n = face_cycles[f].len() as int;
+                let h = input_face_half_edge_index_spec(face_cycles, f, i);
+                let next_i = input_face_next_local_index_spec(face_cycles, f, i);
+                let prev_i = input_face_prev_local_index_spec(face_cycles, f, i);
+                &&& m.half_edges[h].face == f
+                &&& m.half_edges[h].vertex == input_face_from_vertex_spec(face_cycles, f, i)
+                &&& m.half_edges[h].next == input_face_half_edge_index_spec(face_cycles, f, next_i)
+                &&& m.half_edges[h].prev == input_face_half_edge_index_spec(face_cycles, f, prev_i)
+            }) by {
+            assert forall|f: int, i: int|
+                #![trigger m.half_edges[input_face_half_edge_index_spec(face_cycles, f, i)]]
+                input_face_local_index_valid_spec(face_cycles, f, i) implies {
+                    let n = face_cycles[f].len() as int;
+                    let h = input_face_half_edge_index_spec(face_cycles, f, i);
+                    let next_i = input_face_next_local_index_spec(face_cycles, f, i);
+                    let prev_i = input_face_prev_local_index_spec(face_cycles, f, i);
+                    &&& m.half_edges[h].face == f
+                    &&& m.half_edges[h].vertex == input_face_from_vertex_spec(face_cycles, f, i)
+                    &&& m.half_edges[h].next == input_face_half_edge_index_spec(face_cycles, f, next_i)
+                    &&& m.half_edges[h].prev == input_face_half_edge_index_spec(face_cycles, f, prev_i)
+                } by {
+                assert(from_face_cycles_next_prev_face_coherent_spec(face_cycles, m));
+                assert(from_face_cycles_next_prev_face_at_spec(face_cycles, m, f, i));
+                assert(from_face_cycles_vertex_assignment_coherent_spec(face_cycles, m));
+                assert(from_face_cycles_vertex_assignment_at_spec(face_cycles, m, f, i));
+            };
+        };
+
+        assert(forall|h: int|
+            #![trigger m.half_edges[h].twin]
+            0 <= h < hcnt ==> {
+                let t = m.half_edges[h].twin;
+                &&& 0 <= t < hcnt
+                &&& mesh_half_edge_from_vertex_spec(m, t) == mesh_half_edge_to_vertex_spec(m, h)
+                &&& mesh_half_edge_to_vertex_spec(m, t) == mesh_half_edge_from_vertex_spec(m, h)
+            }) by {
+            assert forall|h: int|
+                #![trigger m.half_edges[h].twin]
+                0 <= h < hcnt implies {
+                    let t = m.half_edges[h].twin;
+                    &&& 0 <= t < hcnt
+                    &&& mesh_half_edge_from_vertex_spec(m, t) == mesh_half_edge_to_vertex_spec(m, h)
+                    &&& mesh_half_edge_to_vertex_spec(m, t) == mesh_half_edge_from_vertex_spec(m, h)
+                } by {
+                assert(from_face_cycles_twin_endpoint_correspondence_spec(m));
+                assert(from_face_cycles_twin_endpoint_correspondence_at_spec(m, h));
+            };
+        };
+
+        assert(forall|h1: int, h2: int|
+            #![trigger m.half_edges[h1].edge, m.half_edges[h2].edge]
+            0 <= h1 < hcnt && 0 <= h2 < hcnt ==> {
+                (m.half_edges[h1].edge == m.half_edges[h2].edge) <==> (
+                    mesh_undirected_key_spec(
+                        mesh_half_edge_from_vertex_spec(m, h1),
+                        mesh_half_edge_to_vertex_spec(m, h1),
+                    ) == mesh_undirected_key_spec(
+                        mesh_half_edge_from_vertex_spec(m, h2),
+                        mesh_half_edge_to_vertex_spec(m, h2),
+                    )
+                )
+            }) by {
+            assert forall|h1: int, h2: int|
+                #![trigger m.half_edges[h1].edge, m.half_edges[h2].edge]
+                0 <= h1 < hcnt && 0 <= h2 < hcnt implies {
+                    (m.half_edges[h1].edge == m.half_edges[h2].edge) <==> (
+                        mesh_undirected_key_spec(
+                            mesh_half_edge_from_vertex_spec(m, h1),
+                            mesh_half_edge_to_vertex_spec(m, h1),
+                        ) == mesh_undirected_key_spec(
+                            mesh_half_edge_from_vertex_spec(m, h2),
+                            mesh_half_edge_to_vertex_spec(m, h2),
+                        )
+                    )
+                } by {
+                assert(from_face_cycles_undirected_edge_equivalence_spec(m));
+                assert(from_face_cycles_undirected_edge_pair_equivalent_spec(m, h1, h2));
+            };
+        };
+
+        assert(forall|e: int|
+            #![trigger m.edge_half_edges[e]]
+            0 <= e < mesh_edge_count_spec(m) ==> {
+                let h = m.edge_half_edges[e];
+                &&& 0 <= h < hcnt
+                &&& m.half_edges[h].edge == e
+            }) by {
+            assert forall|e: int|
+                #![trigger m.edge_half_edges[e]]
+                0 <= e < mesh_edge_count_spec(m) implies {
+                    let h = m.edge_half_edges[e];
+                    &&& 0 <= h < hcnt
+                    &&& m.half_edges[h].edge == e
+                } by {
+                assert(mesh_edge_exactly_two_half_edges_spec(m));
+                assert(mesh_edge_exactly_two_half_edges_at_spec(m, e));
+            };
+        };
+
+        assert(forall|h: int| 0 <= h < hcnt ==> 0 <= #[trigger] m.half_edges[h].edge < mesh_edge_count_spec(m));
+
+        assert(forall|v: int|
+            #![trigger m.vertex_half_edges[v]]
+            0 <= v < vertex_count ==> {
+                let h = m.vertex_half_edges[v];
+                &&& 0 <= h < hcnt
+                &&& m.half_edges[h].vertex == v
+            }) by {
+            assert(mesh_vertex_representative_valid_nonisolated_spec(m));
+        };
+
+        assert(from_face_cycles_incidence_model_spec(vertex_count, face_cycles, m));
+    }
+}
+
+pub proof fn lemma_from_face_cycles_structural_core_implies_success(
+    vertex_count: int,
+    face_cycles: Seq<Seq<int>>,
+    m: MeshModel,
+)
+    ensures
+        from_face_cycles_structural_core_spec(vertex_count, face_cycles, m)
+            ==> from_face_cycles_success_spec(vertex_count, face_cycles, m),
+{
+    if from_face_cycles_structural_core_spec(vertex_count, face_cycles, m) {
+        assert(from_face_cycles_basic_input_spec(vertex_count, face_cycles));
+        assert(from_face_cycles_no_duplicate_oriented_edges_spec(face_cycles));
+        assert(from_face_cycles_all_oriented_edges_have_twin_spec(face_cycles));
+        assert(from_face_cycles_no_isolated_vertices_spec(vertex_count, face_cycles));
+        lemma_from_face_cycles_structural_core_implies_incidence(vertex_count, face_cycles, m);
+        assert(from_face_cycles_incidence_model_spec(vertex_count, face_cycles, m));
+        assert(from_face_cycles_success_spec(vertex_count, face_cycles, m));
+    }
+}
+
 #[verifier::external_body]
 pub fn ex_mesh_from_face_cycles(
     vertex_positions: Vec<RuntimePoint3>,
@@ -4882,6 +5041,10 @@ pub fn from_face_cycles_constructive_next_prev_face(
                 vertex_positions@.len() as int,
                 face_cycles_exec_to_model_spec(face_cycles@),
                 m@,
+            ) && from_face_cycles_success_spec(
+                vertex_positions@.len() as int,
+                face_cycles_exec_to_model_spec(face_cycles@),
+                m@,
             ),
             Result::Err(_) => true,
         },
@@ -4966,6 +5129,16 @@ pub fn from_face_cycles_constructive_next_prev_face(
                                             assert(mesh_edge_exactly_two_half_edges_spec(m@));
                                             assert(from_face_cycles_vertex_representatives_spec(m@));
                                             assert(from_face_cycles_structural_core_spec(
+                                                vertex_count as int,
+                                                model_cycles,
+                                                m@,
+                                            ));
+                                            lemma_from_face_cycles_structural_core_implies_success(
+                                                vertex_count as int,
+                                                model_cycles,
+                                                m@,
+                                            );
+                                            assert(from_face_cycles_success_spec(
                                                 vertex_count as int,
                                                 model_cycles,
                                                 m@,
@@ -6560,13 +6733,13 @@ pub fn ex_mesh_component_count(m: &Mesh) -> (out: usize)
 #[verifier::external_body]
 pub fn ex_mesh_euler_characteristics_per_component(m: &Mesh) -> (out: Vec<isize>)
 {
-    m.euler_characteristics_per_component()
+    m.euler_characteristics_per_component_for_verification()
 }
 
 #[verifier::external_body]
 pub fn ex_mesh_check_euler_formula_closed_components(m: &Mesh) -> (out: bool)
 {
-    m.check_euler_formula_closed_components()
+    m.check_euler_formula_closed_components_for_verification()
 }
 
 #[verifier::external_body]

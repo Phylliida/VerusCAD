@@ -1,1 +1,1 @@
-Completed vcad-topology validity burndown by proving constructive is_valid and all three reference constructors now export model-level mesh_valid_spec, with fast and full verification green.
+Completed vcad-topology Section C burndown by proving structural-core constructor outputs imply from_face_cycles_success_spec, documenting the remaining failure-link gap, and keeping fast and full verification green.

@@ -267,6 +267,19 @@ impl Mesh {
     }
 
     pub fn euler_characteristics_per_component(&self) -> Vec<isize> {
+        #[cfg(feature = "verus-proofs")]
+        {
+            if let Some(chis) =
+                crate::runtime_halfedge_mesh_refinement::euler_characteristics_per_component_constructive(self)
+            {
+                return chis;
+            }
+        }
+
+        self.euler_characteristics_per_component_raw()
+    }
+
+    fn euler_characteristics_per_component_raw(&self) -> Vec<isize> {
         let mut out = Vec::new();
         for component in self.half_edge_components() {
             let mut vertices = HashSet::new();
@@ -284,7 +297,20 @@ impl Mesh {
     }
 
     pub fn check_euler_formula_closed_components(&self) -> bool {
-        let chis = self.euler_characteristics_per_component();
+        #[cfg(feature = "verus-proofs")]
+        {
+            if let Some(w) =
+                crate::runtime_halfedge_mesh_refinement::check_euler_formula_closed_components_constructive(self)
+            {
+                return w.api_ok;
+            }
+        }
+
+        self.check_euler_formula_closed_components_raw()
+    }
+
+    fn check_euler_formula_closed_components_raw(&self) -> bool {
+        let chis = self.euler_characteristics_per_component_raw();
         !chis.is_empty() && chis.into_iter().all(|chi| chi == 2)
     }
 
@@ -354,6 +380,16 @@ impl Mesh {
     #[cfg(feature = "verus-proofs")]
     pub(crate) fn half_edge_components_for_verification(&self) -> Vec<Vec<usize>> {
         self.half_edge_components()
+    }
+
+    #[cfg(feature = "verus-proofs")]
+    pub(crate) fn euler_characteristics_per_component_for_verification(&self) -> Vec<isize> {
+        self.euler_characteristics_per_component_raw()
+    }
+
+    #[cfg(feature = "verus-proofs")]
+    pub(crate) fn check_euler_formula_closed_components_for_verification(&self) -> bool {
+        self.check_euler_formula_closed_components_raw()
     }
 
     #[cfg(feature = "verus-proofs")]
@@ -742,6 +778,14 @@ mod tests {
             t.check_edge_has_exactly_two_half_edges(),
             t.check_edge_has_exactly_two_half_edges_via_kernel()
         );
+        assert_eq!(
+            t.euler_characteristics_per_component(),
+            t.euler_characteristics_per_component_for_verification()
+        );
+        assert_eq!(
+            t.check_euler_formula_closed_components(),
+            t.check_euler_formula_closed_components_for_verification()
+        );
 
         let c = Mesh::cube();
         assert!(c.bridge_index_and_twin_checks_agree());
@@ -756,6 +800,14 @@ mod tests {
             c.check_edge_has_exactly_two_half_edges(),
             c.check_edge_has_exactly_two_half_edges_via_kernel()
         );
+        assert_eq!(
+            c.euler_characteristics_per_component(),
+            c.euler_characteristics_per_component_for_verification()
+        );
+        assert_eq!(
+            c.check_euler_formula_closed_components(),
+            c.check_euler_formula_closed_components_for_verification()
+        );
 
         let p = Mesh::triangular_prism();
         assert!(p.bridge_index_and_twin_checks_agree());
@@ -769,6 +821,14 @@ mod tests {
         assert_eq!(
             p.check_edge_has_exactly_two_half_edges(),
             p.check_edge_has_exactly_two_half_edges_via_kernel()
+        );
+        assert_eq!(
+            p.euler_characteristics_per_component(),
+            p.euler_characteristics_per_component_for_verification()
+        );
+        assert_eq!(
+            p.check_euler_formula_closed_components(),
+            p.check_euler_formula_closed_components_for_verification()
         );
     }
 }

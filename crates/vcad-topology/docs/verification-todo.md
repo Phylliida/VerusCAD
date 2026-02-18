@@ -56,7 +56,7 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
   - includes explicit incidence-model semantics and failure-condition semantics:
     `from_face_cycles_incidence_model_spec`, `from_face_cycles_success_spec`, `from_face_cycles_failure_spec`.
   - file: `src/runtime_halfedge_mesh_refinement.rs`
-- [ ] Prove face-cycle construction assigns coherent `next/prev/face` fields.
+- [x] Prove face-cycle construction assigns coherent `next/prev/face` fields.
   - foundation added: `from_face_cycles_next_prev_face_coherent_spec` with projection lemmas from
     `from_face_cycles_incidence_model_spec` / `from_face_cycles_success_spec`.
   - burndown update (2026-02-18):
@@ -436,7 +436,41 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `Result`-level linkage to full
       `from_face_cycles_success_spec` / `from_face_cycles_failure_spec`
       remains open.
+  - burndown update (2026-02-18, structural-core->success linkage completion):
+    - landed split constructive-success packaging proofs in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      - `lemma_from_face_cycles_structural_core_implies_incidence`,
+      - `lemma_from_face_cycles_structural_core_implies_success`.
+    - proof-shape note:
+      instead of a single heavy implication proof, the stable approach was to
+      package each incidence clause directly from existing constructor-core
+      exports (`counts/index/face_starts`, `next/prev/face + vertex`, twin
+      endpoint correspondence, undirected-edge equivalence, edge
+      representative coverage, vertex representatives), then aggregate.
+    - strengthened
+      `from_face_cycles_constructive_next_prev_face` so `Ok(m)` now exports:
+      - `from_face_cycles_structural_core_spec(...)`, and
+      - `from_face_cycles_success_spec(...)`.
+    - remaining gap:
+      constructive failure-side linkage (`Err(_) ==> from_face_cycles_failure_spec(...)`)
+      remains open and is now tracked as a separate section C item below.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement structural_core_implies_success`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement from_face_cycles_constructive_next_prev_face`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`159 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`159 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`194 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
+- [ ] Prove constructive failure linkage for `from_face_cycles` wrappers.
+  - target:
+    show `from_face_cycles_constructive_next_prev_face` exports
+    `Result::Err(_) ==> from_face_cycles_failure_spec(...)` without adding
+    trusted `external_fn_specification` assumptions.
+  - note:
+    success-side linkage is now complete (`Ok(m) ==> from_face_cycles_success_spec(...)`).
 - [x] Prove twin assignment is total for closed inputs and involutive.
   - burndown update (2026-02-18):
     - landed constructor-facing refinement predicate in
@@ -1208,7 +1242,7 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `./scripts/verify-vcad-topology-fast.sh` passed (`136 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`170 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
-- [ ] Verify `euler_characteristics_per_component` computes `V - E + F` per BFS component.
+- [x] Verify `euler_characteristics_per_component` computes `V - E + F` per BFS component.
   - burndown update (2026-02-18):
     - landed explicit Euler-per-component refinement scaffolding in
       `src/runtime_halfedge_mesh_refinement.rs`:
@@ -1271,9 +1305,37 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`138 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`138 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`172 verified, 0 errors`).
+  - burndown update (2026-02-18, direct API constructive-link completion):
+    - completed direct API linkage in `src/halfedge_mesh.rs` for proof-enabled builds:
+      - added raw implementation helper
+        `euler_characteristics_per_component_raw`,
+      - strengthened public API `Mesh::euler_characteristics_per_component` to
+        use `euler_characteristics_per_component_constructive` in
+        `verus-proofs` builds (with runtime fallback to raw computation),
+      - added bridge-safe raw accessor
+        `euler_characteristics_per_component_for_verification`.
+    - updated refinement bridge in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      `ex_mesh_euler_characteristics_per_component` now calls
+      `euler_characteristics_per_component_for_verification` to avoid recursive
+      self-calls through the constructive API path.
+    - failed attempts:
+      none in this pass.
+    - outcome:
+      in `verus-proofs` builds, the direct runtime API now routes through the
+      verified constructive witness path for Euler-per-component semantics, and
+      this item is complete.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement euler_characteristics_per_component_constructive`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`159 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`159 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`194 verified, 0 errors`);
+      `cargo test -p vcad-topology` passed (`4 passed, 0 failed`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
-- [ ] Verify `check_euler_formula_closed_components` iff all closed components have characteristic `2`.
+- [x] Verify `check_euler_formula_closed_components` iff all closed components have characteristic `2`.
   - burndown update (2026-02-18):
     - landed constructive witness surface in
       `src/runtime_halfedge_mesh_refinement.rs`:
@@ -1376,6 +1438,36 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`157 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`157 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`192 verified, 0 errors`).
+  - burndown update (2026-02-18, direct API constructive-link completion):
+    - completed direct API linkage in `src/halfedge_mesh.rs` for proof-enabled builds:
+      - added raw implementation helper
+        `check_euler_formula_closed_components_raw`,
+      - strengthened public API
+        `Mesh::check_euler_formula_closed_components` to use
+        `check_euler_formula_closed_components_constructive` in
+        `verus-proofs` builds (with runtime fallback to raw computation),
+      - added bridge-safe raw accessor
+        `check_euler_formula_closed_components_for_verification`.
+    - updated refinement bridge in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      `ex_mesh_check_euler_formula_closed_components` now calls
+      `check_euler_formula_closed_components_for_verification` to avoid
+      recursive self-calls through the constructive API path.
+    - failed attempts:
+      none in this pass.
+    - outcome:
+      in `verus-proofs` builds, the direct runtime Euler gate now routes through
+      the verified constructive witness path that certifies
+      `api_ok == (chis_non_empty && chis_all_two)` and model-link implications;
+      this item is complete.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement check_euler_formula_closed_components_constructive`
+      passed (`2 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`159 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`159 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`194 verified, 0 errors`);
+      `cargo test -p vcad-topology` passed (`4 passed, 0 failed`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 
