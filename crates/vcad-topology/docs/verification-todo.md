@@ -89,7 +89,9 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
   - note: runtime `Mesh::check_edge_has_exactly_two_half_edges` now delegates to this kernel checker in `verus-proofs` builds.
 - [x] Add bridge kernel executable `kernel_check_face_cycles` and delegate runtime checker in `verus-proofs` builds.
   - file: `src/verified_checker_kernels.rs`
-  - note: current proved contract is bounds-soundness (`out ==> kernel_index_bounds_spec`); full face-cycle semantic contract is pending.
+  - note: current proved contract is an intermediate semantic strengthening
+    (`out ==> kernel_face_representative_closed_min_length_total_spec(m)`); full
+    face-cycle semantic contract is still pending.
 - [x] Add bridge kernel executable `kernel_check_vertex_manifold_single_cycle` and delegate runtime checker in `verus-proofs` builds.
   - file: `src/verified_checker_kernels.rs`
   - note: current proved contract is bounds-soundness (`out ==> kernel_index_bounds_spec`); full vertex-manifold semantic contract is pending.
@@ -114,10 +116,12 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `lemma_kernel_next_iter_step`, `lemma_kernel_next_or_self_in_bounds`, `lemma_kernel_next_iter_in_bounds`
       to support bounded next-iteration witness construction.
     - strengthen `kernel_check_face_cycles` postcondition from
-      `out ==> kernel_face_has_incident_half_edge_total_spec(m)` to
+      `out ==> kernel_face_representative_closed_min_length_total_spec(m)` to
       `out ==> kernel_face_representative_cycles_total_spec(m)`.
-    - add per-face cycle-length witness threading invariant (`forall fp < f. exists k ...`) in outer loop.
-    - prove representative-cycle witness construction at face loop boundary (`k = steps`).
+    - lift the current per-face closure-length witnesses to include per-step face-membership
+      (`forall i < k. face(next_iter(i)) == f`) for each face representative cycle.
+    - connect executable no-overlap/global-coverage checks to explicit spec predicates (instead of
+      only executable-state invariants) as part of the final contract strengthening.
   - burndown update (2026-02-17):
     - attempted re-strengthening of `kernel_check_face_cycles` to
       `out ==> kernel_face_representative_cycles_total_spec`; this was rolled back after trigger-heavy
@@ -163,6 +167,24 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       existential witness threading while still proving a non-trivial semantic guarantee stronger
       than `out ==> kernel_index_bounds_spec(m)`.
     - verification check:
+      `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` passed (`34 verified, 0 errors`).
+  - burndown update (2026-02-18, latest):
+    - attempted direct postcondition packaging as a per-face `forall f. exists k` closure/min-length property.
+      this proof shape was rolled back after trigger-sensitive existential instantiation remained brittle in the
+      final contract-lifting step (despite stable inner-loop invariants).
+    - landed a stable strengthening by carrying explicit per-face cycle-length witnesses in execution
+      (`face_cycle_lens`) and exposing them through a spec-level existential witness sequence:
+      `kernel_face_representative_closed_min_length_spec`.
+    - strengthened `kernel_check_face_cycles` contract from
+      `out ==> kernel_face_has_incident_half_edge_total_spec(m)` to
+      `out ==> kernel_face_representative_closed_min_length_total_spec(m)`.
+      this now proves, for every face, a representative-anchored closed `next` walk of length `>= 3`
+      and `<= half_edge_count`, plus representative-face incidence.
+    - small proof-structure stabilization also landed: inner face walk uses `while steps < hcnt && !closed`
+      with invariant-preserving closure tracking (`closed ==> h == start`) instead of `break`.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels kernel_check_face_cycles`
+      passed (`4 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` passed (`34 verified, 0 errors`).
   - file: `src/verified_checker_kernels.rs`
 - [x] Verify `check_no_degenerate_edges`.

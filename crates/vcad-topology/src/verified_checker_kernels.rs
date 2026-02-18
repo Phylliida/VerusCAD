@@ -292,6 +292,35 @@ pub open spec fn kernel_face_has_incident_half_edge_total_spec(m: &KernelMesh) -
     kernel_index_bounds_spec(m) && kernel_face_has_incident_half_edge_spec(m)
 }
 
+pub open spec fn kernel_face_representative_closed_min_length_witness_spec(
+    m: &KernelMesh,
+    f: int,
+    k: int,
+) -> bool {
+    let start = m.face_half_edges@[f] as int;
+    &&& 3 <= k <= kernel_half_edge_count_spec(m)
+    &&& kernel_next_iter_spec(m, start, k as nat) == start
+}
+
+pub open spec fn kernel_face_representative_closed_min_length_spec(m: &KernelMesh) -> bool {
+    exists|face_cycle_lens: Seq<usize>| {
+        &&& face_cycle_lens.len() == kernel_face_count_spec(m)
+        &&& forall|f: int|
+            #![trigger face_cycle_lens[f]]
+            0 <= f < kernel_face_count_spec(m)
+                ==> kernel_face_representative_closed_min_length_witness_spec(
+                    m,
+                    f,
+                    face_cycle_lens[f] as int,
+                )
+    }
+}
+
+pub open spec fn kernel_face_representative_closed_min_length_total_spec(m: &KernelMesh) -> bool {
+    kernel_face_has_incident_half_edge_total_spec(m)
+        && kernel_face_representative_closed_min_length_spec(m)
+}
+
 pub open spec fn kernel_vertex_representative_cycle_witness_spec(m: &KernelMesh, v: int, k: int) -> bool {
     let hcnt = kernel_half_edge_count_spec(m);
     let start = m.vertex_half_edges@[v] as int;
@@ -650,7 +679,7 @@ pub fn kernel_check_no_degenerate_edges(m: &KernelMesh) -> (out: bool)
 #[allow(unused_variables, unused_assignments)]
 pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
     ensures
-        out ==> kernel_face_has_incident_half_edge_total_spec(m),
+        out ==> kernel_face_representative_closed_min_length_total_spec(m),
 {
     let bounds_ok = kernel_check_index_bounds(m);
     if !bounds_ok {
@@ -660,6 +689,7 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
     let hcnt = m.half_edges.len();
     let fcnt = m.face_half_edges.len();
     let mut global_seen: Vec<bool> = vec![false; hcnt];
+    let mut face_cycle_lens: Vec<usize> = Vec::new();
     let mut f: usize = 0;
     while f < fcnt
         invariant
@@ -667,11 +697,20 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
             hcnt == m.half_edges.len(),
             fcnt == m.face_half_edges.len(),
             global_seen@.len() == hcnt as int,
+            face_cycle_lens@.len() == f as int,
             0 <= f <= fcnt,
             forall|fp: int|
                 #![trigger m.face_half_edges@[fp]]
                 0 <= fp < f as int
                     ==> (#[trigger] m.half_edges@[m.face_half_edges@[fp] as int].face as int) == fp,
+            forall|fp: int|
+                #![trigger face_cycle_lens@[fp]]
+                0 <= fp < f as int
+                    ==> kernel_face_representative_closed_min_length_witness_spec(
+                        m,
+                        fp,
+                        face_cycle_lens@[fp] as int,
+                    ),
     {
         let start = m.face_half_edges[f];
         if m.half_edges[start].face != f {
@@ -681,7 +720,7 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
         let mut h = start;
         let mut steps: usize = 0;
         let mut closed = false;
-        while steps < hcnt
+        while steps < hcnt && !closed
             invariant
                 kernel_index_bounds_spec(m),
                 hcnt == m.half_edges.len(),
@@ -690,6 +729,7 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
                 local_seen@.len() == hcnt as int,
                 0 <= h < hcnt,
                 h as int == kernel_next_iter_spec(m, start as int, steps as nat),
+                closed ==> h == start,
         {
             let h_prev = h;
             let steps_prev = steps;
@@ -726,7 +766,6 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
 
             if h == start {
                 closed = true;
-                break;
             }
         }
 
@@ -739,6 +778,7 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
         if steps < 3 {
             return false;
         }
+        face_cycle_lens.push(steps);
 
         proof {
             assert(start as int == m.face_half_edges@[f as int] as int);
@@ -756,6 +796,50 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
                     } else {
                         assert(fp == f as int);
                         assert((#[trigger] m.half_edges@[m.face_half_edges@[fp] as int].face as int) == f as int);
+                    }
+                };
+            }
+            assert(forall|fp: int|
+                #![trigger face_cycle_lens@[fp]]
+                0 <= fp < (f + 1) as int
+                    ==> kernel_face_representative_closed_min_length_witness_spec(
+                        m,
+                        fp,
+                        face_cycle_lens@[fp] as int,
+                    )) by {
+                assert forall|fp: int|
+                    #![trigger face_cycle_lens@[fp]]
+                    0 <= fp < (f + 1) as int
+                        implies kernel_face_representative_closed_min_length_witness_spec(
+                            m,
+                            fp,
+                            face_cycle_lens@[fp] as int,
+                        ) by {
+                    if fp < f as int {
+                        assert(kernel_face_representative_closed_min_length_witness_spec(
+                            m,
+                            fp,
+                            face_cycle_lens@[fp] as int,
+                        ));
+                    } else {
+                        assert(fp == f as int);
+                        assert((face_cycle_lens@[fp] as int) == steps as int);
+                        assert(steps as int <= hcnt as int);
+                        assert(3 <= steps as int);
+                        assert(h as int == start as int);
+                        assert(h as int == kernel_next_iter_spec(m, start as int, steps as nat));
+                        assert(kernel_next_iter_spec(m, start as int, steps as nat) == start as int);
+                        assert(start as int == m.face_half_edges@[f as int] as int);
+                        assert(kernel_face_representative_closed_min_length_witness_spec(
+                            m,
+                            f as int,
+                            steps as int,
+                        ));
+                        assert(kernel_face_representative_closed_min_length_witness_spec(
+                            m,
+                            fp,
+                            face_cycle_lens@[fp] as int,
+                        ));
                     }
                 };
             }
@@ -797,7 +881,69 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
                 assert((#[trigger] m.half_edges@[m.face_half_edges@[fp] as int].face as int) == fp);
             };
         }
-        assert(kernel_face_has_incident_half_edge_total_spec(m));
+        assert(kernel_face_representative_closed_min_length_spec(m)) by {
+            let cycle_lens = face_cycle_lens@;
+            assert(cycle_lens.len() == kernel_face_count_spec(m)) by {
+                assert(cycle_lens.len() == f as int);
+                assert(kernel_face_count_spec(m) == fcnt as int);
+                assert(f == fcnt);
+            }
+            assert(forall|fp: int|
+                #![trigger cycle_lens[fp]]
+                0 <= fp < kernel_face_count_spec(m)
+                    ==> kernel_face_representative_closed_min_length_witness_spec(
+                        m,
+                        fp,
+                        cycle_lens[fp] as int,
+                    )) by {
+                assert forall|fp: int|
+                    #![trigger cycle_lens[fp]]
+                    0 <= fp < kernel_face_count_spec(m)
+                        implies kernel_face_representative_closed_min_length_witness_spec(
+                            m,
+                            fp,
+                            cycle_lens[fp] as int,
+                        ) by {
+                    assert(kernel_face_count_spec(m) == fcnt as int);
+                    assert(fp < fcnt as int);
+                    assert(fp < f as int);
+                    assert(cycle_lens[fp] == face_cycle_lens@[fp]);
+                    assert(kernel_face_representative_closed_min_length_witness_spec(
+                        m,
+                        fp,
+                        face_cycle_lens@[fp] as int,
+                    ));
+                    assert(kernel_face_representative_closed_min_length_witness_spec(
+                        m,
+                        fp,
+                        cycle_lens[fp] as int,
+                    ));
+                };
+            }
+            assert(exists|cycle_lens: Seq<usize>| {
+                &&& cycle_lens.len() == kernel_face_count_spec(m)
+                &&& forall|fp: int|
+                    #![trigger cycle_lens[fp]]
+                    0 <= fp < kernel_face_count_spec(m)
+                        ==> kernel_face_representative_closed_min_length_witness_spec(
+                            m,
+                            fp,
+                            cycle_lens[fp] as int,
+                        )
+            }) by {
+                let cycle_lens = face_cycle_lens@;
+                assert(cycle_lens.len() == kernel_face_count_spec(m));
+                assert(forall|fp: int|
+                    #![trigger cycle_lens[fp]]
+                    0 <= fp < kernel_face_count_spec(m)
+                        ==> kernel_face_representative_closed_min_length_witness_spec(
+                            m,
+                            fp,
+                            cycle_lens[fp] as int,
+                        ));
+            };
+        }
+        assert(kernel_face_representative_closed_min_length_total_spec(m));
     }
     true
 }
