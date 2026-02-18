@@ -1,1 +1,1 @@
-Validated and documented the vcad-topology vcad-geometry hardening item with passing geometry-check tests, fresh 173/208 Verus verification runs, and a recorded combined-feature cargo-test cfg mismatch.
+Resolved the vcad-topology combined geometry-checks+verus-proofs cargo-test cfg mismatch by cfg-gating Scalar usage in runtime_halfedge_mesh_refinement, documenting the closeout, and revalidating 173/208 Verus checks.

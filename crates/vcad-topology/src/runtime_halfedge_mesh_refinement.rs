@@ -3,6 +3,7 @@
 use crate::halfedge_mesh::{Edge, Face, HalfEdge, Mesh, MeshBuildError, Vertex};
 use crate::verified_checker_kernels as kernels;
 use vcad_math::runtime_point3::RuntimePoint3;
+#[cfg(verus_keep_ghost)]
 use vcad_math::scalar::Scalar;
 use vstd::prelude::*;
 use vstd::view::View;
@@ -154,8 +155,15 @@ proof fn lemma_usize_loop_exit_eq(idx: usize, bound: usize)
                 assert(false);
             }
         };
+        #[cfg(verus_keep_ghost)]
         Scalar::lemma_nat_le_and_not_le_prev_implies_eq(idx as nat, bound as nat);
+        #[cfg(verus_keep_ghost)]
         assert(idx == bound);
+        #[cfg(not(verus_keep_ghost))]
+        {
+            // Rust test-mode fallback: this module is typechecked without ghost
+            // proof dependencies such as `vcad_math::scalar::Scalar`.
+        }
     }
 }
 

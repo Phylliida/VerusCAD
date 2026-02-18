@@ -2261,6 +2261,27 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `src/runtime_halfedge_mesh_refinement.rs` (`E0432`).
       this is tracked as a cargo-test-mode cfg mismatch and does not block
       Verus-script verification flows for `verus-proofs`.
+  - burndown update (2026-02-18, cargo-test cfg mismatch closeout):
+    - fixed the documented combined-feature cargo-test failure in
+      `src/runtime_halfedge_mesh_refinement.rs` by making the
+      `vcad_math::scalar::Scalar` import conditional on `verus_keep_ghost` and
+      using a single `lemma_usize_loop_exit_eq` body with statement-level cfg
+      gating around the scalar lemma call.
+    - failed attempt (rolled back in-pass):
+      first tried a two-function cfg split for `lemma_usize_loop_exit_eq`
+      (`#[cfg(verus_keep_ghost)]` + `#[cfg(not(verus_keep_ghost))]`); this
+      caused duplicate-definition failure under `verus!` expansion
+      (`E0428`), so it was replaced by the stable single-definition shape.
+    - outcome:
+      `cargo test` now works in the previously failing mixed feature mode while
+      keeping the `verus_keep_ghost` proof path unchanged.
+    - verification checks:
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`6 passed, 0 failed`);
+      `./scripts/verify-vcad-topology-fast.sh` passed
+      (`173 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed
+      (`208 verified, 0 errors`).
 
 ## Exit Condition
 - [x] No `assume_specification` remains in `vcad-topology` for runtime mesh behavior.
