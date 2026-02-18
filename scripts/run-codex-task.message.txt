@@ -1,1 +1,1 @@
-Strengthened vcad-topology prev/next and no-degenerate runtime checker proofs to two-way completeness, documented the failed proof shapes, and revalidated full verification and tests.
+Replayed vcad-topology exit-condition trust-surface scans and full verification/test matrix, and logged the fresh green results in verification-todo.md.
