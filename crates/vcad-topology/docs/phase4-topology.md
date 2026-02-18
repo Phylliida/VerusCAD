@@ -61,3 +61,5 @@ Validity API:
 2. Geometry-aware non-degeneracy checks for faces/volumes using `vcad-geometry` predicates.
 3. Full exhaustive verification backlog is tracked in:
    - `docs/verification-todo.md`
+4. Phase 5 geometric-topological verification plan is tracked in:
+   - `docs/phase5-geometric-topology-consistency.md`
