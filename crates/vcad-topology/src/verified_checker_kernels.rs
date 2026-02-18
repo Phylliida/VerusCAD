@@ -280,6 +280,29 @@ pub open spec fn kernel_face_representative_cycles_total_spec(m: &KernelMesh) ->
     kernel_index_bounds_spec(m) && kernel_face_representative_cycles_spec(m)
 }
 
+pub open spec fn kernel_face_representative_cycles_cover_all_half_edges_spec(m: &KernelMesh) -> bool {
+    exists|face_cycle_lens: Seq<usize>| {
+        &&& face_cycle_lens.len() == kernel_face_count_spec(m)
+        &&& forall|f: int|
+            #![trigger face_cycle_lens[f]]
+            0 <= f < kernel_face_count_spec(m)
+                ==> kernel_face_representative_cycle_witness_spec(m, f, face_cycle_lens[f] as int)
+        &&& forall|h: int|
+            #![trigger h + 0]
+            0 <= h < kernel_half_edge_count_spec(m) ==> exists|f: int, i: int| {
+                &&& 0 <= f < kernel_face_count_spec(m)
+                &&& 0 <= i < face_cycle_lens[f] as int
+                &&& #[trigger] kernel_next_iter_spec(m, m.face_half_edges@[f] as int, i as nat) == h
+            }
+    }
+}
+
+pub open spec fn kernel_face_representative_cycles_cover_all_half_edges_total_spec(
+    m: &KernelMesh,
+) -> bool {
+    kernel_index_bounds_spec(m) && kernel_face_representative_cycles_cover_all_half_edges_spec(m)
+}
+
 pub open spec fn kernel_face_has_incident_half_edge_spec(m: &KernelMesh) -> bool {
     forall|f: int|
         #![trigger m.face_half_edges@[f]]
@@ -741,10 +764,36 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
                         fp,
                         face_cycle_lens@[fp] as int,
                     ),
+            forall|hp: int| 0 <= hp < hcnt as int && #[trigger] global_seen@[hp] ==> exists|fp: int, ip: int| {
+                &&& 0 <= fp < f as int
+                &&& 0 <= ip < face_cycle_lens@[fp] as int
+                &&& #[trigger] kernel_next_iter_spec(m, m.face_half_edges@[fp] as int, ip as nat) == hp
+            },
     {
         let start = m.face_half_edges[f];
         if m.half_edges[start].face != f {
             return false;
+        }
+        let ghost global_seen_before = global_seen@;
+        proof {
+            assert(forall|hp: int|
+                #![trigger hp + 0]
+                0 <= hp < hcnt as int && #[trigger] global_seen_before[hp] ==> exists|fp: int, ip: int| {
+                    &&& 0 <= fp < f as int
+                    &&& 0 <= ip < face_cycle_lens@[fp] as int
+                    &&& #[trigger] kernel_next_iter_spec(m, m.face_half_edges@[fp] as int, ip as nat) == hp
+                }) by {
+                assert forall|hp: int|
+                    #![trigger hp + 0]
+                    0 <= hp < hcnt as int && #[trigger] global_seen_before[hp]
+                        implies exists|fp: int, ip: int| {
+                            &&& 0 <= fp < f as int
+                            &&& 0 <= ip < face_cycle_lens@[fp] as int
+                            &&& #[trigger] kernel_next_iter_spec(m, m.face_half_edges@[fp] as int, ip as nat) == hp
+                        } by {
+                    assert(global_seen_before[hp] == global_seen@[hp]);
+                };
+            }
         }
         let mut local_seen: Vec<bool> = vec![false; hcnt];
         let mut h = start;
@@ -760,6 +809,16 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
                 0 <= h < hcnt,
                 h as int == kernel_next_iter_spec(m, start as int, steps as nat),
                 closed ==> h == start,
+                forall|hp: int|
+                    0 <= hp < hcnt as int && #[trigger] local_seen@[hp]
+                        ==> exists|i: int| {
+                            &&& 0 <= i < steps as int
+                            &&& #[trigger] kernel_next_iter_spec(m, start as int, i as nat) == hp
+                        },
+                forall|hp: int|
+                    0 <= hp < hcnt as int && #[trigger] local_seen@[hp] ==> #[trigger] global_seen@[hp],
+                forall|hp: int|
+                    0 <= hp < hcnt as int && !local_seen@[hp] ==> global_seen@[hp] == global_seen_before[hp],
                 forall|i: int|
                     0 <= i < steps as int ==> #[trigger] m.half_edges@[kernel_next_iter_spec(
                         m,
@@ -769,6 +828,8 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
         {
             let h_prev = h;
             let steps_prev = steps;
+            let ghost local_seen_before = local_seen@;
+            let ghost global_seen_before_iter = global_seen@;
 
             if local_seen[h] {
                 return false;
@@ -828,6 +889,67 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
                                 start as int,
                                 i as nat,
                             )].face as int) == f as int);
+                        }
+                    };
+                };
+                assert(forall|hp: int|
+                    0 <= hp < hcnt as int && #[trigger] local_seen@[hp]
+                        ==> exists|i: int| {
+                            &&& 0 <= i < steps as int
+                            &&& #[trigger] kernel_next_iter_spec(m, start as int, i as nat) == hp
+                        }) by {
+                    assert forall|hp: int|
+                        0 <= hp < hcnt as int && #[trigger] local_seen@[hp]
+                            implies exists|i: int| {
+                                &&& 0 <= i < steps as int
+                                &&& #[trigger] kernel_next_iter_spec(m, start as int, i as nat) == hp
+                            } by {
+                        if hp == h_prev as int {
+                            let i = steps_prev as int;
+                            assert(0 <= i < steps as int);
+                            assert(kernel_next_iter_spec(m, start as int, i as nat) == hp);
+                        } else {
+                            assert(local_seen@[hp] == local_seen_before[hp]);
+                            assert(local_seen_before[hp]);
+                            assert(exists|i: int| {
+                                &&& 0 <= i < steps_prev as int
+                                &&& #[trigger] kernel_next_iter_spec(m, start as int, i as nat) == hp
+                            });
+                            let i = choose|i: int| {
+                                &&& 0 <= i < steps_prev as int
+                                &&& #[trigger] kernel_next_iter_spec(m, start as int, i as nat) == hp
+                            };
+                            assert(0 <= i < steps as int);
+                            assert(kernel_next_iter_spec(m, start as int, i as nat) == hp);
+                        }
+                    };
+                };
+                assert(forall|hp: int|
+                    0 <= hp < hcnt as int && #[trigger] local_seen@[hp] ==> #[trigger] global_seen@[hp]) by {
+                    assert forall|hp: int|
+                        0 <= hp < hcnt as int && #[trigger] local_seen@[hp]
+                            implies #[trigger] global_seen@[hp] by {
+                        if hp == h_prev as int {
+                        } else {
+                            assert(local_seen@[hp] == local_seen_before[hp]);
+                            assert(global_seen@[hp] == global_seen_before_iter[hp]);
+                            assert(local_seen_before[hp]);
+                            assert(global_seen_before_iter[hp]);
+                        }
+                    };
+                };
+                assert(forall|hp: int|
+                    0 <= hp < hcnt as int && !local_seen@[hp] ==> global_seen@[hp] == global_seen_before[hp]) by {
+                    assert forall|hp: int|
+                        0 <= hp < hcnt as int && !local_seen@[hp]
+                            implies global_seen@[hp] == global_seen_before[hp] by {
+                        if hp == h_prev as int {
+                            assert(local_seen@[hp]);
+                        } else {
+                            assert(local_seen@[hp] == local_seen_before[hp]);
+                            assert(!local_seen_before[hp]);
+                            assert(global_seen@[hp] == global_seen_before_iter[hp]);
+                            assert(global_seen_before_iter[hp] == global_seen_before[hp]);
                         }
                     };
                 };
@@ -921,6 +1043,42 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
                     }
                 };
             }
+            assert(forall|hp: int| 0 <= hp < hcnt as int && #[trigger] global_seen@[hp] ==> exists|fp: int, ip: int| {
+                &&& 0 <= fp < (f + 1) as int
+                &&& 0 <= ip < face_cycle_lens@[fp] as int
+                &&& #[trigger] kernel_next_iter_spec(m, m.face_half_edges@[fp] as int, ip as nat) == hp
+            }) by {
+                assert forall|hp: int|
+                    0 <= hp < hcnt as int && #[trigger] global_seen@[hp]
+                        implies exists|fp: int, ip: int| {
+                            &&& 0 <= fp < (f + 1) as int
+                            &&& 0 <= ip < face_cycle_lens@[fp] as int
+                            &&& #[trigger] kernel_next_iter_spec(m, m.face_half_edges@[fp] as int, ip as nat) == hp
+                        } by {
+                    if local_seen@[hp] {
+                        assert(exists|i: int| {
+                            &&& 0 <= i < steps as int
+                            &&& #[trigger] kernel_next_iter_spec(m, start as int, i as nat) == hp
+                        });
+                        let i = choose|i: int| {
+                            &&& 0 <= i < steps as int
+                            &&& #[trigger] kernel_next_iter_spec(m, start as int, i as nat) == hp
+                        };
+                        assert(0 <= i < face_cycle_lens@[f as int] as int);
+                        assert(m.face_half_edges@[f as int] as int == start as int);
+                        assert(kernel_next_iter_spec(m, m.face_half_edges@[f as int] as int, i as nat)
+                            == kernel_next_iter_spec(m, start as int, i as nat));
+                    } else {
+                        assert(global_seen@[hp] == global_seen_before[hp]);
+                        assert(global_seen_before[hp]);
+                        assert(exists|fp: int, ip: int| {
+                            &&& 0 <= fp < f as int
+                            &&& 0 <= ip < face_cycle_lens@[fp] as int
+                            &&& #[trigger] kernel_next_iter_spec(m, m.face_half_edges@[fp] as int, ip as nat) == hp
+                        });
+                    }
+                };
+            };
         }
 
         f += 1;
@@ -942,6 +1100,11 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
                         fp,
                         face_cycle_lens@[fp] as int,
                     ),
+            forall|hp: int| 0 <= hp < hcnt as int && #[trigger] global_seen@[hp] ==> exists|fp: int, ip: int| {
+                &&& 0 <= fp < f as int
+                &&& 0 <= ip < face_cycle_lens@[fp] as int
+                &&& #[trigger] kernel_next_iter_spec(m, m.face_half_edges@[fp] as int, ip as nat) == hp
+            },
             0 <= h <= hcnt,
             forall|j: int| 0 <= j < h as int ==> #[trigger] global_seen@[j],
     {
@@ -955,6 +1118,12 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
         assert(bounds_ok);
         assert(f == fcnt);
         assert(face_cycle_lens@.len() == f as int);
+        assert(forall|hp: int| 0 <= hp < hcnt as int ==> #[trigger] global_seen@[hp]) by {
+            assert forall|hp: int| 0 <= hp < hcnt as int implies #[trigger] global_seen@[hp] by {
+                assert(h == hcnt);
+                assert(0 <= hp < h as int);
+            };
+        }
         assert(kernel_face_representative_cycles_spec(m)) by {
             let cycle_lens = face_cycle_lens@;
             assert(cycle_lens.len() == kernel_face_count_spec(m)) by {

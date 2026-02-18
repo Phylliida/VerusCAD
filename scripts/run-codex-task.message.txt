@@ -1,1 +1,1 @@
-Updated run-codex-task.sh to source Zulip messages from a tracked message file and synced scripts README usage details.
+Advanced vcad-topology face-cycle verification groundwork with global-coverage witness scaffolding, documented the rolled-back contract-lift attempt, and kept all topology verification scripts green.
