@@ -1,1 +1,1 @@
-Strengthened twin-assignment checker completeness with stable twin-involution bridge proofs and documented the passing vcad-topology fast/full verification and test runs in the burndown.
+Replayed Exit Condition trust-surface scans and the full vcad-topology verification/test matrix, with all checks passing and burndown updated.
