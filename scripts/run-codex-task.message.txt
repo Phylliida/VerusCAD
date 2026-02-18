@@ -1,1 +1,1 @@
-Removed the twin-checker lint suppression by explicitly consuming the twin witness locals and revalidated vcad-topology verification plus tests.
+Removed remaining kernel-checker unused-variable suppressions by explicitly consuming proof witness locals and revalidated full vcad-topology verification and tests.
