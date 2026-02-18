@@ -208,6 +208,18 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels kernel_check_vertex_manifold_single_cycle`
       passed (`4 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` passed (`34 verified, 0 errors`).
+  - burndown update (2026-02-18, later):
+    - attempted another strengthening pass of `kernel_check_vertex_manifold_single_cycle` to
+      `out ==> kernel_vertex_manifold_single_cycle_total_spec` by threading an explicit per-step
+      ring-membership invariant (`forall i < steps. vertex(iter(i)) == v`) and carrying a processed-vertex
+      existential witness invariant in the outer loop.
+    - this attempt was rolled back: quantified invariant carry/instantiation remained brittle
+      (trigger-sensitive and unstable across small proof-shape changes), and keeping the partial proof
+      state would regress verifier stability.
+    - no executable-proof behavior change was kept from this attempt; the function remains at the
+      stable intermediate contract `out ==> kernel_vertex_has_incident_half_edge_total_spec(m)`.
+    - post-rollback verification check:
+      `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` passed (`34 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
   - kernel file: `src/verified_checker_kernels.rs`
 - [x] Verify `check_edge_has_exactly_two_half_edges`.
