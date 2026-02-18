@@ -1,1 +1,1 @@
-Implemented Phase 5 zero-length geometric edge rejection in vcad-topology, integrated it into geometric consistency checks with new regression coverage, and confirmed all vcad-topology tests and Verus verification scripts pass.
+Implemented Phase 5 face convexity checking in vcad-topology with exact orient3d-based validation, wired it into the geometric consistency gate, added concavity/coverage tests, and revalidated all vcad-topology test and verification scripts.

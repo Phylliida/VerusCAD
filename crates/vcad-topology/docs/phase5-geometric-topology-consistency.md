@@ -40,9 +40,9 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [ ] Proof: edge-geometry facts are derivable from mesh model + vertex positions.
 
 ## P5.3 Invariant: Face Convexity (Roadmap)
-- [ ] Choose deterministic face-to-2D projection strategy for convexity tests (for example dominant-axis drop from face normal).
+- [x] Choose deterministic face-local orientation strategy for convexity tests (implemented with per-face reference normal + `orient3d_sign`, without 2D projection).
 - [ ] Spec: projected consecutive `orient2d` signs are globally consistent per face.
-- [ ] Runtime checker: implement `check_face_convexity`.
+- [x] Runtime checker: implement `check_face_convexity`.
 - [ ] Proof: runtime checker correctness vs convexity spec.
 - [ ] Proof: convexity checker uses only legally projected points from a coplanar face.
 - [ ] Proof: triangle faces satisfy convexity trivially.
@@ -89,7 +89,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [x] Positive fixtures: tetrahedron, cube, triangular prism pass Phase 5 gate.
 - [x] Negative fixture: non-coplanar face fails coplanarity checker.
 - [x] Negative fixture: zero-length geometric edge fails edge-straightness checker.
-- [ ] Negative fixture: concave polygon face fails convexity checker.
+- [x] Negative fixture: concave polygon face fails convexity checker.
 - [ ] Negative fixture: flipped face winding fails outward-normal checker.
 - [ ] Negative fixture: non-adjacent face intersection fails self-intersection checker.
 - [x] Regression tests under:
@@ -98,6 +98,12 @@ This doc expands those targets into executable TODOs aligned with the current `v
   - `--features "geometry-checks,verus-proofs"`
 
 ## Burndown Log
+- 2026-02-18: Implemented `Mesh::check_face_convexity()` in `src/halfedge_mesh/validation.rs` using exact arithmetic only: per-face reference normal from the first corner (`(p1 - p0) x (p2 - p1)`), witness point `p0 + normal`, and per-corner `vcad_geometry::orientation_predicates::orient3d_sign(prev, cur, next, witness)` sign consistency checks around each face cycle.
+- 2026-02-18: Updated `Mesh::check_geometric_topological_consistency()` to additionally require `check_face_convexity()`.
+- 2026-02-18: Extended `src/halfedge_mesh/tests.rs` for convexity coverage:
+  - positive fixtures (`tetrahedron`, `cube`, `triangular_prism`) now assert `check_face_convexity()`;
+  - existing coplanarity/non-collinearity negative fixtures now also assert convexity failure when preconditions are violated;
+  - added `concave_polygon_faces_fail_face_convexity` as the P5.9 concavity counterexample.
 - 2026-02-18: Follow-up validation pass reran the full `vcad-topology` matrix (`cargo test` default/`geometry-checks`/`geometry-checks,verus-proofs`, plus both fast verify scripts and full verify script) after landing the P5.2 zero-length edge checker; all remained green with no new failures.
 - 2026-02-18: Implemented `Mesh::check_face_coplanarity()` in `src/halfedge_mesh/validation.rs`, using `vcad_geometry::collinearity_coplanarity::coplanar` on each face cycle with a fixed local `(a,b,c)` plane basis and checking all remaining face vertices against that plane.
 - 2026-02-18: Added `Mesh::check_geometric_topological_consistency()` as a Phase-5-in-progress aggregate checker (initially `corner_non_collinearity && face_coplanarity`) and updated `Mesh::is_valid_with_geometry()` to require this aggregate.

@@ -3,6 +3,8 @@ use std::collections::HashSet;
 
 #[cfg(feature = "geometry-checks")]
 use vcad_geometry::collinearity_coplanarity::{collinear3d, coplanar};
+#[cfg(feature = "geometry-checks")]
+use vcad_geometry::orientation_predicates::orient3d_sign;
 #[cfg(feature = "verus-proofs")]
 use crate::verified_checker_kernels::{
     kernel_check_edge_has_exactly_two_half_edges, kernel_check_face_cycles, kernel_check_index_bounds,
@@ -133,10 +135,76 @@ impl Mesh {
     }
 
     #[cfg(feature = "geometry-checks")]
+    /// Optional geometric extension: each face cycle is strictly convex under
+    /// its own winding order.
+    ///
+    /// This uses exact arithmetic only:
+    /// - choose a deterministic reference normal from the first face corner;
+    /// - compare every corner turn orientation sign against that reference.
+    pub fn check_face_convexity(&self) -> bool {
+        if !self.check_index_bounds() || !self.check_face_cycles() {
+            return false;
+        }
+        if !self.check_face_coplanarity() || !self.check_face_corner_non_collinearity() {
+            return false;
+        }
+
+        let hcnt = self.half_edges.len();
+        for face in &self.faces {
+            let h0 = face.half_edge;
+            let h1 = self.half_edges[h0].next;
+            let h2 = self.half_edges[h1].next;
+
+            let p0 = &self.vertices[self.half_edges[h0].vertex].position;
+            let p1 = &self.vertices[self.half_edges[h1].vertex].position;
+            let p2 = &self.vertices[self.half_edges[h2].vertex].position;
+
+            let e01 = p1.sub(p0);
+            let e12 = p2.sub(p1);
+            let reference_normal = e01.cross(&e12);
+            let witness = p0.add_vec(&reference_normal);
+
+            let mut expected_turn_sign = 0i8;
+            let mut h = h0;
+            let mut steps = 0usize;
+            loop {
+                let he = &self.half_edges[h];
+                let prev = &self.half_edges[he.prev];
+                let next = &self.half_edges[he.next];
+
+                let a = &self.vertices[prev.vertex].position;
+                let b = &self.vertices[he.vertex].position;
+                let c = &self.vertices[next.vertex].position;
+                let turn_sign = orient3d_sign(a, b, c, &witness);
+                if turn_sign == 0 {
+                    return false;
+                }
+                if expected_turn_sign == 0 {
+                    expected_turn_sign = turn_sign;
+                } else if turn_sign != expected_turn_sign {
+                    return false;
+                }
+
+                h = he.next;
+                steps += 1;
+                if h == h0 {
+                    break;
+                }
+                if steps > hcnt {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+
+    #[cfg(feature = "geometry-checks")]
     pub fn check_geometric_topological_consistency(&self) -> bool {
         self.check_no_zero_length_geometric_edges()
             && self.check_face_corner_non_collinearity()
             && self.check_face_coplanarity()
+            && self.check_face_convexity()
     }
 
     #[cfg(feature = "geometry-checks")]
