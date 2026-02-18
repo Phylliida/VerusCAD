@@ -162,7 +162,9 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
     - groundwork landed in `src/verified_checker_kernels.rs`:
       `lemma_kernel_vertex_ring_iter_step`, `lemma_kernel_vertex_ring_succ_or_self_in_bounds`,
       `lemma_kernel_vertex_ring_iter_in_bounds` to support bounded ring-iteration witness construction.
-    - strengthen `kernel_check_vertex_manifold_single_cycle` postcondition from `out ==> kernel_index_bounds_spec` to `out ==> kernel_vertex_manifold_single_cycle_total_spec`.
+    - strengthen `kernel_check_vertex_manifold_single_cycle` postcondition from the intermediate
+      `out ==> kernel_vertex_has_incident_half_edge_total_spec` to
+      `out ==> kernel_vertex_manifold_single_cycle_total_spec`.
     - add per-vertex cycle witness threading invariant (`forall vp < v. exists k ...`) in outer loop.
     - prove representative-ring witness construction at vertex loop boundary (`k = steps`).
   - burndown update (2026-02-17):
@@ -176,7 +178,25 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       aligned with the spec iterator for the later witness proof.
     - verification check: `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` passed
       (`34 verified, 0 errors`).
+  - burndown update (2026-02-18):
+    - attempted direct re-strengthening of `kernel_check_vertex_manifold_single_cycle` to
+      `out ==> kernel_vertex_manifold_single_cycle_total_spec` with a per-vertex existential witness
+      invariant in the outer loop; this was rolled back after quantified witness-lifting obligations
+      remained trigger-sensitive/unstable.
+    - landed stable intermediate strengthening in `src/verified_checker_kernels.rs`:
+      introduced `kernel_vertex_has_incident_half_edge_spec` /
+      `kernel_vertex_has_incident_half_edge_total_spec` and strengthened the executable contract to
+      `out ==> kernel_vertex_has_incident_half_edge_total_spec(m)`.
+    - proof shape now threads a representative-vertex invariant
+      (`half_edges[vertex_half_edges[v]].vertex == v`) across the outer loop, avoiding brittle
+      existential quantifier threading while still proving a non-trivial semantic guarantee stronger
+      than `out ==> kernel_index_bounds_spec(m)`.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels kernel_check_vertex_manifold_single_cycle`
+      passed (`4 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` passed (`34 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
+  - kernel file: `src/verified_checker_kernels.rs`
 - [x] Verify `check_edge_has_exactly_two_half_edges`.
   - in `verus-proofs` builds, this is delegated to a verified kernel checker.
   - file: `src/halfedge_mesh.rs`

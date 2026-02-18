@@ -303,6 +303,19 @@ pub open spec fn kernel_vertex_manifold_single_cycle_total_spec(m: &KernelMesh) 
     kernel_index_bounds_spec(m) && kernel_vertex_manifold_single_cycle_basic_spec(m)
 }
 
+pub open spec fn kernel_vertex_has_incident_half_edge_spec(m: &KernelMesh) -> bool {
+    forall|v: int|
+        #![trigger m.vertex_half_edges@[v]]
+        0 <= v < kernel_vertex_count_spec(m) ==> {
+            &&& (m.vertex_half_edges@[v] as int) < kernel_half_edge_count_spec(m)
+            &&& #[trigger] m.half_edges@[m.vertex_half_edges@[v] as int].vertex as int == v
+        }
+}
+
+pub open spec fn kernel_vertex_has_incident_half_edge_total_spec(m: &KernelMesh) -> bool {
+    kernel_index_bounds_spec(m) && kernel_vertex_has_incident_half_edge_spec(m)
+}
+
 pub open spec fn kernel_next_prev_inverse_at_spec(m: &KernelMesh, h: int) -> bool {
     let hcnt = kernel_half_edge_count_spec(m);
     if 0 <= h < hcnt {
@@ -735,7 +748,7 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
 #[allow(unused_variables, unused_assignments)]
 pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
     ensures
-        out ==> kernel_index_bounds_spec(m),
+        out ==> kernel_vertex_has_incident_half_edge_total_spec(m),
 {
     let bounds_ok = kernel_check_index_bounds(m);
     if !bounds_ok {
@@ -752,6 +765,10 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
             hcnt == m.half_edges.len(),
             vcnt == m.vertex_half_edges.len(),
             0 <= v <= vcnt,
+            forall|vp: int|
+                #![trigger m.vertex_half_edges@[vp]]
+                0 <= vp < v as int
+                    ==> (#[trigger] m.half_edges@[m.vertex_half_edges@[vp] as int].vertex as int) == vp,
     {
         let mut expected: usize = 0;
         let mut hh: usize = 0;
@@ -829,11 +846,49 @@ pub fn kernel_check_vertex_manifold_single_cycle(m: &KernelMesh) -> (out: bool)
         if steps != expected {
             return false;
         }
+
+        proof {
+            assert(start as int == m.vertex_half_edges@[v as int] as int);
+            assert((m.half_edges@[start as int].vertex as int) == v as int);
+            assert(forall|vp: int|
+                #![trigger m.vertex_half_edges@[vp]]
+                0 <= vp < (v + 1) as int
+                    ==> (#[trigger] m.half_edges@[m.vertex_half_edges@[vp] as int].vertex as int) == vp) by {
+                assert forall|vp: int|
+                    #![trigger m.vertex_half_edges@[vp]]
+                    0 <= vp < (v + 1) as int
+                        implies (#[trigger] m.half_edges@[m.vertex_half_edges@[vp] as int].vertex as int) == vp by {
+                    if vp < v as int {
+                        assert((#[trigger] m.half_edges@[m.vertex_half_edges@[vp] as int].vertex as int) == vp);
+                    } else {
+                        assert(vp == v as int);
+                        assert((#[trigger] m.half_edges@[m.vertex_half_edges@[vp] as int].vertex as int) == v as int);
+                    }
+                };
+            }
+        }
         v += 1;
     }
 
     proof {
         assert(bounds_ok);
+        assert(v == vcnt);
+        assert(kernel_vertex_has_incident_half_edge_spec(m)) by {
+            assert forall|vp: int|
+                #![trigger m.vertex_half_edges@[vp]]
+                0 <= vp < kernel_vertex_count_spec(m) implies {
+                    &&& (m.vertex_half_edges@[vp] as int) < kernel_half_edge_count_spec(m)
+                    &&& #[trigger] m.half_edges@[m.vertex_half_edges@[vp] as int].vertex as int == vp
+                } by {
+                assert(kernel_vertex_count_spec(m) == vcnt as int);
+                assert(kernel_half_edge_count_spec(m) == hcnt as int);
+                assert(vp < (vcnt as int));
+                assert(vp < v as int);
+                assert((m.vertex_half_edges@[vp] as int) < kernel_half_edge_count_spec(m));
+                assert((#[trigger] m.half_edges@[m.vertex_half_edges@[vp] as int].vertex as int) == vp);
+            };
+        }
+        assert(kernel_vertex_has_incident_half_edge_total_spec(m));
     }
     true
 }
