@@ -1,1 +1,1 @@
-Aligned vcad-topology burndown status notes with current kernel proofs and revalidated fast/full verification plus topology tests.
+Revalidated vcad-topology exit conditions with clean trust-surface scans and fully green verification and test runs.
