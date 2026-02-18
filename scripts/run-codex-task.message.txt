@@ -1,1 +1,1 @@
-Revalidated vcad-topology exit-condition trust-surface scans and reconfirmed the full verification and test matrix is green.
+Revalidated vcad-topology Exit Condition trust-surface scans and reconfirmed fast/full verification plus all cargo test feature matrices are green.
