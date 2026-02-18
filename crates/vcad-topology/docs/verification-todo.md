@@ -4832,3 +4832,92 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`5 passed, 0 failed`);
       `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
       passed (`6 passed, 0 failed`).
+  - burndown update (2026-02-18, exit-condition rerun under no-daemon constraints):
+    - selected task in this pass:
+      replay the Exit Condition command set on the current tree and document
+      what is currently verifiable in this permission-constrained environment.
+    - run timestamp:
+      `2026-02-18T08:17:59-08:00`.
+    - trust-surface scans:
+      - `./scripts/check-vcad-topology-trust-surface.sh`
+        passed; no forbidden trust markers found and
+        `external_type_specification` count remained exactly `6` in
+        `runtime_halfedge_mesh_refinement.rs`.
+    - failed attempts (kept documented):
+      - `./scripts/verify-vcad-topology-fast.sh` and
+        `./scripts/verify-vcad-topology.sh` both failed before verification
+        start with Nix daemon access error:
+        `cannot connect to socket at '/nix/var/nix/daemon-socket/socket': Operation not permitted`.
+      - tried bypassing `nix-shell` via direct `cargo verus verify` with a
+        local `rustup` shim in `/tmp`; this advanced past the initial rustup
+        check but failed loading Verus rustc glue with:
+        `rust_verify: error while loading shared libraries: librustc_driver-90863c8161c83a53.so: cannot open shared object file`.
+        this was an initial shim-shape failure (missing toolchain library-path
+        wiring), not a proof-level issue; later in this pass the matrix runner
+        fallback was stabilized by exporting the toolchain `PATH` and
+        `LD_LIBRARY_PATH` from the shim.
+    - warning-scope note:
+      runnable `cargo test -p vcad-topology` invocations in this pass emitted
+      warnings only from dependency crates (`vstd`, `vcad-math`,
+      `vcad-geometry`), with no warnings from `vcad-topology`.
+    - verification checks:
+      `./scripts/check-vcad-topology-trust-surface.sh`
+      passed;
+      `cargo test -p vcad-topology`
+      passed (`4 passed, 0 failed`);
+      `cargo test -p vcad-topology --features geometry-checks`
+      passed (`5 passed, 0 failed`);
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`6 passed, 0 failed`);
+      `./scripts/verify-vcad-topology-fast.sh`
+      failed (environmental Nix-daemon socket restriction);
+      `./scripts/verify-vcad-topology.sh`
+      failed (environmental Nix-daemon socket restriction).
+  - burndown update (2026-02-18, matrix-runner fallback hardening + matrix replay):
+    - selected task in this pass:
+      strengthen Exit Condition maintenance by adding a single-command
+      `vcad-topology` matrix runner that still works in environments where
+      `nix-shell` cannot access the Nix daemon socket.
+    - run timestamp:
+      `2026-02-18T08:25:11-08:00`.
+    - code hardening:
+      - added `scripts/verify-vcad-topology-matrix.sh` and documented it in
+        `scripts/README.md`.
+      - the matrix runner now executes:
+        trust-surface guard, fast topology verification, full topology
+        verification, and cargo tests for baseline, `geometry-checks`, and
+        `geometry-checks,verus-proofs`.
+      - added an automatic fallback path when `nix-shell` is unavailable:
+        run direct `cargo verus` with a temporary local `rustup` shim wired to
+        the existing local `1.93.0-x86_64-unknown-linux-gnu` toolchain under
+        `$RUSTUP_HOME` (or `$HOME/.rustup`) if present.
+      - fallback fast verification uses
+        `--verify-module runtime_halfedge_mesh_refinement`; fallback full
+        verification uses full-module verification (`--triggers-mode silent`).
+    - failed attempts (kept documented):
+      - first matrix run failed at fast verification because `nix-shell`
+        could not connect to `/nix/var/nix/daemon-socket/socket`
+        (`Operation not permitted`).
+      - direct `cargo verus` without a rustup shim failed with
+        `verus: rustup not found, or not executable`.
+      - direct `cargo verus` fallback with `--verify-only-module` failed by
+        applying the module filter at dependency crate scope (`vstd` module not
+        found); stabilized by using `--verify-module` for the fast fallback.
+    - warning-scope note:
+      all cargo tests in this pass emitted warnings only from dependency crates
+      (`vstd`, `vcad-math`, `vcad-geometry`), with no warnings from
+      `vcad-topology`.
+    - verification checks:
+      `./scripts/verify-vcad-topology-matrix.sh`
+      passed:
+      - trust-surface guard passed,
+      - fast fallback verification passed (`192 verified, 0 errors` partial),
+      - full fallback verification passed (`227 verified, 0 errors`),
+      - `cargo test -p vcad-topology` passed (`4 passed, 0 failed`),
+      - `cargo test -p vcad-topology --features geometry-checks` passed
+        (`5 passed, 0 failed`),
+      - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+        passed (`6 passed, 0 failed`).
+      post-generalization rerun at `2026-02-18T08:26:17-08:00` (switching the
+      shim source from a hardcoded home path to `$RUSTUP_HOME`/`$HOME`) also
+      passed with the same verification/test results.

@@ -21,8 +21,12 @@ Helper scripts for local Verus workflows.
      verifies `runtime_halfedge_mesh_refinement`.
    - module: `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
    - function: `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels kernel_check_index_bounds`
-9. `verify-vad-topology.sh`: compatibility alias that forwards to `verify-vcad-topology.sh`.
-10. `run-codex-task.sh`: lightweight client that POSTs to the looper service (`http://127.0.0.1:3456/run` by default).
+9. `verify-vcad-topology-matrix.sh`: one-command replay of the full topology matrix.
+   - runs in order: trust-surface guard, `verify-vcad-topology-fast.sh`,
+     `verify-vcad-topology.sh`, and cargo tests for baseline, `geometry-checks`,
+     and `geometry-checks,verus-proofs`.
+10. `verify-vad-topology.sh`: compatibility alias that forwards to `verify-vcad-topology.sh`.
+11. `run-codex-task.sh`: lightweight client that POSTs to the looper service (`http://127.0.0.1:3456/run` by default).
    - sends a `zulip_message` to looper; looper handles Zulip DM + VS Code restart/new Codex panel
    - message source file: `scripts/run-codex-task.message.txt`
    - default: `./scripts/run-codex-task.sh`

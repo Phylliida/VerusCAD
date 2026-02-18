@@ -1,1 +1,1 @@
-Added an automated vcad-topology trust-surface guard to the topology verify scripts, replayed the full verification/test matrix, and logged the new 2026-02-18 burndown update.
+Added a vcad-topology matrix verification script with a nix-shell fallback path, documented it, and logged a full passing matrix replay in the verification burndown.
