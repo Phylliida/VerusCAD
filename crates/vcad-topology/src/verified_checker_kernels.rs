@@ -297,6 +297,15 @@ pub open spec fn kernel_face_representative_cycles_cover_all_half_edges_spec(m: 
                     &&& #[trigger] kernel_next_iter_spec(m, m.face_half_edges@[f] as int, i as nat) == h
                 }
         &&& forall|h: int| 0 <= h < kernel_half_edge_count_spec(m) ==> #[trigger] covered[h]
+        &&& forall|f1: int, i1: int, f2: int, i2: int|
+            #![trigger kernel_next_iter_spec(m, m.face_half_edges@[f1] as int, i1 as nat), kernel_next_iter_spec(m, m.face_half_edges@[f2] as int, i2 as nat)]
+            0 <= f1 < kernel_face_count_spec(m)
+                && 0 <= f2 < kernel_face_count_spec(m)
+                && 0 <= i1 < face_cycle_lens[f1] as int
+                && 0 <= i2 < face_cycle_lens[f2] as int
+                && kernel_next_iter_spec(m, m.face_half_edges@[f1] as int, i1 as nat)
+                    == kernel_next_iter_spec(m, m.face_half_edges@[f2] as int, i2 as nat)
+                ==> f1 == f2
     }
 }
 
@@ -1309,6 +1318,45 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
                     assert(global_seen@[h]);
                 };
             }
+            assert(forall|fp1: int, ip1: int, fp2: int, ip2: int|
+                #![trigger kernel_next_iter_spec(m, m.face_half_edges@[fp1] as int, ip1 as nat), kernel_next_iter_spec(m, m.face_half_edges@[fp2] as int, ip2 as nat)]
+                0 <= fp1 < kernel_face_count_spec(m)
+                    && 0 <= fp2 < kernel_face_count_spec(m)
+                    && 0 <= ip1 < cycle_lens[fp1] as int
+                    && 0 <= ip2 < cycle_lens[fp2] as int
+                    && kernel_next_iter_spec(m, m.face_half_edges@[fp1] as int, ip1 as nat)
+                        == kernel_next_iter_spec(m, m.face_half_edges@[fp2] as int, ip2 as nat)
+                    ==> fp1 == fp2) by {
+                assert forall|fp1: int, ip1: int, fp2: int, ip2: int|
+                    #![trigger kernel_next_iter_spec(m, m.face_half_edges@[fp1] as int, ip1 as nat), kernel_next_iter_spec(m, m.face_half_edges@[fp2] as int, ip2 as nat)]
+                    0 <= fp1 < kernel_face_count_spec(m)
+                        && 0 <= fp2 < kernel_face_count_spec(m)
+                        && 0 <= ip1 < cycle_lens[fp1] as int
+                        && 0 <= ip2 < cycle_lens[fp2] as int
+                        && kernel_next_iter_spec(m, m.face_half_edges@[fp1] as int, ip1 as nat)
+                            == kernel_next_iter_spec(m, m.face_half_edges@[fp2] as int, ip2 as nat)
+                        implies fp1 == fp2 by {
+                    assert(kernel_face_representative_cycle_witness_spec(m, fp1, cycle_lens[fp1] as int));
+                    assert(kernel_face_representative_cycle_witness_spec(m, fp2, cycle_lens[fp2] as int));
+                    assert(m.half_edges@[kernel_next_iter_spec(
+                        m,
+                        m.face_half_edges@[fp1] as int,
+                        ip1 as nat,
+                    )].face as int == fp1);
+                    assert(m.half_edges@[kernel_next_iter_spec(
+                        m,
+                        m.face_half_edges@[fp2] as int,
+                        ip2 as nat,
+                    )].face as int == fp2);
+                    assert(kernel_next_iter_spec(m, m.face_half_edges@[fp1] as int, ip1 as nat)
+                        == kernel_next_iter_spec(m, m.face_half_edges@[fp2] as int, ip2 as nat));
+                    assert(m.half_edges@[kernel_next_iter_spec(
+                        m,
+                        m.face_half_edges@[fp1] as int,
+                        ip1 as nat,
+                    )].face as int == fp2);
+                };
+            }
             assert(exists|cycle_lens: Seq<usize>, covered: Seq<bool>| {
                 &&& cycle_lens.len() == kernel_face_count_spec(m)
                 &&& covered.len() == kernel_half_edge_count_spec(m)
@@ -1333,6 +1381,15 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
                         ) == h
                     }
                 &&& forall|h: int| 0 <= h < kernel_half_edge_count_spec(m) ==> #[trigger] covered[h]
+                &&& forall|fp1: int, ip1: int, fp2: int, ip2: int|
+                    #![trigger kernel_next_iter_spec(m, m.face_half_edges@[fp1] as int, ip1 as nat), kernel_next_iter_spec(m, m.face_half_edges@[fp2] as int, ip2 as nat)]
+                    0 <= fp1 < kernel_face_count_spec(m)
+                        && 0 <= fp2 < kernel_face_count_spec(m)
+                        && 0 <= ip1 < cycle_lens[fp1] as int
+                        && 0 <= ip2 < cycle_lens[fp2] as int
+                        && kernel_next_iter_spec(m, m.face_half_edges@[fp1] as int, ip1 as nat)
+                            == kernel_next_iter_spec(m, m.face_half_edges@[fp2] as int, ip2 as nat)
+                        ==> fp1 == fp2
             }) by {
                 let cycle_lens = face_cycle_lens@;
                 let covered = global_seen@;
@@ -1359,6 +1416,15 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
                             ) == h
                         });
                 assert(forall|h: int| 0 <= h < kernel_half_edge_count_spec(m) ==> #[trigger] covered[h]);
+                assert(forall|fp1: int, ip1: int, fp2: int, ip2: int|
+                    #![trigger kernel_next_iter_spec(m, m.face_half_edges@[fp1] as int, ip1 as nat), kernel_next_iter_spec(m, m.face_half_edges@[fp2] as int, ip2 as nat)]
+                    0 <= fp1 < kernel_face_count_spec(m)
+                        && 0 <= fp2 < kernel_face_count_spec(m)
+                        && 0 <= ip1 < cycle_lens[fp1] as int
+                        && 0 <= ip2 < cycle_lens[fp2] as int
+                        && kernel_next_iter_spec(m, m.face_half_edges@[fp1] as int, ip1 as nat)
+                            == kernel_next_iter_spec(m, m.face_half_edges@[fp2] as int, ip2 as nat)
+                        ==> fp1 == fp2);
             };
         }
         assert(kernel_face_representative_cycles_cover_all_half_edges_total_spec(m));

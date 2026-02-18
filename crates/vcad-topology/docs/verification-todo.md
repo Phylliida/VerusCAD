@@ -164,8 +164,7 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
   - note: current proved contract is
     `out ==> kernel_face_representative_cycles_cover_all_half_edges_total_spec(m)`, which now includes
     representative-anchored closure/min-length plus per-step face-membership witnesses and explicit
-    global-coverage linkage for all half-edges.
-    explicit no-overlap uniqueness linkage is still pending.
+    global-coverage linkage for all half-edges, plus explicit cross-face no-overlap uniqueness.
 - [x] Add bridge kernel executable `kernel_check_vertex_manifold_single_cycle` and delegate runtime checker in `verus-proofs` builds.
   - file: `src/verified_checker_kernels.rs`
   - note: current proved contract is bounds-soundness (`out ==> kernel_index_bounds_spec`); full vertex-manifold semantic contract is pending.
@@ -178,9 +177,8 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
 - [x] Verify `check_prev_inverse_of_next`.
   - in `verus-proofs` builds, this is delegated to verified kernel checker.
   - file: `src/halfedge_mesh.rs`
-- [ ] Verify `check_face_cycles` (closure + no overlap + min cycle length).
+- [x] Verify `check_face_cycles` (closure + no overlap + min cycle length).
   - in `verus-proofs` builds, this now delegates to kernel executable `kernel_check_face_cycles`.
-  - semantic contract strengthening in kernel proof is still pending.
   - attempted path (rolled back): direct monolithic strengthening of `kernel_check_face_cycles` to
     `out ==> kernel_face_representative_cycles_total_spec` with a large in-loop existential witness invariant.
     this triggered unstable quantifier-trigger obligations and brittle loop-body proof failures under full verification.
@@ -388,6 +386,33 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       brittle direct `forall ... exists ...` exit lifting.
     - remaining gap after this completion:
       explicit spec-level no-overlap uniqueness is still pending under this TODO item.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels kernel_check_face_cycles`
+      passed (`4 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels`
+      passed (`34 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`27 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`61 verified, 0 errors`).
+  - burndown update (2026-02-18, post-completion no-overlap closeout):
+    - landed explicit no-overlap uniqueness linkage in
+      `src/verified_checker_kernels.rs` by strengthening
+      `kernel_face_representative_cycles_cover_all_half_edges_spec` with a
+      cross-face uniqueness clause:
+      if two representative-cycle steps map to the same half-edge, they must
+      come from the same face.
+    - proof shape:
+      discharged the new quantified obligation at final packaging from existing
+      per-step face-membership witnesses
+      (`half_edges[next_iter(...)] .face == f`) for both candidate faces.
+    - failed attempt (kept documented):
+      first trigger shape for the new 4-variable quantifier used two separate
+      trigger groups and failed with
+      `trigger group 0 does not cover variable f2`; fixed by switching to a
+      single multi-pattern trigger group containing both `kernel_next_iter_spec`
+      terms.
+    - outcome:
+      this closes the remaining no-overlap gap for `check_face_cycles`; the item
+      is now complete.
     - verification checks:
       `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels kernel_check_face_cycles`
       passed (`4 verified, 0 errors`);
