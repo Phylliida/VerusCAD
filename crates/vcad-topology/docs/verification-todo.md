@@ -2187,6 +2187,22 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`4 passed, 0 failed`);
       `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
       passed (`6 passed, 0 failed`).
+  - burndown update (2026-02-18, constructor-bridge burndown hygiene pass):
+    - removed a duplicate historical note for the same constructor-bridge
+      selector-typing hardening work to keep this checklist single-sourced.
+    - revalidated the current `vcad-topology` proof/test state after the doc
+      cleanup.
+    - failed attempts:
+      none in this pass.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh`
+      passed (`174 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh`
+      passed (`209 verified, 0 errors`);
+      `cargo test -p vcad-topology`
+      passed (`4 passed, 0 failed`);
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`6 passed, 0 failed`).
   - file: `src/halfedge_mesh.rs`
 - [x] Verify `is_valid` exactly matches `is_structurally_valid && check_euler_formula_closed_components`.
   - burndown update (2026-02-18):
@@ -2430,35 +2446,6 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`157 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`157 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`192 verified, 0 errors`).
-  - burndown update (2026-02-18, reference-constructor bridge dedup hardening):
-    - reduced constructor bridge surface in
-      `src/runtime_halfedge_mesh_refinement.rs` by replacing three wrappers
-      (`ex_mesh_tetrahedron`, `ex_mesh_cube`, `ex_mesh_triangular_prism`)
-      with one shared bridge:
-      `ex_mesh_reference_constructor`.
-    - strengthened selector safety in the same pass:
-      `ex_mesh_reference_constructor` now takes a closed enum
-      (`ReferenceMeshKind`) instead of a raw `usize`, removing the default
-      abort branch from the bridge body.
-    - updated constructor wrappers to use the enum-based bridge:
-      - `tetrahedron_constructive_counts`,
-      - `cube_constructive_counts`,
-      - `triangular_prism_constructive_counts`.
-    - failed attempt (kept documented):
-      first enum revision derived only `Structural, Copy, Clone`; Verus
-      rejected `Structural` derivation for this enum shape until
-      `PartialEq, Eq` were also derived.
-    - verification checks:
-      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
-      passed (`174 verified, 0 errors`);
-      `./scripts/verify-vcad-topology-fast.sh`
-      passed (`174 verified, 0 errors`);
-      `./scripts/verify-vcad-topology.sh`
-      passed (`209 verified, 0 errors`);
-      `cargo test -p vcad-topology`
-      passed (`4 passed, 0 failed`);
-      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
-      passed (`6 passed, 0 failed`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 
