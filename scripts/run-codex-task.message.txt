@@ -1,1 +1,1 @@
-Added and wired a verified representative-reachability checker for half_edge_components in vcad-topology, strengthening component/Euler constructive witnesses and updating the burndown log.
+Added a verified representative-minimality checker to the half_edge_components constructive pipeline in vcad-topology and stabilized module verification with a localized spinoff prover/rlimit adjustment.

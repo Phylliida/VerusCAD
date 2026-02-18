@@ -1240,6 +1240,29 @@ pub open spec fn mesh_half_edge_components_representative_connected_spec(
             ==> mesh_half_edge_component_representative_connected_at_spec(m, components, c)
 }
 
+pub open spec fn mesh_half_edge_component_representative_minimal_at_spec(
+    m: MeshModel,
+    components: Seq<Vec<usize>>,
+    c: int,
+) -> bool {
+    &&& 0 <= c < components.len() as int
+    &&& components[c]@.len() > 0
+    &&& forall|h: int|
+        #![trigger mesh_half_edge_component_contains_spec(m, components, c, h)]
+        mesh_half_edge_component_contains_spec(m, components, c, h)
+            ==> mesh_half_edge_component_entry_spec(components, c, 0) <= h
+}
+
+pub open spec fn mesh_half_edge_components_representative_minimal_spec(
+    m: MeshModel,
+    components: Seq<Vec<usize>>,
+) -> bool {
+    forall|c: int|
+        #![trigger components[c]@]
+        0 <= c < components.len() as int
+            ==> mesh_half_edge_component_representative_minimal_at_spec(m, components, c)
+}
+
 pub open spec fn mesh_half_edge_components_partition_neighbor_closed_spec(
     m: MeshModel,
     components: Seq<Vec<usize>>,
@@ -1247,6 +1270,7 @@ pub open spec fn mesh_half_edge_components_partition_neighbor_closed_spec(
     &&& mesh_half_edge_components_partition_spec(m, components)
     &&& mesh_half_edge_components_neighbor_closed_spec(m, components)
     &&& mesh_half_edge_components_representative_connected_spec(m, components)
+    &&& mesh_half_edge_components_representative_minimal_spec(m, components)
 }
 
 pub open spec fn mesh_component_count_partition_witness_spec(m: MeshModel, count: int) -> bool {
@@ -6262,7 +6286,8 @@ pub fn runtime_check_half_edge_components_partition(
 }
 
 #[verifier::exec_allows_no_decreases_clause]
-#[verifier::rlimit(300)]
+#[verifier::spinoff_prover]
+#[verifier::rlimit(600)]
 #[allow(dead_code)]
 pub fn runtime_check_half_edge_components_neighbor_closed(
     m: &Mesh,
@@ -6945,6 +6970,151 @@ pub fn runtime_check_half_edge_components_representative_connected(
     true
 }
 
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
+pub fn runtime_check_half_edge_components_representative_minimal(
+    m: &Mesh,
+    components: &[Vec<usize>],
+) -> (out: bool)
+    ensures
+        out ==> mesh_half_edge_components_representative_minimal_spec(m@, components@),
+{
+    let hcnt = m.half_edges.len();
+    let mut c: usize = 0;
+    while c < components.len()
+        invariant
+            hcnt == m.half_edges.len(),
+            0 <= c <= components.len(),
+            forall|cp: int|
+                #![trigger components@[cp]@]
+                0 <= cp < c as int
+                    ==> mesh_half_edge_component_representative_minimal_at_spec(m@, components@, cp),
+    {
+        let component = vstd::slice::slice_index_get(components, c);
+        let clen = component.len();
+        if clen == 0 {
+            return false;
+        }
+
+        let rep = component[0];
+        if rep >= hcnt {
+            return false;
+        }
+
+        let mut i: usize = 0;
+        while i < clen
+            invariant
+                hcnt == m.half_edges.len(),
+                0 <= c < components.len(),
+                *component == components@.index(c as int),
+                clen == component.len(),
+                component@.len() == clen as int,
+                rep == component[0],
+                rep < hcnt,
+                0 <= i <= clen,
+                forall|ip: int|
+                    #![trigger component@[ip]]
+                    0 <= ip < i as int
+                        ==> 0 <= (component@[ip] as int)
+                            && (component@[ip] as int) < (hcnt as int)
+                            && (rep as int) <= #[trigger] (component@[ip] as int),
+        {
+            let h = component[i];
+            if h >= hcnt {
+                return false;
+            }
+            if rep > h {
+                return false;
+            }
+
+            proof {
+                assert(component@[i as int] == h);
+                assert(forall|ip: int|
+                    #![trigger component@[ip]]
+                    0 <= ip < (i + 1) as int
+                        ==> 0 <= (component@[ip] as int)
+                            && (component@[ip] as int) < (hcnt as int)
+                            && (rep as int) <= #[trigger] (component@[ip] as int)) by {
+                    assert forall|ip: int|
+                        #![trigger component@[ip]]
+                        0 <= ip < (i + 1) as int
+                            implies 0 <= (component@[ip] as int)
+                                && (component@[ip] as int) < (hcnt as int)
+                                && (rep as int) <= #[trigger] (component@[ip] as int) by {
+                        if ip < i as int {
+                        } else {
+                            assert(ip == i as int);
+                            assert(component@[ip] as int == h as int);
+                            assert(0 <= (h as int));
+                            assert((h as int) < (hcnt as int));
+                            assert((rep as int) <= (h as int));
+                        }
+                    };
+                }
+            }
+
+            i += 1;
+        }
+
+        proof {
+            assert(i == clen);
+            assert(mesh_half_edge_component_representative_minimal_at_spec(m@, components@, c as int)) by {
+                assert(0 <= c as int);
+                assert((c as int) < (components@.len() as int));
+                assert(components@[c as int]@.len() > 0);
+                assert(mesh_half_edge_component_entry_spec(components@, c as int, 0) == rep as int);
+                assert forall|h: int|
+                    #![trigger mesh_half_edge_component_contains_spec(m@, components@, c as int, h)]
+                    mesh_half_edge_component_contains_spec(m@, components@, c as int, h)
+                        implies mesh_half_edge_component_entry_spec(components@, c as int, 0) <= h by {
+                    let ip = choose|ip: int| {
+                        &&& 0 <= ip < components@[c as int]@.len() as int
+                        &&& mesh_half_edge_component_entry_spec(components@, c as int, ip) == h
+                    };
+                    assert(components@[c as int] == *component);
+                    assert(components@[c as int]@.len() == clen as int);
+                    assert(0 <= ip < clen as int);
+                    assert(0 <= ip < i as int);
+                    assert(component@[ip] as int == h);
+                    assert((rep as int) <= (component@[ip] as int));
+                    assert(mesh_half_edge_component_entry_spec(components@, c as int, 0) == rep as int);
+                };
+            }
+            assert(forall|cp: int|
+                #![trigger components@[cp]@]
+                0 <= cp < (c + 1) as int
+                    ==> mesh_half_edge_component_representative_minimal_at_spec(m@, components@, cp)) by {
+                assert forall|cp: int|
+                    #![trigger components@[cp]@]
+                    0 <= cp < (c + 1) as int
+                        implies mesh_half_edge_component_representative_minimal_at_spec(m@, components@, cp) by {
+                    if cp < c as int {
+                    } else {
+                        assert(cp == c as int);
+                        assert(mesh_half_edge_component_representative_minimal_at_spec(m@, components@, cp));
+                    }
+                };
+            }
+        }
+
+        c += 1;
+    }
+
+    proof {
+        assert(c == components.len());
+        assert(mesh_half_edge_components_representative_minimal_spec(m@, components@)) by {
+            assert forall|cp: int|
+                #![trigger components@[cp]@]
+                0 <= cp < components@.len() as int
+                    implies mesh_half_edge_component_representative_minimal_at_spec(m@, components@, cp) by {
+                assert(components@.len() as int == c as int);
+                assert(0 <= cp < c as int);
+            };
+        }
+    }
+    true
+}
+
 #[allow(dead_code)]
 pub fn half_edge_components_constructive(
     m: &Mesh,
@@ -6969,12 +7139,20 @@ pub fn half_edge_components_constructive(
         &components,
     );
     if !representative_connected_ok {
+        return Option::None;
+    }
+    let representative_minimal_ok = runtime_check_half_edge_components_representative_minimal(
+        m,
+        &components,
+    );
+    if !representative_minimal_ok {
         Option::None
     } else {
         proof {
             assert(mesh_half_edge_components_partition_spec(m@, components@));
             assert(mesh_half_edge_components_neighbor_closed_spec(m@, components@));
             assert(mesh_half_edge_components_representative_connected_spec(m@, components@));
+            assert(mesh_half_edge_components_representative_minimal_spec(m@, components@));
             assert(mesh_half_edge_components_partition_neighbor_closed_spec(m@, components@));
         }
         Option::Some(components)
@@ -7007,6 +7185,13 @@ pub fn component_count_constructive(
     if !representative_connected_ok {
         return Option::None;
     }
+    let representative_minimal_ok = runtime_check_half_edge_components_representative_minimal(
+        m,
+        &components,
+    );
+    if !representative_minimal_ok {
+        return Option::None;
+    }
 
     let count = ex_mesh_component_count(m);
     if count != components.len() {
@@ -7017,6 +7202,7 @@ pub fn component_count_constructive(
         assert(mesh_half_edge_components_partition_spec(m@, components@));
         assert(mesh_half_edge_components_neighbor_closed_spec(m@, components@));
         assert(mesh_half_edge_components_representative_connected_spec(m@, components@));
+        assert(mesh_half_edge_components_representative_minimal_spec(m@, components@));
         assert(mesh_half_edge_components_partition_neighbor_closed_spec(m@, components@));
         assert(count as int == components@.len() as int);
         assert(mesh_component_count_partition_witness_spec(m@, count as int));
@@ -7052,6 +7238,13 @@ pub fn euler_characteristics_per_component_constructive(
     if !representative_connected_ok {
         return Option::None;
     }
+    let representative_minimal_ok = runtime_check_half_edge_components_representative_minimal(
+        m,
+        &components,
+    );
+    if !representative_minimal_ok {
+        return Option::None;
+    }
 
     let chis = ex_mesh_euler_characteristics_per_component(m);
     let chis_ok = runtime_check_euler_characteristics_per_component(m, &components, &chis);
@@ -7063,6 +7256,7 @@ pub fn euler_characteristics_per_component_constructive(
         assert(mesh_half_edge_components_partition_spec(m@, components@));
         assert(mesh_half_edge_components_neighbor_closed_spec(m@, components@));
         assert(mesh_half_edge_components_representative_connected_spec(m@, components@));
+        assert(mesh_half_edge_components_representative_minimal_spec(m@, components@));
         assert(mesh_half_edge_components_partition_neighbor_closed_spec(m@, components@));
         assert(mesh_euler_characteristics_per_component_spec(m@, components@, chis@));
         assert(mesh_euler_characteristics_partition_witness_spec(m@, chis@));
@@ -7102,6 +7296,13 @@ pub fn check_euler_formula_closed_components_constructive(
         &components,
     );
     if !representative_connected_ok {
+        return Option::None;
+    }
+    let representative_minimal_ok = runtime_check_half_edge_components_representative_minimal(
+        m,
+        &components,
+    );
+    if !representative_minimal_ok {
         return Option::None;
     }
 
@@ -7161,6 +7362,7 @@ pub fn check_euler_formula_closed_components_constructive(
         assert(mesh_half_edge_components_partition_spec(m@, components@));
         assert(mesh_half_edge_components_neighbor_closed_spec(m@, components@));
         assert(mesh_half_edge_components_representative_connected_spec(m@, components@));
+        assert(mesh_half_edge_components_representative_minimal_spec(m@, components@));
         assert(mesh_half_edge_components_partition_neighbor_closed_spec(m@, components@));
         assert(mesh_euler_characteristics_per_component_spec(m@, components@, chis@));
         assert(chis@.len() > 0);

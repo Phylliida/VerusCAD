@@ -860,6 +860,48 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
       passed (`121 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`155 verified, 0 errors`).
+  - burndown update (2026-02-18, representative-minimality witness increment):
+    - strengthened exported component semantics in
+      `src/runtime_halfedge_mesh_refinement.rs` with:
+      - `mesh_half_edge_component_representative_minimal_at_spec`,
+      - `mesh_half_edge_components_representative_minimal_spec`,
+      - and a strengthened
+        `mesh_half_edge_components_partition_neighbor_closed_spec` that now
+        additionally requires representative-minimality
+        (`component[0] <= every member`) for each component.
+    - added constructive checker
+      `runtime_check_half_edge_components_representative_minimal` and required
+      it in:
+      - `half_edge_components_constructive`,
+      - `component_count_constructive`,
+      - `euler_characteristics_per_component_constructive`,
+      - `check_euler_formula_closed_components_constructive`.
+      this lifts shared constructive witnesses from
+      partition+coverage+neighbor-closure+representative-reachability to also
+      include explicit per-component representative-minimality.
+    - failed stabilization attempt (kept documented):
+      initially tried to recover full-module verifier stability using only
+      larger `#[verifier::rlimit(...)]` values on
+      `runtime_check_half_edge_components_neighbor_closed`; this remained
+      brittle (resource-limit failures, and a high-rlimit solver-run panic:
+      `expected rlimit-count in smt statistics`), so it was not kept.
+    - stabilization kept in-tree:
+      `runtime_check_half_edge_components_neighbor_closed` now uses
+      `#[verifier::spinoff_prover]` with a moderate localized
+      `#[verifier::rlimit(600)]`, restoring stable full-module verification.
+    - remaining gap:
+      this advances the minimality half of the pending boundary, but full BFS
+      soundness/completeness is still open at reverse-direction connectivity
+      export (`mesh_half_edge_connected_spec(rep, h) ==> component_contains(...)`).
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_half_edge_components_representative_minimal`
+      passed (`3 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement component_count_constructive`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`124 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`124 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`158 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 - [ ] Verify `component_count` equals number of connected components.
@@ -902,7 +944,13 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `component_count_constructive` results now also carry per-component
       representative reachability (in addition to partition/coverage and
       neighbor-closure).
-    - remaining gap:
+  - burndown update (2026-02-18, aligned with representative-minimality increment):
+    - due the strengthened shared witness
+      `mesh_half_edge_components_partition_neighbor_closed_spec`, successful
+      `component_count_constructive` results now also carry per-component
+      representative-minimality (`component[0] <= each member`) in addition to
+      partition/coverage/neighbor-closure/representative-reachability.
+  - remaining gap:
       `component_count` still lacks the full model-level linkage to
       `mesh_component_count_spec` until reverse-direction minimality
       (`connected ==> same component`) is exported.
