@@ -2467,6 +2467,30 @@ pub open spec fn from_face_cycles_twin_endpoint_correspondence_spec(m: MeshModel
         0 <= h < hcnt ==> from_face_cycles_twin_endpoint_correspondence_at_spec(m, h)
 }
 
+pub open spec fn from_face_cycles_undirected_edge_pair_equivalent_spec(
+    m: MeshModel,
+    h1: int,
+    h2: int,
+) -> bool {
+    (m.half_edges[h1].edge == m.half_edges[h2].edge) <==> (
+        mesh_undirected_key_spec(
+            mesh_half_edge_from_vertex_spec(m, h1),
+            mesh_half_edge_to_vertex_spec(m, h1),
+        ) == mesh_undirected_key_spec(
+            mesh_half_edge_from_vertex_spec(m, h2),
+            mesh_half_edge_to_vertex_spec(m, h2),
+        )
+    )
+}
+
+pub open spec fn from_face_cycles_undirected_edge_equivalence_spec(m: MeshModel) -> bool {
+    let hcnt = mesh_half_edge_count_spec(m);
+    forall|h1: int, h2: int|
+        #![trigger from_face_cycles_undirected_edge_pair_equivalent_spec(m, h1, h2)]
+        0 <= h1 < hcnt && 0 <= h2 < hcnt
+            ==> from_face_cycles_undirected_edge_pair_equivalent_spec(m, h1, h2)
+}
+
 pub open spec fn from_face_cycles_counts_index_face_starts_spec(
     vertex_count: int,
     face_cycles: Seq<Seq<int>>,
@@ -2496,6 +2520,7 @@ pub open spec fn from_face_cycles_structural_core_spec(
     &&& from_face_cycles_vertex_assignment_coherent_spec(face_cycles, m)
     &&& from_face_cycles_twin_assignment_total_involution_spec(m)
     &&& from_face_cycles_twin_endpoint_correspondence_spec(m)
+    &&& from_face_cycles_undirected_edge_equivalence_spec(m)
     &&& mesh_edge_exactly_two_half_edges_spec(m)
     &&& from_face_cycles_vertex_representatives_spec(m)
 }
@@ -2610,6 +2635,39 @@ pub proof fn lemma_from_face_cycles_success_implies_twin_endpoint_correspondence
     if from_face_cycles_success_spec(vertex_count, face_cycles, m) {
         assert(from_face_cycles_incidence_model_spec(vertex_count, face_cycles, m));
         lemma_from_face_cycles_incidence_implies_twin_endpoint_correspondence(
+            vertex_count,
+            face_cycles,
+            m,
+        );
+    }
+}
+
+pub proof fn lemma_from_face_cycles_incidence_implies_undirected_edge_equivalence(
+    vertex_count: int,
+    face_cycles: Seq<Seq<int>>,
+    m: MeshModel,
+)
+    ensures
+        from_face_cycles_incidence_model_spec(vertex_count, face_cycles, m)
+            ==> from_face_cycles_undirected_edge_equivalence_spec(m),
+{
+    if from_face_cycles_incidence_model_spec(vertex_count, face_cycles, m) {
+        assert(from_face_cycles_undirected_edge_equivalence_spec(m));
+    }
+}
+
+pub proof fn lemma_from_face_cycles_success_implies_undirected_edge_equivalence(
+    vertex_count: int,
+    face_cycles: Seq<Seq<int>>,
+    m: MeshModel,
+)
+    ensures
+        from_face_cycles_success_spec(vertex_count, face_cycles, m)
+            ==> from_face_cycles_undirected_edge_equivalence_spec(m),
+{
+    if from_face_cycles_success_spec(vertex_count, face_cycles, m) {
+        assert(from_face_cycles_incidence_model_spec(vertex_count, face_cycles, m));
+        lemma_from_face_cycles_incidence_implies_undirected_edge_equivalence(
             vertex_count,
             face_cycles,
             m,
@@ -4287,42 +4345,51 @@ pub fn from_face_cycles_constructive_next_prev_face(
                         if !twin_endpoints_ok {
                             Result::Err(mesh_build_error_empty_face_set())
                         } else {
-                            let edge_ok = runtime_check_edge_exactly_two_half_edges(&m);
-                            if !edge_ok {
+                            let undirected_edge_ok = runtime_check_from_face_cycles_undirected_edge_equivalence(
+                                &m,
+                            );
+                            if !undirected_edge_ok {
                                 Result::Err(mesh_build_error_empty_face_set())
                             } else {
-                                let vertex_ok = runtime_check_vertex_representative_valid_nonisolated(&m);
-                                if !vertex_ok {
+                                let edge_ok = runtime_check_edge_exactly_two_half_edges(&m);
+                                if !edge_ok {
                                     Result::Err(mesh_build_error_empty_face_set())
                                 } else {
-                                    proof {
-                                        assert(input_ok);
-                                        assert(no_duplicate_ok);
-                                        assert(all_twin_ok);
-                                        assert(no_isolated_ok);
-                                        assert(counts_index_face_starts_ok);
-                                        assert(from_face_cycles_basic_input_spec(vertex_count as int, model_cycles));
-                                        assert(from_face_cycles_no_duplicate_oriented_edges_spec(model_cycles));
-                                        assert(from_face_cycles_all_oriented_edges_have_twin_spec(model_cycles));
-                                        assert(from_face_cycles_no_isolated_vertices_spec(vertex_count as int, model_cycles));
-                                        assert(from_face_cycles_counts_index_face_starts_spec(
-                                            vertex_count as int,
-                                            model_cycles,
-                                            m@,
-                                        ));
-                                        assert(from_face_cycles_next_prev_face_coherent_spec(model_cycles, m@));
-                                        assert(from_face_cycles_vertex_assignment_coherent_spec(model_cycles, m@));
-                                        assert(from_face_cycles_twin_assignment_total_involution_spec(m@));
-                                        assert(from_face_cycles_twin_endpoint_correspondence_spec(m@));
-                                        assert(mesh_edge_exactly_two_half_edges_spec(m@));
-                                        assert(from_face_cycles_vertex_representatives_spec(m@));
-                                        assert(from_face_cycles_structural_core_spec(
-                                            vertex_count as int,
-                                            model_cycles,
-                                            m@,
-                                        ));
+                                    let vertex_ok = runtime_check_vertex_representative_valid_nonisolated(&m);
+                                    if !vertex_ok {
+                                        Result::Err(mesh_build_error_empty_face_set())
+                                    } else {
+                                        proof {
+                                            assert(input_ok);
+                                            assert(no_duplicate_ok);
+                                            assert(all_twin_ok);
+                                            assert(no_isolated_ok);
+                                            assert(counts_index_face_starts_ok);
+                                            assert(undirected_edge_ok);
+                                            assert(from_face_cycles_basic_input_spec(vertex_count as int, model_cycles));
+                                            assert(from_face_cycles_no_duplicate_oriented_edges_spec(model_cycles));
+                                            assert(from_face_cycles_all_oriented_edges_have_twin_spec(model_cycles));
+                                            assert(from_face_cycles_no_isolated_vertices_spec(vertex_count as int, model_cycles));
+                                            assert(from_face_cycles_counts_index_face_starts_spec(
+                                                vertex_count as int,
+                                                model_cycles,
+                                                m@,
+                                            ));
+                                            assert(from_face_cycles_next_prev_face_coherent_spec(model_cycles, m@));
+                                            assert(from_face_cycles_vertex_assignment_coherent_spec(model_cycles, m@));
+                                            assert(from_face_cycles_twin_assignment_total_involution_spec(m@));
+                                            assert(from_face_cycles_twin_endpoint_correspondence_spec(m@));
+                                            assert(from_face_cycles_undirected_edge_equivalence_spec(m@));
+                                            assert(mesh_edge_exactly_two_half_edges_spec(m@));
+                                            assert(from_face_cycles_vertex_representatives_spec(m@));
+                                            assert(from_face_cycles_structural_core_spec(
+                                                vertex_count as int,
+                                                model_cycles,
+                                                m@,
+                                            ));
+                                        }
+                                        Result::Ok(m)
                                     }
-                                    Result::Ok(m)
                                 }
                             }
                         }
@@ -4827,6 +4894,199 @@ pub fn runtime_check_twin_endpoint_correspondence(m: &Mesh) -> (out: bool)
             };
         };
         assert(from_face_cycles_twin_endpoint_correspondence_spec(m@));
+    }
+    true
+}
+
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
+pub fn runtime_check_from_face_cycles_undirected_edge_equivalence(m: &Mesh) -> (out: bool)
+    ensures
+        out ==> from_face_cycles_undirected_edge_equivalence_spec(m@),
+{
+    let index_ok = runtime_check_index_bounds(m);
+    if !index_ok {
+        return false;
+    }
+
+    let hcnt = m.half_edges.len();
+    let mut h1: usize = 0;
+    while h1 < hcnt
+        invariant
+            hcnt == m.half_edges.len(),
+            mesh_index_bounds_spec(m@),
+            0 <= h1 <= hcnt,
+            forall|hp1: int, hp2: int|
+                #![trigger from_face_cycles_undirected_edge_pair_equivalent_spec(m@, hp1, hp2)]
+                0 <= hp1 < h1 as int && 0 <= hp2 < hcnt as int
+                    ==> from_face_cycles_undirected_edge_pair_equivalent_spec(m@, hp1, hp2),
+    {
+        let mut h2: usize = 0;
+        while h2 < hcnt
+            invariant
+                hcnt == m.half_edges.len(),
+                mesh_index_bounds_spec(m@),
+                0 <= h1 < hcnt,
+                0 <= h2 <= hcnt,
+                forall|hp1: int, hp2: int|
+                    #![trigger from_face_cycles_undirected_edge_pair_equivalent_spec(m@, hp1, hp2)]
+                    0 <= hp1 < h1 as int && 0 <= hp2 < hcnt as int
+                        ==> from_face_cycles_undirected_edge_pair_equivalent_spec(m@, hp1, hp2),
+                forall|hp2: int|
+                    #![trigger from_face_cycles_undirected_edge_pair_equivalent_spec(m@, h1 as int, hp2)]
+                    0 <= hp2 < h2 as int
+                        ==> from_face_cycles_undirected_edge_pair_equivalent_spec(m@, h1 as int, hp2),
+        {
+            let he1 = &m.half_edges[h1];
+            let he2 = &m.half_edges[h2];
+            let n1 = he1.next;
+            let n2 = he2.next;
+            if n1 >= hcnt || n2 >= hcnt {
+                return false;
+            }
+
+            let from1 = he1.vertex;
+            let to1 = m.half_edges[n1].vertex;
+            let from2 = he2.vertex;
+            let to2 = m.half_edges[n2].vertex;
+
+            let key1_a = if from1 <= to1 { from1 } else { to1 };
+            let key1_b = if from1 <= to1 { to1 } else { from1 };
+            let key2_a = if from2 <= to2 { from2 } else { to2 };
+            let key2_b = if from2 <= to2 { to2 } else { from2 };
+            let same_edge = he1.edge == he2.edge;
+            let same_key = key1_a == key2_a && key1_b == key2_b;
+            if same_edge != same_key {
+                return false;
+            }
+
+            proof {
+                let h1i = h1 as int;
+                let h2i = h2 as int;
+                let key1_model = mesh_undirected_key_spec(
+                    mesh_half_edge_from_vertex_spec(m@, h1i),
+                    mesh_half_edge_to_vertex_spec(m@, h1i),
+                );
+                let key2_model = mesh_undirected_key_spec(
+                    mesh_half_edge_from_vertex_spec(m@, h2i),
+                    mesh_half_edge_to_vertex_spec(m@, h2i),
+                );
+
+                assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+                assert(0 <= h1i < hcnt as int);
+                assert(0 <= h2i < hcnt as int);
+                assert(m@.half_edges[h1i].edge == he1.edge as int);
+                assert(m@.half_edges[h2i].edge == he2.edge as int);
+                assert(m@.half_edges[h1i].next == n1 as int);
+                assert(m@.half_edges[h2i].next == n2 as int);
+                assert(m@.half_edges[h1i].vertex == from1 as int);
+                assert(m@.half_edges[h2i].vertex == from2 as int);
+                assert(m@.half_edges[n1 as int].vertex == to1 as int);
+                assert(m@.half_edges[n2 as int].vertex == to2 as int);
+                assert(mesh_half_edge_from_vertex_spec(m@, h1i) == from1 as int);
+                assert(mesh_half_edge_to_vertex_spec(m@, h1i) == to1 as int);
+                assert(mesh_half_edge_from_vertex_spec(m@, h2i) == from2 as int);
+                assert(mesh_half_edge_to_vertex_spec(m@, h2i) == to2 as int);
+
+                if from1 <= to1 {
+                    assert(key1_a == from1);
+                    assert(key1_b == to1);
+                    assert(key1_model == (key1_a as int, key1_b as int));
+                } else {
+                    assert(key1_a == to1);
+                    assert(key1_b == from1);
+                    assert(key1_model == (key1_a as int, key1_b as int));
+                }
+                if from2 <= to2 {
+                    assert(key2_a == from2);
+                    assert(key2_b == to2);
+                    assert(key2_model == (key2_a as int, key2_b as int));
+                } else {
+                    assert(key2_a == to2);
+                    assert(key2_b == from2);
+                    assert(key2_model == (key2_a as int, key2_b as int));
+                }
+
+                if same_edge {
+                    assert(same_key);
+                    assert(m@.half_edges[h1i].edge == m@.half_edges[h2i].edge);
+                    assert(key1_a == key2_a);
+                    assert(key1_b == key2_b);
+                    assert((key1_a as int, key1_b as int) == (key2_a as int, key2_b as int));
+                    assert(key1_model == key2_model);
+                } else {
+                    assert(!same_key);
+                    assert(m@.half_edges[h1i].edge != m@.half_edges[h2i].edge);
+                    assert(key1_a != key2_a || key1_b != key2_b);
+                    assert((key1_a as int, key1_b as int) != (key2_a as int, key2_b as int));
+                    assert(key1_model != key2_model);
+                }
+                assert(from_face_cycles_undirected_edge_pair_equivalent_spec(m@, h1i, h2i));
+
+                assert(forall|hp2: int|
+                    #![trigger from_face_cycles_undirected_edge_pair_equivalent_spec(m@, h1 as int, hp2)]
+                    0 <= hp2 < (h2 + 1) as int
+                        ==> from_face_cycles_undirected_edge_pair_equivalent_spec(m@, h1 as int, hp2)) by {
+                    assert forall|hp2: int|
+                        #![trigger from_face_cycles_undirected_edge_pair_equivalent_spec(m@, h1 as int, hp2)]
+                        0 <= hp2 < (h2 + 1) as int
+                            implies from_face_cycles_undirected_edge_pair_equivalent_spec(m@, h1 as int, hp2) by {
+                        if hp2 < h2 as int {
+                            assert(0 <= hp2 < h2 as int);
+                        } else {
+                            assert(hp2 == h2 as int);
+                            assert(from_face_cycles_undirected_edge_pair_equivalent_spec(m@, h1 as int, hp2));
+                        }
+                    };
+                };
+            }
+
+            h2 += 1;
+        }
+
+        proof {
+            assert(h2 == hcnt);
+            assert(forall|hp1: int, hp2: int|
+                #![trigger from_face_cycles_undirected_edge_pair_equivalent_spec(m@, hp1, hp2)]
+                0 <= hp1 < (h1 + 1) as int && 0 <= hp2 < hcnt as int
+                    ==> from_face_cycles_undirected_edge_pair_equivalent_spec(m@, hp1, hp2)) by {
+                assert forall|hp1: int, hp2: int|
+                    #![trigger from_face_cycles_undirected_edge_pair_equivalent_spec(m@, hp1, hp2)]
+                    0 <= hp1 < (h1 + 1) as int && 0 <= hp2 < hcnt as int
+                        implies from_face_cycles_undirected_edge_pair_equivalent_spec(m@, hp1, hp2) by {
+                    if hp1 < h1 as int {
+                        assert(0 <= hp1 < h1 as int);
+                    } else {
+                        assert(hp1 == h1 as int);
+                        assert(0 <= hp2 < h2 as int);
+                    }
+                };
+            };
+        }
+
+        h1 += 1;
+    }
+
+    proof {
+        assert(index_ok);
+        assert(h1 == hcnt);
+        assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+        assert(forall|hp1: int, hp2: int|
+            #![trigger from_face_cycles_undirected_edge_pair_equivalent_spec(m@, hp1, hp2)]
+            0 <= hp1 < mesh_half_edge_count_spec(m@)
+                && 0 <= hp2 < mesh_half_edge_count_spec(m@)
+                ==> from_face_cycles_undirected_edge_pair_equivalent_spec(m@, hp1, hp2)) by {
+            assert forall|hp1: int, hp2: int|
+                #![trigger from_face_cycles_undirected_edge_pair_equivalent_spec(m@, hp1, hp2)]
+                0 <= hp1 < mesh_half_edge_count_spec(m@)
+                    && 0 <= hp2 < mesh_half_edge_count_spec(m@)
+                    implies from_face_cycles_undirected_edge_pair_equivalent_spec(m@, hp1, hp2) by {
+                assert(mesh_half_edge_count_spec(m@) == h1 as int);
+                assert(0 <= hp1 < h1 as int);
+                assert(0 <= hp2 < hcnt as int);
+            };
+        };
+        assert(from_face_cycles_undirected_edge_equivalence_spec(m@));
     }
     true
 }

@@ -1,1 +1,1 @@
-Exported twin-endpoint correspondence into the from_face_cycles structural core and reran vcad-topology verification with all 176 proofs passing.
+Exported undirected-edge equivalence into the from_face_cycles structural core, documented a rolled-back structural_core-to-success proof attempt, and reran vcad-topology verification with all 181 proofs passing.

@@ -376,6 +376,42 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`142 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`142 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`176 verified, 0 errors`).
+  - burndown update (2026-02-18, incidence-core undirected-edge equivalence export):
+    - completed undirected-edge equivalence export in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      - added incidence-core predicate helpers
+        `from_face_cycles_undirected_edge_pair_equivalent_spec` and
+        `from_face_cycles_undirected_edge_equivalence_spec`,
+      - added projection lemmas
+        `lemma_from_face_cycles_incidence_implies_undirected_edge_equivalence`
+        and
+        `lemma_from_face_cycles_success_implies_undirected_edge_equivalence`,
+      - added executable checker
+        `runtime_check_from_face_cycles_undirected_edge_equivalence`,
+      - strengthened `from_face_cycles_structural_core_spec` and
+        `from_face_cycles_constructive_next_prev_face` so `Ok(m)` now exports
+        the undirected-edge equivalence clause as part of the constructor core.
+    - failed attempt (rolled back in this pass):
+      attempted to strengthen the constructive wrapper all the way to direct
+      `Ok(m) ==> from_face_cycles_success_spec(...)` using new lemmas
+      (`lemma_from_face_cycles_structural_core_implies_incidence` /
+      `..._implies_success`); this proof shape was removed after localized
+      solver runs became unstable/too expensive for reliable full-module
+      burndown throughput.
+    - stable state retained:
+      undirected-edge equivalence is now exported in the constructive
+      constructor core, but direct constructive `Result`-level linkage to full
+      `from_face_cycles_success_spec` / `from_face_cycles_failure_spec` remains
+      open.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_from_face_cycles_undirected_edge_equivalence`
+      passed (`3 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement from_face_cycles_constructive_next_prev_face`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`147 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`147 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`181 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
 - [x] Prove twin assignment is total for closed inputs and involutive.
   - burndown update (2026-02-18):
