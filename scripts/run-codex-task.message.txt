@@ -1,1 +1,1 @@
-Replayed vcad-topology Exit Condition burndown checks (clean trust-surface scans, 192/227 verifier passes, and green baseline/geometry/verus cargo tests) and logged the run in verification-todo.md.
+Replayed vcad-topology Exit Condition burndown checks with clean trust-surface scans and a fully green verification/test matrix (192 fast, 227 full, and all cargo test variants).
