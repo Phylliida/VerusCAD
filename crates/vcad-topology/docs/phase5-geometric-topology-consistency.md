@@ -52,7 +52,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [x] Define component-level outwardness criterion for closed meshes (document chosen witness, for example interior reference point / signed volume convention).
 - [x] Runtime checker: implement global orientation check (`check_outward_normals` or equivalent).
 - [x] Runtime checker: add explicit shared-edge local orientation consistency check (adjacent faces induce opposite direction on the same geometric edge).
-- [ ] Proof: local orientation consistency across adjacent faces via shared edges.
+- [x] Proof: local orientation consistency across adjacent faces via shared edges.
 - [ ] Proof: global outwardness criterion implies all faces point outward for each closed component.
 - [ ] Proof: signed-volume outwardness criterion is independent of the chosen reference origin.
 
@@ -139,6 +139,26 @@ This doc expands those targets into executable TODOs aligned with the current `v
   - document which Euler-operator preconditions must preserve geometric invariants versus recheck them.
 
 ## Burndown Log
+- 2026-02-18: Completed the P5.4 local-orientation proof item by adding explicit shared-edge orientation specs and constructive proof wiring:
+  - in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
+    - added `mesh_twin_faces_distinct_at_spec`, `mesh_twin_faces_distinct_spec`, and aggregate `mesh_shared_edge_local_orientation_consistency_spec`;
+  - in `src/runtime_halfedge_mesh_refinement/core_runtime_checks_and_bridges.rs`:
+    - added `runtime_check_twin_faces_distinct` (`out ==> mesh_twin_faces_distinct_spec(m@)`);
+    - added `runtime_check_shared_edge_local_orientation_consistency` (`out ==> mesh_shared_edge_local_orientation_consistency_spec(m@)`), composed from the new twin-face-distinct checker plus existing `runtime_check_twin_endpoint_correspondence`;
+  - in `src/runtime_halfedge_mesh_refinement/components_and_validity_specs.rs`:
+    - strengthened `geometric_topological_consistency_gate_model_link_spec` with
+      `w.shared_edge_local_orientation_ok ==> mesh_shared_edge_local_orientation_consistency_spec(m)`;
+  - in `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`:
+    - wired `check_geometric_topological_consistency_constructive` to require the new verified wrapper signal for `shared_edge_local_orientation_ok`, then discharged the strengthened model-link implication in proof.
+- 2026-02-18: Runtime alignment for the same P5.4 pass in `src/halfedge_mesh/validation.rs`:
+  - tightened `Mesh::check_shared_edge_local_orientation_consistency()` to check opposite endpoint-vertex order on twin half-edges (and distinct incident faces), matching the new refinement spec vocabulary used in proofs.
+- 2026-02-18: Failed attempts in this P5.4 proof pass: none.
+- 2026-02-18: Revalidated after the P5.4 local-orientation proof/linking pass:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (215 verified, 0 errors)
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology.sh` (250 verified, 0 errors)
 - 2026-02-18: Completed the P5.3 projected-turn convexity spec + triangle-trivial proof item in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
   - added face-local projected convexity spec helpers:
     - `mesh_face_projection_axis_from_normal_spec`

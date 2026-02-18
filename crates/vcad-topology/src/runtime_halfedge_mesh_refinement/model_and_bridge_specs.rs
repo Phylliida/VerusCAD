@@ -154,6 +154,25 @@ pub open spec fn mesh_twin_involution_spec(m: MeshModel) -> bool {
             ==> #[trigger] m.half_edges[m.half_edges[h].twin].twin == h
 }
 
+pub open spec fn mesh_twin_faces_distinct_at_spec(m: MeshModel, h: int) -> bool {
+    let hcnt = mesh_half_edge_count_spec(m);
+    let t = m.half_edges[h].twin;
+    &&& 0 <= h < hcnt
+    &&& 0 <= t < hcnt
+    &&& m.half_edges[h].face != m.half_edges[t].face
+}
+
+pub open spec fn mesh_twin_faces_distinct_spec(m: MeshModel) -> bool {
+    forall|h: int|
+        0 <= h < mesh_half_edge_count_spec(m)
+            ==> #[trigger] mesh_twin_faces_distinct_at_spec(m, h)
+}
+
+pub open spec fn mesh_shared_edge_local_orientation_consistency_spec(m: MeshModel) -> bool {
+    &&& mesh_twin_faces_distinct_spec(m)
+    &&& from_face_cycles_twin_endpoint_correspondence_spec(m)
+}
+
 pub open spec fn mesh_prev_next_inverse_at_spec(m: MeshModel, h: int) -> bool {
     &&& 0 <= m.half_edges[h].next < mesh_half_edge_count_spec(m)
     &&& 0 <= m.half_edges[h].prev < mesh_half_edge_count_spec(m)

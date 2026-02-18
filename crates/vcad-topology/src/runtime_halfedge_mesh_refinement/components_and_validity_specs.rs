@@ -974,7 +974,8 @@ pub open spec fn geometric_topological_consistency_gate_model_link_spec(
     m: MeshModel,
     w: GeometricTopologicalConsistencyGateWitness,
 ) -> bool {
-    w.phase4_valid_ok ==> mesh_valid_spec(m)
+    &&& (w.phase4_valid_ok ==> mesh_valid_spec(m))
+    &&& (w.shared_edge_local_orientation_ok ==> mesh_shared_edge_local_orientation_consistency_spec(m))
 }
 
 #[derive(Structural, Copy, Clone, PartialEq, Eq)]

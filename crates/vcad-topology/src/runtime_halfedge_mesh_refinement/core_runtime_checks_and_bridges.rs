@@ -655,6 +655,107 @@ pub fn runtime_check_twin_endpoint_correspondence(m: &Mesh) -> (out: bool)
 
 #[verifier::exec_allows_no_decreases_clause]
 #[allow(dead_code)]
+pub fn runtime_check_twin_faces_distinct(m: &Mesh) -> (out: bool)
+    ensures
+        out ==> mesh_twin_faces_distinct_spec(m@),
+{
+    let index_ok = runtime_check_index_bounds(m);
+    if !index_ok {
+        return false;
+    }
+
+    let hcnt = m.half_edges.len();
+    let mut h: usize = 0;
+    while h < hcnt
+        invariant
+            hcnt == m.half_edges.len(),
+            mesh_index_bounds_spec(m@),
+            0 <= h <= hcnt,
+            forall|hp: int|
+                0 <= hp < h as int ==> #[trigger] mesh_twin_faces_distinct_at_spec(m@, hp),
+    {
+        let he = &m.half_edges[h];
+        let t = he.twin;
+        if t >= hcnt {
+            return false;
+        }
+
+        let twin = &m.half_edges[t];
+        if he.face == twin.face {
+            return false;
+        }
+
+        proof {
+            assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+            assert(m@.half_edges[h as int].twin == t as int);
+            assert(m@.half_edges[h as int].face == he.face as int);
+            assert(m@.half_edges[t as int].face == twin.face as int);
+            assert(he.face as int != twin.face as int);
+            assert(mesh_twin_faces_distinct_at_spec(m@, h as int));
+
+            assert(forall|hp: int|
+                0 <= hp < (h + 1) as int ==> #[trigger] mesh_twin_faces_distinct_at_spec(m@, hp)) by {
+                assert forall|hp: int|
+                    0 <= hp < (h + 1) as int implies #[trigger] mesh_twin_faces_distinct_at_spec(m@, hp) by {
+                    if hp < h as int {
+                        assert(0 <= hp < h as int);
+                    } else {
+                        assert(hp == h as int);
+                        assert(mesh_twin_faces_distinct_at_spec(m@, hp));
+                    }
+                };
+            };
+        }
+
+        h += 1;
+    }
+
+    proof {
+        assert(index_ok);
+        assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+        assert(forall|hp: int|
+            0 <= hp < mesh_half_edge_count_spec(m@)
+                ==> #[trigger] mesh_twin_faces_distinct_at_spec(m@, hp)) by {
+            assert forall|hp: int|
+                0 <= hp < mesh_half_edge_count_spec(m@)
+                    implies #[trigger] mesh_twin_faces_distinct_at_spec(m@, hp) by {
+                assert(mesh_half_edge_count_spec(m@) == h as int);
+                assert(0 <= hp < h as int);
+            };
+        };
+        assert(mesh_twin_faces_distinct_spec(m@));
+    }
+    true
+}
+
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
+pub fn runtime_check_shared_edge_local_orientation_consistency(m: &Mesh) -> (out: bool)
+    ensures
+        out ==> mesh_shared_edge_local_orientation_consistency_spec(m@),
+{
+    let twin_faces_distinct_ok = runtime_check_twin_faces_distinct(m);
+    if !twin_faces_distinct_ok {
+        return false;
+    }
+
+    let twin_endpoint_ok = runtime_check_twin_endpoint_correspondence(m);
+    if !twin_endpoint_ok {
+        return false;
+    }
+
+    proof {
+        assert(twin_faces_distinct_ok);
+        assert(mesh_twin_faces_distinct_spec(m@));
+        assert(twin_endpoint_ok);
+        assert(from_face_cycles_twin_endpoint_correspondence_spec(m@));
+        assert(mesh_shared_edge_local_orientation_consistency_spec(m@));
+    }
+    true
+}
+
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
 pub fn runtime_check_from_face_cycles_undirected_edge_equivalence(m: &Mesh) -> (out: bool)
     ensures
         out ==> from_face_cycles_undirected_edge_equivalence_spec(m@),

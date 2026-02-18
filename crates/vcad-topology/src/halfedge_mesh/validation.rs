@@ -551,7 +551,7 @@ impl Mesh {
 
     #[cfg(feature = "geometry-checks")]
     /// Optional geometric extension: each shared edge between adjacent faces
-    /// must induce opposite geometric segment directions on twin half-edges.
+    /// must induce opposite endpoint-vertex order on twin half-edges.
     pub fn check_shared_edge_local_orientation_consistency(&self) -> bool {
         if !self.is_valid() {
             return false;
@@ -569,10 +569,10 @@ impl Mesh {
                 return false;
             }
 
-            let he_start = &self.vertices[he.vertex].position;
-            let he_end = &self.vertices[self.half_edges[he.next].vertex].position;
-            let twin_start = &self.vertices[twin.vertex].position;
-            let twin_end = &self.vertices[self.half_edges[twin.next].vertex].position;
+            let he_start = he.vertex;
+            let he_end = self.half_edges[he.next].vertex;
+            let twin_start = twin.vertex;
+            let twin_end = self.half_edges[twin.next].vertex;
             if he_start != twin_end || he_end != twin_start {
                 return false;
             }

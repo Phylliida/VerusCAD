@@ -531,7 +531,10 @@ pub fn check_geometric_topological_consistency_constructive(
     let face_coplanarity_ok = m.check_face_coplanarity();
     let face_convexity_ok = m.check_face_convexity();
     let face_plane_consistency_ok = m.check_face_plane_consistency();
-    let shared_edge_local_orientation_ok = m.check_shared_edge_local_orientation_consistency();
+    let shared_edge_local_orientation_runtime_ok = m.check_shared_edge_local_orientation_consistency();
+    let shared_edge_local_orientation_bridge_ok = runtime_check_shared_edge_local_orientation_consistency(m);
+    let shared_edge_local_orientation_ok = shared_edge_local_orientation_runtime_ok
+        && shared_edge_local_orientation_bridge_ok;
     let no_forbidden_face_face_intersections_ok = m.check_no_forbidden_face_face_intersections();
     let outward_face_normals_ok = m.check_outward_face_normals();
 
@@ -565,6 +568,10 @@ pub fn check_geometric_topological_consistency_constructive(
         if w.phase4_valid_ok {
             lemma_validity_gate_witness_api_ok_implies_mesh_valid(m@, validity_w);
             assert(mesh_valid_spec(m@));
+        }
+        if w.shared_edge_local_orientation_ok {
+            assert(shared_edge_local_orientation_bridge_ok);
+            assert(mesh_shared_edge_local_orientation_consistency_spec(m@));
         }
         assert(geometric_topological_consistency_gate_model_link_spec(m@, w));
         assert(w.phase4_valid_ok ==> mesh_valid_spec(m@)) by {
