@@ -1621,6 +1621,41 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`152 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`152 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`186 verified, 0 errors`).
+  - burndown update (2026-02-18, face-cycle model-link completion):
+    - completed the face-side structural model-link gap in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      - added `lemma_face_bridge_total_implies_face_next_cycles`,
+      - strengthened `structural_validity_gate_model_link_spec` from
+        `w.face_cycles_ok ==> mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_total_spec(m)`
+        to
+        `w.face_cycles_ok ==> mesh_face_next_cycles_spec(m)`,
+      - strengthened `is_structurally_valid_constructive` proof packaging to
+        invoke the new lemma and export the stronger face-cycle clause on
+        `Some(w)`.
+    - stabilization/refactor that made this pass converge:
+      refactored `mesh_face_next_cycles_spec` to a witness-sequence shape via
+      `mesh_face_next_cycles_witness_spec` (instead of direct
+      `forall f. exists k` packaging), so bridge witness export can be lifted
+      constructively without brittle final existential instantiation.
+    - failed attempt kept documented:
+      initial proof shape in this pass retried direct final packaging against
+      the old `forall f. exists k` form and hit the same trigger-sensitive
+      assertion failures in the final lift; this was replaced by the stable
+      witness-sequence refactor above.
+    - remaining gap after this increment:
+      structural model-link export is now fully aligned for face cycles; the
+      remaining top-level structural `iff` gap is on the vertex side
+      (`mesh_vertex_representative_cycles_kernel_bridge_total_spec` vs
+      `mesh_vertex_manifold_single_cycle_spec`).
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement lemma_face_bridge_total_implies_face_next_cycles`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement is_structurally_valid_constructive`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`153 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`153 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`187 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
 - [ ] Verify `is_valid` exactly matches `is_structurally_valid && check_euler_formula_closed_components`.
   - burndown update (2026-02-18):

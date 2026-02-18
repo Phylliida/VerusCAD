@@ -1,1 +1,1 @@
-Added a regression test and burndown note documenting that self-loop face cycles can build but violate edge-two-half-edges, which blocks direct success-spec linkage for that invariant.
+Completed face-cycle model-link strengthening by proving the bridge implies mesh_face_next_cycles_spec and threading that guarantee into is_structurally_valid constructive proofs.

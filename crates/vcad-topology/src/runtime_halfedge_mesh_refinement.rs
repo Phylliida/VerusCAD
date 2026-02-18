@@ -269,10 +269,19 @@ pub open spec fn mesh_face_cycle_witness_spec(m: MeshModel, f: int, k: int) -> b
             0 <= i < k && mesh_next_iter_spec(m, start, i as nat) == h
 }
 
+pub open spec fn mesh_face_next_cycles_witness_spec(
+    m: MeshModel,
+    face_cycle_lens: Seq<usize>,
+) -> bool {
+    &&& face_cycle_lens.len() == mesh_face_count_spec(m)
+    &&& forall|f: int|
+        #![trigger face_cycle_lens[f]]
+        0 <= f < mesh_face_count_spec(m)
+            ==> mesh_face_cycle_witness_spec(m, f, face_cycle_lens[f] as int)
+}
+
 pub open spec fn mesh_face_next_cycles_spec(m: MeshModel) -> bool {
-    forall|f: int|
-        #![trigger m.face_half_edges[f]]
-        0 <= f < mesh_face_count_spec(m) ==> exists|k: int| mesh_face_cycle_witness_spec(m, f, k)
+    exists|face_cycle_lens: Seq<usize>| mesh_face_next_cycles_witness_spec(m, face_cycle_lens)
 }
 
 pub open spec fn kernel_mesh_matches_mesh_model_spec(km: &kernels::KernelMesh, m: MeshModel) -> bool {
@@ -572,6 +581,49 @@ pub proof fn lemma_face_bridge_witness_implies_face_cycle_witness(
                 #![trigger mesh_next_iter_spec(m, start, i as nat)]
                 0 <= i < k && mesh_next_iter_spec(m, start, i as nat) == h);
     };
+}
+
+pub proof fn lemma_face_bridge_total_implies_face_next_cycles(m: MeshModel)
+    requires
+        mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_total_spec(m),
+    ensures
+        mesh_face_next_cycles_spec(m),
+{
+    assert(mesh_index_bounds_spec(m));
+    assert(mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_spec(m));
+    let (face_cycle_lens, covered) = choose|face_cycle_lens: Seq<usize>, covered: Seq<bool>| {
+        mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_witness_spec(
+            m,
+            face_cycle_lens,
+            covered,
+        )
+    };
+    assert(mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_witness_spec(
+        m,
+        face_cycle_lens,
+        covered,
+    ));
+    assert(mesh_face_next_cycles_witness_spec(m, face_cycle_lens)) by {
+        assert(face_cycle_lens.len() == mesh_face_count_spec(m));
+        assert(forall|f: int|
+            #![trigger face_cycle_lens[f]]
+            0 <= f < mesh_face_count_spec(m)
+                ==> mesh_face_cycle_witness_spec(m, f, face_cycle_lens[f] as int)) by {
+            assert forall|f: int|
+                #![trigger face_cycle_lens[f]]
+                0 <= f < mesh_face_count_spec(m)
+                    implies mesh_face_cycle_witness_spec(m, f, face_cycle_lens[f] as int)
+                by {
+                lemma_face_bridge_witness_implies_face_cycle_witness(m, face_cycle_lens, covered, f);
+            };
+        };
+    };
+    assert(exists|face_cycle_lens2: Seq<usize>| mesh_face_next_cycles_witness_spec(m, face_cycle_lens2))
+        by {
+        let face_cycle_lens2 = face_cycle_lens;
+        assert(mesh_face_next_cycles_witness_spec(m, face_cycle_lens2));
+    };
+    assert(mesh_face_next_cycles_spec(m));
 }
 
 pub open spec fn kernel_face_cover_step_witness_spec(
@@ -2026,7 +2078,7 @@ pub open spec fn structural_validity_gate_model_link_spec(
     &&& (w.index_bounds_ok ==> mesh_index_bounds_spec(m))
     &&& (w.twin_involution_ok ==> from_face_cycles_twin_assignment_total_involution_spec(m))
     &&& (w.prev_next_inverse_ok ==> mesh_prev_next_inverse_spec(m))
-    &&& (w.face_cycles_ok ==> mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_total_spec(m))
+    &&& (w.face_cycles_ok ==> mesh_face_next_cycles_spec(m))
     &&& (w.no_degenerate_edges_ok ==> mesh_no_degenerate_edges_spec(m))
     &&& (w.vertex_manifold_ok ==> mesh_vertex_representative_cycles_kernel_bridge_total_spec(m))
     &&& (w.edge_two_half_edges_ok ==> mesh_edge_exactly_two_half_edges_spec(m))
@@ -9263,6 +9315,8 @@ pub fn is_structurally_valid_constructive(
         }
         if w.face_cycles_ok {
             assert(mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_total_spec(m@));
+            lemma_face_bridge_total_implies_face_next_cycles(m@);
+            assert(mesh_face_next_cycles_spec(m@));
         }
         if w.no_degenerate_edges_ok {
             assert(mesh_no_degenerate_edges_spec(m@));
