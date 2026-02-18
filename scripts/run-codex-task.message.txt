@@ -1,1 +1,1 @@
-Revalidated the vcad-topology Exit Condition by replaying the full verification/test matrix and confirming trust-surface scans remain clean.
+Replayed vcad-topology trust-surface scans and the full verification/test matrix directly, and all checks passed with no trust-surface regressions.
