@@ -1818,6 +1818,11 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       certifies:
       `w.api_ok ==> mesh_valid_spec(m@)`,
       alongside the existing gate-equivalence and witness-link guarantees.
+    - failed attempt (kept documented):
+      first count-link proof blocks used `is_empty()` calls directly inside
+      proof context and were rejected by Verus mode checking (`cannot call
+      function ... with mode exec`); fixed by switching those local facts to
+      `len() > 0` shape before lifting to model-count implications.
     - outcome:
       constructive `is_valid` linkage to model-level `mesh_valid_spec` is now
       exported and the item is complete.
