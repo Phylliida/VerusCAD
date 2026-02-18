@@ -1617,6 +1617,91 @@ fn diagnostic_witness_is_real_counterexample(
 
     #[cfg(feature = "geometry-checks")]
     #[test]
+    fn canonical_face_plane_is_stable_under_cycle_rotation_with_collinear_seed_prefix() {
+        let vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(2, 0, 0),
+            RuntimePoint3::from_ints(2, 1, 0),
+            RuntimePoint3::from_ints(0, 1, 0),
+            RuntimePoint3::from_ints(0, 0, 1),
+            RuntimePoint3::from_ints(1, 0, 1),
+            RuntimePoint3::from_ints(2, 0, 1),
+            RuntimePoint3::from_ints(2, 1, 1),
+            RuntimePoint3::from_ints(0, 1, 1),
+        ];
+        let faces = vec![
+            vec![0, 1, 2, 3, 4],
+            vec![5, 9, 8, 7, 6],
+            vec![0, 5, 6, 1],
+            vec![1, 6, 7, 2],
+            vec![2, 7, 8, 3],
+            vec![3, 8, 9, 4],
+            vec![4, 9, 5, 0],
+        ];
+        assert!(collinear3d(
+            &vertices[faces[0][0]],
+            &vertices[faces[0][1]],
+            &vertices[faces[0][2]]
+        ));
+
+        let mut faces_rotated_by_one = faces.clone();
+        faces_rotated_by_one[0].rotate_left(1);
+        let mut faces_rotated_by_two = faces.clone();
+        faces_rotated_by_two[0].rotate_left(2);
+        assert!(!collinear3d(
+            &vertices[faces_rotated_by_one[0][0]],
+            &vertices[faces_rotated_by_one[0][1]],
+            &vertices[faces_rotated_by_one[0][2]]
+        ));
+        assert!(!collinear3d(
+            &vertices[faces_rotated_by_two[0][0]],
+            &vertices[faces_rotated_by_two[0][1]],
+            &vertices[faces_rotated_by_two[0][2]]
+        ));
+
+        let base = Mesh::from_face_cycles(vertices.clone(), &faces)
+            .expect("baseline prism with collinear face prefix should build");
+        let rotated_by_one = Mesh::from_face_cycles(vertices.clone(), &faces_rotated_by_one)
+            .expect("cycle-rotated-by-one prism should build");
+        let rotated_by_two = Mesh::from_face_cycles(vertices, &faces_rotated_by_two)
+            .expect("cycle-rotated-by-two prism should build");
+        assert!(base.is_valid());
+        assert!(rotated_by_one.is_valid());
+        assert!(rotated_by_two.is_valid());
+
+        let base_plane = base
+            .compute_face_plane(0)
+            .expect("baseline face plane should exist");
+        let rotated_by_one_plane = rotated_by_one
+            .compute_face_plane(0)
+            .expect("rotated-by-one face plane should exist");
+        let rotated_by_two_plane = rotated_by_two
+            .compute_face_plane(0)
+            .expect("rotated-by-two face plane should exist");
+
+        assert_eq!(base_plane, rotated_by_one_plane);
+        assert_ne!(base_plane, rotated_by_two_plane);
+
+        let base_canonical = base
+            .compute_face_plane_canonical(0)
+            .expect("baseline canonical face plane should exist");
+        assert_eq!(
+            base_canonical,
+            rotated_by_one
+                .compute_face_plane_canonical(0)
+                .expect("rotated-by-one canonical face plane should exist")
+        );
+        assert_eq!(
+            base_canonical,
+            rotated_by_two
+                .compute_face_plane_canonical(0)
+                .expect("rotated-by-two canonical face plane should exist")
+        );
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
     fn flipped_face_winding_fails_outward_normal_check() {
         let vertices = vec![
             RuntimePoint3::from_ints(0, 0, 0),

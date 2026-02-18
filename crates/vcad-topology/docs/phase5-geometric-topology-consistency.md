@@ -75,7 +75,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [x] Proof: computed plane contains all vertices of that face (using coplanarity invariant).
 - [ ] Proof: computed normal direction matches face orientation/winding.
 - [ ] Proof: twin/adjacent orientation interactions agree with plane-normal conventions.
-- [ ] Proof: canonicalized plane is stable under cyclic face reindexing and seed-triple choice.
+- [x] Proof: canonicalized plane is stable under cyclic face reindexing and seed-triple choice.
 
 ## P5.7 Validity Gate Integration
 - [x] Add an explicit Phase 5 aggregate predicate/checker, for example:
@@ -182,6 +182,24 @@ Current differential/property-based harness policy (runtime behavior locked by t
 - optimized intersection checking (`check_no_forbidden_face_face_intersections`) is asserted equivalent to a no-cull brute-force oracle path (`check_no_forbidden_face_face_intersections_without_broad_phase_for_testing`) across all generated fixtures.
 
 ## Burndown Log
+- 2026-02-18: Completed the remaining P5.6 canonical-plane stability item in `src/halfedge_mesh/tests.rs`:
+  - added `canonical_face_plane_is_stable_under_cycle_rotation_with_collinear_seed_prefix`;
+  - new fixture builds a closed pentagonal prism whose bottom face has a collinear leading triple, then compares three cycle starts for that face:
+    - baseline start where `compute_face_plane` skips a collinear seed-triple prefix;
+    - rotated start where the first triple is already non-collinear;
+    - second rotated start where the first non-collinear seed triple changes and yields a different raw `(normal, offset)` scale;
+  - locked that `compute_face_plane_canonical(0)` is identical across all three starts, while raw non-canonical `compute_face_plane(0)` may differ by scale under seed-triple choice.
+  - marked the P5.6 checklist item complete:
+    - canonicalized plane stability under cyclic face reindexing and seed-triple choice.
+- 2026-02-18: Failed attempts in this P5.6 canonical-plane stability pass: none.
+- 2026-02-18: Revalidated after the P5.6 canonical-plane stability additions:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks canonical_face_plane_is_stable_under_cycle_rotation_with_collinear_seed_prefix`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (215 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (250 verified, 0 errors)
 - 2026-02-18: Completed a P5.4/P5.5 spec pass in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
   - added oriented face-normal specs from winding + plane containment:
     - `mesh_face_winding_orients_plane_normal_with_seed_spec`;
