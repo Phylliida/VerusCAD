@@ -659,6 +659,8 @@ pub open spec fn structural_validity_gate_model_link_spec(
     w: StructuralValidityGateWitness,
 ) -> bool {
     &&& (w.twin_involution_ok ==> from_face_cycles_twin_assignment_total_involution_spec(m))
+    &&& (w.prev_next_inverse_ok ==> mesh_prev_next_inverse_spec(m))
+    &&& (w.no_degenerate_edges_ok ==> mesh_no_degenerate_edges_spec(m))
     &&& (w.edge_two_half_edges_ok ==> mesh_edge_exactly_two_half_edges_spec(m))
 }
 
@@ -2031,6 +2033,249 @@ pub fn from_face_cycles_constructive_twin_assignment_total_involution(
         }
         Result::Err(e) => Result::Err(e),
     }
+}
+
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
+pub fn runtime_check_prev_next_inverse(m: &Mesh) -> (out: bool)
+    ensures
+        out ==> mesh_prev_next_inverse_spec(m@),
+{
+    let hcnt = m.half_edges.len();
+    let mut h: usize = 0;
+    while h < hcnt
+        invariant
+            hcnt == m.half_edges.len(),
+            0 <= h <= hcnt,
+            forall|hp: int|
+                0 <= hp < h as int
+                    ==> #[trigger] m@.half_edges[m@.half_edges[hp].next].prev == hp,
+            forall|hp: int|
+                0 <= hp < h as int
+                    ==> #[trigger] m@.half_edges[m@.half_edges[hp].prev].next == hp,
+    {
+        let he = &m.half_edges[h];
+        let n = he.next;
+        let p = he.prev;
+        if n >= hcnt || p >= hcnt {
+            return false;
+        }
+        if m.half_edges[n].prev != h {
+            return false;
+        }
+        if m.half_edges[p].next != h {
+            return false;
+        }
+
+        proof {
+            assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+            assert(m@.half_edges[h as int].next == n as int);
+            assert(m@.half_edges[h as int].prev == p as int);
+            assert(m@.half_edges[n as int].prev == m.half_edges@[n as int].prev);
+            assert(m@.half_edges[p as int].next == m.half_edges@[p as int].next);
+            assert(m.half_edges@[n as int].prev == h as int);
+            assert(m.half_edges@[p as int].next == h as int);
+            assert(#[trigger] m@.half_edges[m@.half_edges[h as int].next].prev == h as int);
+            assert(#[trigger] m@.half_edges[m@.half_edges[h as int].prev].next == h as int);
+
+            assert(forall|hp: int|
+                0 <= hp < (h + 1) as int
+                    ==> #[trigger] m@.half_edges[m@.half_edges[hp].next].prev == hp) by {
+                assert forall|hp: int|
+                    0 <= hp < (h + 1) as int
+                        implies #[trigger] m@.half_edges[m@.half_edges[hp].next].prev == hp by {
+                    if hp < h as int {
+                        assert(0 <= hp < h as int);
+                    } else {
+                        assert(hp == h as int);
+                        assert(#[trigger] m@.half_edges[m@.half_edges[hp].next].prev == hp);
+                    }
+                };
+            };
+            assert(forall|hp: int|
+                0 <= hp < (h + 1) as int
+                    ==> #[trigger] m@.half_edges[m@.half_edges[hp].prev].next == hp) by {
+                assert forall|hp: int|
+                    0 <= hp < (h + 1) as int
+                        implies #[trigger] m@.half_edges[m@.half_edges[hp].prev].next == hp by {
+                    if hp < h as int {
+                        assert(0 <= hp < h as int);
+                    } else {
+                        assert(hp == h as int);
+                        assert(#[trigger] m@.half_edges[m@.half_edges[hp].prev].next == hp);
+                    }
+                };
+            };
+        }
+
+        h += 1;
+    }
+
+    proof {
+        assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+        assert(forall|hp: int|
+            0 <= hp < mesh_half_edge_count_spec(m@)
+                ==> #[trigger] m@.half_edges[m@.half_edges[hp].next].prev == hp) by {
+            assert forall|hp: int|
+                0 <= hp < mesh_half_edge_count_spec(m@)
+                    implies #[trigger] m@.half_edges[m@.half_edges[hp].next].prev == hp by {
+                assert(mesh_half_edge_count_spec(m@) == h as int);
+                assert(0 <= hp < h as int);
+            };
+        };
+        assert(forall|hp: int|
+            0 <= hp < mesh_half_edge_count_spec(m@)
+                ==> #[trigger] m@.half_edges[m@.half_edges[hp].prev].next == hp) by {
+            assert forall|hp: int|
+                0 <= hp < mesh_half_edge_count_spec(m@)
+                    implies #[trigger] m@.half_edges[m@.half_edges[hp].prev].next == hp by {
+                assert(mesh_half_edge_count_spec(m@) == h as int);
+                assert(0 <= hp < h as int);
+            };
+        };
+        assert(mesh_prev_next_inverse_spec(m@)) by {
+            assert forall|hp: int| 0 <= hp < mesh_half_edge_count_spec(m@) implies {
+                &&& #[trigger] m@.half_edges[m@.half_edges[hp].next].prev == hp
+                &&& #[trigger] m@.half_edges[m@.half_edges[hp].prev].next == hp
+            } by {
+                assert(#[trigger] m@.half_edges[m@.half_edges[hp].next].prev == hp);
+                assert(#[trigger] m@.half_edges[m@.half_edges[hp].prev].next == hp);
+            };
+        };
+    }
+    true
+}
+
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
+pub fn runtime_check_no_degenerate_edges(m: &Mesh) -> (out: bool)
+    ensures
+        out ==> mesh_no_degenerate_edges_spec(m@),
+{
+    let hcnt = m.half_edges.len();
+    let mut h: usize = 0;
+    while h < hcnt
+        invariant
+            hcnt == m.half_edges.len(),
+            0 <= h <= hcnt,
+            forall|hp: int|
+                0 <= hp < h as int
+                    ==> #[trigger] m@.half_edges[hp].vertex
+                        != m@.half_edges[m@.half_edges[hp].twin].vertex,
+            forall|hp: int|
+                0 <= hp < h as int
+                    ==> #[trigger] m@.half_edges[hp].vertex
+                        != m@.half_edges[m@.half_edges[hp].next].vertex,
+    {
+        let he = &m.half_edges[h];
+        let t = he.twin;
+        let n = he.next;
+        if t >= hcnt || n >= hcnt {
+            return false;
+        }
+        let tv = m.half_edges[t].vertex;
+        if he.vertex == tv {
+            return false;
+        }
+        let nv = m.half_edges[n].vertex;
+        if he.vertex == nv {
+            return false;
+        }
+
+        proof {
+            assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+            assert(m@.half_edges[h as int].twin == t as int);
+            assert(m@.half_edges[h as int].next == n as int);
+            assert(m@.half_edges[h as int].vertex == he.vertex as int);
+            assert(m@.half_edges[t as int].vertex == m.half_edges@[t as int].vertex);
+            assert(m@.half_edges[n as int].vertex == m.half_edges@[n as int].vertex);
+            assert(m.half_edges@[t as int].vertex == tv as int);
+            assert(m.half_edges@[n as int].vertex == nv as int);
+            assert(he.vertex as int != tv as int);
+            assert(he.vertex as int != nv as int);
+            assert(#[trigger] m@.half_edges[h as int].vertex
+                != m@.half_edges[m@.half_edges[h as int].twin].vertex);
+            assert(#[trigger] m@.half_edges[h as int].vertex
+                != m@.half_edges[m@.half_edges[h as int].next].vertex);
+
+            assert(forall|hp: int|
+                0 <= hp < (h + 1) as int
+                    ==> #[trigger] m@.half_edges[hp].vertex
+                        != m@.half_edges[m@.half_edges[hp].twin].vertex) by {
+                assert forall|hp: int|
+                    0 <= hp < (h + 1) as int
+                        implies #[trigger] m@.half_edges[hp].vertex
+                            != m@.half_edges[m@.half_edges[hp].twin].vertex by {
+                    if hp < h as int {
+                        assert(0 <= hp < h as int);
+                    } else {
+                        assert(hp == h as int);
+                        assert(#[trigger] m@.half_edges[hp].vertex
+                            != m@.half_edges[m@.half_edges[hp].twin].vertex);
+                    }
+                };
+            };
+            assert(forall|hp: int|
+                0 <= hp < (h + 1) as int
+                    ==> #[trigger] m@.half_edges[hp].vertex
+                        != m@.half_edges[m@.half_edges[hp].next].vertex) by {
+                assert forall|hp: int|
+                    0 <= hp < (h + 1) as int
+                        implies #[trigger] m@.half_edges[hp].vertex
+                            != m@.half_edges[m@.half_edges[hp].next].vertex by {
+                    if hp < h as int {
+                        assert(0 <= hp < h as int);
+                    } else {
+                        assert(hp == h as int);
+                        assert(#[trigger] m@.half_edges[hp].vertex
+                            != m@.half_edges[m@.half_edges[hp].next].vertex);
+                    }
+                };
+            };
+        }
+
+        h += 1;
+    }
+
+    proof {
+        assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+        assert(forall|hp: int|
+            0 <= hp < mesh_half_edge_count_spec(m@)
+                ==> #[trigger] m@.half_edges[hp].vertex
+                    != m@.half_edges[m@.half_edges[hp].twin].vertex) by {
+            assert forall|hp: int|
+                0 <= hp < mesh_half_edge_count_spec(m@)
+                    implies #[trigger] m@.half_edges[hp].vertex
+                        != m@.half_edges[m@.half_edges[hp].twin].vertex by {
+                assert(mesh_half_edge_count_spec(m@) == h as int);
+                assert(0 <= hp < h as int);
+            };
+        };
+        assert(forall|hp: int|
+            0 <= hp < mesh_half_edge_count_spec(m@)
+                ==> #[trigger] m@.half_edges[hp].vertex
+                    != m@.half_edges[m@.half_edges[hp].next].vertex) by {
+            assert forall|hp: int|
+                0 <= hp < mesh_half_edge_count_spec(m@)
+                    implies #[trigger] m@.half_edges[hp].vertex
+                        != m@.half_edges[m@.half_edges[hp].next].vertex by {
+                assert(mesh_half_edge_count_spec(m@) == h as int);
+                assert(0 <= hp < h as int);
+            };
+        };
+        assert(mesh_no_degenerate_edges_spec(m@)) by {
+            assert forall|hp: int| 0 <= hp < mesh_half_edge_count_spec(m@) implies {
+                &&& #[trigger] m@.half_edges[hp].vertex != m@.half_edges[m@.half_edges[hp].twin].vertex
+                &&& #[trigger] m@.half_edges[hp].vertex != m@.half_edges[m@.half_edges[hp].next].vertex
+            } by {
+                assert(#[trigger] m@.half_edges[hp].vertex
+                    != m@.half_edges[m@.half_edges[hp].twin].vertex);
+                assert(#[trigger] m@.half_edges[hp].vertex
+                    != m@.half_edges[m@.half_edges[hp].next].vertex);
+            };
+        };
+    }
+    true
 }
 
 #[verifier::exec_allows_no_decreases_clause]
@@ -4311,9 +4556,9 @@ pub fn is_structurally_valid_constructive(
 
     let index_bounds_ok = ex_mesh_check_index_bounds_via_kernel(m);
     let twin_involution_ok = runtime_check_twin_assignment_total_involution(m);
-    let prev_next_inverse_ok = ex_mesh_check_prev_inverse_of_next_via_kernel(m);
+    let prev_next_inverse_ok = runtime_check_prev_next_inverse(m);
     let face_cycles_ok = ex_mesh_check_face_cycles_via_kernel(m);
-    let no_degenerate_edges_ok = ex_mesh_check_no_degenerate_edges_via_kernel(m);
+    let no_degenerate_edges_ok = runtime_check_no_degenerate_edges(m);
     let vertex_manifold_ok = ex_mesh_check_vertex_manifold_single_cycle_via_kernel(m);
     let edge_two_half_edges_ok = runtime_check_edge_exactly_two_half_edges(m);
 
@@ -4353,6 +4598,12 @@ pub fn is_structurally_valid_constructive(
         assert(structural_validity_gate_witness_spec(w));
         if w.twin_involution_ok {
             assert(from_face_cycles_twin_assignment_total_involution_spec(m@));
+        }
+        if w.prev_next_inverse_ok {
+            assert(mesh_prev_next_inverse_spec(m@));
+        }
+        if w.no_degenerate_edges_ok {
+            assert(mesh_no_degenerate_edges_spec(m@));
         }
         if w.edge_two_half_edges_ok {
             assert(mesh_edge_exactly_two_half_edges_spec(m@));

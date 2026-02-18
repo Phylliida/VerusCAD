@@ -914,6 +914,36 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`76 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`76 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`110 verified, 0 errors`).
+  - burndown update (2026-02-18, constructive model-link recovery):
+    - completed the previously rolled-back constructive checker path in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      - landed `runtime_check_prev_next_inverse`
+        (`out ==> mesh_prev_next_inverse_spec(m@)`),
+      - landed `runtime_check_no_degenerate_edges`
+        (`out ==> mesh_no_degenerate_edges_spec(m@)`).
+    - strengthened `is_structurally_valid_constructive` to source:
+      - `prev_next_inverse_ok` from `runtime_check_prev_next_inverse`, and
+      - `no_degenerate_edges_ok` from `runtime_check_no_degenerate_edges`
+      (instead of external-body kernel bridges).
+    - strengthened `structural_validity_gate_model_link_spec` so `Some(w)` now
+      additionally exports:
+      - `w.prev_next_inverse_ok ==> mesh_prev_next_inverse_spec(m@)`,
+      - `w.no_degenerate_edges_ok ==> mesh_no_degenerate_edges_spec(m@)`.
+    - remaining gap after this increment:
+      model-link export is still partial (index-bounds/face-cycles/vertex-manifold
+      clauses remain unlinked at model level), so full model-level gate `iff`
+      remains open.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_prev_next_inverse`
+      passed (`2 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_no_degenerate_edges`
+      passed (`2 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement is_structurally_valid_constructive`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`80 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`80 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`114 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
 - [ ] Verify `is_valid` exactly matches `is_structurally_valid && check_euler_formula_closed_components`.
   - burndown update (2026-02-18):
