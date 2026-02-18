@@ -1,1 +1,1 @@
-Reran vcad-topology exit-condition trust-surface scans and full verification/test matrix; all checks passed and the burndown log was updated.
+Replayed the vcad-topology Exit Condition burndown by rerunning trust-surface scans plus the full verification and test matrix, then logged the new 2026-02-18 pass in verification-todo.
