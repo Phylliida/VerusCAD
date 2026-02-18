@@ -254,6 +254,34 @@ impl Mesh {
     }
 
     #[cfg(feature = "geometry-checks")]
+    /// Canonicalize plane representation `(normal, offset)` for comparison.
+    ///
+    /// Policy:
+    /// - pick the first non-zero normal component in `(x, y, z)` order;
+    /// - scale both `normal` and `offset` so that pivot component becomes `1`.
+    ///
+    /// This removes sign/scale ambiguity for equivalent planes.
+    pub fn canonicalize_plane(
+        normal: &RuntimeVec3,
+        offset: &RuntimeScalar,
+    ) -> Option<(RuntimeVec3, RuntimeScalar)> {
+        let pivot = if normal.x().signum_i8() != 0 {
+            normal.x()
+        } else if normal.y().signum_i8() != 0 {
+            normal.y()
+        } else if normal.z().signum_i8() != 0 {
+            normal.z()
+        } else {
+            return None;
+        };
+
+        let pivot_recip = pivot.recip()?;
+        let normalized_normal = normal.scale(&pivot_recip);
+        let normalized_offset = offset.mul(&pivot_recip);
+        Some((normalized_normal, normalized_offset))
+    }
+
+    #[cfg(feature = "geometry-checks")]
     /// Optional geometric extension: compute a face plane `(normal, offset)`
     /// in the equation `normal . p = offset`, using exact arithmetic.
     ///
@@ -301,6 +329,15 @@ impl Mesh {
         }
 
         None
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    /// Optional geometric extension: compute a canonicalized face plane.
+    ///
+    /// See `canonicalize_plane` for the normalization policy.
+    pub fn compute_face_plane_canonical(&self, face_id: usize) -> Option<(RuntimeVec3, RuntimeScalar)> {
+        let (normal, offset) = self.compute_face_plane(face_id)?;
+        Self::canonicalize_plane(&normal, &offset)
     }
 
     #[cfg(feature = "geometry-checks")]

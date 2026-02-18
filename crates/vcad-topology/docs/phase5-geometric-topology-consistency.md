@@ -71,7 +71,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [x] Runtime API: compute face plane `(normal, offset)` from face vertices via cross product + dot product.
 - [x] Handle face-normal seed selection robustly (first non-collinear triple or explicit precondition).
 - [x] Spec: `face_plane_contains_vertex_spec` for every vertex on the face.
-- [ ] Define canonical face-plane representation for comparisons (`normal` sign/scale normalization policy).
+- [x] Define canonical face-plane representation for comparisons (`normal` sign/scale normalization policy).
 - [ ] Proof: computed plane contains all vertices of that face (using coplanarity invariant).
 - [ ] Proof: computed normal direction matches face orientation/winding.
 - [ ] Proof: twin/adjacent orientation interactions agree with plane-normal conventions.
@@ -139,6 +139,23 @@ This doc expands those targets into executable TODOs aligned with the current `v
   - document which Euler-operator preconditions must preserve geometric invariants versus recheck them.
 
 ## Burndown Log
+- 2026-02-18: Completed the P5.6 canonical face-plane representation item in `src/halfedge_mesh/validation.rs`:
+  - added `Mesh::canonicalize_plane(normal, offset)` with explicit deterministic policy:
+    - pivot = first non-zero normal component in `(x, y, z)` order;
+    - normalize by dividing both normal and offset by that pivot so pivot becomes `1`;
+  - added `Mesh::compute_face_plane_canonical(face_id)` as the canonicalized variant of `compute_face_plane`.
+- 2026-02-18: Extended `src/halfedge_mesh/tests.rs` for canonical plane coverage:
+  - added `canonicalize_plane_normalizes_sign_and_scale`, locking sign/scale invariance (`(n, d)` equals canonicalized `(-3n, -3d)`);
+  - added `compute_face_plane_canonical_returns_expected_values_for_cube_bottom_face` (expects canonical `(0, 0, 1)` and `-1`);
+  - strengthened `phase5_checks_are_invariant_under_face_cycle_start_rotation` to assert canonical face planes are unchanged across per-face cycle-start rotations.
+- 2026-02-18: Failed attempts in this P5.6 canonical-plane pass: none.
+- 2026-02-18: Revalidated after the P5.6 canonical-plane additions:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (205 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (240 verified, 0 errors)
 - 2026-02-18: Completed the P5.0 runtime-to-kernel geometry bridge-spec item across the refinement layer:
   - in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`, added `kernel_mesh_runtime_geometry_bridge_spec(km, m)` to model a combined kernel-topology/runtime-geometry bridge for kernel geometry-checker inputs;
   - in `src/runtime_halfedge_mesh_refinement/kernel_bridge_lemmas.rs`, added `lemma_kernel_mesh_runtime_geometry_bridge_holds`, deriving the new bridge spec from `kernel_mesh_matches_mesh_model_spec` plus `lemma_mesh_runtime_geometry_bridge_holds`;

@@ -2,6 +2,8 @@ use super::{Mesh, MeshBuildError};
 use vcad_math::runtime_point3::RuntimePoint3;
 #[cfg(feature = "geometry-checks")]
 use vcad_math::runtime_scalar::RuntimeScalar;
+#[cfg(feature = "geometry-checks")]
+use vcad_math::runtime_vec3::RuntimeVec3;
 
     #[test]
     fn tetrahedron_is_valid() {
@@ -133,6 +135,12 @@ use vcad_math::runtime_scalar::RuntimeScalar;
             original.check_face_plane_consistency(),
             rotated.check_face_plane_consistency()
         );
+        for f in 0..original.faces.len() {
+            assert_eq!(
+                original.compute_face_plane_canonical(f),
+                rotated.compute_face_plane_canonical(f)
+            );
+        }
         assert_eq!(
             original.check_shared_edge_local_orientation_consistency(),
             rotated.check_shared_edge_local_orientation_consistency()
@@ -354,6 +362,41 @@ use vcad_math::runtime_scalar::RuntimeScalar;
         assert_eq!(*normal.y(), RuntimeScalar::from_int(0));
         assert_eq!(*normal.z(), RuntimeScalar::from_int(4));
         assert_eq!(offset, RuntimeScalar::from_int(-4));
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn canonicalize_plane_normalizes_sign_and_scale() {
+        let normal = RuntimeVec3::from_ints(0, 0, 4);
+        let offset = RuntimeScalar::from_int(-4);
+        let scale = RuntimeScalar::from_int(-3);
+        let scaled_normal = normal.scale(&scale);
+        let scaled_offset = offset.mul(&scale);
+
+        let canonical = Mesh::canonicalize_plane(&normal, &offset)
+            .expect("non-zero normal should canonicalize");
+        let scaled_canonical = Mesh::canonicalize_plane(&scaled_normal, &scaled_offset)
+            .expect("scaled non-zero normal should canonicalize");
+
+        assert_eq!(canonical, scaled_canonical);
+        assert_eq!(*canonical.0.x(), RuntimeScalar::from_int(0));
+        assert_eq!(*canonical.0.y(), RuntimeScalar::from_int(0));
+        assert_eq!(*canonical.0.z(), RuntimeScalar::from_int(1));
+        assert_eq!(canonical.1, RuntimeScalar::from_int(-1));
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn compute_face_plane_canonical_returns_expected_values_for_cube_bottom_face() {
+        let mesh = Mesh::cube();
+        assert!(mesh.is_valid());
+
+        let (normal, offset) = mesh.compute_face_plane_canonical(0)
+            .expect("cube bottom face should yield a canonical plane");
+        assert_eq!(*normal.x(), RuntimeScalar::from_int(0));
+        assert_eq!(*normal.y(), RuntimeScalar::from_int(0));
+        assert_eq!(*normal.z(), RuntimeScalar::from_int(1));
+        assert_eq!(offset, RuntimeScalar::from_int(-1));
     }
 
     #[cfg(feature = "geometry-checks")]
