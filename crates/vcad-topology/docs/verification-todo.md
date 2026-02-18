@@ -3014,7 +3014,14 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       warnings only from dependency crates (`vstd`, `vcad-math`,
       `vcad-geometry`), with no new warnings from `vcad-topology`.
     - failed attempts:
-      none in this pass.
+      first attempted
+      `/home/bepis/Documents/verifycad/VerusCAD/scripts/run-codex-task.sh "<summary>"`;
+      this script expects zero positional arguments and returned
+      `error: expected zero arguments`.
+      stable invocation in this workspace is:
+      update `scripts/run-codex-task.message.txt`, then run
+      `/home/bepis/Documents/verifycad/VerusCAD/scripts/run-codex-task.sh`
+      with no arguments.
     - verification checks:
       `./scripts/verify-vcad-topology-fast.sh`
       passed (`191 verified, 0 errors`);
