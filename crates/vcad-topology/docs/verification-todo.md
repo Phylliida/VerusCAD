@@ -506,7 +506,10 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       bridge in runtime behavior (no unwind path), aligned with its
       verification role as an unreachable abort-only path.
     - failed attempts:
-      none in this pass.
+      initial ad-hoc `rg` search used backticks in a double-quoted shell
+      argument, which triggered command substitution (`cargo test` output from
+      dependency crates) and ended in an `rg` regex parse error; reran the
+      search with single-quoted patterns.
     - verification checks:
       `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement from_face_cycles_constructive_next_prev_face`
       passed (`1 verified, 0 errors`);
