@@ -7745,10 +7745,83 @@ pub fn runtime_check_vertex_manifold_kernel_bridge(m: &Mesh) -> (out: bool)
     true
 }
 
-#[verifier::external_body]
-pub fn ex_mesh_half_edge_components(m: &Mesh) -> (out: Vec<Vec<usize>>)
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
+pub fn runtime_compute_half_edge_components(m: &Mesh) -> (out: Option<Vec<Vec<usize>>>)
 {
-    m.half_edge_components_for_verification()
+    let hcnt = m.half_edges.len();
+    let mut components: Vec<Vec<usize>> = Vec::new();
+    if hcnt == 0 {
+        return Option::Some(components);
+    }
+
+    let mut visited = vec![false; hcnt];
+    let mut start: usize = 0;
+    while start < hcnt
+        invariant
+            hcnt == m.half_edges.len(),
+            visited.len() == hcnt,
+            start <= hcnt,
+    {
+        if visited[start] {
+            start += 1;
+            continue;
+        }
+
+        let mut frontier: Vec<usize> = Vec::new();
+        let mut component: Vec<usize> = Vec::new();
+        frontier.push(start);
+        visited[start] = true;
+
+        let mut frontier_idx: usize = 0;
+        while frontier_idx < frontier.len()
+            invariant
+                hcnt == m.half_edges.len(),
+                visited.len() == hcnt,
+                frontier_idx <= frontier.len(),
+        {
+            let h = frontier[frontier_idx];
+            frontier_idx += 1;
+            if h >= hcnt {
+                return Option::None;
+            }
+
+            component.push(h);
+            let he = &m.half_edges[h];
+
+            let twin = he.twin;
+            if twin >= hcnt {
+                return Option::None;
+            }
+            if !visited[twin] {
+                visited[twin] = true;
+                frontier.push(twin);
+            }
+
+            let next = he.next;
+            if next >= hcnt {
+                return Option::None;
+            }
+            if !visited[next] {
+                visited[next] = true;
+                frontier.push(next);
+            }
+
+            let prev = he.prev;
+            if prev >= hcnt {
+                return Option::None;
+            }
+            if !visited[prev] {
+                visited[prev] = true;
+                frontier.push(prev);
+            }
+        }
+
+        components.push(component);
+        start += 1;
+    }
+
+    Option::Some(components)
 }
 
 #[allow(dead_code)]
@@ -10449,7 +10522,10 @@ pub fn half_edge_components_constructive(
             Option::None => true,
         },
 {
-    let components = ex_mesh_half_edge_components(m);
+    let components = match runtime_compute_half_edge_components(m) {
+        Option::Some(components) => components,
+        Option::None => return Option::None,
+    };
     let partition_ok = runtime_check_half_edge_components_partition(m, &components);
     if !partition_ok {
         return Option::None;

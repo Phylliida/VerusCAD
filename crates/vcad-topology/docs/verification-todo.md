@@ -2768,3 +2768,45 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `cargo test -p vcad-topology` passed (`4 passed, 0 failed`);
       `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
       passed (`6 passed, 0 failed`).
+  - burndown update (2026-02-18, half-edge components bridge removal completion):
+    - selected task in this pass:
+      continue Exit Condition maintenance by removing the remaining
+      half-edge-components `external_body` bridge.
+    - code hardening:
+      in `src/runtime_halfedge_mesh_refinement.rs`, removed
+      `ex_mesh_half_edge_components` and replaced its use in
+      `half_edge_components_constructive` with a new in-module constructive
+      helper:
+      `runtime_compute_half_edge_components`.
+      the new helper builds components via a bounded frontier walk and returns
+      `Option::None` on any out-of-bounds neighbor link, avoiding bridge calls
+      to runtime `Mesh::*_for_verification` methods.
+      in `src/halfedge_mesh.rs`, removed now-unused
+      `half_edge_components_for_verification`.
+    - failed attempt (rolled back in-pass):
+      first implementation used a `frontier.pop()` proof shape without
+      sufficient loop invariants, which caused Verus precondition failures on
+      `visited[start]`, `m.half_edges[h]`, and `visited[n]` indexing in full
+      module verification. stabilized by switching to a frontier-index walk
+      (`frontier_idx`) with explicit bounds checks before every mesh/visited
+      index.
+    - trusted-boundary/interpreted-spec scans:
+      - `rg -n "assume_specification|external_fn_specification|\\buninterpreted\\b|admit\\(|assume\\("`
+        over `runtime_halfedge_mesh_refinement.rs`,
+        `verified_checker_kernels.rs`, and `halfedge_mesh.rs`
+        returned no matches.
+      - `rg -n "\\[verifier::external_body\\]" crates/vcad-topology/src/runtime_halfedge_mesh_refinement.rs`
+        now reports one wrapper (down from two in the previous pass).
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement half_edge_components_constructive`
+      passed (`1 verified, 0 errors` partial);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`182 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh`
+      passed (`182 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh`
+      passed (`217 verified, 0 errors`);
+      `cargo test -p vcad-topology`
+      passed (`4 passed, 0 failed`);
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`6 passed, 0 failed`).
