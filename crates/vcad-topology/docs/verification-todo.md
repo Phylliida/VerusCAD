@@ -521,7 +521,7 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `./scripts/verify-vcad-topology.sh` passed (`57 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
-- [ ] Prove undirected-edge grouping induces exactly-two-half-edges per edge.
+- [x] Prove undirected-edge grouping induces exactly-two-half-edges per edge.
   - burndown update (2026-02-18):
     - landed edge-local refinement predicate factoring in
       `src/runtime_halfedge_mesh_refinement.rs`:
@@ -605,6 +605,38 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`162 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh`
       passed (`197 verified, 0 errors`).
+  - burndown update (2026-02-18, direct-success implication completion):
+    - completed the direct spec-level linkage in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      - `lemma_from_face_cycles_success_implies_edge_exactly_two_half_edges_at`,
+      - `lemma_from_face_cycles_success_implies_edge_exactly_two_half_edges`.
+      these now prove:
+      `from_face_cycles_success_spec(...) ==> mesh_edge_exactly_two_half_edges_spec(...)`.
+    - supporting proof scaffolding landed in the same file:
+      - index-coverage witness lemmas for input half-edge indexing
+        (`lemma_input_half_edge_index_covered_prefix`,
+        `lemma_input_half_edge_index_covered`),
+      - incidence projection + uniqueness lemmas
+        (`lemma_from_face_cycles_incidence_oriented_edge_projection`,
+        `lemma_from_face_cycles_success_implies_oriented_half_edge_unique`),
+      - undirected-key helper lemmas used to classify orientation/reversal.
+    - failed attempt (rolled back in-pass):
+      first implementation as one monolithic lemma hit unstable solver
+      throughput (localized run kept burning in Z3 after requiring high
+      rlimit); refactored to a stable split proof shape:
+      per-edge lemma + lightweight quantifier wrapper.
+    - outcome:
+      this closes the remaining direct-success gap for exactly-two-half-edges;
+      item is now complete.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement from_face_cycles_success_implies_edge_exactly_two_half_edges_at`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`172 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh`
+      passed (`172 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh`
+      passed (`207 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 - [x] Prove vertex representative (`vertex.half_edge`) is valid and non-isolated.

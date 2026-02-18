@@ -1,1 +1,1 @@
-Rejected self-loop oriented edges in from_face_cycles, added no-self-loop constructive input proofs, and kept full vcad-topology verification green.
+Proved direct from_face_cycles success implies exactly-two-half-edges per edge via stable split lemmas and updated the topology verification burndown with passing 172/207-check results.
