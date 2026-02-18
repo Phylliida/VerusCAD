@@ -2415,6 +2415,26 @@ pub open spec fn from_face_cycles_next_prev_face_coherent_spec(
             ==> from_face_cycles_next_prev_face_at_spec(face_cycles, m, f, i)
 }
 
+pub open spec fn from_face_cycles_vertex_assignment_at_spec(
+    face_cycles: Seq<Seq<int>>,
+    m: MeshModel,
+    f: int,
+    i: int,
+) -> bool {
+    let h = input_face_half_edge_index_spec(face_cycles, f, i);
+    m.half_edges[h].vertex == input_face_from_vertex_spec(face_cycles, f, i)
+}
+
+pub open spec fn from_face_cycles_vertex_assignment_coherent_spec(
+    face_cycles: Seq<Seq<int>>,
+    m: MeshModel,
+) -> bool {
+    forall|f: int, i: int|
+        #![trigger m.half_edges[input_face_half_edge_index_spec(face_cycles, f, i)]]
+        input_face_local_index_valid_spec(face_cycles, f, i)
+            ==> from_face_cycles_vertex_assignment_at_spec(face_cycles, m, f, i)
+}
+
 pub open spec fn from_face_cycles_vertex_representatives_spec(m: MeshModel) -> bool {
     mesh_vertex_representative_valid_nonisolated_spec(m)
 }
@@ -2453,6 +2473,7 @@ pub open spec fn from_face_cycles_structural_core_spec(
     &&& from_face_cycles_no_isolated_vertices_spec(vertex_count, face_cycles)
     &&& from_face_cycles_counts_index_face_starts_spec(vertex_count, face_cycles, m)
     &&& from_face_cycles_next_prev_face_coherent_spec(face_cycles, m)
+    &&& from_face_cycles_vertex_assignment_coherent_spec(face_cycles, m)
     &&& from_face_cycles_twin_assignment_total_involution_spec(m)
     &&& mesh_edge_exactly_two_half_edges_spec(m)
     &&& from_face_cycles_vertex_representatives_spec(m)
@@ -2496,6 +2517,35 @@ pub proof fn lemma_from_face_cycles_success_implies_next_prev_face_coherent(
     if from_face_cycles_success_spec(vertex_count, face_cycles, m) {
         assert(from_face_cycles_incidence_model_spec(vertex_count, face_cycles, m));
         lemma_from_face_cycles_incidence_implies_next_prev_face_coherent(vertex_count, face_cycles, m);
+    }
+}
+
+pub proof fn lemma_from_face_cycles_incidence_implies_vertex_assignment_coherent(
+    vertex_count: int,
+    face_cycles: Seq<Seq<int>>,
+    m: MeshModel,
+)
+    ensures
+        from_face_cycles_incidence_model_spec(vertex_count, face_cycles, m)
+            ==> from_face_cycles_vertex_assignment_coherent_spec(face_cycles, m),
+{
+    if from_face_cycles_incidence_model_spec(vertex_count, face_cycles, m) {
+        assert(from_face_cycles_vertex_assignment_coherent_spec(face_cycles, m));
+    }
+}
+
+pub proof fn lemma_from_face_cycles_success_implies_vertex_assignment_coherent(
+    vertex_count: int,
+    face_cycles: Seq<Seq<int>>,
+    m: MeshModel,
+)
+    ensures
+        from_face_cycles_success_spec(vertex_count, face_cycles, m)
+            ==> from_face_cycles_vertex_assignment_coherent_spec(face_cycles, m),
+{
+    if from_face_cycles_success_spec(vertex_count, face_cycles, m) {
+        assert(from_face_cycles_incidence_model_spec(vertex_count, face_cycles, m));
+        lemma_from_face_cycles_incidence_implies_vertex_assignment_coherent(vertex_count, face_cycles, m);
     }
 }
 
@@ -2588,6 +2638,7 @@ pub fn runtime_check_from_face_cycles_basic_input(
         proof {
             assert(*face == face_cycles@.index(f as int));
             lemma_face_cycles_exec_to_model_face_len_exec(face_cycles, f, face, n);
+            assert(face@.len() == n as int);
             assert(model_cycles[f as int].len() == n as int);
         }
 
@@ -3801,7 +3852,14 @@ pub fn runtime_check_from_face_cycles_next_prev_face_coherent(
     face_cycles: &[Vec<usize>],
 ) -> (out: bool)
     ensures
-        out ==> from_face_cycles_next_prev_face_coherent_spec(face_cycles_exec_to_model_spec(face_cycles@), m@),
+        out ==> from_face_cycles_next_prev_face_coherent_spec(
+            face_cycles_exec_to_model_spec(face_cycles@),
+            m@,
+        )
+            && from_face_cycles_vertex_assignment_coherent_spec(
+            face_cycles_exec_to_model_spec(face_cycles@),
+            m@,
+        ),
 {
     let ghost model_cycles = face_cycles_exec_to_model_spec(face_cycles@);
 
@@ -3821,6 +3879,9 @@ pub fn runtime_check_from_face_cycles_next_prev_face_coherent(
             forall|fp: int, ip: int|
                 0 <= fp < f as int && input_face_local_index_valid_spec(model_cycles, fp, ip)
                     ==> from_face_cycles_next_prev_face_at_spec(model_cycles, m@, fp, ip),
+            forall|fp: int, ip: int|
+                0 <= fp < f as int && input_face_local_index_valid_spec(model_cycles, fp, ip)
+                    ==> from_face_cycles_vertex_assignment_at_spec(model_cycles, m@, fp, ip),
     {
         let face = vstd::slice::slice_index_get(face_cycles, f);
         let n = face.len();
@@ -3831,6 +3892,7 @@ pub fn runtime_check_from_face_cycles_next_prev_face_coherent(
             return false;
         }
         proof {
+            assert(*face == face_cycles@.index(f as int));
             lemma_face_cycles_exec_to_model_face_len_exec(face_cycles, f, face, n);
             assert(model_cycles[f as int].len() == n as int);
         }
@@ -3843,16 +3905,29 @@ pub fn runtime_check_from_face_cycles_next_prev_face_coherent(
                 model_cycles == face_cycles_exec_to_model_spec(face_cycles@),
                 model_cycles.len() == face_cycles.len() as int,
                 model_cycles[f as int].len() == n as int,
+                n == face.len(),
+                face@.len() == n as int,
+                *face == face_cycles@.index(f as int),
                 start as int == input_face_cycle_start_spec(model_cycles, f as int),
                 forall|fp: int, ip: int|
                     0 <= fp < f as int && input_face_local_index_valid_spec(model_cycles, fp, ip)
                         ==> from_face_cycles_next_prev_face_at_spec(model_cycles, m@, fp, ip),
+                forall|fp: int, ip: int|
+                    0 <= fp < f as int && input_face_local_index_valid_spec(model_cycles, fp, ip)
+                        ==> from_face_cycles_vertex_assignment_at_spec(model_cycles, m@, fp, ip),
                 forall|ip: int|
                     0 <= ip < i as int && input_face_local_index_valid_spec(model_cycles, f as int, ip)
                         ==> from_face_cycles_next_prev_face_at_spec(model_cycles, m@, f as int, ip),
+                forall|ip: int|
+                    0 <= ip < i as int && input_face_local_index_valid_spec(model_cycles, f as int, ip)
+                        ==> from_face_cycles_vertex_assignment_at_spec(model_cycles, m@, f as int, ip),
         {
+            proof {
+                assert(i < face.len());
+            }
             let next_i = if i + 1 < n { i + 1 } else { 0 };
             let prev_i = if i == 0 { n - 1 } else { i - 1 };
+            let expected_vertex = face[i];
 
             let h = match start.checked_add(i) {
                 Some(v) => v,
@@ -3872,14 +3947,16 @@ pub fn runtime_check_from_face_cycles_next_prev_face_coherent(
             }
 
             let he = &m.half_edges[h];
-            if he.face != f || he.next != expected_next || he.prev != expected_prev {
+            if he.face != f || he.vertex != expected_vertex || he.next != expected_next || he.prev != expected_prev {
                 return false;
             }
 
             proof {
                 assert(0 <= i as int && (i as int) < (n as int));
                 assert(input_face_local_index_valid_spec(model_cycles, f as int, i as int));
+                lemma_face_cycles_exec_to_model_face_entry_exec(face_cycles, f, face, i);
                 assert(h as int == input_face_half_edge_index_spec(model_cycles, f as int, i as int));
+                assert(input_face_from_vertex_spec(model_cycles, f as int, i as int) == expected_vertex as int);
                 if i + 1 < n {
                     assert(next_i == i + 1);
                 } else {
@@ -3895,9 +3972,11 @@ pub fn runtime_check_from_face_cycles_next_prev_face_coherent(
                 assert(expected_next as int == input_face_half_edge_index_spec(model_cycles, f as int, next_i as int));
                 assert(expected_prev as int == input_face_half_edge_index_spec(model_cycles, f as int, prev_i as int));
                 assert(m.half_edges@[h as int].face == he.face as int);
+                assert(m.half_edges@[h as int].vertex == he.vertex as int);
                 assert(m.half_edges@[h as int].next == he.next as int);
                 assert(m.half_edges@[h as int].prev == he.prev as int);
                 assert(from_face_cycles_next_prev_face_at_spec(model_cycles, m@, f as int, i as int));
+                assert(from_face_cycles_vertex_assignment_at_spec(model_cycles, m@, f as int, i as int));
             }
 
             i += 1;
@@ -3917,6 +3996,17 @@ pub fn runtime_check_from_face_cycles_next_prev_face_coherent(
                     assert(from_face_cycles_next_prev_face_at_spec(model_cycles, m@, f as int, ip));
                 }
             };
+            assert forall|fp: int, ip: int|
+                0 <= fp < (f + 1) as int && input_face_local_index_valid_spec(model_cycles, fp, ip)
+                    implies from_face_cycles_vertex_assignment_at_spec(model_cycles, m@, fp, ip) by {
+                if 0 <= fp < f as int {
+                    assert(from_face_cycles_vertex_assignment_at_spec(model_cycles, m@, fp, ip));
+                } else {
+                    assert(fp == f as int);
+                    assert(0 <= ip < i as int);
+                    assert(from_face_cycles_vertex_assignment_at_spec(model_cycles, m@, f as int, ip));
+                }
+            };
             assert(input_face_cycle_start_spec(model_cycles, f as int + 1)
                 == input_face_cycle_start_spec(model_cycles, f as int) + model_cycles[f as int].len() as int);
             assert((start + n) as int == start as int + n as int);
@@ -3930,7 +4020,11 @@ pub fn runtime_check_from_face_cycles_next_prev_face_coherent(
         assert(forall|fp: int, ip: int|
             0 <= fp < face_cycles.len() as int && input_face_local_index_valid_spec(model_cycles, fp, ip)
                 ==> from_face_cycles_next_prev_face_at_spec(model_cycles, m@, fp, ip));
+        assert(forall|fp: int, ip: int|
+            0 <= fp < face_cycles.len() as int && input_face_local_index_valid_spec(model_cycles, fp, ip)
+                ==> from_face_cycles_vertex_assignment_at_spec(model_cycles, m@, fp, ip));
         assert(from_face_cycles_next_prev_face_coherent_spec(model_cycles, m@));
+        assert(from_face_cycles_vertex_assignment_coherent_spec(model_cycles, m@));
     }
     true
 }
@@ -4145,6 +4239,7 @@ pub fn from_face_cycles_constructive_next_prev_face(
                                         m@,
                                     ));
                                     assert(from_face_cycles_next_prev_face_coherent_spec(model_cycles, m@));
+                                    assert(from_face_cycles_vertex_assignment_coherent_spec(model_cycles, m@));
                                     assert(from_face_cycles_twin_assignment_total_involution_spec(m@));
                                     assert(mesh_edge_exactly_two_half_edges_spec(m@));
                                     assert(from_face_cycles_vertex_representatives_spec(m@));

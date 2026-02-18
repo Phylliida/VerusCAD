@@ -307,6 +307,44 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`126 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`126 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`160 verified, 0 errors`).
+  - burndown update (2026-02-18, incidence-core vertex-assignment export):
+    - strengthened constructor-core incidence packaging in
+      `src/runtime_halfedge_mesh_refinement.rs` by adding:
+      - `from_face_cycles_vertex_assignment_at_spec`,
+      - `from_face_cycles_vertex_assignment_coherent_spec`,
+      - projection lemmas
+        `lemma_from_face_cycles_incidence_implies_vertex_assignment_coherent`
+        and
+        `lemma_from_face_cycles_success_implies_vertex_assignment_coherent`.
+    - strengthened the executable checker
+      `runtime_check_from_face_cycles_next_prev_face_coherent` so `out` now
+      certifies both:
+      - `from_face_cycles_next_prev_face_coherent_spec(...)`, and
+      - `from_face_cycles_vertex_assignment_coherent_spec(...)`.
+      implementation now checks `he.vertex == face[i]` in the same face/local
+      scan used for `next/prev/face` coherence.
+    - strengthened `from_face_cycles_structural_core_spec` and
+      `from_face_cycles_constructive_next_prev_face` so `Ok(m)` now exports the
+      new half-edge input vertex-assignment clause as part of the constructor
+      core.
+    - failed attempt (kept documented):
+      first checker revision omitted stable face-slice witness invariants
+      (`n == face.len()`, `*face == face_cycles@.index(f)`) in the inner loop,
+      which caused precondition failures on `face[i]` indexing and
+      `lemma_face_cycles_exec_to_model_face_entry_exec(...)`; fixed by restoring
+      those invariants and explicit entry projection in the loop body.
+    - remaining gap:
+      constructor-level linkage to full
+      `from_face_cycles_success_spec` / `from_face_cycles_failure_spec`
+      still needs the twin-endpoint correspondence and full undirected-edge
+      equivalence clauses from `from_face_cycles_incidence_model_spec`.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_from_face_cycles_next_prev_face_coherent`
+      passed (`3 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`138 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`138 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`172 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
 - [x] Prove twin assignment is total for closed inputs and involutive.
   - burndown update (2026-02-18):

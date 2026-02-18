@@ -1,1 +1,1 @@
-Completed vcad-topology BFS verification by exporting reverse-direction component completeness and wiring the new representative-completeness checker through all connectivity/Euler constructive wrappers.
+Completed vcad-topology from_face_cycles constructive incidence-core strengthening by proving and exporting half-edge input vertex-assignment coherence in runtime_check_from_face_cycles_next_prev_face_coherent and structural core packaging.
