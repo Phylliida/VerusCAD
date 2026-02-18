@@ -1,1 +1,1 @@
-Strengthened from_face_cycles constructive verification to certify a combined structural-core spec and documented the new Section C burndown progress.
+Documented and rolled back an unstable no-isolated input-export proof attempt while adding a reusable face-cycle model entry lemma and keeping vcad-topology verification green.

@@ -791,6 +791,32 @@ pub proof fn lemma_face_cycles_exec_to_model_face_len_exec(
     assert((*face)@.len() == n);
 }
 
+pub proof fn lemma_face_cycles_exec_to_model_face_entry_exec(
+    face_cycles: &[Vec<usize>],
+    f: usize,
+    face: &Vec<usize>,
+    i: usize,
+)
+    requires
+        f < face_cycles.len(),
+        *face == face_cycles@.index(f as int),
+        i < face.len(),
+    ensures
+        face_cycles_exec_to_model_spec(face_cycles@)[f as int][i as int] == face@[i as int] as int,
+{
+    assert(face_cycles@.index(f as int) == face_cycles@[f as int]);
+    assert(face_cycles@[f as int] == *face);
+    assert(face_cycles_exec_to_model_spec(face_cycles@)[f as int]
+        == Seq::new(face_cycles@[f as int]@.len(), |j: int| face_cycles@[f as int]@[j] as int));
+    assert(face@.len() == face.len());
+    assert(face_cycles@[f as int]@.len() == face@.len());
+    assert(0 <= i as int);
+    assert((i as int) < face_cycles@[f as int]@.len());
+    assert(face_cycles_exec_to_model_spec(face_cycles@)[f as int][i as int]
+        == face_cycles@[f as int]@[i as int] as int);
+    assert(face_cycles@[f as int]@[i as int] == face@[i as int]);
+}
+
 pub open spec fn mesh_half_edge_from_vertex_spec(m: MeshModel, h: int) -> int {
     m.half_edges[h].vertex
 }

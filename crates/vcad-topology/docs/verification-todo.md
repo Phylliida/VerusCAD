@@ -121,6 +121,29 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`59 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`59 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`93 verified, 0 errors`).
+  - burndown update (2026-02-18, input no-isolated export attempt):
+    - attempted to add a constructive input checker
+      `runtime_check_from_face_cycles_no_isolated_vertices` in
+      `src/runtime_halfedge_mesh_refinement.rs` and thread it into
+      `from_face_cycles_constructive_next_prev_face` so `Ok(m)` would also
+      export `from_face_cycles_no_isolated_vertices_spec(...)`.
+    - this attempt was rolled back: quantified invariant-preservation and
+      final witness-packaging in the terminal seen-scan loop remained
+      trigger-sensitive/brittle, and keeping the partial proof state regressed
+      verifier stability.
+    - retained stable groundwork:
+      added reusable helper lemma
+      `lemma_face_cycles_exec_to_model_face_entry_exec` for entry-level
+      projection from runtime face slices to the model sequence.
+    - stable state retained:
+      `from_face_cycles_constructive_next_prev_face` still exports
+      `from_face_cycles_structural_core_spec(...)`; no new no-isolated input
+      clause is exported yet.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`60 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`60 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`94 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
 - [x] Prove twin assignment is total for closed inputs and involutive.
   - burndown update (2026-02-18):
