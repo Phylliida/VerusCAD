@@ -585,7 +585,29 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `runtime_check_half_edge_components_partition` still checks full runtime
       coverage via `global_seen`, but exported proved spec remains the stable
       partition/disjointness surface.
+  - burndown update (2026-02-18, latest):
+    - completed export of global completeness in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      `mesh_half_edge_components_partition_spec` now includes
+      `mesh_half_edge_components_cover_all_spec`.
+    - to stabilize trigger behavior, the coverage proof was factored through a
+      helper predicate (`mesh_half_edge_has_component_spec`) and the outer
+      quantifier triggers on that helper, instead of a direct nested
+      `forall h. exists c` trigger over `mesh_half_edge_component_contains_spec`.
+    - failed proof shape (not kept): direct nested trigger annotation on the
+      new `forall -> exists` clause in `mesh_half_edge_components_cover_all_spec`
+      still produced trigger-inference failures.
+    - remaining gap:
+      explicit BFS soundness is still open (connectivity/closure semantics for
+      each reported component), but completeness is now part of the exported
+      proved partition spec.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`36 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`36 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`70 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
+  - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 - [ ] Verify `component_count` equals number of connected components.
   - burndown update (2026-02-18):
     - landed constructive count/partition bridge in

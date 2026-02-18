@@ -371,6 +371,27 @@ pub open spec fn mesh_half_edge_component_entry_spec(
     components[c]@[i] as int
 }
 
+pub open spec fn mesh_half_edge_has_component_spec(
+    m: MeshModel,
+    components: Seq<Vec<usize>>,
+    h: int,
+) -> bool {
+    exists|c: int| {
+        &&& 0 <= c < components.len() as int
+        &&& mesh_half_edge_component_contains_spec(m, components, c, h)
+    }
+}
+
+pub open spec fn mesh_half_edge_components_cover_all_spec(
+    m: MeshModel,
+    components: Seq<Vec<usize>>,
+) -> bool {
+    let hcnt = mesh_half_edge_count_spec(m);
+    forall|h: int|
+        #![trigger mesh_half_edge_has_component_spec(m, components, h)]
+        0 <= h < hcnt ==> mesh_half_edge_has_component_spec(m, components, h)
+}
+
 pub open spec fn mesh_half_edge_components_partition_spec(
     m: MeshModel,
     components: Seq<Vec<usize>>,
@@ -392,6 +413,7 @@ pub open spec fn mesh_half_edge_components_partition_spec(
             && j < components[c]@.len() as int
             ==> mesh_half_edge_component_entry_spec(components, c, i)
                 != mesh_half_edge_component_entry_spec(components, c, j)
+    &&& mesh_half_edge_components_cover_all_spec(m, components)
     &&& forall|c1: int, c2: int, h: int|
         mesh_half_edge_component_contains_spec(m, components, c1, h)
             && mesh_half_edge_component_contains_spec(m, components, c2, h)
@@ -2114,6 +2136,18 @@ pub fn runtime_check_half_edge_components_partition(
                 0 <= hp < mesh_half_edge_count_spec(m@) implies #[trigger] global_seen@[hp] by {
                 assert(mesh_half_edge_count_spec(m@) == h as int);
                 assert(0 <= hp < h as int);
+            };
+        }
+        assert(mesh_half_edge_components_cover_all_spec(m@, components@)) by {
+            assert forall|hp: int|
+                0 <= hp < mesh_half_edge_count_spec(m@)
+                    implies mesh_half_edge_has_component_spec(m@, components@, hp) by {
+                assert(global_seen@[hp]);
+                assert(exists|cp: int| {
+                    &&& 0 <= cp < c as int
+                    &&& mesh_half_edge_component_contains_spec(m@, components@, cp, hp)
+                });
+                assert(c == components.len());
             };
         }
         assert(mesh_half_edge_components_partition_spec(m@, components@));
