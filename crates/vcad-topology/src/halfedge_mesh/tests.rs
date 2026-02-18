@@ -81,6 +81,78 @@ use vcad_math::runtime_scalar::RuntimeScalar;
         assert_eq!(mesh.euler_characteristics_per_component(), vec![2]);
     }
 
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn phase5_checks_are_invariant_under_face_cycle_start_rotation() {
+        let vertices = vec![
+            RuntimePoint3::from_ints(-1, -1, -1),
+            RuntimePoint3::from_ints(1, -1, -1),
+            RuntimePoint3::from_ints(1, 1, -1),
+            RuntimePoint3::from_ints(-1, 1, -1),
+            RuntimePoint3::from_ints(-1, -1, 1),
+            RuntimePoint3::from_ints(1, -1, 1),
+            RuntimePoint3::from_ints(1, 1, 1),
+            RuntimePoint3::from_ints(-1, 1, 1),
+        ];
+        let faces = vec![
+            vec![0, 1, 2, 3],
+            vec![4, 7, 6, 5],
+            vec![0, 4, 5, 1],
+            vec![3, 2, 6, 7],
+            vec![0, 3, 7, 4],
+            vec![1, 5, 6, 2],
+        ];
+        let rotated_faces: Vec<Vec<usize>> = faces
+            .iter()
+            .map(|cycle| {
+                let mut rotated = cycle.clone();
+                rotated.rotate_left(1);
+                rotated
+            })
+            .collect();
+
+        let original = Mesh::from_face_cycles(vertices.clone(), &faces)
+            .expect("original cube cycle starts should build");
+        let rotated = Mesh::from_face_cycles(vertices, &rotated_faces)
+            .expect("rotated cube cycle starts should build");
+
+        assert!(original.is_valid());
+        assert!(rotated.is_valid());
+
+        assert_eq!(
+            original.check_no_zero_length_geometric_edges(),
+            rotated.check_no_zero_length_geometric_edges()
+        );
+        assert_eq!(
+            original.check_face_corner_non_collinearity(),
+            rotated.check_face_corner_non_collinearity()
+        );
+        assert_eq!(original.check_face_coplanarity(), rotated.check_face_coplanarity());
+        assert_eq!(original.check_face_convexity(), rotated.check_face_convexity());
+        assert_eq!(
+            original.check_face_plane_consistency(),
+            rotated.check_face_plane_consistency()
+        );
+        assert_eq!(
+            original.check_shared_edge_local_orientation_consistency(),
+            rotated.check_shared_edge_local_orientation_consistency()
+        );
+        assert_eq!(
+            original.check_no_forbidden_face_face_intersections(),
+            rotated.check_no_forbidden_face_face_intersections()
+        );
+        assert_eq!(
+            original.check_outward_face_normals(),
+            rotated.check_outward_face_normals()
+        );
+        assert_eq!(
+            original.check_geometric_topological_consistency(),
+            rotated.check_geometric_topological_consistency()
+        );
+        assert!(original.check_geometric_topological_consistency());
+        assert!(rotated.check_geometric_topological_consistency());
+    }
+
     #[test]
     fn disconnected_closed_components_have_expected_component_and_euler_counts() {
         let vertices = vec![

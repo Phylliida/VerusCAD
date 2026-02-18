@@ -31,7 +31,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [x] Spec: define aggregate `mesh_all_faces_coplanar_spec(m)`.
 - [x] Runtime checker: implement `check_face_coplanarity` (or equivalent) over all faces.
 - [ ] Proof: runtime checker correctness vs spec (sound + complete under documented preconditions).
-- [ ] Proof: coplanarity is stable under cyclic reindexing of a face cycle.
+- [x] Proof: coplanarity is stable under cyclic reindexing of a face cycle.
 
 ## P5.2 Invariant: Edge Straightness (Implied by Phase 5 Intro)
 - [ ] Spec: each half-edge geometrically denotes the segment between `vertex(h)` and `vertex(next(h))`.
@@ -139,6 +139,19 @@ This doc expands those targets into executable TODOs aligned with the current `v
   - document which Euler-operator preconditions must preserve geometric invariants versus recheck them.
 
 ## Burndown Log
+- 2026-02-18: Completed the P5.1 cyclic-reindexing coplanarity proof item in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
+  - added `mesh_face_cycle_shift_index_spec` and `lemma_mesh_face_cycle_shift_index_in_bounds`;
+  - proved `lemma_mesh_face_coplanar_witness_stable_under_cyclic_reindexing`, showing that any cyclic shift of face-cycle indices preserves the coplanarity witness relation.
+- 2026-02-18: Added runtime regression coverage for cycle-start invariance in `src/halfedge_mesh/tests.rs`:
+  - new `phase5_checks_are_invariant_under_face_cycle_start_rotation` builds two geometrically identical cubes with per-face cycle starts rotated by one and asserts identical outcomes for all current Phase 5 runtime checkers, including the aggregate gate.
+- 2026-02-18: Failed attempt in this P5.1 pass: first proof revision used `nonlinear_arith` directly for shift-index bounds and failed to discharge integer inequalities in Verus; resolved by rewriting the bounds proof with explicit linear inequality steps.
+- 2026-02-18: Revalidated after the P5.1 cyclic-reindexing proof + invariance regression additions:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (194 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (229 verified, 0 errors)
 - 2026-02-18: Implemented the P5.4 shared-edge local orientation runtime checker in `src/halfedge_mesh/validation.rs`:
   - added `Mesh::check_shared_edge_local_orientation_consistency()`, requiring each twin half-edge pair to induce opposite geometric segment directions (`start/end` swapped in exact arithmetic) and to belong to different faces;
   - integrated this check into `Mesh::check_geometric_topological_consistency()`.

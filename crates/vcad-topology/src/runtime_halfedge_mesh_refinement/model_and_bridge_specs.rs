@@ -533,6 +533,130 @@ pub open spec fn mesh_all_faces_coplanar_spec(
 }
 
 #[cfg(verus_keep_ghost)]
+pub open spec fn mesh_face_cycle_shift_index_spec(i: int, shift: int, k: int) -> int {
+    if i + shift < k {
+        i + shift
+    } else {
+        i + shift - k
+    }
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_face_cycle_shift_index_in_bounds(i: int, shift: int, k: int)
+    requires
+        0 < k,
+        0 <= i < k,
+        0 <= shift < k,
+    ensures
+        0 <= mesh_face_cycle_shift_index_spec(i, shift, k) < k,
+{
+    if i + shift < k {
+        assert(0 <= i + shift);
+    } else {
+        assert(k <= i + shift) by {
+            if k <= i + shift {
+            } else {
+                assert(i + shift < k);
+                assert(false);
+            }
+        };
+        assert(i + shift < i + k);
+        assert(i + k < k + k);
+        assert(i + shift < k + k);
+        assert(0 <= i + shift - k);
+        assert(i + shift - k < k);
+    }
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_face_coplanar_witness_stable_under_cyclic_reindexing(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+    k: int,
+    shift: int,
+)
+    requires
+        mesh_face_coplanar_witness_spec(m, vertex_positions, f, k),
+        0 <= shift < k,
+    ensures
+        forall|i: int, j: int, l: int, d: int|
+            0 <= i < k && 0 <= j < k && 0 <= l < k && 0 <= d < k ==> #[trigger]
+                vcad_math::orientation3::is_coplanar(
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                        m,
+                        vertex_positions,
+                        f,
+                        mesh_face_cycle_shift_index_spec(i, shift, k),
+                    ),
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                        m,
+                        vertex_positions,
+                        f,
+                        mesh_face_cycle_shift_index_spec(j, shift, k),
+                    ),
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                        m,
+                        vertex_positions,
+                        f,
+                        mesh_face_cycle_shift_index_spec(l, shift, k),
+                    ),
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                        m,
+                        vertex_positions,
+                        f,
+                        mesh_face_cycle_shift_index_spec(d, shift, k),
+                    ),
+                ),
+{
+    assert(3 <= k <= mesh_half_edge_count_spec(m));
+    assert(0 < k);
+
+    assert forall|i: int, j: int, l: int, d: int|
+        0 <= i < k && 0 <= j < k && 0 <= l < k && 0 <= d < k implies #[trigger]
+            vcad_math::orientation3::is_coplanar(
+                mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                    m,
+                    vertex_positions,
+                    f,
+                    mesh_face_cycle_shift_index_spec(i, shift, k),
+                ),
+                mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                    m,
+                    vertex_positions,
+                    f,
+                    mesh_face_cycle_shift_index_spec(j, shift, k),
+                ),
+                mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                    m,
+                    vertex_positions,
+                    f,
+                    mesh_face_cycle_shift_index_spec(l, shift, k),
+                ),
+                mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                    m,
+                    vertex_positions,
+                    f,
+                    mesh_face_cycle_shift_index_spec(d, shift, k),
+                ),
+            ) by {
+        lemma_mesh_face_cycle_shift_index_in_bounds(i, shift, k);
+        lemma_mesh_face_cycle_shift_index_in_bounds(j, shift, k);
+        lemma_mesh_face_cycle_shift_index_in_bounds(l, shift, k);
+        lemma_mesh_face_cycle_shift_index_in_bounds(d, shift, k);
+
+        let si = mesh_face_cycle_shift_index_spec(i, shift, k);
+        let sj = mesh_face_cycle_shift_index_spec(j, shift, k);
+        let sl = mesh_face_cycle_shift_index_spec(l, shift, k);
+        let sd = mesh_face_cycle_shift_index_spec(d, shift, k);
+        assert(0 <= si < k);
+        assert(0 <= sj < k);
+        assert(0 <= sl < k);
+        assert(0 <= sd < k);
+    };
+}
+
+#[cfg(verus_keep_ghost)]
 pub open spec fn mesh_plane_offset_relative_to_origin_spec(
     normal: vcad_math::vec3::Vec3,
     point: vcad_math::point3::Point3,
