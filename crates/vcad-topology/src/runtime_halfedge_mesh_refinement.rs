@@ -355,6 +355,36 @@ pub open spec fn mesh_face_representative_cycles_cover_all_half_edges_kernel_bri
     mesh_index_bounds_spec(m) && mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_spec(m)
 }
 
+pub open spec fn mesh_vertex_representative_cycle_kernel_bridge_witness_spec(
+    m: MeshModel,
+    v: int,
+    k: int,
+) -> bool {
+    let start = m.vertex_half_edges[v];
+    &&& 1 <= k <= mesh_half_edge_count_spec(m)
+    &&& mesh_vertex_ring_iter_spec(m, start, k as nat) == start
+    &&& forall|i: int|
+        0 <= i < k ==> #[trigger] m.half_edges[mesh_vertex_ring_iter_spec(m, start, i as nat)].vertex == v
+}
+
+pub open spec fn mesh_vertex_representative_cycles_kernel_bridge_spec(m: MeshModel) -> bool {
+    exists|vertex_cycle_lens: Seq<usize>| {
+        &&& vertex_cycle_lens.len() == mesh_vertex_count_spec(m)
+        &&& forall|v: int|
+            #![trigger vertex_cycle_lens[v]]
+            0 <= v < mesh_vertex_count_spec(m)
+                ==> mesh_vertex_representative_cycle_kernel_bridge_witness_spec(
+                    m,
+                    v,
+                    vertex_cycle_lens[v] as int,
+                )
+    }
+}
+
+pub open spec fn mesh_vertex_representative_cycles_kernel_bridge_total_spec(m: MeshModel) -> bool {
+    mesh_index_bounds_spec(m) && mesh_vertex_representative_cycles_kernel_bridge_spec(m)
+}
+
 pub open spec fn kernel_face_cover_step_witness_spec(
     km: &kernels::KernelMesh,
     face_cycle_lens: Seq<usize>,
@@ -417,6 +447,76 @@ pub proof fn lemma_kernel_next_iter_matches_mesh(
         assert(mesh_next_iter_spec(m, h, n)
             == mesh_next_or_self_spec(m, mesh_next_iter_spec(m, h, prev)));
         assert(kernels::kernel_next_iter_spec(km, h, prev) == mesh_next_iter_spec(m, h, prev));
+    }
+}
+
+pub proof fn lemma_kernel_vertex_ring_succ_or_self_matches_mesh(
+    km: &kernels::KernelMesh,
+    m: MeshModel,
+    h: int,
+)
+    requires
+        kernel_mesh_matches_mesh_model_spec(km, m),
+    ensures
+        kernels::kernel_vertex_ring_succ_or_self_spec(km, h) == mesh_vertex_ring_succ_or_self_spec(m, h),
+{
+    let hcnt = mesh_half_edge_count_spec(m);
+    assert(hcnt == kernels::kernel_half_edge_count_spec(km));
+    if 0 <= h < hcnt {
+        let kt = km.half_edges@[h].twin as int;
+        let mt = m.half_edges[h].twin;
+        assert(kt == mt);
+        if 0 <= kt < hcnt {
+            let kn = km.half_edges@[kt].next as int;
+            let mn = m.half_edges[kt].next;
+            assert(kn == mn);
+            if 0 <= kn < hcnt {
+                assert(kernels::kernel_vertex_ring_succ_or_self_spec(km, h) == kn);
+                assert(mesh_vertex_ring_succ_or_self_spec(m, h) == mn);
+            } else {
+                assert(kernels::kernel_vertex_ring_succ_or_self_spec(km, h) == h);
+                assert(mesh_vertex_ring_succ_or_self_spec(m, h) == h);
+            }
+        } else {
+            assert(kernels::kernel_vertex_ring_succ_or_self_spec(km, h) == h);
+            assert(mesh_vertex_ring_succ_or_self_spec(m, h) == h);
+        }
+    } else {
+        assert(kernels::kernel_vertex_ring_succ_or_self_spec(km, h) == h);
+        assert(mesh_vertex_ring_succ_or_self_spec(m, h) == h);
+    }
+}
+
+pub proof fn lemma_kernel_vertex_ring_iter_matches_mesh(
+    km: &kernels::KernelMesh,
+    m: MeshModel,
+    h: int,
+    n: nat,
+)
+    requires
+        kernel_mesh_matches_mesh_model_spec(km, m),
+    ensures
+        kernels::kernel_vertex_ring_iter_spec(km, h, n) == mesh_vertex_ring_iter_spec(m, h, n),
+    decreases n,
+{
+    if n == 0 {
+    } else {
+        let prev = (n - 1) as nat;
+        lemma_kernel_vertex_ring_iter_matches_mesh(km, m, h, prev);
+        lemma_kernel_vertex_ring_succ_or_self_matches_mesh(
+            km,
+            m,
+            kernels::kernel_vertex_ring_iter_spec(km, h, prev),
+        );
+        assert(kernels::kernel_vertex_ring_iter_spec(km, h, n)
+            == kernels::kernel_vertex_ring_succ_or_self_spec(
+            km,
+            kernels::kernel_vertex_ring_iter_spec(km, h, prev),
+        ));
+        assert(mesh_vertex_ring_iter_spec(m, h, n)
+            == mesh_vertex_ring_succ_or_self_spec(m, mesh_vertex_ring_iter_spec(m, h, prev)));
+        assert(kernels::kernel_vertex_ring_iter_spec(km, h, prev)
+            == mesh_vertex_ring_iter_spec(m, h, prev));
     }
 }
 
@@ -716,6 +816,130 @@ pub proof fn lemma_kernel_face_cycles_cover_all_matches_mesh(
         });
     }
     assert(mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_total_spec(m));
+}
+
+pub proof fn lemma_kernel_vertex_cycle_witness_matches_mesh(
+    km: &kernels::KernelMesh,
+    m: MeshModel,
+    v: int,
+    k: int,
+)
+    requires
+        kernel_mesh_matches_mesh_model_spec(km, m),
+        kernels::kernel_index_bounds_spec(km),
+        0 <= v < kernels::kernel_vertex_count_spec(km),
+        kernels::kernel_vertex_representative_cycle_witness_spec(km, v, k),
+    ensures
+        mesh_vertex_representative_cycle_kernel_bridge_witness_spec(m, v, k),
+{
+    let hcnt = mesh_half_edge_count_spec(m);
+    let start_k = km.vertex_half_edges@[v] as int;
+    let start_m = m.vertex_half_edges[v];
+    assert(hcnt == kernels::kernel_half_edge_count_spec(km));
+    assert(start_k == start_m);
+    assert(0 <= start_k < kernels::kernel_half_edge_count_spec(km));
+
+    assert(1 <= k <= hcnt);
+    lemma_kernel_vertex_ring_iter_matches_mesh(km, m, start_k, k as nat);
+    assert(mesh_vertex_ring_iter_spec(m, start_m, k as nat) == start_m);
+
+    assert(forall|i: int|
+        0 <= i < k ==> #[trigger] m.half_edges[mesh_vertex_ring_iter_spec(m, start_m, i as nat)].vertex == v) by {
+        assert forall|i: int|
+            0 <= i < k implies #[trigger] m.half_edges[mesh_vertex_ring_iter_spec(m, start_m, i as nat)].vertex == v by {
+            kernels::lemma_kernel_vertex_ring_iter_in_bounds(km, start_k, i as nat);
+            let hi = kernels::kernel_vertex_ring_iter_spec(km, start_k, i as nat);
+            assert(0 <= hi < kernels::kernel_half_edge_count_spec(km));
+            lemma_kernel_vertex_ring_iter_matches_mesh(km, m, start_k, i as nat);
+            assert(hi == mesh_vertex_ring_iter_spec(m, start_m, i as nat));
+            assert((#[trigger] km.half_edges@[hi]).vertex as int == m.half_edges[hi].vertex);
+            assert(km.half_edges@[hi].vertex as int == v);
+            assert(m.half_edges[mesh_vertex_ring_iter_spec(m, start_m, i as nat)].vertex == v);
+        };
+    };
+}
+
+pub proof fn lemma_kernel_vertex_manifold_matches_mesh(
+    km: &kernels::KernelMesh,
+    m: MeshModel,
+)
+    requires
+        kernel_mesh_matches_mesh_model_spec(km, m),
+        kernels::kernel_vertex_manifold_single_cycle_total_spec(km),
+    ensures
+        mesh_vertex_representative_cycles_kernel_bridge_total_spec(m),
+{
+    lemma_kernel_index_bounds_implies_mesh_index_bounds(km, m);
+
+    reveal(kernels::kernel_vertex_manifold_single_cycle_basic_spec);
+    assert(kernels::kernel_vertex_manifold_single_cycle_basic_spec(km));
+    assert(exists|vertex_cycle_lens: Seq<usize>| {
+        &&& vertex_cycle_lens.len() == kernels::kernel_vertex_count_spec(km)
+        &&& forall|v: int|
+            #![trigger vertex_cycle_lens[v]]
+            0 <= v < kernels::kernel_vertex_count_spec(km)
+                ==> kernels::kernel_vertex_representative_cycle_witness_spec(
+                    km,
+                    v,
+                    vertex_cycle_lens[v] as int,
+                )
+    });
+    let vertex_cycle_lens = choose|vertex_cycle_lens: Seq<usize>| {
+        &&& vertex_cycle_lens.len() == kernels::kernel_vertex_count_spec(km)
+        &&& forall|v: int|
+            #![trigger vertex_cycle_lens[v]]
+            0 <= v < kernels::kernel_vertex_count_spec(km)
+                ==> kernels::kernel_vertex_representative_cycle_witness_spec(
+                    km,
+                    v,
+                    vertex_cycle_lens[v] as int,
+                )
+    };
+    assert(mesh_vertex_representative_cycles_kernel_bridge_spec(m)) by {
+        assert(vertex_cycle_lens.len() == mesh_vertex_count_spec(m));
+        assert(forall|v: int|
+            #![trigger vertex_cycle_lens[v]]
+            0 <= v < mesh_vertex_count_spec(m)
+                ==> mesh_vertex_representative_cycle_kernel_bridge_witness_spec(
+                    m,
+                    v,
+                    vertex_cycle_lens[v] as int,
+                )) by {
+            assert forall|v: int|
+                #![trigger vertex_cycle_lens[v]]
+                0 <= v < mesh_vertex_count_spec(m)
+                    implies mesh_vertex_representative_cycle_kernel_bridge_witness_spec(
+                        m,
+                        v,
+                        vertex_cycle_lens[v] as int,
+                    ) by {
+                lemma_kernel_vertex_cycle_witness_matches_mesh(km, m, v, vertex_cycle_lens[v] as int);
+            };
+        };
+        assert(exists|vertex_cycle_lens2: Seq<usize>| {
+            &&& vertex_cycle_lens2.len() == mesh_vertex_count_spec(m)
+            &&& forall|v: int|
+                #![trigger vertex_cycle_lens2[v]]
+                0 <= v < mesh_vertex_count_spec(m)
+                    ==> mesh_vertex_representative_cycle_kernel_bridge_witness_spec(
+                        m,
+                        v,
+                        vertex_cycle_lens2[v] as int,
+                    )
+        }) by {
+            let vertex_cycle_lens2 = vertex_cycle_lens;
+            assert(vertex_cycle_lens2.len() == mesh_vertex_count_spec(m));
+            assert(forall|v: int|
+                #![trigger vertex_cycle_lens2[v]]
+                0 <= v < mesh_vertex_count_spec(m)
+                    ==> mesh_vertex_representative_cycle_kernel_bridge_witness_spec(
+                        m,
+                        v,
+                        vertex_cycle_lens2[v] as int,
+                    ));
+        };
+    }
+    assert(mesh_vertex_representative_cycles_kernel_bridge_total_spec(m));
 }
 
 pub open spec fn mesh_vertex_ring_witness_spec(m: MeshModel, v: int, k: int) -> bool {
@@ -1107,6 +1331,7 @@ pub open spec fn structural_validity_gate_model_link_spec(
     &&& (w.prev_next_inverse_ok ==> mesh_prev_next_inverse_spec(m))
     &&& (w.face_cycles_ok ==> mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_total_spec(m))
     &&& (w.no_degenerate_edges_ok ==> mesh_no_degenerate_edges_spec(m))
+    &&& (w.vertex_manifold_ok ==> mesh_vertex_representative_cycles_kernel_bridge_total_spec(m))
     &&& (w.edge_two_half_edges_ok ==> mesh_edge_exactly_two_half_edges_spec(m))
 }
 
@@ -3582,6 +3807,24 @@ pub fn runtime_check_face_cycles_kernel_bridge(m: &Mesh) -> (out: bool)
     true
 }
 
+#[allow(dead_code)]
+pub fn runtime_check_vertex_manifold_kernel_bridge(m: &Mesh) -> (out: bool)
+    ensures
+        out ==> mesh_vertex_representative_cycles_kernel_bridge_total_spec(m@),
+{
+    let km = runtime_mesh_to_kernel_mesh(m);
+    let ok = kernels::kernel_check_vertex_manifold_single_cycle(&km);
+    if !ok {
+        return false;
+    }
+    proof {
+        assert(kernels::kernel_vertex_manifold_single_cycle_total_spec(&km));
+        lemma_kernel_vertex_manifold_matches_mesh(&km, m@);
+        assert(mesh_vertex_representative_cycles_kernel_bridge_total_spec(m@));
+    }
+    true
+}
+
 #[verifier::external_body]
 pub fn ex_mesh_check_no_degenerate_edges_via_kernel(m: &Mesh) -> (out: bool)
 {
@@ -5559,7 +5802,7 @@ pub fn is_structurally_valid_constructive(
     let prev_next_inverse_ok = runtime_check_prev_next_inverse(m);
     let face_cycles_ok = runtime_check_face_cycles_kernel_bridge(m);
     let no_degenerate_edges_ok = runtime_check_no_degenerate_edges(m);
-    let vertex_manifold_ok = ex_mesh_check_vertex_manifold_single_cycle_via_kernel(m);
+    let vertex_manifold_ok = runtime_check_vertex_manifold_kernel_bridge(m);
     let edge_two_half_edges_ok = runtime_check_edge_exactly_two_half_edges(m);
 
     let formula_ok = vertex_count_positive
@@ -5610,6 +5853,9 @@ pub fn is_structurally_valid_constructive(
         }
         if w.no_degenerate_edges_ok {
             assert(mesh_no_degenerate_edges_spec(m@));
+        }
+        if w.vertex_manifold_ok {
+            assert(mesh_vertex_representative_cycles_kernel_bridge_total_spec(m@));
         }
         if w.edge_two_half_edges_ok {
             assert(mesh_edge_exactly_two_half_edges_spec(m@));

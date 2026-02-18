@@ -1,1 +1,1 @@
-Added a constructive face-cycles kernel-bridge model-link for structural validity in vcad-topology and documented the burndown increment with green fast/full verification.
+Added a constructive vertex-manifold kernel-bridge model-link for structural validity in vcad-topology and documented the burndown update with passing fast and full verification.

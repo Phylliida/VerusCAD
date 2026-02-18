@@ -1008,6 +1008,40 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`34 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`96 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`130 verified, 0 errors`).
+  - burndown update (2026-02-18, vertex-manifold model-link increment):
+    - landed constructive kernel-bridge path in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      - bridge-facing vertex-manifold model predicates:
+        `mesh_vertex_representative_cycle_kernel_bridge_witness_spec`,
+        `mesh_vertex_representative_cycles_kernel_bridge_spec`,
+        `mesh_vertex_representative_cycles_kernel_bridge_total_spec`,
+      - bridge lemmas:
+        `lemma_kernel_vertex_ring_succ_or_self_matches_mesh`,
+        `lemma_kernel_vertex_ring_iter_matches_mesh`,
+        `lemma_kernel_vertex_cycle_witness_matches_mesh`,
+        `lemma_kernel_vertex_manifold_matches_mesh`,
+      - constructive checker:
+        `runtime_check_vertex_manifold_kernel_bridge`.
+    - strengthened `structural_validity_gate_model_link_spec` with:
+      - `w.vertex_manifold_ok ==> mesh_vertex_representative_cycles_kernel_bridge_total_spec(m@)`.
+    - strengthened `is_structurally_valid_constructive` to source
+      `vertex_manifold_ok` from `runtime_check_vertex_manifold_kernel_bridge`
+      (instead of the external-body vertex-manifold kernel bridge), and to
+      export the new vertex-manifold model-link implication on `Some(w)`.
+    - failed attempts:
+      none in this pass.
+    - remaining gap after this increment:
+      structural model-link coverage is now complete at the current bridge
+      surface, but full model-level gate `iff` is still open because
+      face/vertex bridge predicates remain weaker than
+      `mesh_face_next_cycles_spec` / `mesh_vertex_manifold_single_cycle_spec`.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_vertex_manifold_kernel_bridge`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`101 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`101 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`135 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
 - [ ] Verify `is_valid` exactly matches `is_structurally_valid && check_euler_formula_closed_components`.
   - burndown update (2026-02-18):
