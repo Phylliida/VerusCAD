@@ -2127,6 +2127,36 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`4 passed, 0 failed`).
       `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
       passed (`6 passed, 0 failed`).
+  - burndown update (2026-02-18, reference-constructor bridge consolidation):
+    - attempted to remove constructor bridges entirely by calling
+      `Mesh::tetrahedron`, `Mesh::cube`, and `Mesh::triangular_prism` directly
+      from `src/runtime_halfedge_mesh_refinement.rs`.
+    - failed attempt (rolled back in this pass):
+      Verus rejected those direct calls because the constructor functions are
+      outside `verus!`/external and therefore ignored in proof mode.
+    - landed stable trust-surface consolidation:
+      replaced three constructor-specific external-body bridges
+      (`ex_mesh_tetrahedron`, `ex_mesh_cube`, `ex_mesh_triangular_prism`) with
+      one selector-based bridge:
+      `ex_mesh_reference_constructor(kind: usize)`.
+    - strengthened constructor wrappers to call the unified bridge:
+      - `tetrahedron_constructive_counts` uses selector `0`,
+      - `cube_constructive_counts` uses selector `1`,
+      - `triangular_prism_constructive_counts` uses selector `2`.
+    - outcome:
+      constructor behavior/proofs are unchanged, but the runtime
+      external-body constructor bridge surface is smaller and less duplicated.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`173 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh`
+      passed (`173 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh`
+      passed (`208 verified, 0 errors`);
+      `cargo test -p vcad-topology`
+      passed (`4 passed, 0 failed`);
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`6 passed, 0 failed`).
   - file: `src/halfedge_mesh.rs`
 - [x] Verify `is_valid` exactly matches `is_structurally_valid && check_euler_formula_closed_components`.
   - burndown update (2026-02-18):

@@ -1,1 +1,1 @@
-Totalized all-twin and no-isolated constructor failure paths by replacing aborts with proven Err exports and documenting the verified burndown update.
+Consolidated vcad-topology reference constructor bridges into one external-body selector path and documented the verified burndown update.

@@ -7759,21 +7759,14 @@ pub fn ex_mesh_euler_characteristics_per_component(m: &Mesh) -> (out: Vec<isize>
 }
 
 #[verifier::external_body]
-pub fn ex_mesh_tetrahedron() -> (out: Mesh)
+pub fn ex_mesh_reference_constructor(kind: usize) -> (out: Mesh)
 {
-    Mesh::tetrahedron()
-}
-
-#[verifier::external_body]
-pub fn ex_mesh_cube() -> (out: Mesh)
-{
-    Mesh::cube()
-}
-
-#[verifier::external_body]
-pub fn ex_mesh_triangular_prism() -> (out: Mesh)
-{
-    Mesh::triangular_prism()
+    match kind {
+        0 => Mesh::tetrahedron(),
+        1 => Mesh::cube(),
+        2 => Mesh::triangular_prism(),
+        _ => std::process::abort(),
+    }
 }
 
 #[allow(dead_code)]
@@ -10950,7 +10943,7 @@ pub fn tetrahedron_constructive_counts() -> (out: Option<Mesh>)
             Option::None => true,
         },
 {
-    let m = ex_mesh_tetrahedron();
+    let m = ex_mesh_reference_constructor(0);
     let counts_ok = runtime_check_mesh_counts(&m, 4, 6, 4, 12);
     if !counts_ok {
         return Option::None;
@@ -11007,7 +11000,7 @@ pub fn cube_constructive_counts() -> (out: Option<Mesh>)
             Option::None => true,
         },
 {
-    let m = ex_mesh_cube();
+    let m = ex_mesh_reference_constructor(1);
     let counts_ok = runtime_check_mesh_counts(&m, 8, 12, 6, 24);
     if !counts_ok {
         return Option::None;
@@ -11064,7 +11057,7 @@ pub fn triangular_prism_constructive_counts() -> (out: Option<Mesh>)
             Option::None => true,
         },
 {
-    let m = ex_mesh_triangular_prism();
+    let m = ex_mesh_reference_constructor(2);
     let counts_ok = runtime_check_mesh_counts(&m, 6, 9, 5, 18);
     if !counts_ok {
         return Option::None;
