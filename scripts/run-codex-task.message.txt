@@ -1,1 +1,1 @@
-Added a new negative regression for check_prev_inverse_of_next, replayed the full vcad-topology verification matrix, and documented the burndown results.
+Strengthened vcad-topology prev/next and no-degenerate runtime checker proofs to two-way completeness, documented the failed proof shapes, and revalidated full verification and tests.

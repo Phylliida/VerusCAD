@@ -962,6 +962,34 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
         (`12 passed, 0 failed`),
       - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
         passed (`13 passed, 0 failed`).
+  - burndown update (2026-02-18, checker completeness hardening):
+    - strengthened `src/runtime_halfedge_mesh_refinement.rs` so
+      `runtime_check_prev_next_inverse` is now two-way:
+      - `out ==> mesh_prev_next_inverse_spec(m@)`,
+      - `!out ==> !mesh_prev_next_inverse_spec(m@)`.
+    - stabilization/refactor:
+      added index-local helper predicate
+      `mesh_prev_next_inverse_at_spec`, then defined
+      `mesh_prev_next_inverse_spec` via that helper to stabilize trigger
+      instantiation in negative-path contradiction proofs.
+    - failed attempts (rolled back in-pass):
+      - first proof draft used `assume(...)` inside proof blocks; this was
+        rejected by the topology trust-surface guard.
+      - first helper-spec draft used `let` variables in trigger positions;
+        Verus rejected this shape (`let variables in triggers not supported`).
+      - first negative-direction witness packaging attempted direct existential
+        counterexample blocks and remained brittle; replaced with helper-spec
+        contradiction on the failing index.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_prev_next_inverse`
+      passed (`2 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`192 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`192 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`227 verified, 0 errors`);
+      `cargo test -p vcad-topology` passed (`11 passed, 0 failed`);
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`13 passed, 0 failed`).
   - file: `src/halfedge_mesh.rs`
 - [x] Verify `check_face_cycles` (closure + no overlap + min cycle length).
   - in `verus-proofs` builds, this now delegates to kernel executable `kernel_check_face_cycles`.
@@ -1209,6 +1237,26 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
   - file: `src/verified_checker_kernels.rs`
 - [x] Verify `check_no_degenerate_edges`.
   - in `verus-proofs` builds, this is delegated to verified kernel checker.
+  - burndown update (2026-02-18, checker completeness hardening):
+    - strengthened `src/runtime_halfedge_mesh_refinement.rs` so
+      `runtime_check_no_degenerate_edges` is now two-way:
+      - `out ==> mesh_no_degenerate_edges_spec(m@)`,
+      - `!out ==> !mesh_no_degenerate_edges_spec(m@)`.
+    - stabilization/refactor:
+      added index-local helper predicate
+      `mesh_no_degenerate_edges_at_spec`, then defined
+      `mesh_no_degenerate_edges_spec` via that helper to stabilize trigger
+      behavior in negative-path contradiction proofs.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_no_degenerate_edges`
+      passed (`2 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`192 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`192 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`227 verified, 0 errors`);
+      `cargo test -p vcad-topology` passed (`11 passed, 0 failed`);
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`13 passed, 0 failed`).
   - file: `src/halfedge_mesh.rs`
 - [x] Verify `check_vertex_manifold_single_cycle`.
   - in `verus-proofs` builds, this delegates to kernel executable `kernel_check_vertex_manifold_single_cycle`.
