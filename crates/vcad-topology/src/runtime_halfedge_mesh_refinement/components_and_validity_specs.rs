@@ -940,6 +940,70 @@ pub open spec fn validity_gate_model_link_spec(m: MeshModel, w: ValidityGateWitn
     })
 }
 
+#[derive(Structural, Copy, Clone, PartialEq, Eq)]
+pub struct GeometricTopologicalConsistencyGateWitness {
+    pub api_ok: bool,
+    pub phase4_valid_ok: bool,
+    pub no_zero_length_geometric_edges_ok: bool,
+    pub face_corner_non_collinearity_ok: bool,
+    pub face_coplanarity_ok: bool,
+    pub face_convexity_ok: bool,
+    pub face_plane_consistency_ok: bool,
+    pub shared_edge_local_orientation_ok: bool,
+    pub no_forbidden_face_face_intersections_ok: bool,
+    pub outward_face_normals_ok: bool,
+}
+
+pub open spec fn geometric_topological_consistency_gate_witness_spec(
+    w: GeometricTopologicalConsistencyGateWitness,
+) -> bool {
+    w.api_ok == (
+        w.phase4_valid_ok
+            && w.no_zero_length_geometric_edges_ok
+            && w.face_corner_non_collinearity_ok
+            && w.face_coplanarity_ok
+            && w.face_convexity_ok
+            && w.face_plane_consistency_ok
+            && w.shared_edge_local_orientation_ok
+            && w.no_forbidden_face_face_intersections_ok
+            && w.outward_face_normals_ok
+    )
+}
+
+pub open spec fn geometric_topological_consistency_gate_model_link_spec(
+    m: MeshModel,
+    w: GeometricTopologicalConsistencyGateWitness,
+) -> bool {
+    w.phase4_valid_ok ==> mesh_valid_spec(m)
+}
+
+#[derive(Structural, Copy, Clone, PartialEq, Eq)]
+pub struct ValidWithGeometryGateWitness {
+    pub api_ok: bool,
+    pub phase4_validity_ok: bool,
+    pub geometric_topological_consistency_ok: bool,
+}
+
+pub open spec fn valid_with_geometry_gate_witness_spec(w: ValidWithGeometryGateWitness) -> bool {
+    w.api_ok == (w.phase4_validity_ok && w.geometric_topological_consistency_ok)
+}
+
+pub open spec fn valid_with_geometry_gate_model_link_spec(
+    m: MeshModel,
+    w: ValidWithGeometryGateWitness,
+) -> bool {
+    &&& (w.phase4_validity_ok ==> exists|vw: ValidityGateWitness| {
+        &&& validity_gate_witness_spec(vw)
+        &&& validity_gate_model_link_spec(m, vw)
+        &&& vw.api_ok == w.phase4_validity_ok
+    })
+    &&& (w.geometric_topological_consistency_ok ==> exists|gw: GeometricTopologicalConsistencyGateWitness| {
+        &&& geometric_topological_consistency_gate_witness_spec(gw)
+        &&& geometric_topological_consistency_gate_model_link_spec(m, gw)
+        &&& gw.api_ok == w.geometric_topological_consistency_ok
+    })
+}
+
 #[verifier::spinoff_prover]
 pub proof fn lemma_structural_validity_gate_witness_api_ok_implies_mesh_structurally_valid(
     m: MeshModel,
@@ -1061,6 +1125,41 @@ pub proof fn lemma_validity_gate_witness_api_ok_implies_mesh_valid(
     assert(ew.api_ok ==> mesh_euler_closed_components_spec(m));
     assert(mesh_euler_closed_components_spec(m));
 
+    assert(mesh_valid_spec(m));
+}
+
+pub proof fn lemma_valid_with_geometry_gate_witness_api_ok_implies_mesh_valid(
+    m: MeshModel,
+    w: ValidWithGeometryGateWitness,
+)
+    requires
+        valid_with_geometry_gate_witness_spec(w),
+        valid_with_geometry_gate_model_link_spec(m, w),
+        w.api_ok,
+    ensures
+        mesh_valid_spec(m),
+{
+    assert(w.api_ok == (w.phase4_validity_ok && w.geometric_topological_consistency_ok));
+    assert(w.phase4_validity_ok);
+
+    assert(w.phase4_validity_ok ==> exists|vw: ValidityGateWitness| {
+        &&& validity_gate_witness_spec(vw)
+        &&& validity_gate_model_link_spec(m, vw)
+        &&& vw.api_ok == w.phase4_validity_ok
+    });
+    assert(exists|vw: ValidityGateWitness| {
+        &&& validity_gate_witness_spec(vw)
+        &&& validity_gate_model_link_spec(m, vw)
+        &&& vw.api_ok == w.phase4_validity_ok
+    });
+    let vw = choose|vw: ValidityGateWitness| {
+        &&& validity_gate_witness_spec(vw)
+        &&& validity_gate_model_link_spec(m, vw)
+        &&& vw.api_ok == w.phase4_validity_ok
+    };
+    assert(vw.api_ok == w.phase4_validity_ok);
+    assert(vw.api_ok);
+    lemma_validity_gate_witness_api_ok_implies_mesh_valid(m, vw);
     assert(mesh_valid_spec(m));
 }
 } // verus!

@@ -507,6 +507,153 @@ pub fn is_valid_constructive(
     Option::Some(w)
 }
 
+#[cfg(feature = "geometry-checks")]
+#[allow(dead_code)]
+pub fn check_geometric_topological_consistency_constructive(
+    m: &Mesh,
+) -> (out: Option<GeometricTopologicalConsistencyGateWitness>)
+    ensures
+        match out {
+            Option::Some(w) => geometric_topological_consistency_gate_witness_spec(w)
+                && geometric_topological_consistency_gate_model_link_spec(m@, w)
+                && (w.phase4_valid_ok ==> mesh_valid_spec(m@)),
+            Option::None => true,
+        },
+{
+    let validity_w = match is_valid_constructive(m) {
+        Option::Some(w) => w,
+        Option::None => return Option::None,
+    };
+
+    let phase4_valid_ok = validity_w.api_ok;
+    let no_zero_length_geometric_edges_ok = m.check_no_zero_length_geometric_edges();
+    let face_corner_non_collinearity_ok = m.check_face_corner_non_collinearity();
+    let face_coplanarity_ok = m.check_face_coplanarity();
+    let face_convexity_ok = m.check_face_convexity();
+    let face_plane_consistency_ok = m.check_face_plane_consistency();
+    let shared_edge_local_orientation_ok = m.check_shared_edge_local_orientation_consistency();
+    let no_forbidden_face_face_intersections_ok = m.check_no_forbidden_face_face_intersections();
+    let outward_face_normals_ok = m.check_outward_face_normals();
+
+    let api_ok = phase4_valid_ok
+        && no_zero_length_geometric_edges_ok
+        && face_corner_non_collinearity_ok
+        && face_coplanarity_ok
+        && face_convexity_ok
+        && face_plane_consistency_ok
+        && shared_edge_local_orientation_ok
+        && no_forbidden_face_face_intersections_ok
+        && outward_face_normals_ok;
+
+    let w = GeometricTopologicalConsistencyGateWitness {
+        api_ok,
+        phase4_valid_ok,
+        no_zero_length_geometric_edges_ok,
+        face_corner_non_collinearity_ok,
+        face_coplanarity_ok,
+        face_convexity_ok,
+        face_plane_consistency_ok,
+        shared_edge_local_orientation_ok,
+        no_forbidden_face_face_intersections_ok,
+        outward_face_normals_ok,
+    };
+
+    proof {
+        assert(validity_gate_witness_spec(validity_w));
+        assert(validity_gate_model_link_spec(m@, validity_w));
+        assert(geometric_topological_consistency_gate_witness_spec(w));
+        if w.phase4_valid_ok {
+            lemma_validity_gate_witness_api_ok_implies_mesh_valid(m@, validity_w);
+            assert(mesh_valid_spec(m@));
+        }
+        assert(geometric_topological_consistency_gate_model_link_spec(m@, w));
+        assert(w.phase4_valid_ok ==> mesh_valid_spec(m@)) by {
+            if w.phase4_valid_ok {
+                assert(mesh_valid_spec(m@));
+            }
+        };
+    }
+
+    Option::Some(w)
+}
+
+#[cfg(feature = "geometry-checks")]
+#[allow(dead_code)]
+pub fn is_valid_with_geometry_constructive(
+    m: &Mesh,
+) -> (out: Option<ValidWithGeometryGateWitness>)
+    ensures
+        match out {
+            Option::Some(w) => valid_with_geometry_gate_witness_spec(w)
+                && valid_with_geometry_gate_model_link_spec(m@, w)
+                && (w.api_ok ==> mesh_valid_spec(m@)),
+            Option::None => true,
+        },
+{
+    let validity_w = match is_valid_constructive(m) {
+        Option::Some(w) => w,
+        Option::None => return Option::None,
+    };
+
+    let geometric_w = match check_geometric_topological_consistency_constructive(m) {
+        Option::Some(w) => w,
+        Option::None => return Option::None,
+    };
+
+    let phase4_validity_ok = validity_w.api_ok;
+    let geometric_topological_consistency_ok = geometric_w.api_ok;
+    let api_ok = phase4_validity_ok && geometric_topological_consistency_ok;
+
+    let w = ValidWithGeometryGateWitness {
+        api_ok,
+        phase4_validity_ok,
+        geometric_topological_consistency_ok,
+    };
+
+    proof {
+        assert(validity_gate_witness_spec(validity_w));
+        assert(validity_gate_model_link_spec(m@, validity_w));
+        assert(geometric_topological_consistency_gate_witness_spec(geometric_w));
+        assert(geometric_topological_consistency_gate_model_link_spec(m@, geometric_w));
+        assert(valid_with_geometry_gate_witness_spec(w));
+
+        assert(exists|vw: ValidityGateWitness| {
+            &&& validity_gate_witness_spec(vw)
+            &&& validity_gate_model_link_spec(m@, vw)
+            &&& vw.api_ok == w.phase4_validity_ok
+        }) by {
+            let vw = validity_w;
+            assert(validity_gate_witness_spec(vw));
+            assert(validity_gate_model_link_spec(m@, vw));
+            assert(vw.api_ok == w.phase4_validity_ok);
+        };
+
+        assert(exists|gw: GeometricTopologicalConsistencyGateWitness| {
+            &&& geometric_topological_consistency_gate_witness_spec(gw)
+            &&& geometric_topological_consistency_gate_model_link_spec(m@, gw)
+            &&& gw.api_ok == w.geometric_topological_consistency_ok
+        }) by {
+            let gw = geometric_w;
+            assert(geometric_topological_consistency_gate_witness_spec(gw));
+            assert(geometric_topological_consistency_gate_model_link_spec(m@, gw));
+            assert(gw.api_ok == w.geometric_topological_consistency_ok);
+        };
+
+        assert(valid_with_geometry_gate_model_link_spec(m@, w));
+        if w.api_ok {
+            lemma_valid_with_geometry_gate_witness_api_ok_implies_mesh_valid(m@, w);
+            assert(mesh_valid_spec(m@));
+        }
+        assert(w.api_ok ==> mesh_valid_spec(m@)) by {
+            if w.api_ok {
+                assert(mesh_valid_spec(m@));
+            }
+        };
+    }
+
+    Option::Some(w)
+}
+
 #[allow(dead_code)]
 pub fn tetrahedron_constructive_counts() -> (out: Option<Mesh>)
     ensures

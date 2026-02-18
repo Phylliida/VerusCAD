@@ -88,7 +88,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 ## P5.8 Proof-Layer Integration (Current Refinement Layout)
 - [x] Extend `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs` with Phase 5 geometry specs.
 - [x] Add Phase 5 bridge lemmas alongside `src/runtime_halfedge_mesh_refinement/kernel_bridge_lemmas.rs`.
-- [ ] Add runtime constructive check wrappers analogous to current structural check wrappers.
+- [x] Add runtime constructive check wrappers analogous to current structural check wrappers.
 - [ ] If kernelized checkers are added, extend `src/verified_checker_kernels.rs` and prove bridge equivalence.
 - [ ] Ensure new proof modules are included from `src/runtime_halfedge_mesh_refinement.rs`.
 
@@ -139,6 +139,22 @@ This doc expands those targets into executable TODOs aligned with the current `v
   - document which Euler-operator preconditions must preserve geometric invariants versus recheck them.
 
 ## Burndown Log
+- 2026-02-18: Completed the P5.8 runtime constructive-wrapper item by adding Phase 5 constructive gate witnesses and wrappers:
+  - in `src/runtime_halfedge_mesh_refinement/components_and_validity_specs.rs`:
+    - added `GeometricTopologicalConsistencyGateWitness` + `geometric_topological_consistency_gate_witness_spec`/`geometric_topological_consistency_gate_model_link_spec`;
+    - added `ValidWithGeometryGateWitness` + `valid_with_geometry_gate_witness_spec`/`valid_with_geometry_gate_model_link_spec`;
+    - added lemma `lemma_valid_with_geometry_gate_witness_api_ok_implies_mesh_valid`.
+  - in `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`:
+    - added `check_geometric_topological_consistency_constructive(m)` (feature-gated on `geometry-checks`), returning a constructive witness that mirrors the runtime Phase 5 checker conjunction;
+    - added `is_valid_with_geometry_constructive(m)` (feature-gated on `geometry-checks`), composing Phase 4 validity witness + geometric consistency witness into a combined constructive gate witness.
+- 2026-02-18: Failed attempts in this P5.8 constructive-wrapper pass: none.
+- 2026-02-18: Revalidated after P5.8 constructive-wrapper additions:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (208 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (243 verified, 0 errors)
 - 2026-02-18: Completed the P5.6 canonical face-plane representation item in `src/halfedge_mesh/validation.rs`:
   - added `Mesh::canonicalize_plane(normal, offset)` with explicit deterministic policy:
     - pivot = first non-zero normal component in `(x, y, z)` order;
