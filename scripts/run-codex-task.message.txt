@@ -1,1 +1,1 @@
-Implemented Phase 5 face self-intersection runtime checking with adjacency exemptions, added overlapping-tetrahedron regression coverage, and updated the burndown log with full verification results.
+Added an explicit Phase 5 shared-edge local orientation checker to vcad-topology, integrated it into the aggregate geometry gate, expanded tests, and logged full revalidation in the burndown.

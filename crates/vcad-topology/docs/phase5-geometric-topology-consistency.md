@@ -51,7 +51,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [ ] Define oriented face-normal spec from face winding and plane normal.
 - [x] Define component-level outwardness criterion for closed meshes (document chosen witness, for example interior reference point / signed volume convention).
 - [x] Runtime checker: implement global orientation check (`check_outward_normals` or equivalent).
-- [ ] Runtime checker: add explicit shared-edge local orientation consistency check (adjacent faces induce opposite direction on the same geometric edge).
+- [x] Runtime checker: add explicit shared-edge local orientation consistency check (adjacent faces induce opposite direction on the same geometric edge).
 - [ ] Proof: local orientation consistency across adjacent faces via shared edges.
 - [ ] Proof: global outwardness criterion implies all faces point outward for each closed component.
 - [ ] Proof: signed-volume outwardness criterion is independent of the chosen reference origin.
@@ -139,6 +139,21 @@ This doc expands those targets into executable TODOs aligned with the current `v
   - document which Euler-operator preconditions must preserve geometric invariants versus recheck them.
 
 ## Burndown Log
+- 2026-02-18: Implemented the P5.4 shared-edge local orientation runtime checker in `src/halfedge_mesh/validation.rs`:
+  - added `Mesh::check_shared_edge_local_orientation_consistency()`, requiring each twin half-edge pair to induce opposite geometric segment directions (`start/end` swapped in exact arithmetic) and to belong to different faces;
+  - integrated this check into `Mesh::check_geometric_topological_consistency()`.
+- 2026-02-18: Extended `src/halfedge_mesh/tests.rs` for shared-edge local orientation coverage:
+  - positive fixtures (`tetrahedron`, `cube`, `triangular_prism`) now assert `check_shared_edge_local_orientation_consistency()`;
+  - `phase5_geometry_checks_require_phase4_validity` now asserts this checker returns `false` when Phase 4 validity fails;
+  - orientation-independent negatives (`flipped_face_winding_fails_outward_normal_check`, `nonadjacent_face_intersection_fails_self_intersection_checker`) now explicitly assert local shared-edge orientation still passes.
+- 2026-02-18: Failed attempt in this P5.4 pass: tried to construct a dedicated Phase-4-valid counterexample where twin half-edges do not reverse shared-edge direction, but this relation is already enforced by the current structural ring constraints (`check_twin_involution` + `check_vertex_manifold_single_cycle` via `twin/next` traversal), so no additional Phase-4-valid negative fixture was added.
+- 2026-02-18: Revalidated after P5.4 local-orientation checker integration:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (192 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (227 verified, 0 errors)
 - 2026-02-18: Implemented P5.5 runtime self-intersection checker in `src/halfedge_mesh/validation.rs`:
   - added `Mesh::check_no_forbidden_face_face_intersections()` and integrated it into `Mesh::check_geometric_topological_consistency()`;
   - checker behavior: for each non-adjacent face pair (shared-vertex pairs exempt), test edge-vs-face intersections in exact arithmetic, including coplanar overlap/touch handling via dominant-axis 2D projection and `vcad_geometry` segment intersection predicates.

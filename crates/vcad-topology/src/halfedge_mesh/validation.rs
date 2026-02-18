@@ -513,6 +513,38 @@ impl Mesh {
     }
 
     #[cfg(feature = "geometry-checks")]
+    /// Optional geometric extension: each shared edge between adjacent faces
+    /// must induce opposite geometric segment directions on twin half-edges.
+    pub fn check_shared_edge_local_orientation_consistency(&self) -> bool {
+        if !self.is_valid() {
+            return false;
+        }
+        if !self.check_index_bounds() || !self.check_face_cycles() {
+            return false;
+        }
+        if !self.check_no_zero_length_geometric_edges() {
+            return false;
+        }
+
+        for he in &self.half_edges {
+            let twin = &self.half_edges[he.twin];
+            if he.face == twin.face {
+                return false;
+            }
+
+            let he_start = &self.vertices[he.vertex].position;
+            let he_end = &self.vertices[self.half_edges[he.next].vertex].position;
+            let twin_start = &self.vertices[twin.vertex].position;
+            let twin_end = &self.vertices[self.half_edges[twin.next].vertex].position;
+            if he_start != twin_end || he_end != twin_start {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    #[cfg(feature = "geometry-checks")]
     fn point_in_convex_face_boundary(
         &self,
         point: &RuntimePoint3,
@@ -742,6 +774,7 @@ impl Mesh {
             && self.check_face_coplanarity()
             && self.check_face_convexity()
             && self.check_face_plane_consistency()
+            && self.check_shared_edge_local_orientation_consistency()
             && self.check_no_forbidden_face_face_intersections()
             && self.check_outward_face_normals()
     }
