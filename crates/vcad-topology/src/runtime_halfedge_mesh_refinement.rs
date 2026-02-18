@@ -7422,12 +7422,6 @@ pub fn ex_mesh_half_edge_components(m: &Mesh) -> (out: Vec<Vec<usize>>)
 }
 
 #[verifier::external_body]
-pub fn ex_mesh_component_count(m: &Mesh) -> (out: usize)
-{
-    m.component_count()
-}
-
-#[verifier::external_body]
 pub fn ex_mesh_euler_characteristics_per_component(m: &Mesh) -> (out: Vec<isize>)
 {
     m.euler_characteristics_per_component_for_verification()
@@ -10189,10 +10183,7 @@ pub fn component_count_constructive(
         return Option::None;
     }
 
-    let count = ex_mesh_component_count(m);
-    if count != components.len() {
-        return Option::None;
-    }
+    let count = components.len();
 
     proof {
         assert(mesh_half_edge_components_partition_spec(m@, components@));

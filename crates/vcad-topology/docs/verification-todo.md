@@ -1374,6 +1374,28 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`136 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`136 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`170 verified, 0 errors`).
+  - burndown update (2026-02-18, component-count bridge cleanup):
+    - removed the now-redundant external-body bridge
+      `ex_mesh_component_count` from
+      `src/runtime_halfedge_mesh_refinement.rs`.
+    - strengthened `component_count_constructive` to derive `count` directly
+      from the already-validated component witness (`components.len()`) instead
+      of re-calling the runtime API through an external-body bridge.
+    - rationale:
+      this shrinks the remaining external-body trust surface for connectivity
+      counting without changing exported guarantees
+      (`mesh_component_count_partition_witness_spec` and
+      `count == mesh_component_count_spec(m@)`).
+    - failed attempts:
+      none in this pass.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement component_count_constructive`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`173 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`173 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`208 verified, 0 errors`);
+      `cargo test -p vcad-topology` passed (`4 passed, 0 failed`).
   - file: `src/halfedge_mesh.rs`
 - [x] Verify `euler_characteristics_per_component` computes `V - E + F` per BFS component.
   - burndown update (2026-02-18):

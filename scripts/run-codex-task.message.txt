@@ -1,1 +1,1 @@
-Removed ex_mesh_is_structurally_valid/ex_mesh_is_valid bridge wrappers in vcad-topology and revalidated fast/full verification plus tests.
+Removed the ex_mesh_component_count external-body bridge by deriving component counts from validated component witnesses and revalidated vcad-topology proofs/tests.
