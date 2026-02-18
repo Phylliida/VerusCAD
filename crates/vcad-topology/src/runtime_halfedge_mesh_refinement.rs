@@ -658,6 +658,7 @@ pub open spec fn structural_validity_gate_model_link_spec(
     m: MeshModel,
     w: StructuralValidityGateWitness,
 ) -> bool {
+    &&& (w.index_bounds_ok ==> mesh_index_bounds_spec(m))
     &&& (w.twin_involution_ok ==> from_face_cycles_twin_assignment_total_involution_spec(m))
     &&& (w.prev_next_inverse_ok ==> mesh_prev_next_inverse_spec(m))
     &&& (w.no_degenerate_edges_ok ==> mesh_no_degenerate_edges_spec(m))
@@ -1909,6 +1910,297 @@ pub fn from_face_cycles_constructive_next_prev_face(
         }
         Result::Err(e) => Result::Err(e),
     }
+}
+
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
+pub fn runtime_check_index_bounds(m: &Mesh) -> (out: bool)
+    ensures
+        out ==> mesh_index_bounds_spec(m@),
+{
+    let vcnt = m.vertices.len();
+    let ecnt = m.edges.len();
+    let fcnt = m.faces.len();
+    let hcnt = m.half_edges.len();
+
+    let mut v: usize = 0;
+    while v < vcnt
+        invariant
+            vcnt == m.vertices.len(),
+            hcnt == m.half_edges.len(),
+            0 <= v <= vcnt,
+            forall|vp: int|
+                0 <= vp < v as int
+                    ==> 0 <= #[trigger] m@.vertex_half_edges[vp] < (hcnt as int),
+    {
+        let he = m.vertices[v].half_edge;
+        if he >= hcnt {
+            return false;
+        }
+
+        proof {
+            assert(m@.vertex_half_edges[v as int] == he as int);
+            assert(0 <= #[trigger] m@.vertex_half_edges[v as int] < (hcnt as int));
+            assert(forall|vp: int|
+                0 <= vp < (v + 1) as int
+                    ==> 0 <= #[trigger] m@.vertex_half_edges[vp] < (hcnt as int)) by {
+                assert forall|vp: int|
+                    0 <= vp < (v + 1) as int
+                        implies 0 <= #[trigger] m@.vertex_half_edges[vp] < (hcnt as int) by {
+                    if vp < v as int {
+                        assert(0 <= vp < v as int);
+                    } else {
+                        assert(vp == v as int);
+                        assert(m@.vertex_half_edges[vp] == he as int);
+                    }
+                };
+            }
+        }
+
+        v += 1;
+    }
+
+    let mut e: usize = 0;
+    while e < ecnt
+        invariant
+            ecnt == m.edges.len(),
+            hcnt == m.half_edges.len(),
+            0 <= e <= ecnt,
+            forall|ep: int|
+                0 <= ep < e as int
+                    ==> 0 <= #[trigger] m@.edge_half_edges[ep] < (hcnt as int),
+    {
+        let he = m.edges[e].half_edge;
+        if he >= hcnt {
+            return false;
+        }
+
+        proof {
+            assert(m@.edge_half_edges[e as int] == he as int);
+            assert(0 <= #[trigger] m@.edge_half_edges[e as int] < (hcnt as int));
+            assert(forall|ep: int|
+                0 <= ep < (e + 1) as int
+                    ==> 0 <= #[trigger] m@.edge_half_edges[ep] < (hcnt as int)) by {
+                assert forall|ep: int|
+                    0 <= ep < (e + 1) as int
+                        implies 0 <= #[trigger] m@.edge_half_edges[ep] < (hcnt as int) by {
+                    if ep < e as int {
+                        assert(0 <= ep < e as int);
+                    } else {
+                        assert(ep == e as int);
+                        assert(m@.edge_half_edges[ep] == he as int);
+                    }
+                };
+            }
+        }
+
+        e += 1;
+    }
+
+    let mut f: usize = 0;
+    while f < fcnt
+        invariant
+            fcnt == m.faces.len(),
+            hcnt == m.half_edges.len(),
+            0 <= f <= fcnt,
+            forall|fp: int|
+                0 <= fp < f as int
+                    ==> 0 <= #[trigger] m@.face_half_edges[fp] < (hcnt as int),
+    {
+        let he = m.faces[f].half_edge;
+        if he >= hcnt {
+            return false;
+        }
+
+        proof {
+            assert(m@.face_half_edges[f as int] == he as int);
+            assert(0 <= #[trigger] m@.face_half_edges[f as int] < (hcnt as int));
+            assert(forall|fp: int|
+                0 <= fp < (f + 1) as int
+                    ==> 0 <= #[trigger] m@.face_half_edges[fp] < (hcnt as int)) by {
+                assert forall|fp: int|
+                    0 <= fp < (f + 1) as int
+                        implies 0 <= #[trigger] m@.face_half_edges[fp] < (hcnt as int) by {
+                    if fp < f as int {
+                        assert(0 <= fp < f as int);
+                    } else {
+                        assert(fp == f as int);
+                        assert(m@.face_half_edges[fp] == he as int);
+                    }
+                };
+            }
+        }
+
+        f += 1;
+    }
+
+    let mut h: usize = 0;
+    while h < hcnt
+        invariant
+            vcnt == m.vertices.len(),
+            ecnt == m.edges.len(),
+            fcnt == m.faces.len(),
+            hcnt == m.half_edges.len(),
+            0 <= h <= hcnt,
+            forall|hp: int| 0 <= hp < h as int ==> {
+                let he = #[trigger] m@.half_edges[hp];
+                &&& 0 <= he.twin < (hcnt as int)
+                &&& 0 <= he.next < (hcnt as int)
+                &&& 0 <= he.prev < (hcnt as int)
+                &&& 0 <= he.vertex < (vcnt as int)
+                &&& 0 <= he.edge < (ecnt as int)
+                &&& 0 <= he.face < (fcnt as int)
+            },
+    {
+        let he = &m.half_edges[h];
+        if he.twin >= hcnt
+            || he.next >= hcnt
+            || he.prev >= hcnt
+            || he.vertex >= vcnt
+            || he.edge >= ecnt
+            || he.face >= fcnt
+        {
+            return false;
+        }
+
+        proof {
+            assert(m@.half_edges[h as int].twin == he.twin as int);
+            assert(m@.half_edges[h as int].next == he.next as int);
+            assert(m@.half_edges[h as int].prev == he.prev as int);
+            assert(m@.half_edges[h as int].vertex == he.vertex as int);
+            assert(m@.half_edges[h as int].edge == he.edge as int);
+            assert(m@.half_edges[h as int].face == he.face as int);
+            assert(0 <= m@.half_edges[h as int].twin < (hcnt as int));
+            assert(0 <= m@.half_edges[h as int].next < (hcnt as int));
+            assert(0 <= m@.half_edges[h as int].prev < (hcnt as int));
+            assert(0 <= m@.half_edges[h as int].vertex < (vcnt as int));
+            assert(0 <= m@.half_edges[h as int].edge < (ecnt as int));
+            assert(0 <= m@.half_edges[h as int].face < (fcnt as int));
+
+            assert(forall|hp: int| 0 <= hp < (h + 1) as int ==> {
+                let he2 = #[trigger] m@.half_edges[hp];
+                &&& 0 <= he2.twin < (hcnt as int)
+                &&& 0 <= he2.next < (hcnt as int)
+                &&& 0 <= he2.prev < (hcnt as int)
+                &&& 0 <= he2.vertex < (vcnt as int)
+                &&& 0 <= he2.edge < (ecnt as int)
+                &&& 0 <= he2.face < (fcnt as int)
+            }) by {
+                assert forall|hp: int| 0 <= hp < (h + 1) as int implies {
+                    let he2 = #[trigger] m@.half_edges[hp];
+                    &&& 0 <= he2.twin < (hcnt as int)
+                    &&& 0 <= he2.next < (hcnt as int)
+                    &&& 0 <= he2.prev < (hcnt as int)
+                    &&& 0 <= he2.vertex < (vcnt as int)
+                    &&& 0 <= he2.edge < (ecnt as int)
+                    &&& 0 <= he2.face < (fcnt as int)
+                } by {
+                    if hp < h as int {
+                        assert(0 <= hp < h as int);
+                    } else {
+                        assert(hp == h as int);
+                        assert(0 <= m@.half_edges[hp].twin < (hcnt as int));
+                        assert(0 <= m@.half_edges[hp].next < (hcnt as int));
+                        assert(0 <= m@.half_edges[hp].prev < (hcnt as int));
+                        assert(0 <= m@.half_edges[hp].vertex < (vcnt as int));
+                        assert(0 <= m@.half_edges[hp].edge < (ecnt as int));
+                        assert(0 <= m@.half_edges[hp].face < (fcnt as int));
+                    }
+                };
+            }
+        }
+
+        h += 1;
+    }
+
+    proof {
+        assert(v == vcnt);
+        assert(e == ecnt);
+        assert(f == fcnt);
+        assert(h == hcnt);
+
+        assert(mesh_vertex_count_spec(m@) == m@.vertex_half_edges.len() as int);
+        assert(mesh_edge_count_spec(m@) == m@.edge_half_edges.len() as int);
+        assert(mesh_face_count_spec(m@) == m@.face_half_edges.len() as int);
+        assert(mesh_half_edge_count_spec(m@) == m@.half_edges.len() as int);
+
+        assert(m@.vertex_half_edges.len() == m.vertices@.len());
+        assert(m@.edge_half_edges.len() == m.edges@.len());
+        assert(m@.face_half_edges.len() == m.faces@.len());
+        assert(m@.half_edges.len() == m.half_edges@.len());
+
+        assert(m.vertices@.len() == m.vertices.len());
+        assert(m.edges@.len() == m.edges.len());
+        assert(m.faces@.len() == m.faces.len());
+        assert(m.half_edges@.len() == m.half_edges.len());
+
+        assert(mesh_vertex_count_spec(m@) == vcnt as int);
+        assert(mesh_edge_count_spec(m@) == ecnt as int);
+        assert(mesh_face_count_spec(m@) == fcnt as int);
+        assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+
+        assert(forall|vp: int|
+            0 <= vp < mesh_vertex_count_spec(m@)
+                ==> 0 <= #[trigger] m@.vertex_half_edges[vp] < mesh_half_edge_count_spec(m@)) by {
+            assert forall|vp: int|
+                0 <= vp < mesh_vertex_count_spec(m@)
+                    implies 0 <= #[trigger] m@.vertex_half_edges[vp] < mesh_half_edge_count_spec(m@) by {
+                assert(mesh_vertex_count_spec(m@) == v as int);
+                assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+                assert(0 <= vp < v as int);
+            };
+        }
+        assert(forall|ep: int|
+            0 <= ep < mesh_edge_count_spec(m@)
+                ==> 0 <= #[trigger] m@.edge_half_edges[ep] < mesh_half_edge_count_spec(m@)) by {
+            assert forall|ep: int|
+                0 <= ep < mesh_edge_count_spec(m@)
+                    implies 0 <= #[trigger] m@.edge_half_edges[ep] < mesh_half_edge_count_spec(m@) by {
+                assert(mesh_edge_count_spec(m@) == e as int);
+                assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+                assert(0 <= ep < e as int);
+            };
+        }
+        assert(forall|fp: int|
+            0 <= fp < mesh_face_count_spec(m@)
+                ==> 0 <= #[trigger] m@.face_half_edges[fp] < mesh_half_edge_count_spec(m@)) by {
+            assert forall|fp: int|
+                0 <= fp < mesh_face_count_spec(m@)
+                    implies 0 <= #[trigger] m@.face_half_edges[fp] < mesh_half_edge_count_spec(m@) by {
+                assert(mesh_face_count_spec(m@) == f as int);
+                assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+                assert(0 <= fp < f as int);
+            };
+        }
+        assert(forall|hp: int| 0 <= hp < mesh_half_edge_count_spec(m@) ==> {
+            let he = #[trigger] m@.half_edges[hp];
+            &&& 0 <= he.twin < mesh_half_edge_count_spec(m@)
+            &&& 0 <= he.next < mesh_half_edge_count_spec(m@)
+            &&& 0 <= he.prev < mesh_half_edge_count_spec(m@)
+            &&& 0 <= he.vertex < mesh_vertex_count_spec(m@)
+            &&& 0 <= he.edge < mesh_edge_count_spec(m@)
+            &&& 0 <= he.face < mesh_face_count_spec(m@)
+        }) by {
+            assert forall|hp: int| 0 <= hp < mesh_half_edge_count_spec(m@) implies {
+                let he = #[trigger] m@.half_edges[hp];
+                &&& 0 <= he.twin < mesh_half_edge_count_spec(m@)
+                &&& 0 <= he.next < mesh_half_edge_count_spec(m@)
+                &&& 0 <= he.prev < mesh_half_edge_count_spec(m@)
+                &&& 0 <= he.vertex < mesh_vertex_count_spec(m@)
+                &&& 0 <= he.edge < mesh_edge_count_spec(m@)
+                &&& 0 <= he.face < mesh_face_count_spec(m@)
+            } by {
+                assert(mesh_half_edge_count_spec(m@) == h as int);
+                assert(mesh_vertex_count_spec(m@) == vcnt as int);
+                assert(mesh_edge_count_spec(m@) == ecnt as int);
+                assert(mesh_face_count_spec(m@) == fcnt as int);
+                assert(0 <= hp < h as int);
+            };
+        }
+        assert(mesh_index_bounds_spec(m@));
+    }
+
+    true
 }
 
 #[verifier::exec_allows_no_decreases_clause]
@@ -4554,7 +4846,7 @@ pub fn is_structurally_valid_constructive(
     let face_count_positive = !m.faces.is_empty();
     let half_edge_count_positive = !m.half_edges.is_empty();
 
-    let index_bounds_ok = ex_mesh_check_index_bounds_via_kernel(m);
+    let index_bounds_ok = runtime_check_index_bounds(m);
     let twin_involution_ok = runtime_check_twin_assignment_total_involution(m);
     let prev_next_inverse_ok = runtime_check_prev_next_inverse(m);
     let face_cycles_ok = ex_mesh_check_face_cycles_via_kernel(m);
@@ -4596,6 +4888,9 @@ pub fn is_structurally_valid_constructive(
     proof {
         assert(api_ok == formula_ok);
         assert(structural_validity_gate_witness_spec(w));
+        if w.index_bounds_ok {
+            assert(mesh_index_bounds_spec(m@));
+        }
         if w.twin_involution_ok {
             assert(from_face_cycles_twin_assignment_total_involution_spec(m@));
         }

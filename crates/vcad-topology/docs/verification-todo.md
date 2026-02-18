@@ -944,6 +944,30 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`80 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`80 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`114 verified, 0 errors`).
+  - burndown update (2026-02-18, index-bounds model-link increment):
+    - landed new constructive checker in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      `runtime_check_index_bounds` with guarantee
+      `out ==> mesh_index_bounds_spec(m@)`.
+    - strengthened `structural_validity_gate_model_link_spec` with:
+      - `w.index_bounds_ok ==> mesh_index_bounds_spec(m@)`.
+    - strengthened `is_structurally_valid_constructive` to source
+      `index_bounds_ok` from `runtime_check_index_bounds` (instead of the
+      external-body kernel bridge), and to export the new index-bounds
+      model-link implication through its `Some(w)` postcondition.
+    - remaining gap after this increment:
+      model-link export is still partial (face-cycles/vertex-manifold clauses
+      remain unlinked at model level), so full model-level gate `iff` remains
+      open.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_index_bounds`
+      passed (`5 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement is_structurally_valid_constructive`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`85 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`85 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`119 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
 - [ ] Verify `is_valid` exactly matches `is_structurally_valid && check_euler_formula_closed_components`.
   - burndown update (2026-02-18):
