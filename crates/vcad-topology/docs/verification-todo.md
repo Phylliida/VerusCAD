@@ -2286,6 +2286,47 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`5 passed, 0 failed`);
       `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
       passed (`6 passed, 0 failed`).
+  - burndown update (2026-02-18, face-cycle checker postcondition hardening):
+    - selected task in this pass:
+      continue section F hardening by making the face-cycle kernel bridge
+      checker export the final mesh-model clause directly.
+    - strengthened
+      `runtime_check_face_cycles_kernel_bridge` in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      - postcondition changed from
+        `out ==> mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_total_spec(m@)`
+        to
+        `out ==> mesh_face_next_cycles_spec(m@)`,
+      - checker proof now finishes with
+        `lemma_face_bridge_total_implies_face_next_cycles(m@)` and packages
+        the final face-cycle model predicate at the checker boundary.
+    - simplified `is_structurally_valid_constructive` proof packaging:
+      when `w.face_cycles_ok`, it now consumes the strengthened checker
+      postcondition directly instead of re-lifting from the intermediate
+      bridge-total predicate.
+    - failed attempts:
+      none in this pass.
+    - operational note:
+      parallel test invocations printed
+      `Blocking waiting for file lock on build directory` / artifact directory
+      and then completed successfully.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_face_cycles_kernel_bridge`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement is_structurally_valid_constructive`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`191 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh`
+      passed (`191 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh`
+      passed (`226 verified, 0 errors`);
+      `cargo test -p vcad-topology`
+      passed (`4 passed, 0 failed`);
+      `cargo test -p vcad-topology --features geometry-checks`
+      passed (`5 passed, 0 failed`);
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`6 passed, 0 failed`).
   - file: `src/halfedge_mesh.rs`
 - [x] Verify `is_valid` exactly matches `is_structurally_valid && check_euler_formula_closed_components`.
   - burndown update (2026-02-18):

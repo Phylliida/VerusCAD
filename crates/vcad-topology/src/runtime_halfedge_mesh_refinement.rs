@@ -8119,7 +8119,7 @@ pub fn runtime_mesh_to_kernel_mesh(m: &Mesh) -> (km: kernels::KernelMesh)
 #[allow(dead_code)]
 pub fn runtime_check_face_cycles_kernel_bridge(m: &Mesh) -> (out: bool)
     ensures
-        out ==> mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_total_spec(m@),
+        out ==> mesh_face_next_cycles_spec(m@),
 {
     let km = runtime_mesh_to_kernel_mesh(m);
     let ok = kernels::kernel_check_face_cycles(&km);
@@ -8130,6 +8130,8 @@ pub fn runtime_check_face_cycles_kernel_bridge(m: &Mesh) -> (out: bool)
         assert(kernels::kernel_face_representative_cycles_cover_all_half_edges_total_spec(&km));
         lemma_kernel_face_cycles_cover_all_matches_mesh(&km, m@);
         assert(mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_total_spec(m@));
+        lemma_face_bridge_total_implies_face_next_cycles(m@);
+        assert(mesh_face_next_cycles_spec(m@));
     }
     true
 }
@@ -11289,8 +11291,6 @@ pub fn is_structurally_valid_constructive(
             assert(mesh_prev_next_inverse_spec(m@));
         }
         if w.face_cycles_ok {
-            assert(mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_total_spec(m@));
-            lemma_face_bridge_total_implies_face_next_cycles(m@);
             assert(mesh_face_next_cycles_spec(m@));
         }
         if w.no_degenerate_edges_ok {

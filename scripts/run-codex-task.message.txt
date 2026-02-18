@@ -1,1 +1,1 @@
-Replayed the vcad-topology exit-condition trust-surface scans and full verification/test matrix and documented the clean results in the burndown.
+Hardened the face-cycle kernel bridge checker to export mesh_face_next_cycles_spec directly, simplified structural-validity proof packaging, and documented the successful verification/test matrix in the burndown.
