@@ -684,6 +684,236 @@ pub open spec fn mesh_point_satisfies_plane_relative_to_origin_spec(
 }
 
 #[cfg(verus_keep_ghost)]
+pub open spec fn mesh_face_seed_plane_normal_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+    seed_i: int,
+) -> vcad_math::vec3::Vec3 {
+    let p0 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, seed_i);
+    let p1 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, seed_i + 1);
+    let p2 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, seed_i + 2);
+    p1.sub_spec(p0).cross_spec(p2.sub_spec(p0))
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_face_seed_plane_offset_relative_to_origin_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+    seed_i: int,
+) -> vcad_math::scalar::Scalar {
+    let p0 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, seed_i);
+    mesh_plane_offset_relative_to_origin_spec(
+        mesh_face_seed_plane_normal_spec(m, vertex_positions, f, seed_i),
+        p0,
+    )
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_point_plane_value_relative_to_origin_matches_relative_dot(
+    normal: vcad_math::vec3::Vec3,
+    plane_point: vcad_math::point3::Point3,
+    point: vcad_math::point3::Point3,
+)
+    ensures
+        mesh_point_plane_value_relative_to_origin_spec(
+            normal,
+            mesh_plane_offset_relative_to_origin_spec(normal, plane_point),
+            point,
+        ).eqv_spec(normal.dot_spec(point.sub_spec(plane_point))),
+{
+    let origin = vcad_math::point3::Point3::from_ints_spec(0, 0, 0);
+    let point_from_origin = point.sub_spec(origin);
+    let plane_from_origin = plane_point.sub_spec(origin);
+    let point_from_plane = point.sub_spec(plane_point);
+    let point_from_plane_plus_origin = point_from_plane.add_spec(plane_from_origin);
+    let dot_point_from_origin = normal.dot_spec(point_from_origin);
+    let dot_point_from_plane = normal.dot_spec(point_from_plane);
+    let dot_plane_from_origin = normal.dot_spec(plane_from_origin);
+    let dot_split = normal.dot_spec(point_from_plane_plus_origin);
+
+    vcad_math::point3::Point3::lemma_sub_chain_eqv(point, plane_point, origin);
+    vcad_math::vec3::Vec3::lemma_eqv_from_components(point_from_origin, point_from_plane_plus_origin);
+    vcad_math::vec3::Vec3::lemma_dot_eqv_congruence(
+        normal,
+        normal,
+        point_from_origin,
+        point_from_plane_plus_origin,
+    );
+    vcad_math::vec3::Vec3::lemma_dot_linear_right(normal, point_from_plane, plane_from_origin);
+    assert(dot_point_from_origin.eqv_spec(dot_split));
+    assert(dot_split.eqv_spec(dot_point_from_plane.add_spec(dot_plane_from_origin)));
+    vcad_math::scalar::Scalar::lemma_eqv_transitive(
+        dot_point_from_origin,
+        dot_split,
+        dot_point_from_plane.add_spec(dot_plane_from_origin),
+    );
+    assert(dot_point_from_origin.eqv_spec(dot_point_from_plane.add_spec(dot_plane_from_origin)));
+
+    vcad_math::scalar::Scalar::lemma_eqv_sub_congruence(
+        dot_point_from_origin,
+        dot_point_from_plane.add_spec(dot_plane_from_origin),
+        dot_plane_from_origin,
+        dot_plane_from_origin,
+    );
+    assert(
+        dot_point_from_origin.sub_spec(dot_plane_from_origin).eqv_spec(
+            dot_point_from_plane.add_spec(dot_plane_from_origin).sub_spec(dot_plane_from_origin)
+        )
+    );
+
+    vcad_math::scalar::Scalar::lemma_add_commutative(dot_point_from_plane, dot_plane_from_origin);
+    vcad_math::scalar::Scalar::lemma_eqv_sub_congruence(
+        dot_point_from_plane.add_spec(dot_plane_from_origin),
+        dot_plane_from_origin.add_spec(dot_point_from_plane),
+        dot_plane_from_origin,
+        dot_plane_from_origin,
+    );
+    vcad_math::scalar::Scalar::lemma_add_then_sub_cancel(dot_plane_from_origin, dot_point_from_plane);
+
+    vcad_math::scalar::Scalar::lemma_eqv_transitive(
+        dot_point_from_origin.sub_spec(dot_plane_from_origin),
+        dot_point_from_plane.add_spec(dot_plane_from_origin).sub_spec(dot_plane_from_origin),
+        dot_plane_from_origin.add_spec(dot_point_from_plane).sub_spec(dot_plane_from_origin),
+    );
+    vcad_math::scalar::Scalar::lemma_eqv_transitive(
+        dot_point_from_origin.sub_spec(dot_plane_from_origin),
+        dot_plane_from_origin.add_spec(dot_point_from_plane).sub_spec(dot_plane_from_origin),
+        dot_point_from_plane,
+    );
+
+    assert(mesh_plane_offset_relative_to_origin_spec(normal, plane_point) == dot_plane_from_origin);
+    assert(
+        mesh_point_plane_value_relative_to_origin_spec(
+            normal,
+            mesh_plane_offset_relative_to_origin_spec(normal, plane_point),
+            point,
+        ).eqv_spec(dot_point_from_plane)
+    );
+    assert(dot_point_from_plane == normal.dot_spec(point.sub_spec(plane_point)));
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_face_coplanar_witness_seed_plane_contains_vertices(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+    k: int,
+    seed_i: int,
+)
+    requires
+        mesh_face_coplanar_witness_spec(m, vertex_positions, f, k),
+        0 <= seed_i,
+        seed_i + 2 < k,
+    ensures
+        mesh_face_plane_contains_vertex_witness_spec(
+            m,
+            vertex_positions,
+            f,
+            k,
+            mesh_face_seed_plane_normal_spec(m, vertex_positions, f, seed_i),
+            mesh_face_seed_plane_offset_relative_to_origin_spec(m, vertex_positions, f, seed_i),
+        ),
+{
+    let p0 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, seed_i);
+    let p1 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, seed_i + 1);
+    let p2 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, seed_i + 2);
+    let normal = mesh_face_seed_plane_normal_spec(m, vertex_positions, f, seed_i);
+    let offset = mesh_face_seed_plane_offset_relative_to_origin_spec(m, vertex_positions, f, seed_i);
+    let ba = p1.sub_spec(p0);
+    let ca = p2.sub_spec(p0);
+
+    assert(mesh_index_bounds_spec(m));
+    assert(mesh_geometry_input_spec(m, vertex_positions));
+    assert(0 <= f < mesh_face_count_spec(m));
+    assert(mesh_face_cycle_witness_spec(m, f, k));
+
+    assert forall|j: int| 0 <= j < k implies #[trigger] mesh_point_satisfies_plane_relative_to_origin_spec(
+        normal,
+        offset,
+        mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, j),
+    ) by {
+        let pj = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, j);
+        let da = pj.sub_spec(p0);
+        let orient = vcad_math::orientation3::orient3d_spec(p0, p1, p2, pj);
+        let plane_value = mesh_point_plane_value_relative_to_origin_spec(normal, offset, pj);
+
+        assert(0 <= seed_i < k);
+        assert(0 <= seed_i + 1 < k);
+        assert(0 <= seed_i + 2 < k);
+        assert(vcad_math::orientation3::is_coplanar(p0, p1, p2, pj));
+        assert(orient.signum() == 0);
+
+        lemma_mesh_point_plane_value_relative_to_origin_matches_relative_dot(normal, p0, pj);
+        assert(plane_value.eqv_spec(normal.dot_spec(da)));
+
+        vcad_math::vec3::Vec3::lemma_dot_symmetric(normal, da);
+        vcad_math::vec3::Vec3::lemma_dot_cross_cyclic(da, ba, ca);
+        assert(da.dot_spec(ba.cross_spec(ca)).eqv_spec(orient));
+        assert(da.dot_spec(normal).eqv_spec(orient));
+        vcad_math::scalar::Scalar::lemma_eqv_transitive(
+            normal.dot_spec(da),
+            da.dot_spec(normal),
+            orient,
+        );
+        assert(normal.dot_spec(da).eqv_spec(orient));
+        vcad_math::scalar::Scalar::lemma_eqv_transitive(
+            plane_value,
+            normal.dot_spec(da),
+            orient,
+        );
+        assert(plane_value.eqv_spec(orient));
+        vcad_math::scalar::Scalar::lemma_eqv_signum(plane_value, orient);
+        assert(plane_value.signum() == orient.signum());
+        assert(plane_value.signum() == 0);
+    };
+
+    assert(mesh_face_plane_contains_vertex_witness_spec(m, vertex_positions, f, k, normal, offset));
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_face_coplanar_spec_implies_seed0_plane_contains_vertices(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+)
+    requires
+        mesh_face_coplanar_spec(m, vertex_positions, f),
+    ensures
+        face_plane_contains_vertex_spec(
+            m,
+            vertex_positions,
+            f,
+            mesh_face_seed_plane_normal_spec(m, vertex_positions, f, 0),
+            mesh_face_seed_plane_offset_relative_to_origin_spec(m, vertex_positions, f, 0),
+        ),
+{
+    let k = choose|k: int| mesh_face_coplanar_witness_spec(m, vertex_positions, f, k);
+    assert(mesh_face_coplanar_witness_spec(m, vertex_positions, f, k));
+    assert(3 <= k);
+    lemma_mesh_face_coplanar_witness_seed_plane_contains_vertices(m, vertex_positions, f, k, 0);
+    assert(face_plane_contains_vertex_spec(
+        m,
+        vertex_positions,
+        f,
+        mesh_face_seed_plane_normal_spec(m, vertex_positions, f, 0),
+        mesh_face_seed_plane_offset_relative_to_origin_spec(m, vertex_positions, f, 0),
+    )) by {
+        assert(0 <= f < mesh_face_count_spec(m));
+        let kw = k;
+        assert(mesh_face_plane_contains_vertex_witness_spec(
+            m,
+            vertex_positions,
+            f,
+            kw,
+            mesh_face_seed_plane_normal_spec(m, vertex_positions, f, 0),
+            mesh_face_seed_plane_offset_relative_to_origin_spec(m, vertex_positions, f, 0),
+        ));
+    };
+}
+
+#[cfg(verus_keep_ghost)]
 pub open spec fn mesh_face_plane_contains_vertex_witness_spec(
     m: MeshModel,
     vertex_positions: Seq<vcad_math::point3::Point3>,

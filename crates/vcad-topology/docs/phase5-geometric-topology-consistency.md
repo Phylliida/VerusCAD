@@ -72,7 +72,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [x] Handle face-normal seed selection robustly (first non-collinear triple or explicit precondition).
 - [x] Spec: `face_plane_contains_vertex_spec` for every vertex on the face.
 - [x] Define canonical face-plane representation for comparisons (`normal` sign/scale normalization policy).
-- [ ] Proof: computed plane contains all vertices of that face (using coplanarity invariant).
+- [x] Proof: computed plane contains all vertices of that face (using coplanarity invariant).
 - [ ] Proof: computed normal direction matches face orientation/winding.
 - [ ] Proof: twin/adjacent orientation interactions agree with plane-normal conventions.
 - [ ] Proof: canonicalized plane is stable under cyclic face reindexing and seed-triple choice.
@@ -139,6 +139,23 @@ This doc expands those targets into executable TODOs aligned with the current `v
   - document which Euler-operator preconditions must preserve geometric invariants versus recheck them.
 
 ## Burndown Log
+- 2026-02-18: Completed the P5.6 plane-containment proof item in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
+  - added seed-plane helpers:
+    - `mesh_face_seed_plane_normal_spec`
+    - `mesh_face_seed_plane_offset_relative_to_origin_spec`
+  - added algebra bridge lemma `lemma_mesh_point_plane_value_relative_to_origin_matches_relative_dot`, proving the origin-offset plane-value form is equivalent to `normal · (point - plane_point)`;
+  - proved `lemma_mesh_face_coplanar_witness_seed_plane_contains_vertices`, deriving per-face plane containment from any coplanarity witness + seed index;
+  - added wrapper lemma `lemma_mesh_face_coplanar_spec_implies_seed0_plane_contains_vertices`, producing `face_plane_contains_vertex_spec` from `mesh_face_coplanar_spec`.
+- 2026-02-18: Failed attempts in this P5.6 plane-containment pass:
+  - first proof revision had Verus parser failures from malformed multiline `assert(...)` punctuation in the new lemma block;
+  - after fixing parser issues, one helper-lemma step still failed (`dot_point_from_origin.eqv_spec(...)`) due a missing explicit transitive `eqv` chain; resolved by introducing an intermediate split-dot term and `Scalar::lemma_eqv_transitive`.
+- 2026-02-18: Revalidated after the P5.6 plane-containment proof additions:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (211 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology.sh` (246 verified, 0 errors)
 - 2026-02-18: Completed the P5.8 runtime constructive-wrapper item by adding Phase 5 constructive gate witnesses and wrappers:
   - in `src/runtime_halfedge_mesh_refinement/components_and_validity_specs.rs`:
     - added `GeometricTopologicalConsistencyGateWitness` + `geometric_topological_consistency_gate_witness_spec`/`geometric_topological_consistency_gate_model_link_spec`;

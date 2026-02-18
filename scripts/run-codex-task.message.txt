@@ -1,1 +1,1 @@
-Completed the P5.6 canonical face-plane representation task in vcad-topology by adding deterministic plane sign/scale normalization APIs, cycle-rotation invariance regression checks, and full revalidation (240 proofs verified).
+Completed the P5.6 plane-containment burndown task in vcad-topology by proving coplanarity-derived face-plane vertex containment lemmas in the refinement layer with passing tests and full Verus revalidation (246 verified, 0 errors).
