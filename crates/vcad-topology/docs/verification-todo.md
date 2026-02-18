@@ -928,6 +928,40 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
   - file: `src/halfedge_mesh.rs`
 - [x] Verify `check_prev_inverse_of_next`.
   - in `verus-proofs` builds, this is delegated to verified kernel checker.
+  - burndown update (2026-02-18, prev/next inverse negative-regression hardening + matrix replay):
+    - selected task in this pass:
+      harden the completed `check_prev_inverse_of_next` boundary with an
+      explicit negative runtime regression, then replay the full
+      `vcad-topology` verification/test matrix.
+    - run timestamp:
+      `2026-02-18T09:10:03-08:00`.
+    - code hardening:
+      in `src/halfedge_mesh.rs`, added
+      `broken_prev_next_inverse_fails_prev_inverse_check`.
+      the test builds an index-valid mesh with inconsistent `next/prev`
+      linkage and asserts:
+      - `check_prev_inverse_of_next()` is `false`,
+      - `check_prev_inverse_of_next_via_kernel()` is also `false` in
+        `verus-proofs` builds.
+    - failed attempts:
+      none in this pass.
+    - warning-scope note:
+      all `cargo test -p vcad-topology` invocations in this pass emitted
+      warnings only from dependency crates (`vstd`, `vcad-math`,
+      `vcad-geometry`), with no warnings from `vcad-topology`.
+    - verification checks:
+      `cargo test -p vcad-topology broken_prev_next_inverse_fails_prev_inverse_check -- --nocapture`
+      passed (`1 passed, 0 failed`);
+      `./scripts/verify-vcad-topology-matrix.sh`
+      passed:
+      - trust-surface guard passed,
+      - fast verification passed (`192 verified, 0 errors` partial),
+      - full verification passed (`227 verified, 0 errors`),
+      - `cargo test -p vcad-topology` passed (`11 passed, 0 failed`),
+      - `cargo test -p vcad-topology --features geometry-checks` passed
+        (`12 passed, 0 failed`),
+      - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+        passed (`13 passed, 0 failed`).
   - file: `src/halfedge_mesh.rs`
 - [x] Verify `check_face_cycles` (closure + no overlap + min cycle length).
   - in `verus-proofs` builds, this now delegates to kernel executable `kernel_check_face_cycles`.

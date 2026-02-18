@@ -1,1 +1,1 @@
-Replayed the full vcad-topology exit-condition verification matrix and logged a fresh trust-surface snapshot in verification-todo.md.
+Added a new negative regression for check_prev_inverse_of_next, replayed the full vcad-topology verification matrix, and documented the burndown results.
