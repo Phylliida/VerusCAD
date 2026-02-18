@@ -264,6 +264,14 @@ pub open spec fn kernel_face_representative_cycle_witness_spec(m: &KernelMesh, f
     &&& forall|i: int|
         0 <= i < k ==> #[trigger] m.half_edges@[kernel_next_iter_spec(m, start, i as nat)].face as int
             == f
+    &&& forall|i: int, j: int|
+        #![trigger kernel_next_iter_spec(m, start, i as nat), kernel_next_iter_spec(m, start, j as nat)]
+        0 <= i < j < k
+            ==> kernel_next_iter_spec(m, start, i as nat) != kernel_next_iter_spec(
+                m,
+                start,
+                j as nat,
+            )
 }
 
 pub open spec fn kernel_face_representative_cycles_spec(m: &KernelMesh) -> bool {
@@ -798,6 +806,11 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
         if m.half_edges[start].face != f {
             return false;
         }
+        assert(start < hcnt);
+        proof {
+            assert(0 <= start as int);
+            assert((start as int) < (hcnt as int));
+        }
         let ghost global_seen_before = global_seen@;
         proof {
             assert(forall|hp: int|
@@ -830,6 +843,7 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
                 0 <= steps <= hcnt,
                 global_seen@.len() == hcnt as int,
                 local_seen@.len() == hcnt as int,
+                start < hcnt,
                 0 <= h < hcnt,
                 h as int == kernel_next_iter_spec(m, start as int, steps as nat),
                 closed ==> h == start,
@@ -849,6 +863,17 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
                         start as int,
                         i as nat,
                     )].face as int == f as int,
+                forall|i: int|
+                    0 <= i < steps as int ==> #[trigger] local_seen@[kernel_next_iter_spec(
+                        m,
+                        start as int,
+                        i as nat,
+                    )],
+                forall|i: int, j: int|
+                    #![trigger kernel_next_iter_spec(m, start as int, i as nat), kernel_next_iter_spec(m, start as int, j as nat)]
+                    0 <= i < j < steps as int
+                        ==> kernel_next_iter_spec(m, start as int, i as nat)
+                            != kernel_next_iter_spec(m, start as int, j as nat),
         {
             let h_prev = h;
             let steps_prev = steps;
@@ -876,6 +901,7 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
             proof {
                 assert(steps == steps_prev + 1);
                 assert(h_prev as int == kernel_next_iter_spec(m, start as int, steps_prev as nat));
+                assert(!local_seen_before[h_prev as int]);
 
                 lemma_kernel_next_iter_step(m, start as int, steps_prev as nat);
                 assert(0 <= h_prev as int);
@@ -977,6 +1003,74 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
                         }
                     };
                 };
+                assert(forall|i: int|
+                    0 <= i < steps as int ==> #[trigger] local_seen@[kernel_next_iter_spec(
+                        m,
+                        start as int,
+                        i as nat,
+                    )]) by {
+                    assert forall|i: int|
+                        0 <= i < steps as int implies #[trigger] local_seen@[kernel_next_iter_spec(
+                            m,
+                            start as int,
+                            i as nat,
+                        )] by {
+                        if i < steps_prev as int {
+                            let hi = kernel_next_iter_spec(m, start as int, i as nat);
+                            assert(kernel_half_edge_count_spec(m) == hcnt as int);
+                            assert(0 <= start as int);
+                            assert((start as int) < kernel_half_edge_count_spec(m));
+                            lemma_kernel_next_iter_in_bounds(m, start as int, i as nat);
+                            assert(0 <= hi);
+                            assert(hi < hcnt as int);
+                            assert(local_seen_before[hi]);
+                            if hi == h_prev as int {
+                                assert(local_seen@[hi]);
+                            } else {
+                                assert(hi != h_prev as int);
+                                assert(local_seen@[hi] == local_seen_before[hi]);
+                                assert(local_seen@[hi]);
+                            }
+                        } else {
+                            assert(i == steps_prev as int);
+                            assert(kernel_next_iter_spec(m, start as int, i as nat)
+                                == kernel_next_iter_spec(m, start as int, steps_prev as nat));
+                            assert(kernel_next_iter_spec(m, start as int, steps_prev as nat)
+                                == h_prev as int);
+                            assert(local_seen@[h_prev as int]);
+                        }
+                    };
+                };
+                assert(forall|i: int, j: int|
+                    #![trigger kernel_next_iter_spec(m, start as int, i as nat), kernel_next_iter_spec(m, start as int, j as nat)]
+                    0 <= i < j < steps as int
+                        ==> kernel_next_iter_spec(m, start as int, i as nat)
+                            != kernel_next_iter_spec(m, start as int, j as nat)) by {
+                    assert forall|i: int, j: int|
+                        #![trigger kernel_next_iter_spec(m, start as int, i as nat), kernel_next_iter_spec(m, start as int, j as nat)]
+                        0 <= i < j < steps as int
+                            implies kernel_next_iter_spec(m, start as int, i as nat)
+                                != kernel_next_iter_spec(m, start as int, j as nat) by {
+                        if j < steps_prev as int {
+                            assert(kernel_next_iter_spec(m, start as int, i as nat)
+                                != kernel_next_iter_spec(m, start as int, j as nat));
+                        } else {
+                            assert(j == steps_prev as int);
+                            assert(kernel_next_iter_spec(m, start as int, j as nat)
+                                == kernel_next_iter_spec(m, start as int, steps_prev as nat));
+                            assert(kernel_next_iter_spec(m, start as int, steps_prev as nat)
+                                == h_prev as int);
+                            let hi = kernel_next_iter_spec(m, start as int, i as nat);
+                            assert(local_seen_before[hi]);
+                            if hi == h_prev as int {
+                                assert(local_seen_before[h_prev as int]);
+                                assert(false);
+                            }
+                            assert(hi != h_prev as int);
+                            assert(hi != kernel_next_iter_spec(m, start as int, j as nat));
+                        }
+                    };
+                };
             }
 
             if h == start {
@@ -1058,6 +1152,24 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
                                     s,
                                     i as nat,
                                 )].face as int == f as int);
+                            assert(forall|i: int, j: int|
+                                #![trigger kernel_next_iter_spec(m, s, i as nat), kernel_next_iter_spec(m, s, j as nat)]
+                                0 <= i < j < steps as int
+                                    ==> kernel_next_iter_spec(m, s, i as nat)
+                                        != kernel_next_iter_spec(m, s, j as nat)) by {
+                                assert forall|i: int, j: int|
+                                    #![trigger kernel_next_iter_spec(m, s, i as nat), kernel_next_iter_spec(m, s, j as nat)]
+                                    0 <= i < j < steps as int
+                                        implies kernel_next_iter_spec(m, s, i as nat)
+                                            != kernel_next_iter_spec(m, s, j as nat) by {
+                                    assert(kernel_next_iter_spec(m, s, i as nat)
+                                        == kernel_next_iter_spec(m, start as int, i as nat));
+                                    assert(kernel_next_iter_spec(m, s, j as nat)
+                                        == kernel_next_iter_spec(m, start as int, j as nat));
+                                    assert(kernel_next_iter_spec(m, start as int, i as nat)
+                                        != kernel_next_iter_spec(m, start as int, j as nat));
+                                };
+                            };
                         }
                         assert(kernel_face_representative_cycle_witness_spec(
                             m,

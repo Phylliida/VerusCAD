@@ -312,41 +312,61 @@ pub open spec fn mesh_face_representative_cycle_kernel_bridge_witness_spec(
     &&& mesh_next_iter_spec(m, start, k as nat) == start
     &&& forall|i: int|
         0 <= i < k ==> #[trigger] m.half_edges[mesh_next_iter_spec(m, start, i as nat)].face == f
+    &&& forall|i: int, j: int|
+        #![trigger mesh_next_iter_spec(m, start, i as nat), mesh_next_iter_spec(m, start, j as nat)]
+        0 <= i < j < k
+            ==> mesh_next_iter_spec(m, start, i as nat) != mesh_next_iter_spec(
+                m,
+                start,
+                j as nat,
+            )
 }
 
 pub open spec fn mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_spec(
     m: MeshModel,
 ) -> bool {
     exists|face_cycle_lens: Seq<usize>, covered: Seq<bool>| {
-        &&& face_cycle_lens.len() == mesh_face_count_spec(m)
-        &&& covered.len() == mesh_half_edge_count_spec(m)
-        &&& forall|f: int|
-            #![trigger face_cycle_lens[f]]
-            0 <= f < mesh_face_count_spec(m)
-                ==> mesh_face_representative_cycle_kernel_bridge_witness_spec(
-                    m,
-                    f,
-                    face_cycle_lens[f] as int,
-                )
-        &&& forall|h: int|
-            #![trigger h + 0]
-            0 <= h < mesh_half_edge_count_spec(m) && #[trigger] covered[h]
-                ==> exists|f: int, i: int| {
-                    &&& 0 <= f < mesh_face_count_spec(m)
-                    &&& 0 <= i < face_cycle_lens[f] as int
-                    &&& #[trigger] mesh_next_iter_spec(m, m.face_half_edges[f], i as nat) == h
-                }
-        &&& forall|h: int| 0 <= h < mesh_half_edge_count_spec(m) ==> #[trigger] covered[h]
-        &&& forall|f1: int, i1: int, f2: int, i2: int|
-            #![trigger mesh_next_iter_spec(m, m.face_half_edges[f1], i1 as nat), mesh_next_iter_spec(m, m.face_half_edges[f2], i2 as nat)]
-            0 <= f1 < mesh_face_count_spec(m)
-                && 0 <= f2 < mesh_face_count_spec(m)
-                && 0 <= i1 < face_cycle_lens[f1] as int
-                && 0 <= i2 < face_cycle_lens[f2] as int
-                && mesh_next_iter_spec(m, m.face_half_edges[f1], i1 as nat)
-                    == mesh_next_iter_spec(m, m.face_half_edges[f2], i2 as nat)
-                ==> f1 == f2
+        mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_witness_spec(
+            m,
+            face_cycle_lens,
+            covered,
+        )
     }
+}
+
+pub open spec fn mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_witness_spec(
+    m: MeshModel,
+    face_cycle_lens: Seq<usize>,
+    covered: Seq<bool>,
+) -> bool {
+    &&& face_cycle_lens.len() == mesh_face_count_spec(m)
+    &&& covered.len() == mesh_half_edge_count_spec(m)
+    &&& forall|f: int|
+        #![trigger face_cycle_lens[f]]
+        0 <= f < mesh_face_count_spec(m)
+            ==> mesh_face_representative_cycle_kernel_bridge_witness_spec(
+                m,
+                f,
+                face_cycle_lens[f] as int,
+            )
+    &&& forall|h: int|
+        #![trigger h + 0]
+        0 <= h < mesh_half_edge_count_spec(m) && #[trigger] covered[h]
+            ==> exists|f: int, i: int| {
+                &&& 0 <= f < mesh_face_count_spec(m)
+                &&& 0 <= i < face_cycle_lens[f] as int
+                &&& #[trigger] mesh_next_iter_spec(m, m.face_half_edges[f], i as nat) == h
+            }
+    &&& forall|h: int| 0 <= h < mesh_half_edge_count_spec(m) ==> #[trigger] covered[h]
+    &&& forall|f1: int, i1: int, f2: int, i2: int|
+        #![trigger mesh_next_iter_spec(m, m.face_half_edges[f1], i1 as nat), mesh_next_iter_spec(m, m.face_half_edges[f2], i2 as nat)]
+        0 <= f1 < mesh_face_count_spec(m)
+            && 0 <= f2 < mesh_face_count_spec(m)
+            && 0 <= i1 < face_cycle_lens[f1] as int
+            && 0 <= i2 < face_cycle_lens[f2] as int
+            && mesh_next_iter_spec(m, m.face_half_edges[f1], i1 as nat)
+                == mesh_next_iter_spec(m, m.face_half_edges[f2], i2 as nat)
+            ==> f1 == f2
 }
 
 pub open spec fn mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_total_spec(
@@ -383,6 +403,33 @@ pub open spec fn mesh_vertex_representative_cycles_kernel_bridge_spec(m: MeshMod
 
 pub open spec fn mesh_vertex_representative_cycles_kernel_bridge_total_spec(m: MeshModel) -> bool {
     mesh_index_bounds_spec(m) && mesh_vertex_representative_cycles_kernel_bridge_spec(m)
+}
+
+pub proof fn lemma_mesh_next_or_self_in_bounds(m: MeshModel, h: int)
+    requires
+        mesh_index_bounds_spec(m),
+        0 <= h < mesh_half_edge_count_spec(m),
+    ensures
+        0 <= mesh_next_or_self_spec(m, h) < mesh_half_edge_count_spec(m),
+{
+    assert(mesh_next_or_self_spec(m, h) == m.half_edges[h].next);
+    assert(0 <= m.half_edges[h].next < mesh_half_edge_count_spec(m));
+}
+
+pub proof fn lemma_mesh_next_iter_in_bounds(m: MeshModel, h: int, n: nat)
+    requires
+        mesh_index_bounds_spec(m),
+        0 <= h < mesh_half_edge_count_spec(m),
+    ensures
+        0 <= mesh_next_iter_spec(m, h, n) < mesh_half_edge_count_spec(m),
+    decreases n,
+{
+    if n == 0 {
+    } else {
+        let prev = (n - 1) as nat;
+        lemma_mesh_next_iter_in_bounds(m, h, prev);
+        lemma_mesh_next_or_self_in_bounds(m, mesh_next_iter_spec(m, h, prev));
+    }
 }
 
 pub open spec fn kernel_face_cover_step_witness_spec(
@@ -556,6 +603,32 @@ pub proof fn lemma_kernel_face_cycle_witness_matches_mesh(
             assert((#[trigger] km.half_edges@[hi]).face as int == m.half_edges[hi].face);
             assert(km.half_edges@[hi].face as int == f);
             assert(m.half_edges[mesh_next_iter_spec(m, start_m, i as nat)].face == f);
+        };
+    };
+    assert(forall|i: int, j: int|
+        #![trigger mesh_next_iter_spec(m, start_m, i as nat), mesh_next_iter_spec(m, start_m, j as nat)]
+        0 <= i < j < k
+            ==> mesh_next_iter_spec(m, start_m, i as nat) != mesh_next_iter_spec(
+                m,
+                start_m,
+                j as nat,
+            )) by {
+        assert forall|i: int, j: int|
+            #![trigger mesh_next_iter_spec(m, start_m, i as nat), mesh_next_iter_spec(m, start_m, j as nat)]
+            0 <= i < j < k
+                implies mesh_next_iter_spec(m, start_m, i as nat) != mesh_next_iter_spec(
+                    m,
+                    start_m,
+                    j as nat,
+                ) by {
+            lemma_kernel_next_iter_matches_mesh(km, m, start_k, i as nat);
+            lemma_kernel_next_iter_matches_mesh(km, m, start_k, j as nat);
+            assert(kernels::kernel_next_iter_spec(km, start_k, i as nat)
+                != kernels::kernel_next_iter_spec(km, start_k, j as nat));
+            assert(mesh_next_iter_spec(m, start_m, i as nat)
+                == kernels::kernel_next_iter_spec(km, start_k, i as nat));
+            assert(mesh_next_iter_spec(m, start_m, j as nat)
+                == kernels::kernel_next_iter_spec(km, start_k, j as nat));
         };
     };
 }
@@ -784,36 +857,26 @@ pub proof fn lemma_kernel_face_cycles_cover_all_matches_mesh(
             };
         };
 
+        assert(mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_witness_spec(
+            m,
+            face_cycle_lens,
+            covered,
+        ));
         assert(exists|face_cycle_lens2: Seq<usize>, covered2: Seq<bool>| {
-            &&& face_cycle_lens2.len() == mesh_face_count_spec(m)
-            &&& covered2.len() == mesh_half_edge_count_spec(m)
-            &&& forall|f: int|
-                #![trigger face_cycle_lens2[f]]
-                0 <= f < mesh_face_count_spec(m)
-                    ==> mesh_face_representative_cycle_kernel_bridge_witness_spec(
-                        m,
-                        f,
-                        face_cycle_lens2[f] as int,
-                    )
-            &&& forall|h: int|
-                #![trigger h + 0]
-                0 <= h < mesh_half_edge_count_spec(m) && #[trigger] covered2[h]
-                    ==> exists|f: int, i: int| {
-                        &&& 0 <= f < mesh_face_count_spec(m)
-                        &&& 0 <= i < face_cycle_lens2[f] as int
-                        &&& #[trigger] mesh_next_iter_spec(m, m.face_half_edges[f], i as nat) == h
-                    }
-            &&& forall|h: int| 0 <= h < mesh_half_edge_count_spec(m) ==> #[trigger] covered2[h]
-            &&& forall|f1: int, i1: int, f2: int, i2: int|
-                #![trigger mesh_next_iter_spec(m, m.face_half_edges[f1], i1 as nat), mesh_next_iter_spec(m, m.face_half_edges[f2], i2 as nat)]
-                0 <= f1 < mesh_face_count_spec(m)
-                    && 0 <= f2 < mesh_face_count_spec(m)
-                    && 0 <= i1 < face_cycle_lens2[f1] as int
-                    && 0 <= i2 < face_cycle_lens2[f2] as int
-                    && mesh_next_iter_spec(m, m.face_half_edges[f1], i1 as nat)
-                        == mesh_next_iter_spec(m, m.face_half_edges[f2], i2 as nat)
-                    ==> f1 == f2
-        });
+            mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_witness_spec(
+                m,
+                face_cycle_lens2,
+                covered2,
+            )
+        }) by {
+            let face_cycle_lens2 = face_cycle_lens;
+            let covered2 = covered;
+            assert(mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_witness_spec(
+                m,
+                face_cycle_lens2,
+                covered2,
+            ));
+        };
     }
     assert(mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_total_spec(m));
 }

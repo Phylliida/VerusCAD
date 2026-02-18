@@ -1,1 +1,1 @@
-Documented and rolled back a retried structural-core-to-success linkage proof attempt for from_face_cycles after reproducible solver resource instability.
+Strengthened face-cycle kernel and bridge witnesses with explicit per-cycle distinctness and documented a rolled-back attempt to lift that bridge to full mesh_face_next_cycles linkage.

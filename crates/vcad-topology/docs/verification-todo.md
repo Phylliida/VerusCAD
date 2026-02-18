@@ -1489,6 +1489,51 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`101 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`101 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`135 verified, 0 errors`).
+  - burndown update (2026-02-18, face-cycle witness distinctness strengthening):
+    - landed a stable strengthening in
+      `src/verified_checker_kernels.rs`:
+      `kernel_face_representative_cycle_witness_spec` now includes an
+      intra-cycle uniqueness clause (`forall i < j < k. next_iter(i) != next_iter(j)`),
+      and `kernel_check_face_cycles` now proves it.
+    - propagated the stronger witness through the runtime bridge in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      - `mesh_face_representative_cycle_kernel_bridge_witness_spec` now carries
+        the same intra-cycle uniqueness clause,
+      - `lemma_kernel_face_cycle_witness_matches_mesh` now lifts that clause
+        from kernel witness state into mesh-model witness state.
+    - stabilization/refactor:
+      introduced reusable witness predicate
+      `mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_witness_spec`
+      and refactored
+      `mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_spec`
+      to quantify over it, mirroring the kernel witness packaging shape and
+      keeping bridge witness extraction stable.
+    - failed attempt (rolled back in this pass):
+      tried to complete the face-side top-level gap by proving
+      `mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_total_spec`
+      implies full `mesh_face_next_cycles_spec` and then threading that into
+      `structural_validity_gate_model_link_spec`.
+      this proof shape was removed after quantified in-bounds/coverage lifting
+      remained brittle in the final packaging block.
+    - stable state retained:
+      face-cycle bridge witnesses are now strictly stronger (explicit
+      per-cycle distinctness), but `is_structurally_valid` model-link export
+      still stops at the bridge predicate surface for face cycles.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels kernel_check_face_cycles`
+      passed (`4 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels`
+      passed (`34 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement lemma_kernel_face_cycle_witness_matches_mesh`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_face_cycles_kernel_bridge`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement is_structurally_valid_constructive`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`149 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`149 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`183 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
 - [ ] Verify `is_valid` exactly matches `is_structurally_valid && check_euler_formula_closed_components`.
   - burndown update (2026-02-18):
