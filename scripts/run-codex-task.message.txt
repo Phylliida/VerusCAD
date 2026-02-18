@@ -1,1 +1,1 @@
-Replayed the vcad-topology Exit Condition burndown by rerunning trust-surface scans plus the full verification and test matrix, then logged the new 2026-02-18 pass in verification-todo.
+Replayed the vcad-topology Exit Condition maintenance matrix, documented the 2026-02-18T08:12:59-08:00 trust-surface and verification results, and recorded the transient full-script retry in verification-todo.

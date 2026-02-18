@@ -2325,6 +2325,47 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`5 passed, 0 failed`);
       `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
       passed (`6 passed, 0 failed`).
+  - burndown update (2026-02-18, exit-condition automation hardening + matrix replay):
+    - selected task in this pass:
+      harden Exit Condition maintenance by automating trust-surface gating
+      in topology verification entrypoints, then replay the full
+      `vcad-topology` verification/test matrix.
+    - run timestamp:
+      `2026-02-18T08:14:36-08:00`.
+    - code hardening:
+      - added `scripts/check-vcad-topology-trust-surface.sh` to fail fast on
+        trust-surface regressions in `crates/vcad-topology/src`:
+        `assume_specification`, `external_fn_specification`, `uninterpreted`,
+        `admit(`, `assume(`, and `#[verifier::external_body]`.
+      - wired the new guard into both topology verifier entrypoints so every
+        run enforces the scan before invoking Verus:
+        `scripts/verify-vcad-topology-fast.sh`,
+        `scripts/verify-vcad-topology.sh`.
+      - updated `scripts/README.md` to document the new guard script and note
+        that topology verification scripts run it automatically.
+    - trust-surface scans:
+      - `./scripts/check-vcad-topology-trust-surface.sh`
+        passed; no forbidden trust markers found in
+        `crates/vcad-topology/src`, and
+        `runtime_halfedge_mesh_refinement.rs` reported 6 expected
+        `#[verifier::external_type_specification]` shims.
+    - warning-scope note:
+      `cargo test -p vcad-topology*` invocations in this pass emitted warnings
+      only from dependency crates (`vstd`, `vcad-math`, `vcad-geometry`), with
+      no warnings from `vcad-topology`.
+    - failed attempts:
+      none in this pass.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh`
+      passed (`192 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh`
+      passed (`227 verified, 0 errors`);
+      `cargo test -p vcad-topology`
+      passed (`4 passed, 0 failed`);
+      `cargo test -p vcad-topology --features geometry-checks`
+      passed (`5 passed, 0 failed`);
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`6 passed, 0 failed`).
   - burndown update (2026-02-18, face-cycle checker postcondition hardening):
     - selected task in this pass:
       continue section F hardening by making the face-cycle kernel bridge
@@ -4040,6 +4081,40 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`191 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh`
       passed (`226 verified, 0 errors`);
+      `cargo test -p vcad-topology`
+      passed (`4 passed, 0 failed`);
+      `cargo test -p vcad-topology --features geometry-checks`
+      passed (`5 passed, 0 failed`);
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`6 passed, 0 failed`).
+  - burndown update (2026-02-18, exit-condition maintenance rerun + transient full-script retry):
+    - selected task in this pass:
+      rerun Exit Condition trust-surface scans and replay the full
+      `vcad-topology` verification/test matrix on the current workspace tree.
+    - run timestamp:
+      `2026-02-18T08:12:59-08:00`.
+    - trust-surface scans:
+      - `rg -n "assume_specification|external_fn_specification|\\buninterpreted\\b|admit\\(|assume\\(" crates/vcad-topology/src/runtime_halfedge_mesh_refinement.rs crates/vcad-topology/src/verified_checker_kernels.rs crates/vcad-topology/src/halfedge_mesh.rs`
+        returned no matches (`0` lines).
+      - `rg -n "\\[verifier::external_body\\]" crates/vcad-topology/src`
+        returned no matches (`0` lines).
+      - `rg -n "\\[verifier::external_type_specification\\]" crates/vcad-topology/src/runtime_halfedge_mesh_refinement.rs`
+        returned 6 expected proof-facing type shims (`ExMesh`,
+        `ExMeshBuildError`, `ExHalfEdge`, `ExVertex`, `ExEdge`, `ExFace`).
+    - warning-scope note:
+      all `cargo test -p vcad-topology` invocations in this pass emitted
+      warnings only from dependency crates (`vstd`, `vcad-math`,
+      `vcad-geometry`), with no warnings from `vcad-topology`.
+    - failed attempts:
+      first `./scripts/verify-vcad-topology.sh` invocation in this pass
+      returned non-zero after successful verification output with:
+      `./scripts/verify-vcad-topology.sh: line 29: ology: command not found`;
+      rerunning the same command completed successfully.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh`
+      passed (`192 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh`
+      passed (`227 verified, 0 errors`);
       `cargo test -p vcad-topology`
       passed (`4 passed, 0 failed`);
       `cargo test -p vcad-topology --features geometry-checks`
