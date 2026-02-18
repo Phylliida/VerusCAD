@@ -48,7 +48,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [x] Proof: triangle faces satisfy convexity trivially.
 
 ## P5.4 Invariant: Outward Face Normals (Roadmap)
-- [ ] Define oriented face-normal spec from face winding and plane normal.
+- [x] Define oriented face-normal spec from face winding and plane normal.
 - [x] Define component-level outwardness criterion for closed meshes (document chosen witness, for example interior reference point / signed volume convention).
 - [x] Runtime checker: implement global orientation check (`check_outward_normals` or equivalent).
 - [x] Runtime checker: add explicit shared-edge local orientation consistency check (adjacent faces induce opposite direction on the same geometric edge).
@@ -57,8 +57,8 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [ ] Proof: signed-volume outwardness criterion is independent of the chosen reference origin.
 
 ## P5.5 Invariant: No Self-Intersection Except Shared Boundary (Roadmap)
-- [ ] Spec: define allowed contact relation between two faces (shared edge, shared vertex, or disjoint).
-- [ ] Spec: define forbidden intersection relation for non-adjacent face pairs.
+- [x] Spec: define allowed contact relation between two faces (shared edge, shared vertex, or disjoint).
+- [x] Spec: define forbidden intersection relation for non-adjacent face pairs.
 - [x] Runtime checker: implement pairwise face intersection check with adjacency exemptions.
 - [x] Runtime checker: tighten adjacency exemptions to the exact allowed-contact spec (avoid broad "shared vertex => always exempt" behavior).
 - [x] Runtime checker: reject adjacent-face overlap beyond declared shared boundary (for example coplanar interior overlap with shared edge/vertex).
@@ -182,6 +182,33 @@ Current differential/property-based harness policy (runtime behavior locked by t
 - optimized intersection checking (`check_no_forbidden_face_face_intersections`) is asserted equivalent to a no-cull brute-force oracle path (`check_no_forbidden_face_face_intersections_without_broad_phase_for_testing`) across all generated fixtures.
 
 ## Burndown Log
+- 2026-02-18: Completed a P5.4/P5.5 spec pass in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
+  - added oriented face-normal specs from winding + plane containment:
+    - `mesh_face_winding_orients_plane_normal_with_seed_spec`;
+    - `mesh_face_oriented_plane_normal_spec`;
+    - `mesh_runtime_face_oriented_plane_normal_spec`.
+  - added explicit allowed-contact topology specs for face pairs:
+    - `mesh_faces_share_vertex_index_spec`;
+    - `mesh_faces_share_edge_index_spec`;
+    - `mesh_faces_share_exactly_one_vertex_spec`;
+    - `mesh_faces_share_exactly_two_vertices_spec`;
+    - `mesh_faces_share_exactly_one_edge_spec`;
+    - `mesh_faces_allowed_contact_relation_spec`.
+  - added non-adjacent forbidden-intersection relation spec:
+    - `mesh_non_adjacent_face_pair_forbidden_intersection_relation_spec`.
+  - marked checklist items complete for:
+    - P5.4 oriented face-normal spec definition;
+    - P5.5 allowed-contact relation spec definition;
+    - P5.5 forbidden non-adjacent intersection relation spec definition.
+- 2026-02-18: Failed attempts in this P5.4/P5.5 spec pass: none.
+- 2026-02-18: Revalidated after the P5.4/P5.5 spec additions:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/check-vcad-topology-trust-surface.sh`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (215 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (250 verified, 0 errors)
 - 2026-02-18: Completed a P5.12/ground-rules differential-harness + trust-boundary guardrail pass in `src/halfedge_mesh/tests.rs`:
   - added deterministic randomized fixture helpers:
     - `DeterministicRng`;

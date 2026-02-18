@@ -1,1 +1,1 @@
-Added a seeded differential/property-based Phase 5 harness that checks broad-phase intersection results against the no-cull oracle across randomized valid/adversarial meshes, added a trusted-boundary source guard test, and updated the burndown log/checklists with full revalidation (250 verified, 0 errors).
+Added Phase 5 oriented-face-normal and allowed/forbidden face-contact spec definitions in the refinement model, updated the burndown checklist/log, and revalidated vcad-topology with 250 verified proofs and 0 errors.

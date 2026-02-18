@@ -343,6 +343,103 @@ pub open spec fn mesh_faces_disjoint_boundary_spec(m: MeshModel, f1: int, f2: in
         }
 }
 
+pub open spec fn mesh_faces_share_vertex_index_spec(
+    m: MeshModel,
+    f1: int,
+    f2: int,
+    v: int,
+) -> bool {
+    &&& 0 <= v < mesh_vertex_count_spec(m)
+    &&& exists|h1: int, h2: int| {
+        &&& mesh_half_edge_belongs_to_face_spec(m, f1, h1)
+        &&& mesh_half_edge_belongs_to_face_spec(m, f2, h2)
+        &&& #[trigger] m.half_edges[h1].vertex == v
+        &&& #[trigger] m.half_edges[h2].vertex == v
+    }
+}
+
+pub open spec fn mesh_faces_share_edge_index_spec(
+    m: MeshModel,
+    f1: int,
+    f2: int,
+    e: int,
+) -> bool {
+    &&& 0 <= e < mesh_edge_count_spec(m)
+    &&& exists|h1: int, h2: int| {
+        &&& mesh_half_edge_belongs_to_face_spec(m, f1, h1)
+        &&& mesh_half_edge_belongs_to_face_spec(m, f2, h2)
+        &&& #[trigger] m.half_edges[h1].edge == e
+        &&& #[trigger] m.half_edges[h2].edge == e
+    }
+}
+
+pub open spec fn mesh_faces_share_exactly_one_vertex_spec(m: MeshModel, f1: int, f2: int) -> bool {
+    &&& 0 <= f1 < mesh_face_count_spec(m)
+    &&& 0 <= f2 < mesh_face_count_spec(m)
+    &&& exists|v: int| {
+        &&& mesh_faces_share_vertex_index_spec(m, f1, f2, v)
+        &&& forall|vp: int| #[trigger] mesh_faces_share_vertex_index_spec(m, f1, f2, vp) ==> vp == v
+    }
+}
+
+pub open spec fn mesh_faces_share_exactly_two_vertices_spec(
+    m: MeshModel,
+    f1: int,
+    f2: int,
+) -> bool {
+    &&& 0 <= f1 < mesh_face_count_spec(m)
+    &&& 0 <= f2 < mesh_face_count_spec(m)
+    &&& exists|v0: int, v1: int| {
+        &&& v0 != v1
+        &&& mesh_faces_share_vertex_index_spec(m, f1, f2, v0)
+        &&& mesh_faces_share_vertex_index_spec(m, f1, f2, v1)
+        &&& forall|vp: int| #[trigger] mesh_faces_share_vertex_index_spec(
+            m,
+            f1,
+            f2,
+            vp,
+        ) ==> (vp == v0 || vp == v1)
+    }
+}
+
+pub open spec fn mesh_faces_share_exactly_one_edge_spec(m: MeshModel, f1: int, f2: int) -> bool {
+    &&& 0 <= f1 < mesh_face_count_spec(m)
+    &&& 0 <= f2 < mesh_face_count_spec(m)
+    &&& exists|e: int| {
+        &&& mesh_faces_share_edge_index_spec(m, f1, f2, e)
+        &&& forall|ep: int| #[trigger] mesh_faces_share_edge_index_spec(m, f1, f2, ep) ==> ep == e
+    }
+}
+
+pub open spec fn mesh_faces_allowed_contact_relation_spec(m: MeshModel, f1: int, f2: int) -> bool {
+    &&& 0 <= f1 < mesh_face_count_spec(m)
+    &&& 0 <= f2 < mesh_face_count_spec(m)
+    &&& f1 != f2
+    &&& (
+        mesh_faces_disjoint_boundary_spec(m, f1, f2)
+            || (mesh_faces_share_exactly_one_vertex_spec(m, f1, f2) && !mesh_faces_share_edge_spec(
+                m,
+                f1,
+                f2,
+            ))
+            || (mesh_faces_share_exactly_one_edge_spec(m, f1, f2)
+                && mesh_faces_share_exactly_two_vertices_spec(m, f1, f2))
+    )
+}
+
+pub open spec fn mesh_non_adjacent_face_pair_forbidden_intersection_relation_spec(
+    m: MeshModel,
+    f1: int,
+    f2: int,
+    geometric_intersection_exists: bool,
+) -> bool {
+    &&& 0 <= f1 < mesh_face_count_spec(m)
+    &&& 0 <= f2 < mesh_face_count_spec(m)
+    &&& f1 != f2
+    &&& mesh_faces_disjoint_boundary_spec(m, f1, f2)
+    &&& geometric_intersection_exists
+}
+
 #[cfg(verus_keep_ghost)]
 pub open spec fn mesh_default_point3_spec() -> vcad_math::point3::Point3 {
     vcad_math::point3::Point3::from_ints_spec(0, 0, 0)
@@ -1174,6 +1271,57 @@ pub open spec fn face_plane_contains_vertex_spec(
             normal,
             offset,
         )
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_face_winding_orients_plane_normal_with_seed_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+    k: int,
+    seed_i: int,
+    normal: vcad_math::vec3::Vec3,
+) -> bool {
+    let seed_normal = mesh_face_seed_plane_normal_spec(m, vertex_positions, f, seed_i);
+    &&& mesh_index_bounds_spec(m)
+    &&& mesh_geometry_input_spec(m, vertex_positions)
+    &&& 0 <= f < mesh_face_count_spec(m)
+    &&& #[trigger] mesh_face_cycle_witness_spec(m, f, k)
+    &&& 0 <= seed_i
+    &&& seed_i + 2 < k
+    &&& seed_normal.norm2_spec().signum() != 0
+    &&& normal.norm2_spec().signum() != 0
+    &&& normal.dot_spec(seed_normal).signum() == 1
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_face_oriented_plane_normal_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+    normal: vcad_math::vec3::Vec3,
+    offset: vcad_math::scalar::Scalar,
+) -> bool {
+    &&& 0 <= f < mesh_face_count_spec(m)
+    &&& face_plane_contains_vertex_spec(m, vertex_positions, f, normal, offset)
+    &&& exists|k: int, seed_i: int| #[trigger] mesh_face_winding_orients_plane_normal_with_seed_spec(
+        m,
+        vertex_positions,
+        f,
+        k,
+        seed_i,
+        normal,
+    )
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_runtime_face_oriented_plane_normal_spec(
+    m: &Mesh,
+    f: int,
+    normal: vcad_math::vec3::Vec3,
+    offset: vcad_math::scalar::Scalar,
+) -> bool {
+    mesh_face_oriented_plane_normal_spec(m@, mesh_runtime_vertex_positions_spec(m), f, normal, offset)
 }
 
 #[cfg(verus_keep_ghost)]
