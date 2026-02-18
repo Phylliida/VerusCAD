@@ -1,1 +1,1 @@
-Completed P5.12 connected-component interaction policy hardening by adding edge-touch and face-touch rejection tests, clarifying the intersection checker contract, updating the burndown checklist/log, and revalidating all vcad-topology tests/proofs (250 verified, 0 errors).
+Completed the P5.12 rigid-transform invariance burndown task by adding exact-arithmetic translation/rotation/reflection Phase 5 tests in vcad-topology, marking the checklist item done, and revalidating the full test/proof matrix (250 verified, 0 errors).

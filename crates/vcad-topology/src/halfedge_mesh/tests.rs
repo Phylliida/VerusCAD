@@ -59,6 +59,64 @@ fn phase5_checker_signature(mesh: &Mesh) -> [bool; 10] {
 }
 
 #[cfg(feature = "geometry-checks")]
+fn build_overlapping_tetrahedra_mesh() -> Mesh {
+    let vertices = vec![
+        RuntimePoint3::from_ints(0, 0, 0),
+        RuntimePoint3::from_ints(4, 0, 0),
+        RuntimePoint3::from_ints(0, 4, 0),
+        RuntimePoint3::from_ints(0, 0, 4),
+        RuntimePoint3::from_ints(1, 1, 1),
+        RuntimePoint3::from_ints(5, 1, 1),
+        RuntimePoint3::from_ints(1, 5, 1),
+        RuntimePoint3::from_ints(1, 1, 5),
+    ];
+    let faces = vec![
+        vec![0, 1, 2],
+        vec![0, 3, 1],
+        vec![1, 3, 2],
+        vec![2, 3, 0],
+        vec![4, 5, 6],
+        vec![4, 7, 5],
+        vec![5, 7, 6],
+        vec![6, 7, 4],
+    ];
+    Mesh::from_face_cycles(vertices, &faces).expect("overlapping tetrahedra fixture should build")
+}
+
+#[cfg(feature = "geometry-checks")]
+fn transform_mesh_positions<F>(mesh: &Mesh, transform: F) -> Mesh
+where
+    F: Fn(&RuntimePoint3) -> RuntimePoint3,
+{
+    let mut out = mesh.clone();
+    for vertex in &mut out.vertices {
+        vertex.position = transform(&vertex.position);
+    }
+    out
+}
+
+#[cfg(feature = "geometry-checks")]
+fn translate_point3(point: &RuntimePoint3, tx: i64, ty: i64, tz: i64) -> RuntimePoint3 {
+    point.add_vec(&RuntimeVec3::from_ints(tx, ty, tz))
+}
+
+#[cfg(feature = "geometry-checks")]
+fn rotate_point3_z_90(point: &RuntimePoint3) -> RuntimePoint3 {
+    RuntimePoint3::new(point.y().neg(), point.x().clone(), point.z().clone())
+}
+
+#[cfg(feature = "geometry-checks")]
+fn rigid_rotate_z_90_then_translate(point: &RuntimePoint3, tx: i64, ty: i64, tz: i64) -> RuntimePoint3 {
+    let rotated = rotate_point3_z_90(point);
+    translate_point3(&rotated, tx, ty, tz)
+}
+
+#[cfg(feature = "geometry-checks")]
+fn reflect_point3_across_yz_plane(point: &RuntimePoint3) -> RuntimePoint3 {
+    RuntimePoint3::new(point.x().neg(), point.y().clone(), point.z().clone())
+}
+
+#[cfg(feature = "geometry-checks")]
 fn relabel_vertices_in_face_cycles(
     vertices: &[RuntimePoint3],
     faces: &[Vec<usize>],
@@ -732,6 +790,87 @@ fn diagnostic_witness_is_real_counterexample(
         );
         assert!(!intersecting_original.check_geometric_topological_consistency());
         assert!(!intersecting_relabeled.check_geometric_topological_consistency());
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn phase5_checks_are_invariant_under_rigid_translation_and_rotation() {
+        let cube_original = Mesh::cube();
+        let cube_transformed = transform_mesh_positions(&cube_original, |point| {
+            rigid_rotate_z_90_then_translate(point, 13, -7, 5)
+        });
+
+        assert!(cube_original.is_valid());
+        assert!(cube_transformed.is_valid());
+        assert_eq!(
+            phase5_checker_signature(&cube_original),
+            phase5_checker_signature(&cube_transformed)
+        );
+        assert!(cube_original.check_geometric_topological_consistency());
+        assert!(cube_transformed.check_geometric_topological_consistency());
+
+        let intersecting_original = build_overlapping_tetrahedra_mesh();
+        let intersecting_transformed = transform_mesh_positions(&intersecting_original, |point| {
+            rigid_rotate_z_90_then_translate(point, 13, -7, 5)
+        });
+
+        assert!(intersecting_original.is_valid());
+        assert!(intersecting_transformed.is_valid());
+        assert_eq!(
+            phase5_checker_signature(&intersecting_original),
+            phase5_checker_signature(&intersecting_transformed)
+        );
+        assert!(!intersecting_original.check_geometric_topological_consistency());
+        assert!(!intersecting_transformed.check_geometric_topological_consistency());
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn reflection_flips_outward_orientation_sensitive_phase5_checks() {
+        let cube = Mesh::cube();
+        let reflected = transform_mesh_positions(&cube, |point| {
+            let mirrored = reflect_point3_across_yz_plane(point);
+            translate_point3(&mirrored, 11, 3, -5)
+        });
+
+        assert!(cube.is_valid());
+        assert!(reflected.is_valid());
+        assert_eq!(
+            cube.check_no_zero_length_geometric_edges(),
+            reflected.check_no_zero_length_geometric_edges()
+        );
+        assert_eq!(
+            cube.check_face_corner_non_collinearity(),
+            reflected.check_face_corner_non_collinearity()
+        );
+        assert_eq!(cube.check_face_coplanarity(), reflected.check_face_coplanarity());
+        assert_eq!(cube.check_face_convexity(), reflected.check_face_convexity());
+        assert_eq!(
+            cube.check_face_plane_consistency(),
+            reflected.check_face_plane_consistency()
+        );
+        assert_eq!(
+            cube.check_shared_edge_local_orientation_consistency(),
+            reflected.check_shared_edge_local_orientation_consistency()
+        );
+        assert_eq!(
+            cube.check_no_forbidden_face_face_intersections(),
+            reflected.check_no_forbidden_face_face_intersections()
+        );
+        assert!(cube.check_outward_face_normals());
+        assert!(!reflected.check_outward_face_normals());
+        assert!(cube.check_geometric_topological_consistency());
+        assert!(!reflected.check_geometric_topological_consistency());
+        assert!(cube.is_valid_with_geometry());
+        assert!(!reflected.is_valid_with_geometry());
+
+        let reflected_failure = reflected
+            .check_geometric_topological_consistency_diagnostic()
+            .expect_err("reflected cube should fail by orientation-sensitive outwardness");
+        assert!(matches!(
+            reflected_failure,
+            GeometricTopologicalConsistencyFailure::InwardOrDegenerateComponent { .. }
+        ));
     }
 
     #[test]

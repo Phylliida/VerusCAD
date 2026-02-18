@@ -152,7 +152,7 @@ Current complexity notes (runtime implementation in `src/halfedge_mesh/validatio
 ## P5.12 Invariance, Policy, and Phase-6 Readiness
 - [x] Checker-result invariance:
   - prove/tests that Phase 5 outcomes are invariant under face-cycle start index changes, face iteration order changes, and consistent mesh index relabeling.
-- [ ] Rigid-transform invariance:
+- [x] Rigid-transform invariance:
   - prove/tests that translation + rotation preserve all Phase 5 checks;
   - document and test expected behavior under reflection (orientation-sensitive checks should flip as intended).
 - [x] Connected-component interaction policy:
@@ -172,7 +172,33 @@ Current connected-component interaction policy (runtime behavior locked by tests
 - disconnected closed components are accepted only when geometrically disjoint;
 - disconnected components touching at a vertex, along an edge, or across a face (with distinct vertex indices) are rejected by `check_no_forbidden_face_face_intersections` and therefore by the aggregate Phase 5 gate.
 
+Current rigid-transform policy (runtime behavior locked by tests):
+- rigid transforms with determinant `+1` (tested: exact 90-degree axis rotation plus integer translation) preserve full Phase 5 checker signatures for both passing and failing fixtures;
+- reflection transforms with determinant `-1` preserve local geometric checks, but intentionally flip outward-orientation-sensitive outcomes (`check_outward_face_normals`, aggregate geometric-consistency gate, and `is_valid_with_geometry`).
+
 ## Burndown Log
+- 2026-02-18: Completed a P5.12 rigid-transform invariance pass in `src/halfedge_mesh/tests.rs`:
+  - added exact-arithmetic transform helpers:
+    - `transform_mesh_positions`;
+    - `translate_point3`;
+    - `rotate_point3_z_90`;
+    - `rigid_rotate_z_90_then_translate`;
+    - `reflect_point3_across_yz_plane`;
+  - added `phase5_checks_are_invariant_under_rigid_translation_and_rotation`, locking that full Phase 5 checker signatures are unchanged under a rigid transform (90-degree rotation + translation) for:
+    - a passing fixture (`Mesh::cube()`);
+    - a failing fixture (`build_overlapping_tetrahedra_mesh()`).
+  - added `reflection_flips_outward_orientation_sensitive_phase5_checks`, locking expected reflection behavior:
+    - local geometric checks remain invariant;
+    - outward-orientation-sensitive checks fail as intended, with diagnostic witness `InwardOrDegenerateComponent`.
+  - marked the P5.12 rigid-transform invariance checklist item complete.
+- 2026-02-18: Failed attempts in this P5.12 rigid-transform pass: none.
+- 2026-02-18: Revalidated after the P5.12 rigid-transform additions:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (215 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (250 verified, 0 errors)
 - 2026-02-18: Completed a P5.12 witness-grade failure validation pass in `src/halfedge_mesh/tests.rs`:
   - added helper `diagnostic_witness_is_real_counterexample`, which validates diagnostic payloads against concrete geometric/topological conditions (zero-length edge endpoints, collinear corner witness, non-coplanar witness corner, non-convex turn witness, forbidden pair witness shape, and non-outward component signed-volume witness);
   - expanded `geometric_consistency_diagnostic_returns_first_failure_witness` to assert witness validity for:
