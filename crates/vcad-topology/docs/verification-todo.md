@@ -849,16 +849,38 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       Verus rejected this as external/ignored-function usage. fixed by routing
       calls through minimal `#[verifier::external_body]` bridges (no trusted
       postconditions added).
-    - remaining gap:
-      this is still a constructive runtime agreement path; a total proof that
-      the wrapper always yields `Some(...)` and model-level exact `iff` linkage
-      to `mesh_structurally_valid_spec` remain open.
+  - burndown update (2026-02-18, model-link strengthening):
+    - added witness-level model-link predicate in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      `structural_validity_gate_model_link_spec`.
+    - strengthened `is_structurally_valid_constructive` so `Some(w)` now
+      certifies both:
+      - `structural_validity_gate_witness_spec(w)`, and
+      - `structural_validity_gate_model_link_spec(m@, w)`.
+    - stable linkage now exported for two structural clauses by construction:
+      - `w.twin_involution_ok ==> from_face_cycles_twin_assignment_total_involution_spec(m@)`,
+      - `w.edge_two_half_edges_ok ==> mesh_edge_exactly_two_half_edges_spec(m@)`.
+      these are sourced from verified constructive runtime checkers
+      (`runtime_check_twin_assignment_total_involution`,
+      `runtime_check_edge_exactly_two_half_edges`) instead of external-body
+      kernel bridges for those two fields.
+    - failed attempt (rolled back):
+      introduced new constructive checkers
+      `runtime_check_prev_next_inverse` and
+      `runtime_check_no_degenerate_edges` and tried to include both clauses in
+      `structural_validity_gate_model_link_spec`; quantified invariant
+      packaging in those new proofs remained brittle under full-module
+      verification, so the functions/clauses were removed to preserve stability.
+    - remaining gap after this increment:
+      model-link export is still partial (twin/edge only); exact model-level
+      `iff` linkage for the full structural gate remains open.
     - verification checks:
       `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement is_structurally_valid_constructive`
       passed (`1 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
-      passed (`73 verified, 0 errors`);
-      `./scripts/verify-vcad-topology.sh` passed (`107 verified, 0 errors`).
+      passed (`76 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`76 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`110 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
 - [ ] Verify `is_valid` exactly matches `is_structurally_valid && check_euler_formula_closed_components`.
   - burndown update (2026-02-18):

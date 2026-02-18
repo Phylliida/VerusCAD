@@ -1,1 +1,1 @@
-Added constructive constructor-validity wrappers for tetrahedron, cube, and triangular prism and updated the vcad-topology verification burndown with new guarantees and verification results.
+Strengthened vcad-topology structural-validity constructive verification to export twin and edge model-link guarantees and documented the rolled-back unstable prev/no-degenerate proof attempt in the burndown.

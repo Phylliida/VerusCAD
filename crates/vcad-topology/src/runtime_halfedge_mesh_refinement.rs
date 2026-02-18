@@ -654,6 +654,14 @@ pub open spec fn structural_validity_gate_witness_spec(w: StructuralValidityGate
     )
 }
 
+pub open spec fn structural_validity_gate_model_link_spec(
+    m: MeshModel,
+    w: StructuralValidityGateWitness,
+) -> bool {
+    &&& (w.twin_involution_ok ==> from_face_cycles_twin_assignment_total_involution_spec(m))
+    &&& (w.edge_two_half_edges_ok ==> mesh_edge_exactly_two_half_edges_spec(m))
+}
+
 #[derive(Structural, Copy, Clone, PartialEq, Eq)]
 pub struct ValidityGateWitness {
     pub api_ok: bool,
@@ -4220,7 +4228,8 @@ pub fn is_structurally_valid_constructive(
 ) -> (out: Option<StructuralValidityGateWitness>)
     ensures
         match out {
-            Option::Some(w) => structural_validity_gate_witness_spec(w),
+            Option::Some(w) => structural_validity_gate_witness_spec(w)
+                && structural_validity_gate_model_link_spec(m@, w),
             Option::None => true,
         },
 {
@@ -4232,12 +4241,12 @@ pub fn is_structurally_valid_constructive(
     let half_edge_count_positive = !m.half_edges.is_empty();
 
     let index_bounds_ok = ex_mesh_check_index_bounds_via_kernel(m);
-    let twin_involution_ok = ex_mesh_check_twin_involution_via_kernel(m);
+    let twin_involution_ok = runtime_check_twin_assignment_total_involution(m);
     let prev_next_inverse_ok = ex_mesh_check_prev_inverse_of_next_via_kernel(m);
     let face_cycles_ok = ex_mesh_check_face_cycles_via_kernel(m);
     let no_degenerate_edges_ok = ex_mesh_check_no_degenerate_edges_via_kernel(m);
     let vertex_manifold_ok = ex_mesh_check_vertex_manifold_single_cycle_via_kernel(m);
-    let edge_two_half_edges_ok = ex_mesh_check_edge_has_exactly_two_half_edges_via_kernel(m);
+    let edge_two_half_edges_ok = runtime_check_edge_exactly_two_half_edges(m);
 
     let formula_ok = vertex_count_positive
         && edge_count_positive
@@ -4255,7 +4264,7 @@ pub fn is_structurally_valid_constructive(
         return Option::None;
     }
 
-    Option::Some(StructuralValidityGateWitness {
+    let w = StructuralValidityGateWitness {
         api_ok,
         vertex_count_positive,
         edge_count_positive,
@@ -4268,7 +4277,21 @@ pub fn is_structurally_valid_constructive(
         no_degenerate_edges_ok,
         vertex_manifold_ok,
         edge_two_half_edges_ok,
-    })
+    };
+
+    proof {
+        assert(api_ok == formula_ok);
+        assert(structural_validity_gate_witness_spec(w));
+        if w.twin_involution_ok {
+            assert(from_face_cycles_twin_assignment_total_involution_spec(m@));
+        }
+        if w.edge_two_half_edges_ok {
+            assert(mesh_edge_exactly_two_half_edges_spec(m@));
+        }
+        assert(structural_validity_gate_model_link_spec(m@, w));
+    }
+
+    Option::Some(w)
 }
 
 #[allow(dead_code)]
