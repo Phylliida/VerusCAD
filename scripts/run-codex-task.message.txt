@@ -1,1 +1,1 @@
-Implemented Phase 5 face coplanarity and aggregate geometry-consistency checks in vcad-topology, updated burndown/docs and tests, and confirmed all vcad-topology test and verification scripts pass.
+Implemented Phase 5 zero-length geometric edge rejection in vcad-topology, integrated it into geometric consistency checks with new regression coverage, and confirmed all vcad-topology tests and Verus verification scripts pass.
