@@ -1,1 +1,1 @@
-Exported undirected-edge equivalence into the from_face_cycles structural core, documented a rolled-back structural_core-to-success proof attempt, and reran vcad-topology verification with all 181 proofs passing.
+Documented and rolled back a retried structural-core-to-success linkage proof attempt for from_face_cycles after reproducible solver resource instability.

@@ -412,6 +412,30 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`147 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`147 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`181 verified, 0 errors`).
+  - burndown update (2026-02-18, structural-core->success retry and rollback):
+    - retried direct constructive success linkage by strengthening
+      `from_face_cycles_constructive_next_prev_face` to export
+      `Ok(m) ==> from_face_cycles_success_spec(...)` and reintroducing
+      `lemma_from_face_cycles_structural_core_implies_incidence` /
+      `..._implies_success`.
+    - observed behavior:
+      - localized function check
+        `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement from_face_cycles_constructive_next_prev_face`
+        passed (`1 verified, 0 errors`) while the strengthened lemmas were in-tree,
+      - isolated lemma verification repeatedly hit resource limits
+        (`Resource limit (rlimit) exceeded`) in
+        `lemma_from_face_cycles_structural_core_implies_incidence`.
+    - attempted stabilization (rolled back):
+      added `#[verifier::spinoff_prover]` + localized
+      `#[verifier::rlimit(700)]` on the incidence lemma; this did not yield
+      reliable full-module throughput (long-running/non-convergent
+      `runtime_halfedge_mesh_refinement` solver runs in this workspace state).
+    - stable state retained:
+      the retry was reverted; constructive export remains
+      `from_face_cycles_structural_core_spec(...)`, and direct constructive
+      `Result`-level linkage to full
+      `from_face_cycles_success_spec` / `from_face_cycles_failure_spec`
+      remains open.
   - file: `src/halfedge_mesh.rs`
 - [x] Prove twin assignment is total for closed inputs and involutive.
   - burndown update (2026-02-18):
