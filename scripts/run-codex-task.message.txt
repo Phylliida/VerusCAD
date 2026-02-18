@@ -1,1 +1,1 @@
-Replayed vcad-topology Exit Condition burndown checks with clean trust-surface scans and a fully green verification/test matrix (192 fast, 227 full, and all cargo test variants).
+Refreshed the vcad-topology Exit Condition burndown with new trust-surface scans and a fully green verification/test matrix (192 fast, 227 full, and all cargo test variants).
