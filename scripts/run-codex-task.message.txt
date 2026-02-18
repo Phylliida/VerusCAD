@@ -1,1 +1,1 @@
-Replayed the vcad-topology exit-condition trust-surface scans and full verification/test matrix, documenting green results and the parallel cargo lock-wait note in verification-todo.md.
+Refreshed the vcad-topology Exit Condition burndown by rerunning trust-surface scans and the full verification/test matrix with all checks green.
