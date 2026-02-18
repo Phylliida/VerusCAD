@@ -7146,30 +7146,6 @@ pub fn ex_mesh_is_valid(m: &Mesh) -> (out: bool)
     m.is_valid()
 }
 
-#[verifier::external_body]
-pub fn ex_mesh_check_index_bounds_via_kernel(m: &Mesh) -> (out: bool)
-{
-    m.check_index_bounds_via_kernel()
-}
-
-#[verifier::external_body]
-pub fn ex_mesh_check_twin_involution_via_kernel(m: &Mesh) -> (out: bool)
-{
-    m.check_twin_involution_via_kernel()
-}
-
-#[verifier::external_body]
-pub fn ex_mesh_check_prev_inverse_of_next_via_kernel(m: &Mesh) -> (out: bool)
-{
-    m.check_prev_inverse_of_next_via_kernel()
-}
-
-#[verifier::external_body]
-pub fn ex_mesh_check_face_cycles_via_kernel(m: &Mesh) -> (out: bool)
-{
-    m.check_face_cycles_via_kernel()
-}
-
 #[verifier::exec_allows_no_decreases_clause]
 pub fn runtime_mesh_to_kernel_mesh(m: &Mesh) -> (km: kernels::KernelMesh)
     ensures
@@ -7449,24 +7425,6 @@ pub fn runtime_check_vertex_manifold_kernel_bridge(m: &Mesh) -> (out: bool)
         assert(mesh_vertex_manifold_single_cycle_spec(m@));
     }
     true
-}
-
-#[verifier::external_body]
-pub fn ex_mesh_check_no_degenerate_edges_via_kernel(m: &Mesh) -> (out: bool)
-{
-    m.check_no_degenerate_edges_via_kernel()
-}
-
-#[verifier::external_body]
-pub fn ex_mesh_check_vertex_manifold_single_cycle_via_kernel(m: &Mesh) -> (out: bool)
-{
-    m.check_vertex_manifold_single_cycle_via_kernel()
-}
-
-#[verifier::external_body]
-pub fn ex_mesh_check_edge_has_exactly_two_half_edges_via_kernel(m: &Mesh) -> (out: bool)
-{
-    m.check_edge_has_exactly_two_half_edges_via_kernel()
 }
 
 #[verifier::external_body]

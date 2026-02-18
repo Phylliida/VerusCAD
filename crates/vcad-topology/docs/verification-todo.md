@@ -1952,6 +1952,31 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`35 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`155 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`190 verified, 0 errors`).
+  - burndown update (2026-02-18, external-body trust-surface cleanup):
+    - removed seven now-unused runtime kernel bridge wrappers from
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      - `ex_mesh_check_index_bounds_via_kernel`,
+      - `ex_mesh_check_twin_involution_via_kernel`,
+      - `ex_mesh_check_prev_inverse_of_next_via_kernel`,
+      - `ex_mesh_check_face_cycles_via_kernel`,
+      - `ex_mesh_check_no_degenerate_edges_via_kernel`,
+      - `ex_mesh_check_vertex_manifold_single_cycle_via_kernel`,
+      - `ex_mesh_check_edge_has_exactly_two_half_edges_via_kernel`.
+    - rationale:
+      these wrappers were superseded by constructive checker paths and were no
+      longer referenced, so removing them shrinks the remaining external-body
+      surface without changing proof behavior.
+    - failed attempts:
+      none in this pass.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`173 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh`
+      passed (`173 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh`
+      passed (`208 verified, 0 errors`);
+      `cargo test -p vcad-topology`
+      passed (`4 passed, 0 failed`).
   - file: `src/halfedge_mesh.rs`
 - [x] Verify `is_valid` exactly matches `is_structurally_valid && check_euler_formula_closed_components`.
   - burndown update (2026-02-18):
