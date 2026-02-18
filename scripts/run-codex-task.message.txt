@@ -1,1 +1,1 @@
-Cleaned vcad-topology proof-bridge dead-code warnings and revalidated full fast/full topology verification plus combined-feature tests.
+Aligned vcad-topology burndown status notes with current kernel proofs and revalidated fast/full verification plus topology tests.

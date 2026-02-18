@@ -790,7 +790,10 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
     global-coverage linkage for all half-edges, plus explicit cross-face no-overlap uniqueness.
 - [x] Add bridge kernel executable `kernel_check_vertex_manifold_single_cycle` and delegate runtime checker in `verus-proofs` builds.
   - file: `src/verified_checker_kernels.rs`
-  - note: current proved contract is bounds-soundness (`out ==> kernel_index_bounds_spec`); full vertex-manifold semantic contract is pending.
+  - note: current proved contract is
+    `out ==> kernel_vertex_manifold_single_cycle_total_spec(m)`, including
+    representative-anchored closed ring witnesses with per-step
+    vertex-membership linkage.
 - [x] Verify `check_index_bounds`.
   - in `verus-proofs` builds, this is delegated to verified kernel checker.
   - file: `src/halfedge_mesh.rs`
@@ -2945,3 +2948,23 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`191 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh`
       passed (`226 verified, 0 errors`).
+  - burndown update (2026-02-18, status-note consistency + exit-condition rerun):
+    - selected task in this pass:
+      keep Exit Condition burndown status consistent with the current verified
+      kernel contracts.
+    - doc hardening:
+      corrected the stale D-section note for
+      `kernel_check_vertex_manifold_single_cycle` from an old
+      bounds-only status to the current verified contract
+      `out ==> kernel_vertex_manifold_single_cycle_total_spec(m)`.
+    - failed attempts:
+      none in this pass.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh`
+      passed (`191 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh`
+      passed (`226 verified, 0 errors`);
+      `cargo test -p vcad-topology`
+      passed (`4 passed, 0 failed`);
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`6 passed, 0 failed`).
