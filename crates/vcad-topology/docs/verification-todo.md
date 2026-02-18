@@ -4989,3 +4989,34 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
         (`5 passed, 0 failed`),
       - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
         passed (`6 passed, 0 failed`).
+  - burndown update (2026-02-18, exit-condition maintenance rerun + current-pass matrix replay):
+    - selected task in this pass:
+      rerun the Exit Condition matrix on the current tree to confirm
+      trust-surface and full verification/test status remain green.
+    - run timestamp:
+      `2026-02-18T08:35:37-08:00`.
+    - trust-surface scans:
+      - `./scripts/check-vcad-topology-trust-surface.sh`
+        passed; `external_type_specification` markers remained constrained to
+        `runtime_halfedge_mesh_refinement.rs` with count `6`.
+    - environment note:
+      matrix verification again used the expected no-daemon fallback path
+      (`note: nix-shell unavailable; using direct cargo-verus fallback`) and
+      completed successfully.
+    - warning-scope note:
+      all `cargo test -p vcad-topology` invocations in this pass emitted
+      warnings only from dependency crates (`vstd`, `vcad-math`,
+      `vcad-geometry`), with no warnings from `vcad-topology`.
+    - failed attempts:
+      none in this pass.
+    - verification checks:
+      `./scripts/verify-vcad-topology-matrix.sh`
+      passed:
+      - trust-surface guard passed,
+      - fast verification passed (`192 verified, 0 errors` partial),
+      - full verification passed (`227 verified, 0 errors`),
+      - `cargo test -p vcad-topology` passed (`4 passed, 0 failed`),
+      - `cargo test -p vcad-topology --features geometry-checks` passed
+        (`5 passed, 0 failed`),
+      - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+        passed (`6 passed, 0 failed`).
