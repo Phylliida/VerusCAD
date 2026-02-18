@@ -1101,6 +1101,82 @@ pub proof fn lemma_mesh_half_edge_connected_extend_direct_step(
     assert(mesh_half_edge_connected_spec(m, from, to));
 }
 
+pub proof fn lemma_mesh_half_edge_connected_symmetric(m: MeshModel, from: int, to: int)
+    requires
+        mesh_half_edge_connected_spec(m, from, to),
+    ensures
+        mesh_half_edge_connected_spec(m, to, from),
+{
+    let hcnt = mesh_half_edge_count_spec(m);
+    let path = choose|path: Seq<int>| {
+        &&& 0 <= from < hcnt
+        &&& 0 <= to < hcnt
+        &&& 0 < path.len()
+        &&& path[0] == from
+        &&& path[(path.len() - 1) as int] == to
+        &&& mesh_half_edge_walk_spec(m, path)
+    };
+
+    let rev_path = Seq::new(path.len(), |i: int| path[(path.len() - 1 - i) as int]);
+    assert(path.len() > 0);
+    assert(rev_path.len() == path.len());
+    assert(rev_path.len() > 0);
+    assert(rev_path[0] == to);
+    assert(rev_path[(rev_path.len() - 1) as int] == from);
+
+    assert(mesh_half_edge_walk_spec(m, rev_path)) by {
+        assert(rev_path.len() > 0);
+        assert(forall|i: int| 0 <= i < rev_path.len() as int ==> 0 <= #[trigger] rev_path[i] < hcnt) by {
+            assert forall|i: int|
+                0 <= i < rev_path.len() as int implies 0 <= #[trigger] rev_path[i] < hcnt by {
+                let j = path.len() - 1 - i;
+                assert(0 <= j < path.len() as int);
+                assert(rev_path[i] == path[j]);
+                assert(0 <= path[j] < hcnt);
+            };
+        }
+        assert(forall|i: int|
+            0 <= i < (rev_path.len() as int) - 1
+                ==> mesh_half_edge_adjacent_spec(m, rev_path[i], #[trigger] rev_path[i + 1])) by {
+            assert forall|i: int|
+                0 <= i < (rev_path.len() as int) - 1
+                    implies mesh_half_edge_adjacent_spec(m, rev_path[i], #[trigger] rev_path[i + 1]) by {
+                let j = path.len() - 2 - i;
+                assert(0 <= j < (path.len() as int) - 1);
+                assert(rev_path[i] == path[j + 1]);
+                assert(rev_path[i + 1] == path[j]);
+                assert(mesh_half_edge_adjacent_spec(m, path[j], path[j + 1]));
+                if mesh_half_edge_direct_step_spec(m, path[j], path[j + 1]) {
+                    assert(mesh_half_edge_adjacent_spec(m, path[j + 1], path[j]));
+                } else {
+                    assert(mesh_half_edge_direct_step_spec(m, path[j + 1], path[j]));
+                    assert(mesh_half_edge_adjacent_spec(m, path[j + 1], path[j]));
+                }
+                assert(mesh_half_edge_adjacent_spec(m, rev_path[i], rev_path[i + 1]));
+            };
+        }
+    }
+
+    assert(mesh_half_edge_connected_spec(m, to, from)) by {
+        assert(exists|p: Seq<int>| {
+            &&& 0 <= to < hcnt
+            &&& 0 <= from < hcnt
+            &&& 0 < p.len()
+            &&& p[0] == to
+            &&& p[(p.len() - 1) as int] == from
+            &&& mesh_half_edge_walk_spec(m, p)
+        }) by {
+            let p = rev_path;
+            assert(0 <= to < hcnt);
+            assert(0 <= from < hcnt);
+            assert(0 < p.len());
+            assert(p[0] == to);
+            assert(p[(p.len() - 1) as int] == from);
+            assert(mesh_half_edge_walk_spec(m, p));
+        };
+    }
+}
+
 pub proof fn lemma_mesh_half_edge_walk_closed_set_contains_index(
     m: MeshModel,
     path: Seq<int>,
@@ -1392,6 +1468,159 @@ pub open spec fn mesh_component_count_partition_witness_spec(m: MeshModel, count
         &&& mesh_half_edge_components_partition_neighbor_closed_spec(m, components)
         &&& count == components.len() as int
     }
+}
+
+pub proof fn lemma_component_partition_entry_is_model_representative(
+    m: MeshModel,
+    components: Seq<Vec<usize>>,
+    c: int,
+)
+    requires
+        mesh_half_edge_components_partition_neighbor_closed_spec(m, components),
+        0 <= c < components.len() as int,
+    ensures
+        mesh_component_representative_spec(m, mesh_half_edge_component_entry_spec(components, c, 0)),
+{
+    let hcnt = mesh_half_edge_count_spec(m);
+    let r = mesh_half_edge_component_entry_spec(components, c, 0);
+
+    assert(components[c]@.len() > 0);
+    assert(0 <= 0 < components[c]@.len() as int);
+    assert(0 <= r < hcnt);
+
+    assert(forall|h: int| 0 <= h < hcnt && mesh_half_edge_connected_spec(m, r, h) ==> r <= h) by {
+        assert forall|h: int| 0 <= h < hcnt && mesh_half_edge_connected_spec(m, r, h) implies r <= h by {
+            assert(mesh_half_edge_component_representative_complete_at_spec(m, components, c));
+            assert(mesh_half_edge_component_contains_spec(m, components, c, h));
+            assert(mesh_half_edge_component_representative_minimal_at_spec(m, components, c));
+            assert(r <= h);
+        };
+    }
+
+    assert(mesh_component_representative_spec(m, r));
+}
+
+pub proof fn lemma_model_representative_in_partition_representative_set(
+    m: MeshModel,
+    components: Seq<Vec<usize>>,
+    r: int,
+)
+    requires
+        mesh_half_edge_components_partition_neighbor_closed_spec(m, components),
+        0 <= r < mesh_half_edge_count_spec(m),
+        mesh_component_representative_spec(m, r),
+    ensures
+        vstd::set_lib::set_int_range(0, components.len() as int).map(
+            |c: int| mesh_half_edge_component_entry_spec(components, c, 0),
+        ).contains(r),
+{
+    let hcnt = mesh_half_edge_count_spec(m);
+    let reps = vstd::set_lib::set_int_range(0, components.len() as int).map(
+        |c: int| mesh_half_edge_component_entry_spec(components, c, 0),
+    );
+
+    assert(mesh_half_edge_components_cover_all_spec(m, components));
+    assert(mesh_half_edge_has_component_spec(m, components, r));
+    let c = choose|c: int| {
+        &&& 0 <= c < components.len() as int
+        &&& mesh_half_edge_component_contains_spec(m, components, c, r)
+    };
+    assert(0 <= c < components.len() as int);
+    assert(mesh_half_edge_component_contains_spec(m, components, c, r));
+
+    let cr = mesh_half_edge_component_entry_spec(components, c, 0);
+    assert(mesh_half_edge_component_representative_connected_at_spec(m, components, c));
+    assert(mesh_half_edge_connected_spec(m, cr, r));
+    lemma_mesh_half_edge_connected_symmetric(m, cr, r);
+    assert(mesh_half_edge_connected_spec(m, r, cr));
+
+    assert(r <= cr);
+    assert(mesh_half_edge_component_representative_minimal_at_spec(m, components, c));
+    assert(cr <= r);
+    assert(cr == r);
+
+    assert(vstd::set_lib::set_int_range(0, components.len() as int).contains(c));
+    assert(exists|cp: int|
+        vstd::set_lib::set_int_range(0, components.len() as int).contains(cp)
+            && r == mesh_half_edge_component_entry_spec(components, cp, 0));
+    assert(reps.contains(r));
+}
+
+pub proof fn lemma_component_partition_count_matches_model_component_count(
+    m: MeshModel,
+    components: Seq<Vec<usize>>,
+)
+    requires
+        mesh_half_edge_components_partition_neighbor_closed_spec(m, components),
+    ensures
+        components.len() as int == mesh_component_count_spec(m),
+{
+    let hcnt = mesh_half_edge_count_spec(m);
+    let index_set = vstd::set_lib::set_int_range(0, components.len() as int);
+    let rep_set = index_set.map(|c: int| mesh_half_edge_component_entry_spec(components, c, 0));
+    let model_set = Set::new(|r: int| 0 <= r < hcnt && mesh_component_representative_spec(m, r));
+
+    vstd::set_lib::lemma_int_range(0, components.len() as int);
+
+    assert(vstd::relations::injective_on(
+        |c: int| mesh_half_edge_component_entry_spec(components, c, 0),
+        index_set,
+    )) by {
+        assert forall|c1: int, c2: int|
+            index_set.contains(c1)
+                && index_set.contains(c2)
+                && mesh_half_edge_component_entry_spec(components, c1, 0)
+                    == mesh_half_edge_component_entry_spec(components, c2, 0)
+                implies c1 == c2 by {
+            let h = mesh_half_edge_component_entry_spec(components, c1, 0);
+            assert(0 <= c1 < components.len() as int);
+            assert(0 <= c2 < components.len() as int);
+            assert(components[c1]@.len() > 0);
+            assert(components[c2]@.len() > 0);
+            assert(0 <= 0 < components[c1]@.len() as int);
+            assert(0 <= 0 < components[c2]@.len() as int);
+            assert(mesh_half_edge_component_contains_spec(m, components, c1, h));
+            assert(mesh_half_edge_component_contains_spec(m, components, c2, h));
+            assert(c1 == c2);
+        };
+    };
+
+    vstd::set_lib::lemma_map_size(index_set, rep_set, |c: int| mesh_half_edge_component_entry_spec(components, c, 0));
+    assert(rep_set.finite());
+    assert(index_set.len() == rep_set.len());
+    assert(index_set.len() == components.len() as int);
+    assert(rep_set.len() as int == components.len() as int);
+
+    assert(rep_set.subset_of(model_set)) by {
+        assert forall|r: int| rep_set.contains(r) implies model_set.contains(r) by {
+            let c = choose|c: int| {
+                &&& index_set.contains(c)
+                &&& r == mesh_half_edge_component_entry_spec(components, c, 0)
+            };
+            assert(index_set.contains(c));
+            assert(0 <= c < components.len() as int);
+            assert(r == mesh_half_edge_component_entry_spec(components, c, 0));
+            lemma_component_partition_entry_is_model_representative(m, components, c);
+            assert(mesh_component_representative_spec(m, mesh_half_edge_component_entry_spec(components, c, 0)));
+            assert(mesh_component_representative_spec(m, r));
+            assert(0 <= r < hcnt);
+        };
+    };
+
+    assert(model_set.subset_of(rep_set)) by {
+        assert forall|r: int| model_set.contains(r) implies rep_set.contains(r) by {
+            assert(0 <= r < hcnt && mesh_component_representative_spec(m, r));
+            lemma_model_representative_in_partition_representative_set(m, components, r);
+            assert(rep_set.contains(r));
+        };
+    };
+
+    vstd::set_lib::lemma_set_subset_finite(rep_set, model_set);
+    vstd::set_lib::lemma_len_subset(rep_set, model_set);
+    vstd::set_lib::lemma_len_subset(model_set, rep_set);
+    assert(rep_set.len() == model_set.len());
+    assert(model_set.len() as int == mesh_component_count_spec(m));
+    assert(components.len() as int == mesh_component_count_spec(m));
 }
 
 pub open spec fn bool_true_count_prefix_spec(bits: Seq<bool>, n: int) -> int
@@ -7929,7 +8158,8 @@ pub fn component_count_constructive(
 ) -> (out: Option<usize>)
     ensures
         match out {
-            Option::Some(count) => mesh_component_count_partition_witness_spec(m@, count as int),
+            Option::Some(count) => mesh_component_count_partition_witness_spec(m@, count as int)
+                && count as int == mesh_component_count_spec(m@),
             Option::None => true,
         },
 {
@@ -7976,7 +8206,10 @@ pub fn component_count_constructive(
         assert(mesh_half_edge_components_representative_minimal_spec(m@, components@));
         assert(mesh_half_edge_components_representative_complete_spec(m@, components@));
         assert(mesh_half_edge_components_partition_neighbor_closed_spec(m@, components@));
+        lemma_component_partition_count_matches_model_component_count(m@, components@);
+        assert(components@.len() as int == mesh_component_count_spec(m@));
         assert(count as int == components@.len() as int);
+        assert(count as int == mesh_component_count_spec(m@));
         assert(mesh_component_count_partition_witness_spec(m@, count as int));
     }
 

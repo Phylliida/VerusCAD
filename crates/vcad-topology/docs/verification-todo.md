@@ -973,7 +973,7 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `./scripts/verify-vcad-topology.sh` passed (`166 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
-- [ ] Verify `component_count` equals number of connected components.
+- [x] Verify `component_count` equals number of connected components.
   - burndown update (2026-02-18):
     - landed constructive count/partition bridge in
       `src/runtime_halfedge_mesh_refinement.rs`:
@@ -1030,6 +1030,34 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `mesh_component_count_spec`; reverse-direction connectivity export is now
       available, so the remaining work is to prove the partition witness
       cardinality equivalence against the model representative-set definition.
+  - burndown update (2026-02-18, model-count linkage completion):
+    - closed the remaining cardinality gap in
+      `src/runtime_halfedge_mesh_refinement.rs` by adding:
+      - `lemma_mesh_half_edge_connected_symmetric`,
+      - `lemma_component_partition_entry_is_model_representative`,
+      - `lemma_model_representative_in_partition_representative_set`,
+      - `lemma_component_partition_count_matches_model_component_count`.
+    - proof-shape summary:
+      proved a two-way representative-set correspondence between:
+      - partition representatives (`component[c][0]`), and
+      - model representatives (`mesh_component_representative_spec`),
+      then used finite-set cardinality lemmas (`set_int_range`, `map_size`,
+      subset/len bounds) to conclude
+      `components.len() == mesh_component_count_spec(m)`.
+    - strengthened `component_count_constructive`:
+      `Some(count)` now exports both
+      `mesh_component_count_partition_witness_spec(m@, count)` and
+      `count == mesh_component_count_spec(m@)`.
+    - outcome:
+      this closes the `component_count` model-link item at the constructive
+      wrapper boundary.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement component_count_constructive`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`136 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`136 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`170 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
 - [ ] Verify `euler_characteristics_per_component` computes `V - E + F` per BFS component.
   - burndown update (2026-02-18):
