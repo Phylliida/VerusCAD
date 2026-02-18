@@ -87,7 +87,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 
 ## P5.8 Proof-Layer Integration (Current Refinement Layout)
 - [x] Extend `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs` with Phase 5 geometry specs.
-- [ ] Add Phase 5 bridge lemmas alongside `src/runtime_halfedge_mesh_refinement/kernel_bridge_lemmas.rs`.
+- [x] Add Phase 5 bridge lemmas alongside `src/runtime_halfedge_mesh_refinement/kernel_bridge_lemmas.rs`.
 - [ ] Add runtime constructive check wrappers analogous to current structural check wrappers.
 - [ ] If kernelized checkers are added, extend `src/verified_checker_kernels.rs` and prove bridge equivalence.
 - [ ] Ensure new proof modules are included from `src/runtime_halfedge_mesh_refinement.rs`.
@@ -139,6 +139,21 @@ This doc expands those targets into executable TODOs aligned with the current `v
   - document which Euler-operator preconditions must preserve geometric invariants versus recheck them.
 
 ## Burndown Log
+- 2026-02-18: Completed the P5.8 Phase 5 bridge-lemma item in `src/runtime_halfedge_mesh_refinement/kernel_bridge_lemmas.rs`:
+  - added runtime geometry bridge lemma `lemma_mesh_runtime_geometry_bridge_holds`, proving `mesh_runtime_geometry_bridge_spec(m)`;
+  - added face-cycle bridge lemmas tying model cycle iteration to runtime geometry sequences:
+    - `lemma_mesh_face_cycle_half_edge_or_default_matches_model`
+    - `lemma_mesh_face_cycle_vertex_index_or_default_matches_model`
+    - `lemma_mesh_runtime_face_cycle_vertex_position_matches_runtime_positions`
+    - `lemma_mesh_runtime_face_ordered_vertex_positions_match_cycle`.
+- 2026-02-18: Failed attempt in this P5.8 pass: initial lemma signatures omitted explicit face-index bounds (`0 <= f < mesh_face_count_spec(..)`), and the proof attempted to assert half-edge bounds directly from face-cycle witnesses; Verus rejected those assertions. Resolved by adding explicit face-index preconditions and discharging half-edge bounds via `lemma_mesh_next_iter_in_bounds`.
+- 2026-02-18: Revalidated after the P5.8 bridge-lemma additions:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (203 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (238 verified, 0 errors)
 - 2026-02-18: Completed a P5.2 spec/proof pass in `src/runtime_halfedge_mesh_refinement/from_face_cycles_specs_and_lemmas.rs`:
   - added geometry-level half-edge segment specs over vertex positions (`mesh_half_edge_from_position_spec`, `mesh_half_edge_to_position_spec`, `mesh_half_edge_segment_geometry_at_spec`, and aggregate `mesh_all_half_edges_segment_geometry_spec`);
   - added geometry-level twin reversed-segment specs (`mesh_twin_half_edges_reverse_segment_at_spec` and aggregate `mesh_all_twin_half_edges_reverse_segments_spec`);

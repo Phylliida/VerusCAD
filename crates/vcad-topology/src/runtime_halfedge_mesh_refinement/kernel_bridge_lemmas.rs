@@ -951,4 +951,166 @@ pub proof fn lemma_kernel_vertex_manifold_matches_mesh(
     }
     assert(mesh_vertex_representative_cycles_kernel_bridge_total_spec(m));
 }
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_runtime_geometry_bridge_holds(m: &Mesh)
+    ensures
+        mesh_runtime_geometry_bridge_spec(m),
+{
+    let vertex_positions = mesh_runtime_vertex_positions_spec(m);
+    assert(mesh_geometry_input_spec(m@, vertex_positions)) by {
+        assert(vertex_positions.len() == m.vertices@.len());
+        assert(mesh_vertex_count_spec(m@) == m@.vertex_half_edges.len() as int);
+        assert(m@.vertex_half_edges.len() == m.vertices@.len());
+    };
+    assert(forall|v: int|
+        0 <= v < mesh_vertex_count_spec(m@)
+            ==> #[trigger] vertex_positions[v] == #[trigger] m.vertices@[v].position@) by {
+        assert forall|v: int|
+            0 <= v < mesh_vertex_count_spec(m@)
+                implies #[trigger] vertex_positions[v] == #[trigger] m.vertices@[v].position@ by {
+            assert(mesh_vertex_count_spec(m@) == m.vertices@.len() as int);
+        };
+    };
+    assert(mesh_runtime_geometry_bridge_spec(m));
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_face_cycle_half_edge_or_default_matches_model(
+    m: MeshModel,
+    f: int,
+    k: int,
+    i: int,
+)
+    requires
+        mesh_index_bounds_spec(m),
+        0 <= f < mesh_face_count_spec(m),
+        mesh_face_cycle_witness_spec(m, f, k),
+        0 <= i < k,
+    ensures
+        mesh_face_cycle_half_edge_or_default_spec(m, f, i as nat)
+            == mesh_next_iter_spec(m, m.face_half_edges[f], i as nat),
+{
+    assert(0 <= f < mesh_face_count_spec(m));
+    let start = m.face_half_edges[f];
+    assert(0 <= start < mesh_half_edge_count_spec(m));
+    lemma_mesh_next_iter_in_bounds(m, start, i as nat);
+    let h = mesh_next_iter_spec(m, start, i as nat);
+    assert(0 <= h < mesh_half_edge_count_spec(m));
+    assert(mesh_face_cycle_half_edge_or_default_spec(m, f, i as nat) == h);
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_face_cycle_vertex_index_or_default_matches_model(
+    m: MeshModel,
+    f: int,
+    k: int,
+    i: int,
+)
+    requires
+        mesh_index_bounds_spec(m),
+        0 <= f < mesh_face_count_spec(m),
+        mesh_face_cycle_witness_spec(m, f, k),
+        0 <= i < k,
+    ensures
+        mesh_face_cycle_vertex_index_or_default_spec(m, f, i as nat)
+            == m.half_edges[mesh_next_iter_spec(m, m.face_half_edges[f], i as nat)].vertex,
+{
+    assert(0 <= f < mesh_face_count_spec(m));
+    let start = m.face_half_edges[f];
+    let h = mesh_next_iter_spec(m, start, i as nat);
+    lemma_mesh_face_cycle_half_edge_or_default_matches_model(m, f, k, i);
+    assert(0 <= m.half_edges[h].vertex < mesh_vertex_count_spec(m));
+    assert(mesh_face_cycle_vertex_index_or_default_spec(m, f, i as nat) == m.half_edges[h].vertex);
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_runtime_face_cycle_vertex_position_matches_runtime_positions(
+    m: &Mesh,
+    f: int,
+    k: int,
+    i: int,
+)
+    requires
+        mesh_index_bounds_spec(m@),
+        0 <= f < mesh_face_count_spec(m@),
+        mesh_face_cycle_witness_spec(m@, f, k),
+        0 <= i < k,
+    ensures {
+        let h = mesh_next_iter_spec(m@, m@.face_half_edges[f], i as nat);
+        let v = m@.half_edges[h].vertex;
+        mesh_face_cycle_vertex_position_or_default_at_int_spec(
+            m@,
+            mesh_runtime_vertex_positions_spec(m),
+            f,
+            i,
+        ) == mesh_runtime_vertex_positions_spec(m)[v]
+    },
+{
+    let h = mesh_next_iter_spec(m@, m@.face_half_edges[f], i as nat);
+    let v = m@.half_edges[h].vertex;
+    lemma_mesh_runtime_geometry_bridge_holds(m);
+    lemma_mesh_face_cycle_vertex_index_or_default_matches_model(m@, f, k, i);
+    assert(0 <= v < mesh_vertex_count_spec(m@));
+    assert(mesh_runtime_vertex_positions_spec(m).len() == mesh_vertex_count_spec(m@));
+    assert(mesh_face_cycle_vertex_position_or_default_at_int_spec(
+        m@,
+        mesh_runtime_vertex_positions_spec(m),
+        f,
+        i,
+    ) == mesh_runtime_vertex_positions_spec(m)[v]);
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_runtime_face_ordered_vertex_positions_match_cycle(
+    m: &Mesh,
+    f: int,
+    k: int,
+)
+    requires
+        mesh_index_bounds_spec(m@),
+        0 <= f < mesh_face_count_spec(m@),
+        mesh_face_cycle_witness_spec(m@, f, k),
+    ensures
+        forall|i: int| 0 <= i < k ==> {
+            let h = mesh_next_iter_spec(m@, m@.face_half_edges[f], i as nat);
+            let v = m@.half_edges[h].vertex;
+            #[trigger] mesh_runtime_face_ordered_vertex_positions_spec(m, f, k)[i]
+                == mesh_runtime_vertex_positions_spec(m)[v]
+        },
+{
+    assert(forall|i: int| 0 <= i < k ==> {
+        let h = mesh_next_iter_spec(m@, m@.face_half_edges[f], i as nat);
+        let v = m@.half_edges[h].vertex;
+        #[trigger] mesh_runtime_face_ordered_vertex_positions_spec(m, f, k)[i]
+            == mesh_runtime_vertex_positions_spec(m)[v]
+    }) by {
+        assert forall|i: int| 0 <= i < k implies {
+            let h = mesh_next_iter_spec(m@, m@.face_half_edges[f], i as nat);
+            let v = m@.half_edges[h].vertex;
+            #[trigger] mesh_runtime_face_ordered_vertex_positions_spec(m, f, k)[i]
+                == mesh_runtime_vertex_positions_spec(m)[v]
+        } by {
+            lemma_mesh_runtime_face_cycle_vertex_position_matches_runtime_positions(m, f, k, i);
+            assert(mesh_runtime_face_ordered_vertex_positions_spec(m, f, k)[i]
+                == mesh_face_cycle_vertex_position_or_default_spec(
+                    m@,
+                    mesh_runtime_vertex_positions_spec(m),
+                    f,
+                    i as nat,
+                ));
+            assert(mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                m@,
+                mesh_runtime_vertex_positions_spec(m),
+                f,
+                i,
+            ) == mesh_face_cycle_vertex_position_or_default_spec(
+                m@,
+                mesh_runtime_vertex_positions_spec(m),
+                f,
+                i as nat,
+            ));
+        };
+    };
+}
 } // verus!

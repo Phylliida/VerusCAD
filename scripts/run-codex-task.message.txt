@@ -1,1 +1,1 @@
-Proved Phase 5 coplanarity cyclic-reindexing stability in vcad-topology, added a face-cycle-rotation invariance regression test for geometry checks, and updated the burndown with full revalidation (229 verified, 0 errors).
+Completed P5.8 in vcad-topology by adding verified Phase 5 runtime-geometry bridge lemmas in kernel_bridge_lemmas and revalidating the full test/verification matrix (238 proofs verified).
