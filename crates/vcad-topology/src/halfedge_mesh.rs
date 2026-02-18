@@ -1,5 +1,7 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 
+#[cfg(feature = "geometry-checks")]
+use vcad_geometry::collinearity_coplanarity::collinear3d;
 use vcad_math::runtime_point3::RuntimePoint3;
 #[cfg(feature = "verus-proofs")]
 use crate::verified_checker_kernels::{
@@ -268,6 +270,54 @@ impl Mesh {
     /// per-component Euler check `V - E + F = 2` (sphere-like closed components).
     pub fn is_valid(&self) -> bool {
         self.is_structurally_valid() && self.check_euler_formula_closed_components()
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    /// Optional geometric extension: every face corner must have non-collinear
+    /// `(prev, current, next)` vertex positions.
+    ///
+    /// This intentionally stays outside `is_structurally_valid`/`is_valid` so
+    /// the core topology gate remains purely combinatorial.
+    pub fn check_face_corner_non_collinearity(&self) -> bool {
+        if !self.check_index_bounds() || !self.check_face_cycles() {
+            return false;
+        }
+
+        let hcnt = self.half_edges.len();
+        for face in &self.faces {
+            let start = face.half_edge;
+            let mut h = start;
+            let mut steps = 0usize;
+
+            loop {
+                let he = &self.half_edges[h];
+                let prev = &self.half_edges[he.prev];
+                let next = &self.half_edges[he.next];
+
+                let a = &self.vertices[prev.vertex].position;
+                let b = &self.vertices[he.vertex].position;
+                let c = &self.vertices[next.vertex].position;
+                if collinear3d(a, b, c) {
+                    return false;
+                }
+
+                h = he.next;
+                steps += 1;
+                if h == start {
+                    break;
+                }
+                if steps > hcnt {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    pub fn is_valid_with_geometry(&self) -> bool {
+        self.is_valid() && self.check_face_corner_non_collinearity()
     }
 
     pub fn component_count(&self) -> usize {
@@ -721,6 +771,11 @@ mod tests {
         let mesh = Mesh::tetrahedron();
         assert!(mesh.is_structurally_valid());
         assert!(mesh.is_valid());
+        #[cfg(feature = "geometry-checks")]
+        {
+            assert!(mesh.check_face_corner_non_collinearity());
+            assert!(mesh.is_valid_with_geometry());
+        }
         assert_eq!(mesh.vertices.len(), 4);
         assert_eq!(mesh.edges.len(), 6);
         assert_eq!(mesh.faces.len(), 4);
@@ -734,6 +789,11 @@ mod tests {
         let mesh = Mesh::cube();
         assert!(mesh.is_structurally_valid());
         assert!(mesh.is_valid());
+        #[cfg(feature = "geometry-checks")]
+        {
+            assert!(mesh.check_face_corner_non_collinearity());
+            assert!(mesh.is_valid_with_geometry());
+        }
         assert_eq!(mesh.vertices.len(), 8);
         assert_eq!(mesh.edges.len(), 12);
         assert_eq!(mesh.faces.len(), 6);
@@ -747,12 +807,35 @@ mod tests {
         let mesh = Mesh::triangular_prism();
         assert!(mesh.is_structurally_valid());
         assert!(mesh.is_valid());
+        #[cfg(feature = "geometry-checks")]
+        {
+            assert!(mesh.check_face_corner_non_collinearity());
+            assert!(mesh.is_valid_with_geometry());
+        }
         assert_eq!(mesh.vertices.len(), 6);
         assert_eq!(mesh.edges.len(), 9);
         assert_eq!(mesh.faces.len(), 5);
         assert_eq!(mesh.half_edges.len(), 18);
         assert_eq!(mesh.component_count(), 1);
         assert_eq!(mesh.euler_characteristics_per_component(), vec![2]);
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn collinear_triangle_faces_fail_geometric_nondegeneracy() {
+        let vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(2, 0, 0),
+        ];
+        let faces = vec![vec![0, 1, 2], vec![0, 2, 1]];
+
+        let mesh = Mesh::from_face_cycles(vertices, &faces)
+            .expect("closed opposite-orientation collinear triangles should build");
+        assert!(mesh.is_structurally_valid());
+        assert!(mesh.is_valid());
+        assert!(!mesh.check_face_corner_non_collinearity());
+        assert!(!mesh.is_valid_with_geometry());
     }
 
     #[test]

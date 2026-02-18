@@ -2212,7 +2212,39 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       sentence argument; script rejected it (`error: expected zero arguments`).
       stable usage is to write the sentence to
       `scripts/run-codex-task.message.txt` and invoke the script with no args.
-- [ ] Reuse `vcad-geometry` predicates for optional geometric non-degeneracy extensions (face area > 0, etc.).
+- [x] Reuse `vcad-geometry` predicates for optional geometric non-degeneracy extensions (face area > 0, etc.).
+  - burndown update (2026-02-18, optional geometric non-degeneracy extension):
+    - added an opt-in topology feature in `crates/vcad-topology/Cargo.toml`:
+      `geometry-checks = ["dep:vcad-geometry"]`.
+    - added geometry-backed runtime APIs in `src/halfedge_mesh.rs` under
+      `#[cfg(feature = "geometry-checks")]`:
+      - `Mesh::check_face_corner_non_collinearity`,
+      - `Mesh::is_valid_with_geometry`.
+    - checker semantics:
+      for each face cycle corner `(prev, current, next)`, call
+      `vcad_geometry::collinearity_coplanarity::collinear3d(...)` on the
+      corresponding runtime vertex positions and reject collinear triples.
+    - added coverage tests in `src/halfedge_mesh.rs`:
+      - reference meshes (`tetrahedron`, `cube`, `triangular_prism`) pass the
+        new geometric gate when the feature is enabled,
+      - new regression:
+        `collinear_triangle_faces_fail_geometric_nondegeneracy` demonstrates a
+        closed structurally valid mesh that fails the optional geometric gate.
+    - failed attempt (kept documented):
+      first pass added `vcad-geometry` as a non-optional dependency; Verus
+      topology verification then tried compiling `vcad-geometry` in this
+      workspace state and failed in unrelated existing geometry proof code
+      (`segment_intersection` `view` errors). the stable fix was to keep
+      geometry reuse opt-in via the `geometry-checks` feature so baseline
+      `verus-proofs` verification remains green.
+    - verification checks:
+      `cargo test -p vcad-topology` passed (`4 passed, 0 failed`);
+      `cargo test -p vcad-topology --features geometry-checks` passed
+      (`5 passed, 0 failed`);
+      `./scripts/verify-vcad-topology-fast.sh` passed
+      (`173 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed
+      (`208 verified, 0 errors`).
 
 ## Exit Condition
 - [x] No `assume_specification` remains in `vcad-topology` for runtime mesh behavior.

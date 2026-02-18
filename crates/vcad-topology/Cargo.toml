@@ -4,11 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+vcad-geometry = { path = "../vcad-geometry", optional = true }
 vcad-math = { path = "../vcad-math" }
 vstd = { path = "../../../verus/source/vstd" }
 
 [features]
 default = []
+geometry-checks = ["dep:vcad-geometry"]
 verus-proofs = []
 
 [package.metadata.verus]

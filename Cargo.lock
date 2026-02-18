@@ -130,6 +130,7 @@ dependencies = [
 name = "vcad-topology"
 version = "0.1.0"
 dependencies = [
+ "vcad-geometry",
  "vcad-math",
  "vstd",
 ]
