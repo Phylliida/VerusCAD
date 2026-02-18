@@ -1623,6 +1623,30 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `./scripts/verify-vcad-topology-fast.sh` passed (`159 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`194 verified, 0 errors`);
       `cargo test -p vcad-topology` passed (`4 passed, 0 failed`).
+  - burndown update (2026-02-18, Euler gate bridge removal cleanup):
+    - removed the runtime-call bridge
+      `ex_mesh_check_euler_formula_closed_components` from
+      `src/runtime_halfedge_mesh_refinement.rs`.
+    - strengthened
+      `check_euler_formula_closed_components_constructive` to compute
+      `api_ok` directly from checked witness state:
+      `api_ok = (chis_non_empty && chis_all_two)`.
+      this preserves the exported gate witness contract while removing one
+      external-body trust edge.
+    - removed now-unused helper method
+      `check_euler_formula_closed_components_for_verification` from
+      `src/halfedge_mesh.rs`, and updated the reference-mesh bridge test to
+      compare against `check_euler_formula_closed_components_raw()` directly.
+    - failed attempts:
+      none in this pass.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement check_euler_formula_closed_components_constructive`
+      passed (`2 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`173 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`208 verified, 0 errors`);
+      `cargo test -p vcad-topology` passed (`4 passed, 0 failed`);
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`6 passed, 0 failed`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 

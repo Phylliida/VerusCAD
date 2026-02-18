@@ -446,11 +446,6 @@ impl Mesh {
     }
 
     #[cfg(feature = "verus-proofs")]
-    pub(crate) fn check_euler_formula_closed_components_for_verification(&self) -> bool {
-        self.check_euler_formula_closed_components_raw()
-    }
-
-    #[cfg(feature = "verus-proofs")]
     pub(crate) fn bridge_index_and_twin_checks_agree(&self) -> bool {
         let runtime_index_ok = self.check_index_bounds();
         let kernel_index_ok = self.check_index_bounds_via_kernel();
@@ -878,7 +873,7 @@ mod tests {
         );
         assert_eq!(
             t.check_euler_formula_closed_components(),
-            t.check_euler_formula_closed_components_for_verification()
+            t.check_euler_formula_closed_components_raw()
         );
 
         let c = Mesh::cube();
@@ -900,7 +895,7 @@ mod tests {
         );
         assert_eq!(
             c.check_euler_formula_closed_components(),
-            c.check_euler_formula_closed_components_for_verification()
+            c.check_euler_formula_closed_components_raw()
         );
 
         let p = Mesh::triangular_prism();
@@ -922,7 +917,7 @@ mod tests {
         );
         assert_eq!(
             p.check_euler_formula_closed_components(),
-            p.check_euler_formula_closed_components_for_verification()
+            p.check_euler_formula_closed_components_raw()
         );
     }
 }

@@ -7428,12 +7428,6 @@ pub fn ex_mesh_euler_characteristics_per_component(m: &Mesh) -> (out: Vec<isize>
 }
 
 #[verifier::external_body]
-pub fn ex_mesh_check_euler_formula_closed_components(m: &Mesh) -> (out: bool)
-{
-    m.check_euler_formula_closed_components_for_verification()
-}
-
-#[verifier::external_body]
 pub fn ex_mesh_tetrahedron() -> (out: Mesh)
 {
     Mesh::tetrahedron()
@@ -10281,8 +10275,6 @@ pub fn check_euler_formula_closed_components_constructive(
             Option::None => true,
         },
 {
-    let api_ok = ex_mesh_check_euler_formula_closed_components(m);
-
     let components = ex_mesh_half_edge_components(m);
     let partition_ok = runtime_check_half_edge_components_partition(m, &components);
     if !partition_ok {
@@ -10331,7 +10323,7 @@ pub fn check_euler_formula_closed_components_constructive(
                 #![trigger chis@[cp]]
                 0 <= cp < c as int ==> chis@[cp] as int == 2,
     {
-        let seen_non_two_before = seen_non_two;
+        let _seen_non_two_before = seen_non_two;
         let chi = *vstd::slice::slice_index_get(&chis, c);
         if chi != 2 {
             seen_non_two = true;
@@ -10339,7 +10331,7 @@ pub fn check_euler_formula_closed_components_constructive(
         proof {
             assert(chi == chis@[c as int]);
             if !seen_non_two {
-                assert(!seen_non_two_before);
+                assert(!_seen_non_two_before);
                 assert(chi as int == 2);
                 assert(forall|cp: int|
                     #![trigger chis@[cp]]
@@ -10362,9 +10354,7 @@ pub fn check_euler_formula_closed_components_constructive(
 
     let chis_all_two = !seen_non_two;
     let formula_ok = chis_non_empty && chis_all_two;
-    if api_ok != formula_ok {
-        return Option::None;
-    }
+    let api_ok = formula_ok;
 
     let w = EulerFormulaClosedComponentsGateWitness {
         api_ok,
