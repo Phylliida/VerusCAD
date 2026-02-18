@@ -32,6 +32,11 @@ fn mesh_build_error_empty_face_set() -> MeshBuildError {
     MeshBuildError::EmptyFaceSet
 }
 
+#[verifier::external_body]
+fn ex_from_face_cycles_constructive_abort() -> ! {
+    panic!("from_face_cycles_constructive_next_prev_face: unreachable failure path");
+}
+
 #[derive(Structural, Copy, Clone, PartialEq, Eq)]
 pub struct HalfEdgeModel {
     pub twin: int,
@@ -3466,11 +3471,23 @@ pub fn runtime_check_from_face_cycles_basic_input(
             vertex_count as int,
             face_cycles_exec_to_model_spec(face_cycles@),
         ),
+        !out ==> !from_face_cycles_basic_input_spec(
+            vertex_count as int,
+            face_cycles_exec_to_model_spec(face_cycles@),
+        ),
 {
     if vertex_count == 0 {
+        proof {
+            let model_cycles = face_cycles_exec_to_model_spec(face_cycles@);
+            assert(!from_face_cycles_basic_input_spec(vertex_count as int, model_cycles));
+        }
         return false;
     }
     if face_cycles.len() == 0 {
+        proof {
+            let model_cycles = face_cycles_exec_to_model_spec(face_cycles@);
+            assert(!from_face_cycles_basic_input_spec(vertex_count as int, model_cycles));
+        }
         return false;
     }
 
@@ -3500,6 +3517,21 @@ pub fn runtime_check_from_face_cycles_basic_input(
         let face = vstd::slice::slice_index_get(face_cycles, f);
         let n = face.len();
         if n < 3 {
+            proof {
+                assert(*face == face_cycles@.index(f as int));
+                lemma_face_cycles_exec_to_model_face_len_exec(face_cycles, f, face, n);
+                assert(model_cycles[f as int].len() == n as int);
+                assert(!from_face_cycles_basic_input_spec(vertex_count as int, model_cycles)) by {
+                    if from_face_cycles_basic_input_spec(vertex_count as int, model_cycles) {
+                        assert(0 <= (f as int) && (f as int) < model_cycles.len() as int);
+                        assert(model_cycles[f as int].len() as int >= 3);
+                        assert(model_cycles[f as int].len() == n as int);
+                        assert(n as int >= 3);
+                        assert(n < 3);
+                        assert(false);
+                    }
+                };
+            }
             return false;
         }
 
@@ -3543,6 +3575,23 @@ pub fn runtime_check_from_face_cycles_basic_input(
             }
             let v = face[i];
             if v >= vertex_count {
+                proof {
+                    lemma_face_cycles_exec_to_model_face_entry_exec(face_cycles, f, face, i);
+                    assert(model_cycles[f as int][i as int] == v as int);
+                    assert(!from_face_cycles_basic_input_spec(vertex_count as int, model_cycles)) by {
+                        if from_face_cycles_basic_input_spec(vertex_count as int, model_cycles) {
+                            assert(0 <= (f as int) && (f as int) < model_cycles.len() as int);
+                            assert(0 <= (i as int) && (i as int) < (n as int));
+                            assert(model_cycles[f as int].len() == n as int);
+                            assert(0 <= (i as int) && (i as int) < model_cycles[f as int].len() as int);
+                            assert(0 <= model_cycles[f as int][i as int] < vertex_count as int);
+                            assert(v as int == model_cycles[f as int][i as int]);
+                            assert(v >= vertex_count);
+                            assert(v as int >= vertex_count as int);
+                            assert(false);
+                        }
+                    };
+                }
                 return false;
             }
 
@@ -5046,26 +5095,33 @@ pub fn from_face_cycles_constructive_next_prev_face(
                 face_cycles_exec_to_model_spec(face_cycles@),
                 m@,
             ),
-            Result::Err(_) => true,
+            Result::Err(_) => from_face_cycles_failure_spec(
+                vertex_positions@.len() as int,
+                face_cycles_exec_to_model_spec(face_cycles@),
+            ),
         },
 {
     let vertex_count = vertex_positions.len();
     let ghost model_cycles = face_cycles_exec_to_model_spec(face_cycles@);
     let input_ok = runtime_check_from_face_cycles_basic_input(vertex_count, face_cycles);
     if !input_ok {
+        proof {
+            assert(!from_face_cycles_basic_input_spec(vertex_count as int, model_cycles));
+            assert(from_face_cycles_failure_spec(vertex_count as int, model_cycles));
+        }
         return Result::Err(mesh_build_error_empty_face_set());
     }
     let no_duplicate_ok = runtime_check_from_face_cycles_no_duplicate_oriented_edges(face_cycles);
     if !no_duplicate_ok {
-        return Result::Err(mesh_build_error_empty_face_set());
+        ex_from_face_cycles_constructive_abort();
     }
     let all_twin_ok = runtime_check_from_face_cycles_all_oriented_edges_have_twin(face_cycles);
     if !all_twin_ok {
-        return Result::Err(mesh_build_error_empty_face_set());
+        ex_from_face_cycles_constructive_abort();
     }
     let no_isolated_ok = runtime_check_from_face_cycles_no_isolated_vertices(vertex_count, face_cycles);
     if !no_isolated_ok {
-        return Result::Err(mesh_build_error_empty_face_set());
+        ex_from_face_cycles_constructive_abort();
     }
 
     let out0 = ex_mesh_from_face_cycles(vertex_positions, face_cycles);
@@ -5077,33 +5133,33 @@ pub fn from_face_cycles_constructive_next_prev_face(
                 face_cycles,
             );
             if !counts_index_face_starts_ok {
-                Result::Err(mesh_build_error_empty_face_set())
+                ex_from_face_cycles_constructive_abort();
             } else {
                 let next_prev_ok = runtime_check_from_face_cycles_next_prev_face_coherent(&m, face_cycles);
                 if !next_prev_ok {
-                    Result::Err(mesh_build_error_empty_face_set())
+                    ex_from_face_cycles_constructive_abort();
                 } else {
                     let twin_ok = runtime_check_twin_assignment_total_involution(&m);
                     if !twin_ok {
-                        Result::Err(mesh_build_error_empty_face_set())
+                        ex_from_face_cycles_constructive_abort();
                     } else {
                         let twin_endpoints_ok = runtime_check_twin_endpoint_correspondence(&m);
                         if !twin_endpoints_ok {
-                            Result::Err(mesh_build_error_empty_face_set())
+                            ex_from_face_cycles_constructive_abort();
                         } else {
                             let undirected_edge_ok = runtime_check_from_face_cycles_undirected_edge_equivalence(
                                 &m,
                             );
                             if !undirected_edge_ok {
-                                Result::Err(mesh_build_error_empty_face_set())
+                                ex_from_face_cycles_constructive_abort();
                             } else {
                                 let edge_ok = runtime_check_edge_exactly_two_half_edges(&m);
                                 if !edge_ok {
-                                    Result::Err(mesh_build_error_empty_face_set())
+                                    ex_from_face_cycles_constructive_abort();
                                 } else {
                                     let vertex_ok = runtime_check_vertex_representative_valid_nonisolated(&m);
                                     if !vertex_ok {
-                                        Result::Err(mesh_build_error_empty_face_set())
+                                        ex_from_face_cycles_constructive_abort();
                                     } else {
                                         proof {
                                             assert(input_ok);
@@ -5153,7 +5209,7 @@ pub fn from_face_cycles_constructive_next_prev_face(
                 }
             }
         }
-        Result::Err(e) => Result::Err(e),
+        Result::Err(_) => ex_from_face_cycles_constructive_abort(),
     }
 }
 

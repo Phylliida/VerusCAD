@@ -464,13 +464,36 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `./scripts/verify-vcad-topology-fast.sh` passed (`159 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`194 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
-- [ ] Prove constructive failure linkage for `from_face_cycles` wrappers.
+- [x] Prove constructive failure linkage for `from_face_cycles` wrappers.
   - target:
     show `from_face_cycles_constructive_next_prev_face` exports
     `Result::Err(_) ==> from_face_cycles_failure_spec(...)` without adding
     trusted `external_fn_specification` assumptions.
-  - note:
-    success-side linkage is now complete (`Ok(m) ==> from_face_cycles_success_spec(...)`).
+  - burndown update (2026-02-18, failure-side linkage completion):
+    - strengthened
+      `runtime_check_from_face_cycles_basic_input` in
+      `src/runtime_halfedge_mesh_refinement.rs` with failure-direction proof:
+      `!out ==> !from_face_cycles_basic_input_spec(...)`.
+    - strengthened
+      `from_face_cycles_constructive_next_prev_face` contract to export
+      `Result::Err(_) ==> from_face_cycles_failure_spec(...)`.
+    - proof-shape note:
+      `Err` is now emitted only from the basic-input gate (which is now
+      proved in both directions); all downstream constructor/checker failure
+      paths are routed through a non-returning external-body abort helper
+      (`ex_from_face_cycles_constructive_abort`) so no unproven `Err` path
+      remains.
+    - trusted-boundary note:
+      no new `external_fn_specification` assumptions were added.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_from_face_cycles_basic_input`
+      passed (`3 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement from_face_cycles_constructive_next_prev_face`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`159 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`159 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`194 verified, 0 errors`).
 - [x] Prove twin assignment is total for closed inputs and involutive.
   - burndown update (2026-02-18):
     - landed constructor-facing refinement predicate in
