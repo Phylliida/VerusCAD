@@ -1,1 +1,1 @@
-Strengthened vcad-topology structural-validity verification by proving constructive prev/next-inverse and no-degenerate-edge model links and documenting the burndown update with all verification scripts passing.
+Added a constructive face-cycles kernel-bridge model-link for structural validity in vcad-topology and documented the burndown increment with green fast/full verification.

@@ -1,6 +1,7 @@
 #![cfg(feature = "verus-proofs")]
 
 use crate::halfedge_mesh::{Edge, Face, HalfEdge, Mesh, MeshBuildError, Vertex};
+use crate::verified_checker_kernels as kernels;
 use vcad_math::runtime_point3::RuntimePoint3;
 use vstd::prelude::*;
 use vstd::view::View;
@@ -272,6 +273,449 @@ pub open spec fn mesh_face_next_cycles_spec(m: MeshModel) -> bool {
     forall|f: int|
         #![trigger m.face_half_edges[f]]
         0 <= f < mesh_face_count_spec(m) ==> exists|k: int| mesh_face_cycle_witness_spec(m, f, k)
+}
+
+pub open spec fn kernel_mesh_matches_mesh_model_spec(km: &kernels::KernelMesh, m: MeshModel) -> bool {
+    &&& km.vertex_half_edges@.len() == mesh_vertex_count_spec(m)
+    &&& km.edge_half_edges@.len() == mesh_edge_count_spec(m)
+    &&& km.face_half_edges@.len() == mesh_face_count_spec(m)
+    &&& km.half_edges@.len() == mesh_half_edge_count_spec(m)
+    &&& forall|v: int|
+        0 <= v < mesh_vertex_count_spec(m)
+            ==> (#[trigger] km.vertex_half_edges@[v] as int) == m.vertex_half_edges[v]
+    &&& forall|e: int|
+        0 <= e < mesh_edge_count_spec(m)
+            ==> (#[trigger] km.edge_half_edges@[e] as int) == m.edge_half_edges[e]
+    &&& forall|f: int|
+        0 <= f < mesh_face_count_spec(m)
+            ==> (#[trigger] km.face_half_edges@[f] as int) == m.face_half_edges[f]
+    &&& forall|h: int| 0 <= h < mesh_half_edge_count_spec(m) ==> {
+        let khe = #[trigger] km.half_edges@[h];
+        let mhe = m.half_edges[h];
+        &&& (khe.twin as int) == mhe.twin
+        &&& (khe.next as int) == mhe.next
+        &&& (khe.prev as int) == mhe.prev
+        &&& (khe.vertex as int) == mhe.vertex
+        &&& (khe.edge as int) == mhe.edge
+        &&& (khe.face as int) == mhe.face
+    }
+}
+
+pub open spec fn mesh_face_representative_cycle_kernel_bridge_witness_spec(
+    m: MeshModel,
+    f: int,
+    k: int,
+) -> bool {
+    let hcnt = mesh_half_edge_count_spec(m);
+    let start = m.face_half_edges[f];
+    &&& 3 <= k <= hcnt
+    &&& mesh_next_iter_spec(m, start, k as nat) == start
+    &&& forall|i: int|
+        0 <= i < k ==> #[trigger] m.half_edges[mesh_next_iter_spec(m, start, i as nat)].face == f
+}
+
+pub open spec fn mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_spec(
+    m: MeshModel,
+) -> bool {
+    exists|face_cycle_lens: Seq<usize>, covered: Seq<bool>| {
+        &&& face_cycle_lens.len() == mesh_face_count_spec(m)
+        &&& covered.len() == mesh_half_edge_count_spec(m)
+        &&& forall|f: int|
+            #![trigger face_cycle_lens[f]]
+            0 <= f < mesh_face_count_spec(m)
+                ==> mesh_face_representative_cycle_kernel_bridge_witness_spec(
+                    m,
+                    f,
+                    face_cycle_lens[f] as int,
+                )
+        &&& forall|h: int|
+            #![trigger h + 0]
+            0 <= h < mesh_half_edge_count_spec(m) && #[trigger] covered[h]
+                ==> exists|f: int, i: int| {
+                    &&& 0 <= f < mesh_face_count_spec(m)
+                    &&& 0 <= i < face_cycle_lens[f] as int
+                    &&& #[trigger] mesh_next_iter_spec(m, m.face_half_edges[f], i as nat) == h
+                }
+        &&& forall|h: int| 0 <= h < mesh_half_edge_count_spec(m) ==> #[trigger] covered[h]
+        &&& forall|f1: int, i1: int, f2: int, i2: int|
+            #![trigger mesh_next_iter_spec(m, m.face_half_edges[f1], i1 as nat), mesh_next_iter_spec(m, m.face_half_edges[f2], i2 as nat)]
+            0 <= f1 < mesh_face_count_spec(m)
+                && 0 <= f2 < mesh_face_count_spec(m)
+                && 0 <= i1 < face_cycle_lens[f1] as int
+                && 0 <= i2 < face_cycle_lens[f2] as int
+                && mesh_next_iter_spec(m, m.face_half_edges[f1], i1 as nat)
+                    == mesh_next_iter_spec(m, m.face_half_edges[f2], i2 as nat)
+                ==> f1 == f2
+    }
+}
+
+pub open spec fn mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_total_spec(
+    m: MeshModel,
+) -> bool {
+    mesh_index_bounds_spec(m) && mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_spec(m)
+}
+
+pub open spec fn kernel_face_cover_step_witness_spec(
+    km: &kernels::KernelMesh,
+    face_cycle_lens: Seq<usize>,
+    h: int,
+    w: (int, int),
+) -> bool {
+    &&& 0 <= w.0 < kernels::kernel_face_count_spec(km)
+    &&& 0 <= w.1 < face_cycle_lens[w.0] as int
+    &&& kernels::kernel_next_iter_spec(km, km.face_half_edges@[w.0] as int, w.1 as nat) == h
+}
+
+pub proof fn lemma_kernel_next_or_self_matches_mesh(
+    km: &kernels::KernelMesh,
+    m: MeshModel,
+    h: int,
+)
+    requires
+        kernel_mesh_matches_mesh_model_spec(km, m),
+    ensures
+        kernels::kernel_next_or_self_spec(km, h) == mesh_next_or_self_spec(m, h),
+{
+    let hcnt = mesh_half_edge_count_spec(m);
+    assert(hcnt == kernels::kernel_half_edge_count_spec(km));
+    if 0 <= h < hcnt {
+        let kn = km.half_edges@[h].next as int;
+        let mn = m.half_edges[h].next;
+        assert(kn == mn);
+        if 0 <= kn < hcnt {
+            assert(kernels::kernel_next_or_self_spec(km, h) == kn);
+            assert(mesh_next_or_self_spec(m, h) == mn);
+        } else {
+            assert(kernels::kernel_next_or_self_spec(km, h) == h);
+            assert(mesh_next_or_self_spec(m, h) == h);
+        }
+    } else {
+        assert(kernels::kernel_next_or_self_spec(km, h) == h);
+        assert(mesh_next_or_self_spec(m, h) == h);
+    }
+}
+
+pub proof fn lemma_kernel_next_iter_matches_mesh(
+    km: &kernels::KernelMesh,
+    m: MeshModel,
+    h: int,
+    n: nat,
+)
+    requires
+        kernel_mesh_matches_mesh_model_spec(km, m),
+    ensures
+        kernels::kernel_next_iter_spec(km, h, n) == mesh_next_iter_spec(m, h, n),
+    decreases n,
+{
+    if n == 0 {
+    } else {
+        let prev = (n - 1) as nat;
+        lemma_kernel_next_iter_matches_mesh(km, m, h, prev);
+        lemma_kernel_next_or_self_matches_mesh(km, m, kernels::kernel_next_iter_spec(km, h, prev));
+        assert(kernels::kernel_next_iter_spec(km, h, n)
+            == kernels::kernel_next_or_self_spec(km, kernels::kernel_next_iter_spec(km, h, prev)));
+        assert(mesh_next_iter_spec(m, h, n)
+            == mesh_next_or_self_spec(m, mesh_next_iter_spec(m, h, prev)));
+        assert(kernels::kernel_next_iter_spec(km, h, prev) == mesh_next_iter_spec(m, h, prev));
+    }
+}
+
+pub proof fn lemma_kernel_face_cycle_witness_matches_mesh(
+    km: &kernels::KernelMesh,
+    m: MeshModel,
+    f: int,
+    k: int,
+)
+    requires
+        kernel_mesh_matches_mesh_model_spec(km, m),
+        kernels::kernel_index_bounds_spec(km),
+        0 <= f < kernels::kernel_face_count_spec(km),
+        kernels::kernel_face_representative_cycle_witness_spec(km, f, k),
+    ensures
+        mesh_face_representative_cycle_kernel_bridge_witness_spec(m, f, k),
+{
+    let hcnt = mesh_half_edge_count_spec(m);
+    let start_k = km.face_half_edges@[f] as int;
+    let start_m = m.face_half_edges[f];
+    assert(hcnt == kernels::kernel_half_edge_count_spec(km));
+    assert(start_k == start_m);
+
+    assert(3 <= k <= hcnt);
+    lemma_kernel_next_iter_matches_mesh(km, m, start_k, k as nat);
+    assert(mesh_next_iter_spec(m, start_m, k as nat) == start_m);
+
+    assert(forall|i: int|
+        0 <= i < k ==> #[trigger] m.half_edges[mesh_next_iter_spec(m, start_m, i as nat)].face == f) by {
+        assert forall|i: int|
+            0 <= i < k implies #[trigger] m.half_edges[mesh_next_iter_spec(m, start_m, i as nat)].face == f by {
+            kernels::lemma_kernel_next_iter_in_bounds(km, start_k, i as nat);
+            let hi = kernels::kernel_next_iter_spec(km, start_k, i as nat);
+            assert(0 <= hi < kernels::kernel_half_edge_count_spec(km));
+            lemma_kernel_next_iter_matches_mesh(km, m, start_k, i as nat);
+            assert(hi == mesh_next_iter_spec(m, start_m, i as nat));
+            assert((#[trigger] km.half_edges@[hi]).face as int == m.half_edges[hi].face);
+            assert(km.half_edges@[hi].face as int == f);
+            assert(m.half_edges[mesh_next_iter_spec(m, start_m, i as nat)].face == f);
+        };
+    };
+}
+
+pub proof fn lemma_kernel_index_bounds_implies_mesh_index_bounds(
+    km: &kernels::KernelMesh,
+    m: MeshModel,
+)
+    requires
+        kernel_mesh_matches_mesh_model_spec(km, m),
+        kernels::kernel_index_bounds_spec(km),
+    ensures
+        mesh_index_bounds_spec(m),
+{
+    let hcnt = mesh_half_edge_count_spec(m);
+    let vcnt = mesh_vertex_count_spec(m);
+    let ecnt = mesh_edge_count_spec(m);
+    let fcnt = mesh_face_count_spec(m);
+    assert(hcnt == kernels::kernel_half_edge_count_spec(km));
+    assert(vcnt == kernels::kernel_vertex_count_spec(km));
+    assert(ecnt == kernels::kernel_edge_count_spec(km));
+    assert(fcnt == kernels::kernel_face_count_spec(km));
+
+    assert(forall|v: int|
+        0 <= v < vcnt ==> 0 <= #[trigger] m.vertex_half_edges[v] < hcnt) by {
+        assert forall|v: int| 0 <= v < vcnt implies 0 <= #[trigger] m.vertex_half_edges[v] < hcnt by {
+            assert((#[trigger] km.vertex_half_edges@[v] as int) == m.vertex_half_edges[v]);
+            assert((km.vertex_half_edges@[v] as int) < hcnt);
+            assert(0 <= km.vertex_half_edges@[v] as int);
+        };
+    };
+
+    assert(forall|e: int|
+        0 <= e < ecnt ==> 0 <= #[trigger] m.edge_half_edges[e] < hcnt) by {
+        assert forall|e: int| 0 <= e < ecnt implies 0 <= #[trigger] m.edge_half_edges[e] < hcnt by {
+            assert((#[trigger] km.edge_half_edges@[e] as int) == m.edge_half_edges[e]);
+            assert((km.edge_half_edges@[e] as int) < hcnt);
+            assert(0 <= km.edge_half_edges@[e] as int);
+        };
+    };
+
+    assert(forall|f: int|
+        0 <= f < fcnt ==> 0 <= #[trigger] m.face_half_edges[f] < hcnt) by {
+        assert forall|f: int| 0 <= f < fcnt implies 0 <= #[trigger] m.face_half_edges[f] < hcnt by {
+            assert((#[trigger] km.face_half_edges@[f] as int) == m.face_half_edges[f]);
+            assert((km.face_half_edges@[f] as int) < hcnt);
+            assert(0 <= km.face_half_edges@[f] as int);
+        };
+    };
+
+    assert(forall|h: int| 0 <= h < hcnt ==> {
+        let he = #[trigger] m.half_edges[h];
+        &&& 0 <= he.twin < hcnt
+        &&& 0 <= he.next < hcnt
+        &&& 0 <= he.prev < hcnt
+        &&& 0 <= he.vertex < vcnt
+        &&& 0 <= he.edge < ecnt
+        &&& 0 <= he.face < fcnt
+    }) by {
+        assert forall|h: int| 0 <= h < hcnt implies {
+            let he = #[trigger] m.half_edges[h];
+            &&& 0 <= he.twin < hcnt
+            &&& 0 <= he.next < hcnt
+            &&& 0 <= he.prev < hcnt
+            &&& 0 <= he.vertex < vcnt
+            &&& 0 <= he.edge < ecnt
+            &&& 0 <= he.face < fcnt
+        } by {
+            let khe = #[trigger] km.half_edges@[h];
+            assert((khe.twin as int) == m.half_edges[h].twin);
+            assert((khe.next as int) == m.half_edges[h].next);
+            assert((khe.prev as int) == m.half_edges[h].prev);
+            assert((khe.vertex as int) == m.half_edges[h].vertex);
+            assert((khe.edge as int) == m.half_edges[h].edge);
+            assert((khe.face as int) == m.half_edges[h].face);
+
+            assert((khe.twin as int) < hcnt);
+            assert((khe.next as int) < hcnt);
+            assert((khe.prev as int) < hcnt);
+            assert((khe.vertex as int) < vcnt);
+            assert((khe.edge as int) < ecnt);
+            assert((khe.face as int) < fcnt);
+
+            assert(0 <= khe.twin as int);
+            assert(0 <= khe.next as int);
+            assert(0 <= khe.prev as int);
+            assert(0 <= khe.vertex as int);
+            assert(0 <= khe.edge as int);
+            assert(0 <= khe.face as int);
+        };
+    };
+    assert(mesh_index_bounds_spec(m));
+}
+
+pub proof fn lemma_kernel_face_cycles_cover_all_matches_mesh(
+    km: &kernels::KernelMesh,
+    m: MeshModel,
+)
+    requires
+        kernel_mesh_matches_mesh_model_spec(km, m),
+        kernels::kernel_face_representative_cycles_cover_all_half_edges_total_spec(km),
+    ensures
+        mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_total_spec(m),
+{
+    lemma_kernel_index_bounds_implies_mesh_index_bounds(km, m);
+    reveal(kernels::kernel_face_representative_cycles_cover_all_half_edges_spec);
+    assert(kernels::kernel_face_representative_cycles_cover_all_half_edges_spec(km));
+    assert(exists|face_cycle_lens: Seq<usize>, covered: Seq<bool>| {
+        kernels::kernel_face_representative_cycles_cover_all_half_edges_witness_spec(
+            km,
+            face_cycle_lens,
+            covered,
+        )
+    });
+    let (face_cycle_lens, covered) = choose|face_cycle_lens: Seq<usize>, covered: Seq<bool>| {
+        kernels::kernel_face_representative_cycles_cover_all_half_edges_witness_spec(
+            km,
+            face_cycle_lens,
+            covered,
+        )
+    };
+    assert(kernels::kernel_face_representative_cycles_cover_all_half_edges_witness_spec(
+        km,
+        face_cycle_lens,
+        covered,
+    ));
+
+    assert(mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_spec(m)) by {
+        assert(face_cycle_lens.len() == mesh_face_count_spec(m));
+        assert(covered.len() == mesh_half_edge_count_spec(m));
+
+        assert(forall|f: int|
+            #![trigger face_cycle_lens[f]]
+            0 <= f < mesh_face_count_spec(m)
+                ==> mesh_face_representative_cycle_kernel_bridge_witness_spec(
+                    m,
+                    f,
+                    face_cycle_lens[f] as int,
+                )) by {
+            assert forall|f: int|
+                #![trigger face_cycle_lens[f]]
+                0 <= f < mesh_face_count_spec(m)
+                    implies mesh_face_representative_cycle_kernel_bridge_witness_spec(
+                        m,
+                        f,
+                        face_cycle_lens[f] as int,
+                    ) by {
+                lemma_kernel_face_cycle_witness_matches_mesh(km, m, f, face_cycle_lens[f] as int);
+            };
+        };
+
+        assert(forall|h: int|
+            #![trigger h + 0]
+            0 <= h < mesh_half_edge_count_spec(m) && #[trigger] covered[h]
+                ==> exists|f: int, i: int| {
+                    &&& 0 <= f < mesh_face_count_spec(m)
+                    &&& 0 <= i < face_cycle_lens[f] as int
+                    &&& #[trigger] mesh_next_iter_spec(m, m.face_half_edges[f], i as nat) == h
+                }) by {
+            assert forall|h: int|
+                #![trigger h + 0]
+                0 <= h < mesh_half_edge_count_spec(m) && #[trigger] covered[h]
+                    implies exists|f: int, i: int| {
+                        &&& 0 <= f < mesh_face_count_spec(m)
+                        &&& 0 <= i < face_cycle_lens[f] as int
+                        &&& #[trigger] mesh_next_iter_spec(m, m.face_half_edges[f], i as nat) == h
+                    } by {
+                let (fw, iw) = choose|f: int, i: int| {
+                    &&& 0 <= f < kernels::kernel_face_count_spec(km)
+                    &&& 0 <= i < face_cycle_lens[f] as int
+                    &&& #[trigger] kernels::kernel_next_iter_spec(
+                        km,
+                        km.face_half_edges@[f] as int,
+                        i as nat,
+                    ) == h
+                };
+                assert(kernel_face_cover_step_witness_spec(km, face_cycle_lens, h, (fw, iw)));
+                assert(exists|f: int, i: int| {
+                    kernel_face_cover_step_witness_spec(km, face_cycle_lens, h, (f, i))
+                });
+                let (f0, i0) = choose|f: int, i: int| {
+                    kernel_face_cover_step_witness_spec(km, face_cycle_lens, h, (f, i))
+                };
+                assert(0 <= f0 < mesh_face_count_spec(m));
+                assert(0 <= i0 < face_cycle_lens[f0] as int);
+                lemma_kernel_next_iter_matches_mesh(km, m, km.face_half_edges@[f0] as int, i0 as nat);
+                assert(km.face_half_edges@[f0] as int == m.face_half_edges[f0]);
+                assert(mesh_next_iter_spec(m, m.face_half_edges[f0], i0 as nat) == h);
+            };
+        };
+
+        assert(forall|h: int| 0 <= h < mesh_half_edge_count_spec(m) ==> #[trigger] covered[h]) by {
+            assert forall|h: int| 0 <= h < mesh_half_edge_count_spec(m) implies #[trigger] covered[h] by {
+            };
+        };
+
+        assert(forall|f1: int, i1: int, f2: int, i2: int|
+            #![trigger mesh_next_iter_spec(m, m.face_half_edges[f1], i1 as nat), mesh_next_iter_spec(m, m.face_half_edges[f2], i2 as nat)]
+            0 <= f1 < mesh_face_count_spec(m)
+                && 0 <= f2 < mesh_face_count_spec(m)
+                && 0 <= i1 < face_cycle_lens[f1] as int
+                && 0 <= i2 < face_cycle_lens[f2] as int
+                && mesh_next_iter_spec(m, m.face_half_edges[f1], i1 as nat)
+                    == mesh_next_iter_spec(m, m.face_half_edges[f2], i2 as nat)
+                ==> f1 == f2) by {
+            assert forall|f1: int, i1: int, f2: int, i2: int|
+                0 <= f1 < mesh_face_count_spec(m)
+                    && 0 <= f2 < mesh_face_count_spec(m)
+                    && 0 <= i1 < face_cycle_lens[f1] as int
+                    && 0 <= i2 < face_cycle_lens[f2] as int
+                    && #[trigger] mesh_next_iter_spec(m, m.face_half_edges[f1], i1 as nat)
+                        == #[trigger] mesh_next_iter_spec(m, m.face_half_edges[f2], i2 as nat)
+                    implies f1 == f2 by {
+                assert(0 <= f1 < kernels::kernel_face_count_spec(km));
+                assert(0 <= f2 < kernels::kernel_face_count_spec(km));
+                lemma_kernel_next_iter_matches_mesh(km, m, km.face_half_edges@[f1] as int, i1 as nat);
+                lemma_kernel_next_iter_matches_mesh(km, m, km.face_half_edges@[f2] as int, i2 as nat);
+                assert(km.face_half_edges@[f1] as int == m.face_half_edges[f1]);
+                assert(km.face_half_edges@[f2] as int == m.face_half_edges[f2]);
+                assert(kernels::kernel_next_iter_spec(km, km.face_half_edges@[f1] as int, i1 as nat)
+                    == mesh_next_iter_spec(m, m.face_half_edges[f1], i1 as nat));
+                assert(kernels::kernel_next_iter_spec(km, km.face_half_edges@[f2] as int, i2 as nat)
+                    == mesh_next_iter_spec(m, m.face_half_edges[f2], i2 as nat));
+                assert(kernels::kernel_next_iter_spec(km, km.face_half_edges@[f1] as int, i1 as nat)
+                    == kernels::kernel_next_iter_spec(km, km.face_half_edges@[f2] as int, i2 as nat));
+            };
+        };
+
+        assert(exists|face_cycle_lens2: Seq<usize>, covered2: Seq<bool>| {
+            &&& face_cycle_lens2.len() == mesh_face_count_spec(m)
+            &&& covered2.len() == mesh_half_edge_count_spec(m)
+            &&& forall|f: int|
+                #![trigger face_cycle_lens2[f]]
+                0 <= f < mesh_face_count_spec(m)
+                    ==> mesh_face_representative_cycle_kernel_bridge_witness_spec(
+                        m,
+                        f,
+                        face_cycle_lens2[f] as int,
+                    )
+            &&& forall|h: int|
+                #![trigger h + 0]
+                0 <= h < mesh_half_edge_count_spec(m) && #[trigger] covered2[h]
+                    ==> exists|f: int, i: int| {
+                        &&& 0 <= f < mesh_face_count_spec(m)
+                        &&& 0 <= i < face_cycle_lens2[f] as int
+                        &&& #[trigger] mesh_next_iter_spec(m, m.face_half_edges[f], i as nat) == h
+                    }
+            &&& forall|h: int| 0 <= h < mesh_half_edge_count_spec(m) ==> #[trigger] covered2[h]
+            &&& forall|f1: int, i1: int, f2: int, i2: int|
+                #![trigger mesh_next_iter_spec(m, m.face_half_edges[f1], i1 as nat), mesh_next_iter_spec(m, m.face_half_edges[f2], i2 as nat)]
+                0 <= f1 < mesh_face_count_spec(m)
+                    && 0 <= f2 < mesh_face_count_spec(m)
+                    && 0 <= i1 < face_cycle_lens2[f1] as int
+                    && 0 <= i2 < face_cycle_lens2[f2] as int
+                    && mesh_next_iter_spec(m, m.face_half_edges[f1], i1 as nat)
+                        == mesh_next_iter_spec(m, m.face_half_edges[f2], i2 as nat)
+                    ==> f1 == f2
+        });
+    }
+    assert(mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_total_spec(m));
 }
 
 pub open spec fn mesh_vertex_ring_witness_spec(m: MeshModel, v: int, k: int) -> bool {
@@ -661,6 +1105,7 @@ pub open spec fn structural_validity_gate_model_link_spec(
     &&& (w.index_bounds_ok ==> mesh_index_bounds_spec(m))
     &&& (w.twin_involution_ok ==> from_face_cycles_twin_assignment_total_involution_spec(m))
     &&& (w.prev_next_inverse_ok ==> mesh_prev_next_inverse_spec(m))
+    &&& (w.face_cycles_ok ==> mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_total_spec(m))
     &&& (w.no_degenerate_edges_ok ==> mesh_no_degenerate_edges_spec(m))
     &&& (w.edge_two_half_edges_ok ==> mesh_edge_exactly_two_half_edges_spec(m))
 }
@@ -2874,6 +3319,269 @@ pub fn ex_mesh_check_face_cycles_via_kernel(m: &Mesh) -> (out: bool)
     m.check_face_cycles_via_kernel()
 }
 
+#[verifier::exec_allows_no_decreases_clause]
+pub fn runtime_mesh_to_kernel_mesh(m: &Mesh) -> (km: kernels::KernelMesh)
+    ensures
+        kernel_mesh_matches_mesh_model_spec(&km, m@),
+{
+    let mut vertex_half_edges: Vec<usize> = Vec::new();
+    let mut v: usize = 0;
+    while v < m.vertices.len()
+        invariant
+            0 <= v <= m.vertices.len(),
+            vertex_half_edges@.len() == v as int,
+            forall|vp: int|
+                0 <= vp < v as int
+                    ==> (#[trigger] vertex_half_edges@[vp] as int) == m@.vertex_half_edges[vp],
+    {
+        let he = m.vertices[v].half_edge;
+        vertex_half_edges.push(he);
+        proof {
+            assert(m@.vertex_half_edges[v as int] == he as int);
+            assert(forall|vp: int|
+                0 <= vp < (v + 1) as int
+                    ==> (#[trigger] vertex_half_edges@[vp] as int) == m@.vertex_half_edges[vp]) by {
+                assert forall|vp: int|
+                    0 <= vp < (v + 1) as int
+                        implies (#[trigger] vertex_half_edges@[vp] as int) == m@.vertex_half_edges[vp] by {
+                    if vp < v as int {
+                    } else {
+                        assert(vp == v as int);
+                        assert(vertex_half_edges@[vp] == he);
+                    }
+                };
+            };
+        }
+        v += 1;
+    }
+
+    let mut edge_half_edges: Vec<usize> = Vec::new();
+    let mut e: usize = 0;
+    while e < m.edges.len()
+        invariant
+            0 <= e <= m.edges.len(),
+            edge_half_edges@.len() == e as int,
+            forall|ep: int|
+                0 <= ep < e as int
+                    ==> (#[trigger] edge_half_edges@[ep] as int) == m@.edge_half_edges[ep],
+    {
+        let he = m.edges[e].half_edge;
+        edge_half_edges.push(he);
+        proof {
+            assert(m@.edge_half_edges[e as int] == he as int);
+            assert(forall|ep: int|
+                0 <= ep < (e + 1) as int
+                    ==> (#[trigger] edge_half_edges@[ep] as int) == m@.edge_half_edges[ep]) by {
+                assert forall|ep: int|
+                    0 <= ep < (e + 1) as int
+                        implies (#[trigger] edge_half_edges@[ep] as int) == m@.edge_half_edges[ep] by {
+                    if ep < e as int {
+                    } else {
+                        assert(ep == e as int);
+                        assert(edge_half_edges@[ep] == he);
+                    }
+                };
+            };
+        }
+        e += 1;
+    }
+
+    let mut face_half_edges: Vec<usize> = Vec::new();
+    let mut f: usize = 0;
+    while f < m.faces.len()
+        invariant
+            0 <= f <= m.faces.len(),
+            face_half_edges@.len() == f as int,
+            forall|fp: int|
+                0 <= fp < f as int
+                    ==> (#[trigger] face_half_edges@[fp] as int) == m@.face_half_edges[fp],
+    {
+        let he = m.faces[f].half_edge;
+        face_half_edges.push(he);
+        proof {
+            assert(m@.face_half_edges[f as int] == he as int);
+            assert(forall|fp: int|
+                0 <= fp < (f + 1) as int
+                    ==> (#[trigger] face_half_edges@[fp] as int) == m@.face_half_edges[fp]) by {
+                assert forall|fp: int|
+                    0 <= fp < (f + 1) as int
+                        implies (#[trigger] face_half_edges@[fp] as int) == m@.face_half_edges[fp] by {
+                    if fp < f as int {
+                    } else {
+                        assert(fp == f as int);
+                        assert(face_half_edges@[fp] == he);
+                    }
+                };
+            };
+        }
+        f += 1;
+    }
+
+    let mut half_edges: Vec<kernels::KernelHalfEdge> = Vec::new();
+    let mut h: usize = 0;
+    while h < m.half_edges.len()
+        invariant
+            0 <= h <= m.half_edges.len(),
+            half_edges@.len() == h as int,
+            forall|hp: int| 0 <= hp < h as int ==> {
+                let khe = #[trigger] half_edges@[hp];
+                let mhe = m@.half_edges[hp];
+                &&& (khe.twin as int) == mhe.twin
+                &&& (khe.next as int) == mhe.next
+                &&& (khe.prev as int) == mhe.prev
+                &&& (khe.vertex as int) == mhe.vertex
+                &&& (khe.edge as int) == mhe.edge
+                &&& (khe.face as int) == mhe.face
+            },
+    {
+        let he = &m.half_edges[h];
+        let khe = kernels::KernelHalfEdge {
+            twin: he.twin,
+            next: he.next,
+            prev: he.prev,
+            vertex: he.vertex,
+            edge: he.edge,
+            face: he.face,
+        };
+        half_edges.push(khe);
+        proof {
+            assert(m@.half_edges[h as int].twin == he.twin as int);
+            assert(m@.half_edges[h as int].next == he.next as int);
+            assert(m@.half_edges[h as int].prev == he.prev as int);
+            assert(m@.half_edges[h as int].vertex == he.vertex as int);
+            assert(m@.half_edges[h as int].edge == he.edge as int);
+            assert(m@.half_edges[h as int].face == he.face as int);
+            assert(forall|hp: int| 0 <= hp < (h + 1) as int ==> {
+                let khe0 = #[trigger] half_edges@[hp];
+                let mhe0 = m@.half_edges[hp];
+                &&& (khe0.twin as int) == mhe0.twin
+                &&& (khe0.next as int) == mhe0.next
+                &&& (khe0.prev as int) == mhe0.prev
+                &&& (khe0.vertex as int) == mhe0.vertex
+                &&& (khe0.edge as int) == mhe0.edge
+                &&& (khe0.face as int) == mhe0.face
+            }) by {
+                assert forall|hp: int| 0 <= hp < (h + 1) as int implies {
+                    let khe0 = #[trigger] half_edges@[hp];
+                    let mhe0 = m@.half_edges[hp];
+                    &&& (khe0.twin as int) == mhe0.twin
+                    &&& (khe0.next as int) == mhe0.next
+                    &&& (khe0.prev as int) == mhe0.prev
+                    &&& (khe0.vertex as int) == mhe0.vertex
+                    &&& (khe0.edge as int) == mhe0.edge
+                    &&& (khe0.face as int) == mhe0.face
+                } by {
+                    if hp < h as int {
+                    } else {
+                        assert(hp == h as int);
+                        assert(half_edges@[hp] == khe);
+                    }
+                };
+            };
+        }
+        h += 1;
+    }
+
+    let km = kernels::KernelMesh {
+        vertex_half_edges,
+        edge_half_edges,
+        face_half_edges,
+        half_edges,
+    };
+
+    proof {
+        assert(mesh_vertex_count_spec(m@) == m.vertices@.len() as int);
+        assert(mesh_edge_count_spec(m@) == m.edges@.len() as int);
+        assert(mesh_face_count_spec(m@) == m.faces@.len() as int);
+        assert(mesh_half_edge_count_spec(m@) == m.half_edges@.len() as int);
+        assert(m.vertices@.len() == m.vertices.len());
+        assert(m.edges@.len() == m.edges.len());
+        assert(m.faces@.len() == m.faces.len());
+        assert(m.half_edges@.len() == m.half_edges.len());
+
+        assert(km.vertex_half_edges@.len() == mesh_vertex_count_spec(m@));
+        assert(km.edge_half_edges@.len() == mesh_edge_count_spec(m@));
+        assert(km.face_half_edges@.len() == mesh_face_count_spec(m@));
+        assert(km.half_edges@.len() == mesh_half_edge_count_spec(m@));
+
+        assert(forall|vp: int|
+            0 <= vp < mesh_vertex_count_spec(m@)
+                ==> (#[trigger] km.vertex_half_edges@[vp] as int) == m@.vertex_half_edges[vp]) by {
+            assert forall|vp: int|
+                0 <= vp < mesh_vertex_count_spec(m@)
+                    implies (#[trigger] km.vertex_half_edges@[vp] as int) == m@.vertex_half_edges[vp] by {
+                assert(mesh_vertex_count_spec(m@) == v as int);
+                assert(0 <= vp < v as int);
+            };
+        };
+        assert(forall|ep: int|
+            0 <= ep < mesh_edge_count_spec(m@)
+                ==> (#[trigger] km.edge_half_edges@[ep] as int) == m@.edge_half_edges[ep]) by {
+            assert forall|ep: int|
+                0 <= ep < mesh_edge_count_spec(m@)
+                    implies (#[trigger] km.edge_half_edges@[ep] as int) == m@.edge_half_edges[ep] by {
+                assert(mesh_edge_count_spec(m@) == e as int);
+                assert(0 <= ep < e as int);
+            };
+        };
+        assert(forall|fp: int|
+            0 <= fp < mesh_face_count_spec(m@)
+                ==> (#[trigger] km.face_half_edges@[fp] as int) == m@.face_half_edges[fp]) by {
+            assert forall|fp: int|
+                0 <= fp < mesh_face_count_spec(m@)
+                    implies (#[trigger] km.face_half_edges@[fp] as int) == m@.face_half_edges[fp] by {
+                assert(mesh_face_count_spec(m@) == f as int);
+                assert(0 <= fp < f as int);
+            };
+        };
+        assert(forall|hp: int| 0 <= hp < mesh_half_edge_count_spec(m@) ==> {
+            let khe0 = #[trigger] km.half_edges@[hp];
+            let mhe0 = m@.half_edges[hp];
+            &&& (khe0.twin as int) == mhe0.twin
+            &&& (khe0.next as int) == mhe0.next
+            &&& (khe0.prev as int) == mhe0.prev
+            &&& (khe0.vertex as int) == mhe0.vertex
+            &&& (khe0.edge as int) == mhe0.edge
+            &&& (khe0.face as int) == mhe0.face
+        }) by {
+            assert forall|hp: int| 0 <= hp < mesh_half_edge_count_spec(m@) implies {
+                let khe0 = #[trigger] km.half_edges@[hp];
+                let mhe0 = m@.half_edges[hp];
+                &&& (khe0.twin as int) == mhe0.twin
+                &&& (khe0.next as int) == mhe0.next
+                &&& (khe0.prev as int) == mhe0.prev
+                &&& (khe0.vertex as int) == mhe0.vertex
+                &&& (khe0.edge as int) == mhe0.edge
+                &&& (khe0.face as int) == mhe0.face
+            } by {
+                assert(mesh_half_edge_count_spec(m@) == h as int);
+                assert(0 <= hp < h as int);
+            };
+        };
+        assert(kernel_mesh_matches_mesh_model_spec(&km, m@));
+    }
+
+    km
+}
+
+#[allow(dead_code)]
+pub fn runtime_check_face_cycles_kernel_bridge(m: &Mesh) -> (out: bool)
+    ensures
+        out ==> mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_total_spec(m@),
+{
+    let km = runtime_mesh_to_kernel_mesh(m);
+    let ok = kernels::kernel_check_face_cycles(&km);
+    if !ok {
+        return false;
+    }
+    proof {
+        assert(kernels::kernel_face_representative_cycles_cover_all_half_edges_total_spec(&km));
+        lemma_kernel_face_cycles_cover_all_matches_mesh(&km, m@);
+        assert(mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_total_spec(m@));
+    }
+    true
+}
+
 #[verifier::external_body]
 pub fn ex_mesh_check_no_degenerate_edges_via_kernel(m: &Mesh) -> (out: bool)
 {
@@ -4849,7 +5557,7 @@ pub fn is_structurally_valid_constructive(
     let index_bounds_ok = runtime_check_index_bounds(m);
     let twin_involution_ok = runtime_check_twin_assignment_total_involution(m);
     let prev_next_inverse_ok = runtime_check_prev_next_inverse(m);
-    let face_cycles_ok = ex_mesh_check_face_cycles_via_kernel(m);
+    let face_cycles_ok = runtime_check_face_cycles_kernel_bridge(m);
     let no_degenerate_edges_ok = runtime_check_no_degenerate_edges(m);
     let vertex_manifold_ok = ex_mesh_check_vertex_manifold_single_cycle_via_kernel(m);
     let edge_two_half_edges_ok = runtime_check_edge_exactly_two_half_edges(m);
@@ -4896,6 +5604,9 @@ pub fn is_structurally_valid_constructive(
         }
         if w.prev_next_inverse_ok {
             assert(mesh_prev_next_inverse_spec(m@));
+        }
+        if w.face_cycles_ok {
+            assert(mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_total_spec(m@));
         }
         if w.no_degenerate_edges_ok {
             assert(mesh_no_degenerate_edges_spec(m@));

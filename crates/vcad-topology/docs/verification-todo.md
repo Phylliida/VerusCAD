@@ -968,6 +968,46 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`85 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`85 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`119 verified, 0 errors`).
+  - burndown update (2026-02-18, face-cycles model-link increment):
+    - landed constructive kernel-bridge path in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      - bridge relation/spec + builder:
+        `kernel_mesh_matches_mesh_model_spec`,
+        `runtime_mesh_to_kernel_mesh`,
+      - bridge-facing face-cycle model predicate:
+        `mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_total_spec`,
+      - constructive checker:
+        `runtime_check_face_cycles_kernel_bridge`.
+    - strengthened `structural_validity_gate_model_link_spec` with:
+      - `w.face_cycles_ok ==> mesh_face_representative_cycles_cover_all_half_edges_kernel_bridge_total_spec(m@)`.
+    - strengthened `is_structurally_valid_constructive` to source
+      `face_cycles_ok` from `runtime_check_face_cycles_kernel_bridge`
+      (instead of the external-body face-cycle kernel bridge), and to export
+      the new face-cycle model-link implication on `Some(w)`.
+    - supporting kernel refactor (stability helper):
+      `src/verified_checker_kernels.rs` now factors
+      `kernel_face_representative_cycles_cover_all_half_edges_spec` through a
+      reusable witness predicate:
+      `kernel_face_representative_cycles_cover_all_half_edges_witness_spec`.
+    - failed proof shapes (rolled back during this pass):
+      - repeated witness extraction attempts using nested `choose` over
+        `exists` (`face_cycle_lens` / `(f, i)` witnesses) were trigger-sensitive
+        and failed with quantifier-trigger inference/existence obligations.
+      - a local duplicate witness predicate in
+        `runtime_halfedge_mesh_refinement.rs` was attempted first and then
+        superseded by the kernel-side witness factoring above to stabilize
+        extraction.
+    - remaining gap after this increment:
+      structural model-link export is still partial:
+      `vertex_manifold_ok` remains unlinked at model level, so full structural
+      gate `iff` is still open.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`96 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels`
+      passed (`34 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`96 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`130 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
 - [ ] Verify `is_valid` exactly matches `is_structurally_valid && check_euler_formula_closed_components`.
   - burndown update (2026-02-18):
