@@ -1,1 +1,1 @@
-Added constructive count verification wrappers for tetrahedron/cube/triangular_prism and documented the constructor burndown progress in vcad-topology.
+Strengthened from_face_cycles constructive verification to certify a combined structural-core spec and documented the new Section C burndown progress.

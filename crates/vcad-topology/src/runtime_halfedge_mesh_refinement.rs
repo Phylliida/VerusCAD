@@ -908,6 +908,18 @@ pub open spec fn from_face_cycles_twin_assignment_total_involution_spec(m: MeshM
     }
 }
 
+pub open spec fn from_face_cycles_structural_core_spec(
+    vertex_count: int,
+    face_cycles: Seq<Seq<int>>,
+    m: MeshModel,
+) -> bool {
+    &&& from_face_cycles_basic_input_spec(vertex_count, face_cycles)
+    &&& from_face_cycles_next_prev_face_coherent_spec(face_cycles, m)
+    &&& from_face_cycles_twin_assignment_total_involution_spec(m)
+    &&& mesh_edge_exactly_two_half_edges_spec(m)
+    &&& from_face_cycles_vertex_representatives_spec(m)
+}
+
 pub open spec fn from_face_cycles_success_spec(
     vertex_count: int,
     face_cycles: Seq<Seq<int>>,
@@ -1330,20 +1342,16 @@ pub fn from_face_cycles_constructive_next_prev_face(
 ) -> (out: Result<Mesh, MeshBuildError>)
     ensures
         match out {
-            Result::Ok(m) => {
-                &&& from_face_cycles_basic_input_spec(
-                    vertex_positions@.len() as int,
-                    face_cycles_exec_to_model_spec(face_cycles@),
-                )
-                &&& from_face_cycles_next_prev_face_coherent_spec(
-                    face_cycles_exec_to_model_spec(face_cycles@),
-                    m@,
-                )
-            }
+            Result::Ok(m) => from_face_cycles_structural_core_spec(
+                vertex_positions@.len() as int,
+                face_cycles_exec_to_model_spec(face_cycles@),
+                m@,
+            ),
             Result::Err(_) => true,
         },
 {
     let vertex_count = vertex_positions.len();
+    let ghost model_cycles = face_cycles_exec_to_model_spec(face_cycles@);
     let input_ok = runtime_check_from_face_cycles_basic_input(vertex_count, face_cycles);
     if !input_ok {
         return Result::Err(mesh_build_error_empty_face_set());
@@ -1352,18 +1360,39 @@ pub fn from_face_cycles_constructive_next_prev_face(
     let out0 = ex_mesh_from_face_cycles(vertex_positions, face_cycles);
     match out0 {
         Result::Ok(m) => {
-            let ok = runtime_check_from_face_cycles_next_prev_face_coherent(&m, face_cycles);
-            if ok {
-                proof {
-                    assert(input_ok);
-                    assert(from_face_cycles_basic_input_spec(
-                        vertex_count as int,
-                        face_cycles_exec_to_model_spec(face_cycles@),
-                    ));
-                }
-                Result::Ok(m)
-            } else {
+            let next_prev_ok = runtime_check_from_face_cycles_next_prev_face_coherent(&m, face_cycles);
+            if !next_prev_ok {
                 Result::Err(mesh_build_error_empty_face_set())
+            } else {
+                let twin_ok = runtime_check_twin_assignment_total_involution(&m);
+                if !twin_ok {
+                    Result::Err(mesh_build_error_empty_face_set())
+                } else {
+                    let edge_ok = runtime_check_edge_exactly_two_half_edges(&m);
+                    if !edge_ok {
+                        Result::Err(mesh_build_error_empty_face_set())
+                    } else {
+                        let vertex_ok = runtime_check_vertex_representative_valid_nonisolated(&m);
+                        if !vertex_ok {
+                            Result::Err(mesh_build_error_empty_face_set())
+                        } else {
+                            proof {
+                                assert(input_ok);
+                                assert(from_face_cycles_basic_input_spec(vertex_count as int, model_cycles));
+                                assert(from_face_cycles_next_prev_face_coherent_spec(model_cycles, m@));
+                                assert(from_face_cycles_twin_assignment_total_involution_spec(m@));
+                                assert(mesh_edge_exactly_two_half_edges_spec(m@));
+                                assert(from_face_cycles_vertex_representatives_spec(m@));
+                                assert(from_face_cycles_structural_core_spec(
+                                    vertex_count as int,
+                                    model_cycles,
+                                    m@,
+                                ));
+                            }
+                            Result::Ok(m)
+                        }
+                    }
+                }
             }
         }
         Result::Err(e) => Result::Err(e),

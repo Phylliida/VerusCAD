@@ -93,6 +93,34 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` passed
       (`34 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`64 verified, 0 errors`).
+  - burndown update (2026-02-18, structural-core strengthening):
+    - added a constructor-output aggregation predicate in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      `from_face_cycles_structural_core_spec`.
+    - strengthened `from_face_cycles_constructive_next_prev_face` so its `Ok`
+      branch now certifies the combined constructor core:
+      - `from_face_cycles_basic_input_spec(...)`,
+      - `from_face_cycles_next_prev_face_coherent_spec(...)`,
+      - `from_face_cycles_twin_assignment_total_involution_spec(m@)`,
+      - `mesh_edge_exactly_two_half_edges_spec(m@)`,
+      - `from_face_cycles_vertex_representatives_spec(m@)`.
+    - implementation note:
+      the wrapper now reuses existing constructive runtime checkers
+      (`runtime_check_*`) sequentially after `ex_mesh_from_face_cycles`, and
+      only returns `Ok(m)` when all constructor-core checks pass.
+    - remaining gap:
+      this still stops short of full
+      `from_face_cycles_success_spec` / `from_face_cycles_failure_spec`
+      linkage (notably no-duplicate-oriented-edge, all-twins-exist input
+      condition export, no-isolated-vertex input export, and full incidence
+      model packaging from raw constructor success).
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement from_face_cycles_constructive_next_prev_face`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`59 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`59 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`93 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
 - [x] Prove twin assignment is total for closed inputs and involutive.
   - burndown update (2026-02-18):
