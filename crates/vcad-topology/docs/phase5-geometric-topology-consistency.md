@@ -73,7 +73,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [x] Spec: `face_plane_contains_vertex_spec` for every vertex on the face.
 - [x] Define canonical face-plane representation for comparisons (`normal` sign/scale normalization policy).
 - [x] Proof: computed plane contains all vertices of that face (using coplanarity invariant).
-- [ ] Proof: computed normal direction matches face orientation/winding.
+- [x] Proof: computed normal direction matches face orientation/winding.
 - [ ] Proof: twin/adjacent orientation interactions agree with plane-normal conventions.
 - [x] Proof: canonicalized plane is stable under cyclic face reindexing and seed-triple choice.
 
@@ -182,6 +182,21 @@ Current differential/property-based harness policy (runtime behavior locked by t
 - optimized intersection checking (`check_no_forbidden_face_face_intersections`) is asserted equivalent to a no-cull brute-force oracle path (`check_no_forbidden_face_face_intersections_without_broad_phase_for_testing`) across all generated fixtures.
 
 ## Burndown Log
+- 2026-02-18: Completed the remaining P5.6 oriented-normal proof item in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
+  - added `lemma_mesh_non_collinear_seed_normal_self_dot_sign_is_positive`, proving that a non-collinear seed triple yields positive self-dot sign (`signum == 1`) for the seed face normal;
+  - added `lemma_mesh_face_coplanar_witness_non_collinear_seed_implies_oriented_seed_plane`, proving that for a coplanar face cycle and any non-collinear seed triple:
+    - the seed plane contains all face vertices; and
+    - the seed normal satisfies `mesh_face_winding_orients_plane_normal_with_seed_spec`;
+  - this discharges `mesh_face_oriented_plane_normal_spec` for the computed seed plane `(normal, offset)`, completing:
+    - P5.6 `Proof: computed normal direction matches face orientation/winding`.
+- 2026-02-18: Failed attempts in this P5.6 oriented-normal proof pass: none.
+- 2026-02-18: Revalidated after the P5.6 oriented-normal proof additions:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (217 verified, 0 errors)
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (252 verified, 0 errors)
 - 2026-02-18: Completed the remaining P5.6 canonical-plane stability item in `src/halfedge_mesh/tests.rs`:
   - added `canonical_face_plane_is_stable_under_cycle_rotation_with_collinear_seed_prefix`;
   - new fixture builds a closed pentagonal prism whose bottom face has a collinear leading triple, then compares three cycle starts for that face:

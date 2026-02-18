@@ -1315,6 +1315,154 @@ pub open spec fn mesh_face_oriented_plane_normal_spec(
 }
 
 #[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_non_collinear_seed_normal_self_dot_sign_is_positive(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+    seed_i: int,
+)
+    requires
+        mesh_index_bounds_spec(m),
+        mesh_geometry_input_spec(m, vertex_positions),
+        0 <= f < mesh_face_count_spec(m),
+        !mesh_points_collinear3_spec(
+            mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, seed_i),
+            mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, seed_i + 1),
+            mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, seed_i + 2),
+        ),
+    ensures
+        mesh_face_seed_plane_normal_spec(m, vertex_positions, f, seed_i).dot_spec(
+            mesh_face_seed_plane_normal_spec(m, vertex_positions, f, seed_i),
+        ).signum() == 1,
+{
+    let p0 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, seed_i);
+    let p1 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, seed_i + 1);
+    let p2 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, seed_i + 2);
+    let seed_normal = mesh_face_seed_plane_normal_spec(m, vertex_positions, f, seed_i);
+    let n2 = seed_normal.norm2_spec();
+    let z = vcad_math::scalar::Scalar::from_int_spec(0);
+
+    assert(!mesh_points_collinear3_spec(p0, p1, p2));
+    assert(seed_normal == p1.sub_spec(p0).cross_spec(p2.sub_spec(p0)));
+    assert(seed_normal.norm2_spec().signum() != 0);
+    vcad_math::vec3::Vec3::lemma_norm2_nonnegative(seed_normal);
+    assert(z.le_spec(n2));
+    assert(z.num == 0);
+    assert(z.denom() == 1);
+    assert(z.le_spec(n2) == (z.num * n2.denom() <= n2.num * z.denom()));
+    assert(0 * n2.denom() == 0);
+    assert(n2.num * 1 == n2.num);
+    assert(0 <= n2.num);
+
+    assert(n2.signum() != -1) by {
+        if n2.signum() == -1 {
+            assert(n2.num < 0) by {
+                if n2.num > 0 {
+                    assert(n2.signum() == 1);
+                    assert(false);
+                } else if n2.num < 0 {
+                } else {
+                    assert(n2.num == 0);
+                    assert(n2.signum() == 0);
+                    assert(false);
+                }
+            };
+            assert(false);
+        }
+    };
+    vcad_math::scalar::Scalar::lemma_signum_cases(n2);
+    assert(n2.signum() == 1);
+    assert(seed_normal.dot_spec(seed_normal) == n2);
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_face_coplanar_witness_non_collinear_seed_implies_oriented_seed_plane(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+    k: int,
+    seed_i: int,
+)
+    requires
+        mesh_face_coplanar_witness_spec(m, vertex_positions, f, k),
+        0 <= seed_i,
+        seed_i + 2 < k,
+        !mesh_points_collinear3_spec(
+            mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, seed_i),
+            mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, seed_i + 1),
+            mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, seed_i + 2),
+        ),
+    ensures
+        mesh_face_oriented_plane_normal_spec(
+            m,
+            vertex_positions,
+            f,
+            mesh_face_seed_plane_normal_spec(m, vertex_positions, f, seed_i),
+            mesh_face_seed_plane_offset_relative_to_origin_spec(m, vertex_positions, f, seed_i),
+        ),
+{
+    let normal = mesh_face_seed_plane_normal_spec(m, vertex_positions, f, seed_i);
+    let offset = mesh_face_seed_plane_offset_relative_to_origin_spec(m, vertex_positions, f, seed_i);
+
+    lemma_mesh_face_coplanar_witness_seed_plane_contains_vertices(m, vertex_positions, f, k, seed_i);
+    lemma_mesh_non_collinear_seed_normal_self_dot_sign_is_positive(m, vertex_positions, f, seed_i);
+
+    assert(face_plane_contains_vertex_spec(m, vertex_positions, f, normal, offset)) by {
+        let kw = k;
+        assert(mesh_face_plane_contains_vertex_witness_spec(
+            m,
+            vertex_positions,
+            f,
+            kw,
+            normal,
+            offset,
+        ));
+    };
+
+    assert(mesh_face_winding_orients_plane_normal_with_seed_spec(
+        m,
+        vertex_positions,
+        f,
+        k,
+        seed_i,
+        normal,
+    )) by {
+        assert(mesh_index_bounds_spec(m));
+        assert(mesh_geometry_input_spec(m, vertex_positions));
+        assert(0 <= f < mesh_face_count_spec(m));
+        assert(mesh_face_cycle_witness_spec(m, f, k));
+        assert(0 <= seed_i);
+        assert(seed_i + 2 < k);
+        assert(normal.norm2_spec().signum() != 0);
+        assert(normal.dot_spec(normal).signum() == 1);
+    };
+
+    assert(mesh_face_oriented_plane_normal_spec(m, vertex_positions, f, normal, offset)) by {
+        assert(0 <= f < mesh_face_count_spec(m));
+        assert(face_plane_contains_vertex_spec(m, vertex_positions, f, normal, offset));
+        assert(exists|kw: int, si: int| #[trigger] mesh_face_winding_orients_plane_normal_with_seed_spec(
+            m,
+            vertex_positions,
+            f,
+            kw,
+            si,
+            normal,
+        )) by {
+            let kw = k;
+            let si = seed_i;
+            assert(mesh_face_winding_orients_plane_normal_with_seed_spec(
+                m,
+                vertex_positions,
+                f,
+                kw,
+                si,
+                normal,
+            ));
+        };
+    };
+}
+
+#[cfg(verus_keep_ghost)]
 pub open spec fn mesh_runtime_face_oriented_plane_normal_spec(
     m: &Mesh,
     f: int,
