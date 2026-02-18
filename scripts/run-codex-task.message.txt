@@ -1,1 +1,1 @@
-Replayed Exit Condition trust-surface scans and the full vcad-topology verification/test matrix, with all checks passing and burndown updated.
+Replayed vcad-topology exit-condition trust scans and the full verification/test matrix, then recorded the green results in the burndown log.
