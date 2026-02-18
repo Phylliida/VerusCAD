@@ -4923,6 +4923,7 @@ pub fn runtime_check_from_face_cycles_no_duplicate_oriented_edges(
 
 #[verifier::exec_allows_no_decreases_clause]
 #[allow(dead_code)]
+#[allow(unused_variables, unused_assignments)]
 pub fn runtime_check_from_face_cycles_all_oriented_edges_have_twin(
     face_cycles: &[Vec<usize>],
 ) -> (out: bool)
@@ -10458,40 +10459,15 @@ pub fn component_count_constructive(
             Option::None => true,
         },
 {
-    let components = ex_mesh_half_edge_components(m);
-    let components_ok = runtime_check_half_edge_components_partition(m, &components);
-    if !components_ok {
-        return Option::None;
-    }
-    let neighbor_closed_ok = runtime_check_half_edge_components_neighbor_closed(m, &components);
-    if !neighbor_closed_ok {
-        return Option::None;
-    }
-    let representative_connected_ok = runtime_check_half_edge_components_representative_connected(
-        m,
-        &components,
-    );
-    if !representative_connected_ok {
-        return Option::None;
-    }
-    let representative_minimal_ok = runtime_check_half_edge_components_representative_minimal(
-        m,
-        &components,
-    );
-    if !representative_minimal_ok {
-        return Option::None;
-    }
-    let representative_complete_ok = runtime_check_half_edge_components_representative_complete(
-        m,
-        &components,
-    );
-    if !representative_complete_ok {
-        return Option::None;
-    }
+    let components = match half_edge_components_constructive(m) {
+        Option::Some(components) => components,
+        Option::None => return Option::None,
+    };
 
     let count = components.len();
 
     proof {
+        assert(mesh_half_edge_components_partition_neighbor_closed_spec(m@, components@));
         assert(mesh_half_edge_components_partition_spec(m@, components@));
         assert(mesh_half_edge_components_neighbor_closed_spec(m@, components@));
         assert(mesh_half_edge_components_representative_connected_spec(m@, components@));
@@ -10518,37 +10494,10 @@ pub fn euler_characteristics_per_component_constructive(
             Option::None => true,
         },
 {
-    let components = ex_mesh_half_edge_components(m);
-    let partition_ok = runtime_check_half_edge_components_partition(m, &components);
-    if !partition_ok {
-        return Option::None;
-    }
-
-    let neighbor_closed_ok = runtime_check_half_edge_components_neighbor_closed(m, &components);
-    if !neighbor_closed_ok {
-        return Option::None;
-    }
-    let representative_connected_ok = runtime_check_half_edge_components_representative_connected(
-        m,
-        &components,
-    );
-    if !representative_connected_ok {
-        return Option::None;
-    }
-    let representative_minimal_ok = runtime_check_half_edge_components_representative_minimal(
-        m,
-        &components,
-    );
-    if !representative_minimal_ok {
-        return Option::None;
-    }
-    let representative_complete_ok = runtime_check_half_edge_components_representative_complete(
-        m,
-        &components,
-    );
-    if !representative_complete_ok {
-        return Option::None;
-    }
+    let components = match half_edge_components_constructive(m) {
+        Option::Some(components) => components,
+        Option::None => return Option::None,
+    };
 
     let chis = ex_mesh_euler_characteristics_per_component(m);
     let chis_ok = runtime_check_euler_characteristics_per_component(m, &components, &chis);
@@ -10557,6 +10506,7 @@ pub fn euler_characteristics_per_component_constructive(
     }
 
     proof {
+        assert(mesh_half_edge_components_partition_neighbor_closed_spec(m@, components@));
         assert(mesh_half_edge_components_partition_spec(m@, components@));
         assert(mesh_half_edge_components_neighbor_closed_spec(m@, components@));
         assert(mesh_half_edge_components_representative_connected_spec(m@, components@));
@@ -10587,37 +10537,10 @@ pub fn check_euler_formula_closed_components_constructive(
             Option::None => true,
         },
 {
-    let components = ex_mesh_half_edge_components(m);
-    let partition_ok = runtime_check_half_edge_components_partition(m, &components);
-    if !partition_ok {
-        return Option::None;
-    }
-
-    let neighbor_closed_ok = runtime_check_half_edge_components_neighbor_closed(m, &components);
-    if !neighbor_closed_ok {
-        return Option::None;
-    }
-    let representative_connected_ok = runtime_check_half_edge_components_representative_connected(
-        m,
-        &components,
-    );
-    if !representative_connected_ok {
-        return Option::None;
-    }
-    let representative_minimal_ok = runtime_check_half_edge_components_representative_minimal(
-        m,
-        &components,
-    );
-    if !representative_minimal_ok {
-        return Option::None;
-    }
-    let representative_complete_ok = runtime_check_half_edge_components_representative_complete(
-        m,
-        &components,
-    );
-    if !representative_complete_ok {
-        return Option::None;
-    }
+    let components = match half_edge_components_constructive(m) {
+        Option::Some(components) => components,
+        Option::None => return Option::None,
+    };
 
     let chis = ex_mesh_euler_characteristics_per_component(m);
     let chis_ok = runtime_check_euler_characteristics_per_component(m, &components, &chis);
@@ -10691,6 +10614,7 @@ pub fn check_euler_formula_closed_components_constructive(
                 };
             }
         }
+        assert(mesh_half_edge_components_partition_neighbor_closed_spec(m@, components@));
         assert(mesh_half_edge_components_partition_spec(m@, components@));
         assert(mesh_half_edge_components_neighbor_closed_spec(m@, components@));
         assert(mesh_half_edge_components_representative_connected_spec(m@, components@));

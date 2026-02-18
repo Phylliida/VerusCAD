@@ -2539,6 +2539,33 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       sentence argument; script rejected it (`error: expected zero arguments`).
       stable usage is to write the sentence to
       `scripts/run-codex-task.message.txt` and invoke the script with no args.
+  - burndown update (2026-02-18, component-witness reuse pass):
+    - reduced duplicated connectivity witness gating in
+      `src/runtime_halfedge_mesh_refinement.rs` by reusing
+      `half_edge_components_constructive(...)` in:
+      - `component_count_constructive`,
+      - `euler_characteristics_per_component_constructive`,
+      - `check_euler_formula_closed_components_constructive`.
+    - outcome:
+      these wrappers now share one checked partition/closure witness pipeline
+      instead of repeating the same
+      `runtime_check_half_edge_components_*` sequence inline; exported specs
+      are unchanged.
+    - failed attempts:
+      none in this pass.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement component_count_constructive`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement euler_characteristics_per_component_constructive`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement check_euler_formula_closed_components_constructive`
+      passed (`2 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`173 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh`
+      passed (`173 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh`
+      passed (`208 verified, 0 errors`).
 - [x] Reuse `vcad-geometry` predicates for optional geometric non-degeneracy extensions (face area > 0, etc.).
   - burndown update (2026-02-18, optional geometric non-degeneracy extension):
     - added an opt-in topology feature in `crates/vcad-topology/Cargo.toml`:
@@ -2614,3 +2641,27 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
 - [x] No `assume_specification` remains in `vcad-topology` for runtime mesh behavior.
 - [x] No uninterpreted spec predicate remains for currently implemented invariants.
 - [x] `verify-vcad-topology-fast.sh` and `verify-vcad-topology.sh` both green.
+  - burndown update (2026-02-18, exit-condition maintenance rerun + warning hardening):
+    - selected task in this pass:
+      maintain and revalidate the Exit Condition on the current tree.
+    - code hardening:
+      in `src/runtime_halfedge_mesh_refinement.rs`, added
+      `#[allow(unused_variables, unused_assignments)]` on
+      `runtime_check_from_face_cycles_all_oriented_edges_have_twin` to avoid
+      rustc test-mode warnings for proof-only witness locals
+      (`twin_f`/`twin_i`) that are required by Verus invariants/proofs.
+    - trusted-boundary/interpreted-spec scans:
+      - `rg -n "assume_specification|external_fn_specification" crates/vcad-topology/src`
+        returned no matches.
+      - `rg -n "uninterpreted|admit\\(|assume\\(" ...`
+        over topology proof/refinement sources returned no matches.
+    - failed attempts:
+      none in this pass.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_from_face_cycles_all_oriented_edges_have_twin`
+      passed (`5 verified, 0 errors` partial);
+      `cargo test -p vcad-topology` passed (`4 passed, 0 failed`);
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`6 passed, 0 failed`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`173 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`208 verified, 0 errors`).

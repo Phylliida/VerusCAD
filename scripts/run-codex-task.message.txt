@@ -1,1 +1,1 @@
-Removed the remaining reference-constructor external-body bridge by routing reference mesh wrappers through from_face_cycles_constructive_next_prev_face and revalidated vcad-topology verification/tests.
+Reused half_edge_components_constructive across component-count and Euler constructive wrappers and revalidated full vcad-topology verification.
