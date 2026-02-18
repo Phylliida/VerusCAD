@@ -494,6 +494,24 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`159 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`159 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`194 verified, 0 errors`).
+  - burndown update (2026-02-18, failure-path abort hardening):
+    - hardened `ex_from_face_cycles_constructive_abort` in
+      `src/runtime_halfedge_mesh_refinement.rs` by replacing `panic!(...)`
+      with `std::process::abort()`.
+    - rationale:
+      this keeps the constructive failure helper as a true non-returning
+      bridge in runtime behavior (no unwind path), aligned with its
+      verification role as an unreachable abort-only path.
+    - failed attempts:
+      none in this pass.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement from_face_cycles_constructive_next_prev_face`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`173 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`208 verified, 0 errors`);
+      `cargo test -p vcad-topology` passed (`4 passed, 0 failed`);
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`6 passed, 0 failed`).
 - [x] Prove twin assignment is total for closed inputs and involutive.
   - burndown update (2026-02-18):
     - landed constructor-facing refinement predicate in

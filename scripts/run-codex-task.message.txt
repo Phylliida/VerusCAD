@@ -1,1 +1,1 @@
-Resolved the vcad-topology combined geometry-checks+verus-proofs cargo-test cfg mismatch by cfg-gating Scalar usage in runtime_halfedge_mesh_refinement, documenting the closeout, and revalidating 173/208 Verus checks.
+Hardened vcad-topology's constructive from_face_cycles failure bridge by replacing panic with process abort, documented the burndown update, and revalidated fast/full verification plus test feature matrices.

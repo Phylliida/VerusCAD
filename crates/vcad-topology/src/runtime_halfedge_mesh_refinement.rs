@@ -36,7 +36,7 @@ fn mesh_build_error_empty_face_set() -> MeshBuildError {
 
 #[verifier::external_body]
 fn ex_from_face_cycles_constructive_abort() -> ! {
-    panic!("from_face_cycles_constructive_next_prev_face: unreachable failure path");
+    std::process::abort();
 }
 
 #[derive(Structural, Copy, Clone, PartialEq, Eq)]
