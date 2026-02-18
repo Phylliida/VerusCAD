@@ -1,1 +1,1 @@
-Strengthened face-cycle kernel and bridge witnesses with explicit per-cycle distinctness and documented a rolled-back attempt to lift that bridge to full mesh_face_next_cycles linkage.
+Strengthened Euler closed-components constructive verification by adding an explicit gate witness path (including false-case equivalence) and threading it through validity model-link witnesses.

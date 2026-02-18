@@ -1304,6 +1304,41 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`138 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`138 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`172 verified, 0 errors`).
+  - burndown update (2026-02-18, Euler gate equivalence witness increment):
+    - strengthened `src/runtime_halfedge_mesh_refinement.rs` with an explicit
+      Euler gate witness surface:
+      - `EulerFormulaClosedComponentsGateWitness`,
+      - `euler_formula_closed_components_gate_witness_spec`,
+      - `euler_formula_closed_components_gate_model_link_spec`.
+    - strengthened `check_euler_formula_closed_components_constructive`:
+      - return type is now
+        `Option<EulerFormulaClosedComponentsGateWitness>` (instead of
+        `Option<bool>`),
+      - successful output now certifies exact runtime gate equivalence at the
+        checked witness boundary:
+        `w.api_ok == (w.chis_non_empty && w.chis_all_two)`,
+      - the function now returns constructive witnesses for both `api_ok = true`
+        and `api_ok = false` (when partition/Euler witness checks succeed and
+        the runtime gate matches the checked formula), rather than only
+        `Some(true)`.
+    - integration strengthening:
+      `is_valid_constructive` / `validity_gate_model_link_spec` now retain an
+      explicit existential Euler gate witness (parallel to the structural gate
+      witness path), instead of only carrying a raw implication to the
+      partition witness predicate.
+    - remaining gap:
+      this improves constructive `iff` evidence at the gate-witness level, but
+      full model-level `iff` linkage to `mesh_euler_closed_components_spec`
+      remains open.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement check_euler_formula_closed_components_constructive`
+      passed (`2 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement is_valid_constructive`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`150 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`150 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`184 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 
@@ -1591,6 +1626,25 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`76 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`76 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`110 verified, 0 errors`).
+  - burndown update (2026-02-18, Euler witness threading increment):
+    - strengthened `validity_gate_model_link_spec` in
+      `src/runtime_halfedge_mesh_refinement.rs` so the Euler side now carries
+      an explicit existential witness:
+      `EulerFormulaClosedComponentsGateWitness`.
+    - `is_valid_constructive` now threads the strengthened
+      `check_euler_formula_closed_components_constructive` output witness and
+      proves `w.euler_ok` through retained Euler witness equality
+      (`ew.api_ok == w.euler_ok`) instead of only a direct implication clause.
+    - remaining gap:
+      validity linkage remains constructive witness-based; full total linkage to
+      `mesh_valid_spec` is still open.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement is_valid_constructive`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`150 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`150 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`184 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
 
 ## G. Verify Reference Mesh Constructors End-to-End

@@ -1901,13 +1901,37 @@ pub open spec fn validity_gate_witness_spec(w: ValidityGateWitness) -> bool {
     w.api_ok == (w.structural_ok && w.euler_ok)
 }
 
+#[derive(Structural, Copy, Clone, PartialEq, Eq)]
+pub struct EulerFormulaClosedComponentsGateWitness {
+    pub api_ok: bool,
+    pub chis_non_empty: bool,
+    pub chis_all_two: bool,
+}
+
+pub open spec fn euler_formula_closed_components_gate_witness_spec(
+    w: EulerFormulaClosedComponentsGateWitness,
+) -> bool {
+    w.api_ok == (w.chis_non_empty && w.chis_all_two)
+}
+
+pub open spec fn euler_formula_closed_components_gate_model_link_spec(
+    m: MeshModel,
+    w: EulerFormulaClosedComponentsGateWitness,
+) -> bool {
+    w.api_ok ==> mesh_euler_formula_closed_components_partition_witness_spec(m)
+}
+
 pub open spec fn validity_gate_model_link_spec(m: MeshModel, w: ValidityGateWitness) -> bool {
     &&& (w.structural_ok ==> exists|sw: StructuralValidityGateWitness| {
         &&& structural_validity_gate_witness_spec(sw)
         &&& structural_validity_gate_model_link_spec(m, sw)
         &&& sw.api_ok == w.structural_ok
     })
-    &&& (w.euler_ok ==> mesh_euler_formula_closed_components_partition_witness_spec(m))
+    &&& (w.euler_ok ==> exists|ew: EulerFormulaClosedComponentsGateWitness| {
+        &&& euler_formula_closed_components_gate_witness_spec(ew)
+        &&& euler_formula_closed_components_gate_model_link_spec(m, ew)
+        &&& ew.api_ok == w.euler_ok
+    })
 }
 
 pub open spec fn mesh_counts_spec(
@@ -8885,17 +8909,15 @@ pub fn euler_characteristics_per_component_constructive(
 #[allow(dead_code)]
 pub fn check_euler_formula_closed_components_constructive(
     m: &Mesh,
-) -> (out: Option<bool>)
+) -> (out: Option<EulerFormulaClosedComponentsGateWitness>)
     ensures
         match out {
-            Option::Some(ok) => ok && mesh_euler_formula_closed_components_partition_witness_spec(m@),
+            Option::Some(w) => euler_formula_closed_components_gate_witness_spec(w)
+                && euler_formula_closed_components_gate_model_link_spec(m@, w),
             Option::None => true,
         },
 {
     let api_ok = ex_mesh_check_euler_formula_closed_components(m);
-    if !api_ok {
-        return Option::None;
-    }
 
     let components = ex_mesh_half_edge_components(m);
     let partition_ok = runtime_check_half_edge_components_partition(m, &components);
@@ -8934,53 +8956,73 @@ pub fn check_euler_formula_closed_components_constructive(
     if !chis_ok {
         return Option::None;
     }
-    if chis.len() == 0 {
-        return Option::None;
-    }
+    let chis_non_empty = chis.len() > 0;
+    let mut seen_non_two = false;
 
     let mut c: usize = 0;
     while c < chis.len()
         invariant
             c <= chis.len(),
-            forall|cp: int|
+            !seen_non_two ==> forall|cp: int|
                 #![trigger chis@[cp]]
                 0 <= cp < c as int ==> chis@[cp] as int == 2,
     {
+        let seen_non_two_before = seen_non_two;
         let chi = *vstd::slice::slice_index_get(&chis, c);
         if chi != 2 {
-            return Option::None;
+            seen_non_two = true;
         }
         proof {
             assert(chi == chis@[c as int]);
-            assert(forall|cp: int|
-                #![trigger chis@[cp]]
-                0 <= cp < (c + 1) as int ==> chis@[cp] as int == 2) by {
-                assert forall|cp: int|
+            if !seen_non_two {
+                assert(!seen_non_two_before);
+                assert(chi as int == 2);
+                assert(forall|cp: int|
                     #![trigger chis@[cp]]
-                    0 <= cp < (c + 1) as int implies chis@[cp] as int == 2 by {
-                    if cp < c as int {
-                    } else {
-                        assert(cp == c as int);
-                        assert(chis@[cp] as int == chi as int);
-                        assert(chi as int == 2);
-                    }
-                };
+                    0 <= cp < (c + 1) as int ==> chis@[cp] as int == 2) by {
+                    assert forall|cp: int|
+                        #![trigger chis@[cp]]
+                        0 <= cp < (c + 1) as int implies chis@[cp] as int == 2 by {
+                        if cp < c as int {
+                        } else {
+                            assert(cp == c as int);
+                            assert(chis@[cp] as int == chi as int);
+                            assert(chi as int == 2);
+                        }
+                    };
+                }
             }
         }
         c += 1;
     }
 
+    let chis_all_two = !seen_non_two;
+    let formula_ok = chis_non_empty && chis_all_two;
+    if api_ok != formula_ok {
+        return Option::None;
+    }
+
+    let w = EulerFormulaClosedComponentsGateWitness {
+        api_ok,
+        chis_non_empty,
+        chis_all_two,
+    };
+
     proof {
         assert(c == chis.len());
-        assert(forall|cp: int|
-            #![trigger chis@[cp]]
-            0 <= cp < chis@.len() as int ==> chis@[cp] as int == 2) by {
-            assert forall|cp: int|
+        assert(w.api_ok == formula_ok);
+        assert(euler_formula_closed_components_gate_witness_spec(w));
+        if w.chis_all_two {
+            assert(forall|cp: int|
                 #![trigger chis@[cp]]
-                0 <= cp < chis@.len() as int implies chis@[cp] as int == 2 by {
-                assert(chis@.len() as int == c as int);
-                assert(0 <= cp < c as int);
-            };
+                0 <= cp < chis@.len() as int ==> chis@[cp] as int == 2) by {
+                assert forall|cp: int|
+                    #![trigger chis@[cp]]
+                    0 <= cp < chis@.len() as int implies chis@[cp] as int == 2 by {
+                    assert(chis@.len() as int == c as int);
+                    assert(0 <= cp < c as int);
+                };
+            }
         }
         assert(mesh_half_edge_components_partition_spec(m@, components@));
         assert(mesh_half_edge_components_neighbor_closed_spec(m@, components@));
@@ -8993,11 +9035,19 @@ pub fn check_euler_formula_closed_components_constructive(
         assert(components@.len() as int == mesh_component_count_spec(m@));
         assert(chis@.len() as int == components@.len() as int);
         assert(chis@.len() as int == mesh_component_count_spec(m@));
-        assert(chis@.len() > 0);
-        assert(mesh_euler_formula_closed_components_partition_witness_spec(m@));
+        if w.api_ok {
+            assert(w.chis_non_empty);
+            assert(w.chis_all_two);
+            assert(chis@.len() > 0);
+            assert(forall|cp: int|
+                #![trigger chis@[cp]]
+                0 <= cp < chis@.len() as int ==> chis@[cp] as int == 2);
+            assert(mesh_euler_formula_closed_components_partition_witness_spec(m@));
+        }
+        assert(euler_formula_closed_components_gate_model_link_spec(m@, w));
     }
 
-    Option::Some(true)
+    Option::Some(w)
 }
 
 #[allow(dead_code)]
@@ -9102,16 +9152,11 @@ pub fn is_valid_constructive(
         Option::Some(w) => w,
         Option::None => return Option::None,
     };
-    let euler_ok = match check_euler_formula_closed_components_constructive(m) {
-        Option::Some(ok) => {
-            proof {
-                assert(ok);
-                assert(mesh_euler_formula_closed_components_partition_witness_spec(m@));
-            }
-            ok
-        }
+    let euler_w = match check_euler_formula_closed_components_constructive(m) {
+        Option::Some(w) => w,
         Option::None => return Option::None,
     };
+    let euler_ok = euler_w.api_ok;
     let structural_ok = structural_w.api_ok;
     if api_ok != (structural_ok && euler_ok) {
         return Option::None;
@@ -9126,6 +9171,8 @@ pub fn is_valid_constructive(
     proof {
         assert(structural_validity_gate_witness_spec(structural_w));
         assert(structural_validity_gate_model_link_spec(m@, structural_w));
+        assert(euler_formula_closed_components_gate_witness_spec(euler_w));
+        assert(euler_formula_closed_components_gate_model_link_spec(m@, euler_w));
         assert(exists|sw: StructuralValidityGateWitness| {
             &&& structural_validity_gate_witness_spec(sw)
             &&& structural_validity_gate_model_link_spec(m@, sw)
@@ -9136,7 +9183,16 @@ pub fn is_valid_constructive(
             assert(structural_validity_gate_model_link_spec(m@, sw));
             assert(sw.api_ok == w.structural_ok);
         };
-        assert(w.euler_ok ==> mesh_euler_formula_closed_components_partition_witness_spec(m@));
+        assert(exists|ew: EulerFormulaClosedComponentsGateWitness| {
+            &&& euler_formula_closed_components_gate_witness_spec(ew)
+            &&& euler_formula_closed_components_gate_model_link_spec(m@, ew)
+            &&& ew.api_ok == w.euler_ok
+        }) by {
+            let ew = euler_w;
+            assert(euler_formula_closed_components_gate_witness_spec(ew));
+            assert(euler_formula_closed_components_gate_model_link_spec(m@, ew));
+            assert(ew.api_ok == w.euler_ok);
+        };
         assert(validity_gate_witness_spec(w));
         assert(validity_gate_model_link_spec(m@, w));
     }
