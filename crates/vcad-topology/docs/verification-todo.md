@@ -2203,6 +2203,37 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`4 passed, 0 failed`);
       `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
       passed (`6 passed, 0 failed`).
+  - burndown update (2026-02-18, reference-constructor bridge removal completion):
+    - removed the remaining external-body constructor bridge
+      `ex_mesh_reference_constructor` and its selector enum
+      `ReferenceMeshKind` from
+      `src/runtime_halfedge_mesh_refinement.rs`.
+    - strengthened constructor wrappers to build through the existing
+      constructive `from_face_cycles` path instead of a direct runtime
+      constructor bridge:
+      - `tetrahedron_constructive_counts`,
+      - `cube_constructive_counts`,
+      - `triangular_prism_constructive_counts`.
+      each now builds explicit reference vertex/face inputs and calls
+      `from_face_cycles_constructive_next_prev_face(...)` before the existing
+      count checks.
+    - rationale:
+      this removes one more `external_body` trust edge while keeping
+      constructor proof obligations on the verified `from_face_cycles`
+      constructive boundary.
+    - failed attempts:
+      none in this pass.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`173 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh`
+      passed (`173 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh`
+      passed (`208 verified, 0 errors`);
+      `cargo test -p vcad-topology`
+      passed (`4 passed, 0 failed`);
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`6 passed, 0 failed`).
   - file: `src/halfedge_mesh.rs`
 - [x] Verify `is_valid` exactly matches `is_structurally_valid && check_euler_formula_closed_components`.
   - burndown update (2026-02-18):

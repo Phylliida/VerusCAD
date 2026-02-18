@@ -7758,23 +7758,6 @@ pub fn ex_mesh_euler_characteristics_per_component(m: &Mesh) -> (out: Vec<isize>
     m.euler_characteristics_per_component_for_verification()
 }
 
-#[derive(Structural, Copy, Clone, PartialEq, Eq)]
-pub enum ReferenceMeshKind {
-    Tetrahedron,
-    Cube,
-    TriangularPrism,
-}
-
-#[verifier::external_body]
-pub fn ex_mesh_reference_constructor(kind: ReferenceMeshKind) -> (out: Mesh)
-{
-    match kind {
-        ReferenceMeshKind::Tetrahedron => Mesh::tetrahedron(),
-        ReferenceMeshKind::Cube => Mesh::cube(),
-        ReferenceMeshKind::TriangularPrism => Mesh::triangular_prism(),
-    }
-}
-
 #[allow(dead_code)]
 pub fn runtime_check_mesh_counts(
     m: &Mesh,
@@ -10949,7 +10932,18 @@ pub fn tetrahedron_constructive_counts() -> (out: Option<Mesh>)
             Option::None => true,
         },
 {
-    let m = ex_mesh_reference_constructor(ReferenceMeshKind::Tetrahedron);
+    let vertices = vec![
+        RuntimePoint3::from_ints(0, 0, 0),
+        RuntimePoint3::from_ints(1, 0, 0),
+        RuntimePoint3::from_ints(0, 1, 0),
+        RuntimePoint3::from_ints(0, 0, 1),
+    ];
+    let faces = vec![vec![0, 1, 2], vec![0, 3, 1], vec![1, 3, 2], vec![2, 3, 0]];
+    let built = from_face_cycles_constructive_next_prev_face(vertices, &faces);
+    let m = match built {
+        Result::Ok(m) => m,
+        Result::Err(_) => return Option::None,
+    };
     let counts_ok = runtime_check_mesh_counts(&m, 4, 6, 4, 12);
     if !counts_ok {
         return Option::None;
@@ -11006,7 +11000,29 @@ pub fn cube_constructive_counts() -> (out: Option<Mesh>)
             Option::None => true,
         },
 {
-    let m = ex_mesh_reference_constructor(ReferenceMeshKind::Cube);
+    let vertices = vec![
+        RuntimePoint3::from_ints(-1, -1, -1),
+        RuntimePoint3::from_ints(1, -1, -1),
+        RuntimePoint3::from_ints(1, 1, -1),
+        RuntimePoint3::from_ints(-1, 1, -1),
+        RuntimePoint3::from_ints(-1, -1, 1),
+        RuntimePoint3::from_ints(1, -1, 1),
+        RuntimePoint3::from_ints(1, 1, 1),
+        RuntimePoint3::from_ints(-1, 1, 1),
+    ];
+    let faces = vec![
+        vec![0, 3, 2, 1],
+        vec![4, 5, 6, 7],
+        vec![0, 1, 5, 4],
+        vec![3, 7, 6, 2],
+        vec![0, 4, 7, 3],
+        vec![1, 2, 6, 5],
+    ];
+    let built = from_face_cycles_constructive_next_prev_face(vertices, &faces);
+    let m = match built {
+        Result::Ok(m) => m,
+        Result::Err(_) => return Option::None,
+    };
     let counts_ok = runtime_check_mesh_counts(&m, 8, 12, 6, 24);
     if !counts_ok {
         return Option::None;
@@ -11063,7 +11079,26 @@ pub fn triangular_prism_constructive_counts() -> (out: Option<Mesh>)
             Option::None => true,
         },
 {
-    let m = ex_mesh_reference_constructor(ReferenceMeshKind::TriangularPrism);
+    let vertices = vec![
+        RuntimePoint3::from_ints(0, 0, 0),
+        RuntimePoint3::from_ints(2, 0, 0),
+        RuntimePoint3::from_ints(1, 2, 0),
+        RuntimePoint3::from_ints(0, 0, 1),
+        RuntimePoint3::from_ints(2, 0, 1),
+        RuntimePoint3::from_ints(1, 2, 1),
+    ];
+    let faces = vec![
+        vec![0, 2, 1],
+        vec![3, 4, 5],
+        vec![0, 1, 4, 3],
+        vec![1, 2, 5, 4],
+        vec![2, 0, 3, 5],
+    ];
+    let built = from_face_cycles_constructive_next_prev_face(vertices, &faces);
+    let m = match built {
+        Result::Ok(m) => m,
+        Result::Err(_) => return Option::None,
+    };
     let counts_ok = runtime_check_mesh_counts(&m, 6, 9, 5, 18);
     if !counts_ok {
         return Option::None;
