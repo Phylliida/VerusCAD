@@ -1,1 +1,1 @@
-Removed the ex_mesh_check_euler_formula_closed_components external-body bridge by deriving the Euler gate from checked witnesses and revalidating vcad-topology proofs/tests.
+Totalized the no-duplicate constructor failure path by proving the checker’s negative guarantee and returning a proven Err instead of abort, with vcad-topology verification and tests rerun.

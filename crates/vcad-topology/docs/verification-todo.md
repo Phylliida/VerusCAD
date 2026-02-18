@@ -658,6 +658,37 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`172 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh`
       passed (`207 verified, 0 errors`).
+  - burndown update (2026-02-18, no-duplicate failure-path totalization increment):
+    - strengthened
+      `runtime_check_from_face_cycles_no_duplicate_oriented_edges` in
+      `src/runtime_halfedge_mesh_refinement.rs` to export a two-way result:
+      - `out ==> from_face_cycles_no_duplicate_oriented_edges_spec(...)`, and
+      - `!out ==> !from_face_cycles_no_duplicate_oriented_edges_spec(...)`.
+    - used that new negative guarantee to harden
+      `from_face_cycles_constructive_next_prev_face`:
+      `!no_duplicate_ok` now returns
+      `Err(mesh_build_error_empty_face_set())` with a proven
+      `from_face_cycles_failure_spec(...)` witness instead of taking the abort
+      path.
+    - failed attempt (proof syntax only):
+      first pass used an `assert(g as int < f as int)` shape that failed Verus
+      parsing in this context (`expected ','`); replaced with parenthesized
+      casts and explicit inequalities.
+    - remaining gap:
+      abort-based handling still remains for other constructor-input/output
+      checker failures in `from_face_cycles_constructive_next_prev_face`
+      (notably all-twins/no-isolated negative-path export and post-constructor
+      checker-failure packaging).
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_from_face_cycles_no_duplicate_oriented_edges`
+      passed (`6 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement from_face_cycles_constructive_next_prev_face`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`173 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`173 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`208 verified, 0 errors`);
+      `cargo test -p vcad-topology` passed (`4 passed, 0 failed`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 - [x] Prove vertex representative (`vertex.half_edge`) is valid and non-isolated.
