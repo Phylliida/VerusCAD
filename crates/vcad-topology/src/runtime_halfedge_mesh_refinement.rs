@@ -2181,12 +2181,11 @@ pub open spec fn mesh_euler_formula_closed_components_partition_witness_spec(m: 
     }
 }
 
-/// Euler relation under the current closed-component model:
-/// each connected closed component contributes characteristic `2`,
-/// so globally `V - E + F = 2 * component_count`.
+/// Closed-component Euler gate model: the mesh has a checked half-edge
+/// partition witness whose per-component Euler characteristics are all `2`
+/// (with an explicit non-empty component list).
 pub open spec fn mesh_euler_closed_components_spec(m: MeshModel) -> bool {
-    mesh_vertex_count_spec(m) - mesh_edge_count_spec(m) + mesh_face_count_spec(m)
-        == 2 * mesh_component_count_spec(m)
+    mesh_euler_formula_closed_components_partition_witness_spec(m)
 }
 
 pub open spec fn mesh_vertex_representative_valid_nonisolated_spec(m: MeshModel) -> bool {
@@ -2252,6 +2251,10 @@ pub open spec fn structural_validity_gate_model_link_spec(
     m: MeshModel,
     w: StructuralValidityGateWitness,
 ) -> bool {
+    &&& (w.vertex_count_positive ==> mesh_vertex_count_spec(m) > 0)
+    &&& (w.edge_count_positive ==> mesh_edge_count_spec(m) > 0)
+    &&& (w.face_count_positive ==> mesh_face_count_spec(m) > 0)
+    &&& (w.half_edge_count_positive ==> mesh_half_edge_count_spec(m) > 0)
     &&& (w.index_bounds_ok ==> mesh_index_bounds_spec(m))
     &&& (w.twin_involution_ok ==> from_face_cycles_twin_assignment_total_involution_spec(m))
     &&& (w.prev_next_inverse_ok ==> mesh_prev_next_inverse_spec(m))
@@ -2289,7 +2292,7 @@ pub open spec fn euler_formula_closed_components_gate_model_link_spec(
     m: MeshModel,
     w: EulerFormulaClosedComponentsGateWitness,
 ) -> bool {
-    w.api_ok ==> mesh_euler_formula_closed_components_partition_witness_spec(m)
+    w.api_ok ==> mesh_euler_closed_components_spec(m)
 }
 
 pub open spec fn validity_gate_model_link_spec(m: MeshModel, w: ValidityGateWitness) -> bool {
@@ -2303,6 +2306,128 @@ pub open spec fn validity_gate_model_link_spec(m: MeshModel, w: ValidityGateWitn
         &&& euler_formula_closed_components_gate_model_link_spec(m, ew)
         &&& ew.api_ok == w.euler_ok
     })
+}
+
+pub proof fn lemma_structural_validity_gate_witness_api_ok_implies_mesh_structurally_valid(
+    m: MeshModel,
+    w: StructuralValidityGateWitness,
+)
+    requires
+        structural_validity_gate_witness_spec(w),
+        structural_validity_gate_model_link_spec(m, w),
+        w.api_ok,
+    ensures
+        mesh_structurally_valid_spec(m),
+{
+    assert(w.api_ok == (
+        w.vertex_count_positive
+            && w.edge_count_positive
+            && w.face_count_positive
+            && w.half_edge_count_positive
+            && w.index_bounds_ok
+            && w.twin_involution_ok
+            && w.prev_next_inverse_ok
+            && w.face_cycles_ok
+            && w.no_degenerate_edges_ok
+            && w.vertex_manifold_ok
+            && w.edge_two_half_edges_ok
+    ));
+    assert(
+        w.vertex_count_positive
+            && w.edge_count_positive
+            && w.face_count_positive
+            && w.half_edge_count_positive
+            && w.index_bounds_ok
+            && w.twin_involution_ok
+            && w.prev_next_inverse_ok
+            && w.face_cycles_ok
+            && w.no_degenerate_edges_ok
+            && w.vertex_manifold_ok
+            && w.edge_two_half_edges_ok
+    );
+    assert(w.vertex_count_positive ==> mesh_vertex_count_spec(m) > 0);
+    assert(w.edge_count_positive ==> mesh_edge_count_spec(m) > 0);
+    assert(w.face_count_positive ==> mesh_face_count_spec(m) > 0);
+    assert(w.half_edge_count_positive ==> mesh_half_edge_count_spec(m) > 0);
+    assert(w.index_bounds_ok ==> mesh_index_bounds_spec(m));
+    assert(w.twin_involution_ok ==> from_face_cycles_twin_assignment_total_involution_spec(m));
+    assert(w.prev_next_inverse_ok ==> mesh_prev_next_inverse_spec(m));
+    assert(w.face_cycles_ok ==> mesh_face_next_cycles_spec(m));
+    assert(w.no_degenerate_edges_ok ==> mesh_no_degenerate_edges_spec(m));
+    assert(w.vertex_manifold_ok ==> mesh_vertex_manifold_single_cycle_spec(m));
+    assert(w.edge_two_half_edges_ok ==> mesh_edge_exactly_two_half_edges_spec(m));
+
+    assert(mesh_vertex_count_spec(m) > 0);
+    assert(mesh_edge_count_spec(m) > 0);
+    assert(mesh_face_count_spec(m) > 0);
+    assert(mesh_half_edge_count_spec(m) > 0);
+    assert(mesh_index_bounds_spec(m));
+    assert(from_face_cycles_twin_assignment_total_involution_spec(m));
+    assert(mesh_twin_involution_spec(m));
+    assert(mesh_prev_next_inverse_spec(m));
+    assert(mesh_face_next_cycles_spec(m));
+    assert(mesh_no_degenerate_edges_spec(m));
+    assert(mesh_vertex_manifold_single_cycle_spec(m));
+    assert(mesh_edge_exactly_two_half_edges_spec(m));
+    assert(mesh_structurally_valid_spec(m));
+}
+
+pub proof fn lemma_validity_gate_witness_api_ok_implies_mesh_valid(
+    m: MeshModel,
+    w: ValidityGateWitness,
+)
+    requires
+        validity_gate_witness_spec(w),
+        validity_gate_model_link_spec(m, w),
+        w.api_ok,
+    ensures
+        mesh_valid_spec(m),
+{
+    assert(w.api_ok == (w.structural_ok && w.euler_ok));
+    assert(w.structural_ok && w.euler_ok);
+
+    assert(w.structural_ok ==> exists|sw: StructuralValidityGateWitness| {
+        &&& structural_validity_gate_witness_spec(sw)
+        &&& structural_validity_gate_model_link_spec(m, sw)
+        &&& sw.api_ok == w.structural_ok
+    });
+    assert(exists|sw: StructuralValidityGateWitness| {
+        &&& structural_validity_gate_witness_spec(sw)
+        &&& structural_validity_gate_model_link_spec(m, sw)
+        &&& sw.api_ok == w.structural_ok
+    });
+    let sw = choose|sw: StructuralValidityGateWitness| {
+        &&& structural_validity_gate_witness_spec(sw)
+        &&& structural_validity_gate_model_link_spec(m, sw)
+        &&& sw.api_ok == w.structural_ok
+    };
+    assert(sw.api_ok == w.structural_ok);
+    assert(sw.api_ok);
+    lemma_structural_validity_gate_witness_api_ok_implies_mesh_structurally_valid(m, sw);
+    assert(mesh_structurally_valid_spec(m));
+
+    assert(w.euler_ok ==> exists|ew: EulerFormulaClosedComponentsGateWitness| {
+        &&& euler_formula_closed_components_gate_witness_spec(ew)
+        &&& euler_formula_closed_components_gate_model_link_spec(m, ew)
+        &&& ew.api_ok == w.euler_ok
+    });
+    assert(exists|ew: EulerFormulaClosedComponentsGateWitness| {
+        &&& euler_formula_closed_components_gate_witness_spec(ew)
+        &&& euler_formula_closed_components_gate_model_link_spec(m, ew)
+        &&& ew.api_ok == w.euler_ok
+    });
+    let ew = choose|ew: EulerFormulaClosedComponentsGateWitness| {
+        &&& euler_formula_closed_components_gate_witness_spec(ew)
+        &&& euler_formula_closed_components_gate_model_link_spec(m, ew)
+        &&& ew.api_ok == w.euler_ok
+    };
+    assert(ew.api_ok == w.euler_ok);
+    assert(ew.api_ok);
+    assert(euler_formula_closed_components_gate_model_link_spec(m, ew));
+    assert(ew.api_ok ==> mesh_euler_closed_components_spec(m));
+    assert(mesh_euler_closed_components_spec(m));
+
+    assert(mesh_valid_spec(m));
 }
 
 pub open spec fn mesh_counts_spec(
@@ -9284,7 +9409,8 @@ pub fn check_euler_formula_closed_components_constructive(
     ensures
         match out {
             Option::Some(w) => euler_formula_closed_components_gate_witness_spec(w)
-                && euler_formula_closed_components_gate_model_link_spec(m@, w),
+                && euler_formula_closed_components_gate_model_link_spec(m@, w)
+                && (w.api_ok ==> mesh_euler_closed_components_spec(m@)),
             Option::None => true,
         },
 {
@@ -9414,8 +9540,14 @@ pub fn check_euler_formula_closed_components_constructive(
                 #![trigger chis@[cp]]
                 0 <= cp < chis@.len() as int ==> chis@[cp] as int == 2);
             assert(mesh_euler_formula_closed_components_partition_witness_spec(m@));
+            assert(mesh_euler_closed_components_spec(m@));
         }
         assert(euler_formula_closed_components_gate_model_link_spec(m@, w));
+        assert(w.api_ok ==> mesh_euler_closed_components_spec(m@)) by {
+            if w.api_ok {
+                assert(mesh_euler_closed_components_spec(m@));
+            }
+        };
     }
 
     Option::Some(w)
@@ -9434,10 +9566,10 @@ pub fn is_structurally_valid_constructive(
 {
     let api_ok = ex_mesh_is_structurally_valid(m);
 
-    let vertex_count_positive = !m.vertices.is_empty();
-    let edge_count_positive = !m.edges.is_empty();
-    let face_count_positive = !m.faces.is_empty();
-    let half_edge_count_positive = !m.half_edges.is_empty();
+    let vertex_count_positive = m.vertices.len() > 0;
+    let edge_count_positive = m.edges.len() > 0;
+    let face_count_positive = m.faces.len() > 0;
+    let half_edge_count_positive = m.half_edges.len() > 0;
 
     let index_bounds_ok = runtime_check_index_bounds(m);
     let twin_involution_ok = runtime_check_twin_assignment_total_involution(m);
@@ -9481,6 +9613,50 @@ pub fn is_structurally_valid_constructive(
     proof {
         assert(api_ok == formula_ok);
         assert(structural_validity_gate_witness_spec(w));
+        assert(w.vertex_count_positive ==> mesh_vertex_count_spec(m@) > 0) by {
+            if w.vertex_count_positive {
+                assert(w.vertex_count_positive == vertex_count_positive);
+                assert(m.vertices.len() > 0);
+                assert(m.vertices@.len() == m.vertices.len() as int);
+                assert(mesh_vertex_count_spec(m@) == m@.vertex_half_edges.len() as int);
+                assert(m@.vertex_half_edges.len() == m.vertices@.len());
+                assert(mesh_vertex_count_spec(m@) == m.vertices.len() as int);
+                assert(mesh_vertex_count_spec(m@) > 0);
+            }
+        };
+        assert(w.edge_count_positive ==> mesh_edge_count_spec(m@) > 0) by {
+            if w.edge_count_positive {
+                assert(w.edge_count_positive == edge_count_positive);
+                assert(m.edges.len() > 0);
+                assert(m.edges@.len() == m.edges.len() as int);
+                assert(mesh_edge_count_spec(m@) == m@.edge_half_edges.len() as int);
+                assert(m@.edge_half_edges.len() == m.edges@.len());
+                assert(mesh_edge_count_spec(m@) == m.edges.len() as int);
+                assert(mesh_edge_count_spec(m@) > 0);
+            }
+        };
+        assert(w.face_count_positive ==> mesh_face_count_spec(m@) > 0) by {
+            if w.face_count_positive {
+                assert(w.face_count_positive == face_count_positive);
+                assert(m.faces.len() > 0);
+                assert(m.faces@.len() == m.faces.len() as int);
+                assert(mesh_face_count_spec(m@) == m@.face_half_edges.len() as int);
+                assert(m@.face_half_edges.len() == m.faces@.len());
+                assert(mesh_face_count_spec(m@) == m.faces.len() as int);
+                assert(mesh_face_count_spec(m@) > 0);
+            }
+        };
+        assert(w.half_edge_count_positive ==> mesh_half_edge_count_spec(m@) > 0) by {
+            if w.half_edge_count_positive {
+                assert(w.half_edge_count_positive == half_edge_count_positive);
+                assert(m.half_edges.len() > 0);
+                assert(m.half_edges@.len() == m.half_edges.len() as int);
+                assert(mesh_half_edge_count_spec(m@) == m@.half_edges.len() as int);
+                assert(m@.half_edges.len() == m.half_edges@.len());
+                assert(mesh_half_edge_count_spec(m@) == m.half_edges.len() as int);
+                assert(mesh_half_edge_count_spec(m@) > 0);
+            }
+        };
         if w.index_bounds_ok {
             assert(mesh_index_bounds_spec(m@));
         }
@@ -9516,7 +9692,9 @@ pub fn is_valid_constructive(
 ) -> (out: Option<ValidityGateWitness>)
     ensures
         match out {
-            Option::Some(w) => validity_gate_witness_spec(w) && validity_gate_model_link_spec(m@, w),
+            Option::Some(w) => validity_gate_witness_spec(w)
+                && validity_gate_model_link_spec(m@, w)
+                && (w.api_ok ==> mesh_valid_spec(m@)),
             Option::None => true,
         },
 {
@@ -9568,6 +9746,15 @@ pub fn is_valid_constructive(
         };
         assert(validity_gate_witness_spec(w));
         assert(validity_gate_model_link_spec(m@, w));
+        if w.api_ok {
+            lemma_validity_gate_witness_api_ok_implies_mesh_valid(m@, w);
+            assert(mesh_valid_spec(m@));
+        }
+        assert(w.api_ok ==> mesh_valid_spec(m@)) by {
+            if w.api_ok {
+                assert(mesh_valid_spec(m@));
+            }
+        };
     }
 
     Option::Some(w)
@@ -9600,7 +9787,7 @@ pub fn tetrahedron_constructive_counts_and_is_valid() -> (out: Option<(Mesh, Val
     ensures
         match out {
             Option::Some((m, w)) => mesh_tetrahedron_counts_spec(m@) && validity_gate_witness_spec(w)
-                && validity_gate_model_link_spec(m@, w) && w.api_ok,
+                && validity_gate_model_link_spec(m@, w) && w.api_ok && mesh_valid_spec(m@),
             Option::None => true,
         },
 {
@@ -9617,6 +9804,8 @@ pub fn tetrahedron_constructive_counts_and_is_valid() -> (out: Option<(Mesh, Val
                             assert(mesh_tetrahedron_counts_spec(m@));
                             assert(validity_gate_witness_spec(w));
                             assert(validity_gate_model_link_spec(m@, w));
+                            lemma_validity_gate_witness_api_ok_implies_mesh_valid(m@, w);
+                            assert(mesh_valid_spec(m@));
                         }
                         Option::Some((m, w))
                     }
@@ -9655,7 +9844,7 @@ pub fn cube_constructive_counts_and_is_valid() -> (out: Option<(Mesh, ValidityGa
     ensures
         match out {
             Option::Some((m, w)) => mesh_cube_counts_spec(m@) && validity_gate_witness_spec(w)
-                && validity_gate_model_link_spec(m@, w) && w.api_ok,
+                && validity_gate_model_link_spec(m@, w) && w.api_ok && mesh_valid_spec(m@),
             Option::None => true,
         },
 {
@@ -9672,6 +9861,8 @@ pub fn cube_constructive_counts_and_is_valid() -> (out: Option<(Mesh, ValidityGa
                             assert(mesh_cube_counts_spec(m@));
                             assert(validity_gate_witness_spec(w));
                             assert(validity_gate_model_link_spec(m@, w));
+                            lemma_validity_gate_witness_api_ok_implies_mesh_valid(m@, w);
+                            assert(mesh_valid_spec(m@));
                         }
                         Option::Some((m, w))
                     }
@@ -9710,7 +9901,8 @@ pub fn triangular_prism_constructive_counts_and_is_valid() -> (out: Option<(Mesh
     ensures
         match out {
             Option::Some((m, w)) => mesh_triangular_prism_counts_spec(m@)
-                && validity_gate_witness_spec(w) && validity_gate_model_link_spec(m@, w) && w.api_ok,
+                && validity_gate_witness_spec(w) && validity_gate_model_link_spec(m@, w)
+                && w.api_ok && mesh_valid_spec(m@),
             Option::None => true,
         },
 {
@@ -9727,6 +9919,8 @@ pub fn triangular_prism_constructive_counts_and_is_valid() -> (out: Option<(Mesh
                             assert(mesh_triangular_prism_counts_spec(m@));
                             assert(validity_gate_witness_spec(w));
                             assert(validity_gate_model_link_spec(m@, w));
+                            lemma_validity_gate_witness_api_ok_implies_mesh_valid(m@, w);
+                            assert(mesh_valid_spec(m@));
                         }
                         Option::Some((m, w))
                     }

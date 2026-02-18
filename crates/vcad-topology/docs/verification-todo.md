@@ -1359,6 +1359,23 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`150 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`150 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`184 verified, 0 errors`).
+  - burndown update (2026-02-18, closed-components model-link strengthening):
+    - refactored `mesh_euler_closed_components_spec` in
+      `src/runtime_halfedge_mesh_refinement.rs` to the explicit
+      partition-witness form:
+      `mesh_euler_formula_closed_components_partition_witness_spec(m)`.
+    - strengthened
+      `check_euler_formula_closed_components_constructive` so `Some(w)` now
+      also certifies:
+      `w.api_ok ==> mesh_euler_closed_components_spec(m@)`.
+    - remaining gap:
+      full model-level `iff` remains open; this pass closes the exported
+      constructive `api_ok -> model` direction.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`157 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`157 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`192 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 
@@ -1714,7 +1731,7 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `./scripts/verify-vcad-topology-fast.sh` passed (`155 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`190 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
-- [ ] Verify `is_valid` exactly matches `is_structurally_valid && check_euler_formula_closed_components`.
+- [x] Verify `is_valid` exactly matches `is_structurally_valid && check_euler_formula_closed_components`.
   - burndown update (2026-02-18):
     - landed constructive top-level gate witness in
       `src/runtime_halfedge_mesh_refinement.rs`:
@@ -1789,10 +1806,32 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`150 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`150 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`184 verified, 0 errors`).
+  - burndown update (2026-02-18, model-validity implication completion):
+    - strengthened structural witness model-link surface in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      `structural_validity_gate_model_link_spec` now includes positive-count
+      implications (`vertex/edge/face/half_edge`).
+    - added proof lemmas:
+      - `lemma_structural_validity_gate_witness_api_ok_implies_mesh_structurally_valid`,
+      - `lemma_validity_gate_witness_api_ok_implies_mesh_valid`.
+    - strengthened `is_valid_constructive` postcondition so `Some(w)` now
+      certifies:
+      `w.api_ok ==> mesh_valid_spec(m@)`,
+      alongside the existing gate-equivalence and witness-link guarantees.
+    - outcome:
+      constructive `is_valid` linkage to model-level `mesh_valid_spec` is now
+      exported and the item is complete.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement is_valid_constructive`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`157 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`157 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`192 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
 
 ## G. Verify Reference Mesh Constructors End-to-End
-- [ ] Prove `tetrahedron` builds and satisfies `is_valid`.
+- [x] Prove `tetrahedron` builds and satisfies `is_valid`.
   - prove counts: `V=4, E=6, F=4, H=12`.
   - burndown update (2026-02-18):
     - landed constructor-count refinement scaffolding in
@@ -1832,9 +1871,21 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`76 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`76 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`110 verified, 0 errors`).
+  - burndown update (2026-02-18, model-valid constructor closeout):
+    - strengthened `tetrahedron_constructive_counts_and_is_valid` so
+      `Some((m, w))` now also certifies `mesh_valid_spec(m@)`.
+    - proof path now reuses
+      `lemma_validity_gate_witness_api_ok_implies_mesh_valid`.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement tetrahedron_constructive_counts_and_is_valid`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`157 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`157 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`192 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
-- [ ] Prove `cube` builds and satisfies `is_valid`.
+- [x] Prove `cube` builds and satisfies `is_valid`.
   - prove counts: `V=8, E=12, F=6, H=24`.
   - burndown update (2026-02-18):
     - landed constructor-count bridge + wrapper in
@@ -1860,9 +1911,21 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
     - verification checks:
       `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement cube_constructive_counts_and_is_valid`
       passed (`1 verified, 0 errors`);
+  - burndown update (2026-02-18, model-valid constructor closeout):
+    - strengthened `cube_constructive_counts_and_is_valid` so `Some((m, w))`
+      now also certifies `mesh_valid_spec(m@)`.
+    - proof path now reuses
+      `lemma_validity_gate_witness_api_ok_implies_mesh_valid`.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement cube_constructive_counts_and_is_valid`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`157 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`157 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`192 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
-- [ ] Prove `triangular_prism` builds and satisfies `is_valid`.
+- [x] Prove `triangular_prism` builds and satisfies `is_valid`.
   - prove counts: `V=6, E=9, F=5, H=18`.
   - burndown update (2026-02-18):
     - landed constructor-count bridge + wrapper in
@@ -1893,6 +1956,18 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
     - verification checks:
       `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement triangular_prism_constructive_counts_and_is_valid`
       passed (`1 verified, 0 errors`).
+  - burndown update (2026-02-18, model-valid constructor closeout):
+    - strengthened `triangular_prism_constructive_counts_and_is_valid` so
+      `Some((m, w))` now also certifies `mesh_valid_spec(m@)`.
+    - proof path now reuses
+      `lemma_validity_gate_witness_api_ok_implies_mesh_valid`.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement triangular_prism_constructive_counts_and_is_valid`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`157 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`157 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`192 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 

@@ -1,1 +1,1 @@
-Completed face-cycle model-link strengthening by proving the bridge implies mesh_face_next_cycles_spec and threading that guarantee into is_structurally_valid constructive proofs.
+Completed vcad-topology validity burndown by proving constructive is_valid and all three reference constructors now export model-level mesh_valid_spec, with fast and full verification green.
