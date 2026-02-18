@@ -1,1 +1,1 @@
-Hardened the vertex-representative checker to prove full two-way spec equivalence and recorded a green vcad-topology verification/test replay in the burndown log.
+Replayed the vcad-topology exit-condition verification matrix under no-daemon fallback and recorded a fresh all-green burndown snapshot.
