@@ -128,7 +128,7 @@ Current explicit policy (runtime behavior locked by tests):
 - [x] Add diagnostic checker variants that return a first failing witness (face id / edge id / face-pair + reason), not only `bool`.
 - [x] Prove diagnostic and boolean checker equivalence (diagnostic success iff boolean passes).
 - [x] Document checker complexity and asymptotic bounds (especially face-pair intersection path).
-- [ ] Add broad-phase culling for face-pair checks (for example plane-side/AABB prefilters) with soundness proof (no false negatives).
+- [x] Add broad-phase culling for face-pair checks (for example plane-side/AABB prefilters) with soundness proof (no false negatives).
 - [x] Add stress fixtures (higher face counts) to lock checker behavior and runtime envelope.
 
 Current complexity notes (runtime implementation in `src/halfedge_mesh/validation.rs`):
@@ -143,6 +143,7 @@ Current complexity notes (runtime implementation in `src/halfedge_mesh/validatio
   - In the current implementation, `compute_face_plane` re-runs global validity guards, so `C_plane` is effectively `O(H)` and the stage is `O(FH)` worst-case.
 - Face-pair intersection path:
   - `check_no_forbidden_face_face_intersections` performs per-face preprocessing plus all non-adjacent face pairs.
+  - each pair first applies a broad-phase prefilter (`AABB` overlap + strict plane-side separation) in `O(d_a + d_b)` time; rejected pairs skip the narrow phase.
   - Pair cost is `O(d_a * d_b)` for faces `a, b` (segment-vs-face tests + shared-vertex screening).
   - Total pair cost is `O(sum_{a<b} d_a d_b)`, bounded by `O(F^2 * d_max^2)`; for bounded face degree this is `O(F^2)`.
   - Auxiliary space is `O(H)` for cached per-face vertex cycles and normals.
@@ -177,6 +178,24 @@ Current rigid-transform policy (runtime behavior locked by tests):
 - reflection transforms with determinant `-1` preserve local geometric checks, but intentionally flip outward-orientation-sensitive outcomes (`check_outward_face_normals`, aggregate geometric-consistency gate, and `is_valid_with_geometry`).
 
 ## Burndown Log
+- 2026-02-18: Completed a P5.11 broad-phase culling pass in `src/halfedge_mesh/validation.rs` and `src/halfedge_mesh/tests.rs`:
+  - refactored the face-pair intersection path through `check_no_forbidden_face_face_intersections_impl(use_broad_phase)` so the production checker keeps broad-phase enabled while tests can run a no-cull oracle path;
+  - added pair-level broad-phase culling helpers:
+    - per-face `AABB` bounds (`face_axis_aligned_bounding_box`);
+    - `AABB` overlap rejection (`axis_aligned_bounding_boxes_overlap`);
+    - strict same-side plane rejection (`face_vertices_strictly_on_one_side_of_plane`);
+    - combined prefilter (`face_pair_may_intersect_broad_phase`);
+  - added `broad_phase_face_pair_culling_matches_no_cull_oracle`, locking soundness by asserting checker-equivalence between broad-phase and no-cull paths across passing/failing and stress fixtures (including rigid transforms);
+  - marked the P5.11 broad-phase culling checklist item complete.
+- 2026-02-18: Failed attempts in this P5.11 broad-phase culling pass: none.
+- 2026-02-18: Revalidated after the P5.11 broad-phase culling additions:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks broad_phase_face_pair_culling_matches_no_cull_oracle`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (215 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (250 verified, 0 errors)
 - 2026-02-18: Completed a P5.8/ground-rules guardrail pass in `src/halfedge_mesh/tests.rs`:
   - added `runtime_refinement_include_list_covers_all_refinement_modules` (`--features "geometry-checks,verus-proofs"`), which enforces that `src/runtime_halfedge_mesh_refinement.rs` `include!` entries exactly match `src/runtime_halfedge_mesh_refinement/*.rs`;
   - added `topology_sources_remain_exact_arithmetic_only`, which recursively scans `crates/vcad-topology/src` (excluding `tests.rs`) and fails on `f32`/`f64` identifier tokens to block floating-point fallback paths in Phase 5 code;

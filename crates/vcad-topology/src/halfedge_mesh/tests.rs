@@ -86,6 +86,17 @@ fn phase5_checker_signature(mesh: &Mesh) -> [bool; 10] {
 }
 
 #[cfg(feature = "geometry-checks")]
+fn assert_forbidden_face_face_checker_broad_phase_sound(mesh: &Mesh) {
+    let broad_phase_result = mesh.check_no_forbidden_face_face_intersections();
+    let no_cull_oracle_result =
+        mesh.check_no_forbidden_face_face_intersections_without_broad_phase_for_testing();
+    assert_eq!(
+        broad_phase_result, no_cull_oracle_result,
+        "broad-phase culling changed the forbidden face-face intersection outcome"
+    );
+}
+
+#[cfg(feature = "geometry-checks")]
 fn build_overlapping_tetrahedra_mesh() -> Mesh {
     let vertices = vec![
         RuntimePoint3::from_ints(0, 0, 0),
@@ -963,6 +974,44 @@ fn diagnostic_witness_is_real_counterexample(
             failure,
             GeometricTopologicalConsistencyFailure::ForbiddenFaceFaceIntersection { .. }
         ));
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn broad_phase_face_pair_culling_matches_no_cull_oracle() {
+        let mut disjoint_origins = Vec::new();
+        for i in 0..12 {
+            disjoint_origins.push((i * 10, 0, 0));
+        }
+        let disjoint_stress = build_disconnected_translated_tetrahedra_mesh(&disjoint_origins);
+
+        let mut overlapping_origins = disjoint_origins.clone();
+        overlapping_origins.push((0, 0, 0));
+        let overlapping_stress = build_disconnected_translated_tetrahedra_mesh(&overlapping_origins);
+
+        let cube = Mesh::cube();
+        let cube_rigid = transform_mesh_positions(&cube, |point| {
+            rigid_rotate_z_90_then_translate(point, 7, -5, 3)
+        });
+        let overlapping_rigid = transform_mesh_positions(&build_overlapping_tetrahedra_mesh(), |point| {
+            rigid_rotate_z_90_then_translate(point, -11, 4, 9)
+        });
+
+        let fixtures = vec![
+            Mesh::tetrahedron(),
+            cube,
+            Mesh::triangular_prism(),
+            build_overlapping_tetrahedra_mesh(),
+            disjoint_stress,
+            overlapping_stress,
+            cube_rigid,
+            overlapping_rigid,
+        ];
+
+        for mesh in fixtures {
+            assert!(mesh.is_valid(), "fixture must satisfy Phase 4 validity");
+            assert_forbidden_face_face_checker_broad_phase_sound(&mesh);
+        }
     }
 
     #[test]

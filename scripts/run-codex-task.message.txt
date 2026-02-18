@@ -1,1 +1,1 @@
-Completed the P5.5 adjacency-exemption tightening task by enforcing exact allowed face-contact relations in the intersection checker, adding shared-vertex/coincident-face policy tests, updating the burndown, and revalidating the full vcad-topology test/proof matrix (250 verified, 0 errors).
+Implemented Phase 5 broad-phase face-pair culling with AABB/strict-plane prefilters plus no-cull oracle-equivalence tests, updated the burndown checklist/log, and revalidated the full vcad-topology matrix (250 verified, 0 errors).

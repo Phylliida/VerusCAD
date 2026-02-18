@@ -494,6 +494,11 @@ impl Mesh {
     }
 
     #[cfg(feature = "geometry-checks")]
+    fn scalar_lt(lhs: &RuntimeScalar, rhs: &RuntimeScalar) -> bool {
+        lhs.sub(rhs).signum_i8() < 0
+    }
+
+    #[cfg(feature = "geometry-checks")]
     fn dominant_projection_axis(normal: &RuntimeVec3) -> ProjectionAxis {
         let ax = Self::scalar_abs(normal.x());
         let ay = Self::scalar_abs(normal.y());
@@ -604,6 +609,134 @@ impl Mesh {
         } else {
             shared_edge_keys.len() == 1 && shared_vertices.len() == 2
         }
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn face_axis_aligned_bounding_box(
+        &self,
+        face_vertices: &[usize],
+    ) -> Option<(RuntimePoint3, RuntimePoint3)> {
+        if face_vertices.is_empty() {
+            return None;
+        }
+
+        let first = &self.vertices[face_vertices[0]].position;
+        let mut min_x = first.x().clone();
+        let mut min_y = first.y().clone();
+        let mut min_z = first.z().clone();
+        let mut max_x = first.x().clone();
+        let mut max_y = first.y().clone();
+        let mut max_z = first.z().clone();
+
+        for &vertex in face_vertices.iter().skip(1) {
+            let p = &self.vertices[vertex].position;
+            if Self::scalar_lt(p.x(), &min_x) {
+                min_x = p.x().clone();
+            }
+            if Self::scalar_lt(p.y(), &min_y) {
+                min_y = p.y().clone();
+            }
+            if Self::scalar_lt(p.z(), &min_z) {
+                min_z = p.z().clone();
+            }
+            if Self::scalar_lt(&max_x, p.x()) {
+                max_x = p.x().clone();
+            }
+            if Self::scalar_lt(&max_y, p.y()) {
+                max_y = p.y().clone();
+            }
+            if Self::scalar_lt(&max_z, p.z()) {
+                max_z = p.z().clone();
+            }
+        }
+
+        Some((
+            RuntimePoint3::new(min_x, min_y, min_z),
+            RuntimePoint3::new(max_x, max_y, max_z),
+        ))
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn axis_aligned_bounding_boxes_overlap(
+        min_a: &RuntimePoint3,
+        max_a: &RuntimePoint3,
+        min_b: &RuntimePoint3,
+        max_b: &RuntimePoint3,
+    ) -> bool {
+        !(Self::scalar_lt(max_a.x(), min_b.x())
+            || Self::scalar_lt(max_b.x(), min_a.x())
+            || Self::scalar_lt(max_a.y(), min_b.y())
+            || Self::scalar_lt(max_b.y(), min_a.y())
+            || Self::scalar_lt(max_a.z(), min_b.z())
+            || Self::scalar_lt(max_b.z(), min_a.z()))
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn face_vertices_strictly_on_one_side_of_plane(
+        &self,
+        face_vertices: &[usize],
+        plane_a: &RuntimePoint3,
+        plane_b: &RuntimePoint3,
+        plane_c: &RuntimePoint3,
+    ) -> bool {
+        let mut expected_sign = 0i8;
+        for &vertex in face_vertices {
+            let point = &self.vertices[vertex].position;
+            let sign = orient3d_sign(plane_a, plane_b, plane_c, point);
+            if sign == 0 {
+                return false;
+            }
+            if expected_sign == 0 {
+                expected_sign = sign;
+            } else if sign != expected_sign {
+                return false;
+            }
+        }
+        expected_sign != 0
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn face_pair_may_intersect_broad_phase(
+        &self,
+        face_a_vertices: &[usize],
+        face_b_vertices: &[usize],
+        face_a_plane_a: &RuntimePoint3,
+        face_a_plane_b: &RuntimePoint3,
+        face_a_plane_c: &RuntimePoint3,
+        face_b_plane_a: &RuntimePoint3,
+        face_b_plane_b: &RuntimePoint3,
+        face_b_plane_c: &RuntimePoint3,
+    ) -> bool {
+        let (face_a_min, face_a_max) = match self.face_axis_aligned_bounding_box(face_a_vertices) {
+            Some(bounds) => bounds,
+            None => return false,
+        };
+        let (face_b_min, face_b_max) = match self.face_axis_aligned_bounding_box(face_b_vertices) {
+            Some(bounds) => bounds,
+            None => return false,
+        };
+        if !Self::axis_aligned_bounding_boxes_overlap(&face_a_min, &face_a_max, &face_b_min, &face_b_max) {
+            return false;
+        }
+
+        if self.face_vertices_strictly_on_one_side_of_plane(
+            face_a_vertices,
+            face_b_plane_a,
+            face_b_plane_b,
+            face_b_plane_c,
+        ) {
+            return false;
+        }
+        if self.face_vertices_strictly_on_one_side_of_plane(
+            face_b_vertices,
+            face_a_plane_a,
+            face_a_plane_b,
+            face_a_plane_c,
+        ) {
+            return false;
+        }
+
+        true
     }
 
     #[cfg(feature = "geometry-checks")]
@@ -818,6 +951,7 @@ impl Mesh {
         face_a_normal: &RuntimeVec3,
         face_b_vertices: &[usize],
         face_b_normal: &RuntimeVec3,
+        use_broad_phase: bool,
     ) -> bool {
         if face_a_vertices.len() < 3 || face_b_vertices.len() < 3 {
             return true;
@@ -835,6 +969,21 @@ impl Mesh {
         let face_b_plane_a = &self.vertices[face_b_vertices[0]].position;
         let face_b_plane_b = &self.vertices[face_b_vertices[1]].position;
         let face_b_plane_c = &self.vertices[face_b_vertices[2]].position;
+
+        if use_broad_phase
+            && !self.face_pair_may_intersect_broad_phase(
+                face_a_vertices,
+                face_b_vertices,
+                face_a_plane_a,
+                face_a_plane_b,
+                face_a_plane_c,
+                face_b_plane_a,
+                face_b_plane_b,
+                face_b_plane_c,
+            )
+        {
+            return false;
+        }
 
         for i in 0..face_a_vertices.len() {
             let seg_start_vertex = face_a_vertices[i];
@@ -906,7 +1055,7 @@ impl Mesh {
     ///   exempt (for example, disconnected components touching at a vertex,
     ///   along an edge, or across an entire face);
     /// - exact arithmetic is used throughout (no epsilon tolerance path).
-    pub fn check_no_forbidden_face_face_intersections(&self) -> bool {
+    fn check_no_forbidden_face_face_intersections_impl(&self, use_broad_phase: bool) -> bool {
         if !self.is_valid() {
             return false;
         }
@@ -945,6 +1094,7 @@ impl Mesh {
                     &face_normals[fa],
                     &face_vertices[fb],
                     &face_normals[fb],
+                    use_broad_phase,
                 ) {
                     return false;
                 }
@@ -952,6 +1102,18 @@ impl Mesh {
         }
 
         true
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    pub fn check_no_forbidden_face_face_intersections(&self) -> bool {
+        self.check_no_forbidden_face_face_intersections_impl(true)
+    }
+
+    #[cfg(all(test, feature = "geometry-checks"))]
+    pub(crate) fn check_no_forbidden_face_face_intersections_without_broad_phase_for_testing(
+        &self,
+    ) -> bool {
+        self.check_no_forbidden_face_face_intersections_impl(false)
     }
 
     #[cfg(feature = "geometry-checks")]
@@ -1202,6 +1364,7 @@ impl Mesh {
                     &face_normals[fa],
                     &face_vertices[fb],
                     &face_normals[fb],
+                    true,
                 ) {
                     return Some(
                         GeometricTopologicalConsistencyFailure::ForbiddenFaceFaceIntersection {
