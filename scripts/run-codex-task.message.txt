@@ -1,1 +1,1 @@
-Reused half_edge_components_constructive across component-count and Euler constructive wrappers and revalidated full vcad-topology verification.
+Verified one more refinement helper directly by removing an unnecessary external_body and revalidated all vcad-topology verification/test gates.

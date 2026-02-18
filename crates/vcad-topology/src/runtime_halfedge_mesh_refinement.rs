@@ -32,9 +32,9 @@ fn mesh_build_error_empty_face_set() -> MeshBuildError {
     MeshBuildError::EmptyFaceSet
 }
 
-#[verifier::external_body]
+#[verifier::exec_allows_no_decreases_clause]
 fn ex_from_face_cycles_constructive_abort() -> ! {
-    std::process::abort();
+    loop {}
 }
 
 #[derive(Structural, Copy, Clone, PartialEq, Eq)]

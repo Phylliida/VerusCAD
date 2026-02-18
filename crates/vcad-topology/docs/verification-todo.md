@@ -2694,3 +2694,33 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `cargo test -p vcad-topology` passed (`4 passed, 0 failed`);
       `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
       passed (`6 passed, 0 failed`).
+  - burndown update (2026-02-18, external-body minimization follow-up):
+    - selected task in this pass:
+      continue Exit Condition maintenance by shrinking the remaining trusted
+      refinement bridge surface.
+    - code hardening:
+      in `src/runtime_halfedge_mesh_refinement.rs`, removed
+      `#[verifier::external_body]` from
+      `ex_from_face_cycles_constructive_abort` and replaced the body with a
+      direct diverging loop under
+      `#[verifier::exec_allows_no_decreases_clause]`.
+    - trusted-boundary/interpreted-spec scans:
+      - `rg -n "assume_specification|external_fn_specification|\\buninterpreted\\b|admit\\(|assume\\("`
+        over `runtime_halfedge_mesh_refinement.rs`,
+        `verified_checker_kernels.rs`, and `halfedge_mesh.rs`
+        returned no matches.
+      - `rg -n "\\[verifier::external_body\\]" crates/vcad-topology/src/runtime_halfedge_mesh_refinement.rs`
+        now reports three wrappers (down from four in the previous pass).
+    - failed attempts (rolled back in-pass):
+      - first replacement used `panic!(...)`; Verus rejected unsupported
+        `core::fmt`/`panic_fmt` paths in verified mode.
+      - second replacement used `loop {}` without no-decreases allowance;
+        Verus rejected it with "loop must have a decreases clause".
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`176 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`176 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`211 verified, 0 errors`);
+      `cargo test -p vcad-topology` passed (`4 passed, 0 failed`);
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`6 passed, 0 failed`).
