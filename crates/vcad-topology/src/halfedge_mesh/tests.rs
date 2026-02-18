@@ -155,6 +155,90 @@ fn reflect_point3_across_yz_plane(point: &RuntimePoint3) -> RuntimePoint3 {
 }
 
 #[cfg(feature = "geometry-checks")]
+#[derive(Clone, Copy)]
+struct DeterministicRng {
+    state: u64,
+}
+
+#[cfg(feature = "geometry-checks")]
+impl DeterministicRng {
+    fn new(seed: u64) -> Self {
+        Self { state: seed }
+    }
+
+    fn next_u64(&mut self) -> u64 {
+        self.state = self
+            .state
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
+        self.state
+    }
+
+    fn next_usize_inclusive(&mut self, min: usize, max: usize) -> usize {
+        assert!(min <= max, "min must be <= max");
+        let span = (max - min + 1) as u64;
+        min + (self.next_u64() % span) as usize
+    }
+
+    fn next_i64_inclusive(&mut self, min: i64, max: i64) -> i64 {
+        assert!(min <= max, "min must be <= max");
+        let span = (max - min + 1) as u64;
+        min + (self.next_u64() % span) as i64
+    }
+}
+
+#[cfg(feature = "geometry-checks")]
+fn rotate_point3_z_quarter_turns(point: &RuntimePoint3, quarter_turns: u64) -> RuntimePoint3 {
+    let mut out = point.clone();
+    for _ in 0..(quarter_turns % 4) {
+        out = rotate_point3_z_90(&out);
+    }
+    out
+}
+
+#[cfg(feature = "geometry-checks")]
+fn rigid_rotate_z_quarter_turns_then_translate(
+    point: &RuntimePoint3,
+    quarter_turns: u64,
+    tx: i64,
+    ty: i64,
+    tz: i64,
+) -> RuntimePoint3 {
+    let rotated = rotate_point3_z_quarter_turns(point, quarter_turns);
+    translate_point3(&rotated, tx, ty, tz)
+}
+
+#[cfg(feature = "geometry-checks")]
+fn random_well_separated_component_origins(
+    rng: &mut DeterministicRng,
+    components: usize,
+) -> Vec<(i64, i64, i64)> {
+    let mut origins = Vec::with_capacity(components);
+    while origins.len() < components {
+        let candidate = (
+            rng.next_i64_inclusive(-20, 20) * 6,
+            rng.next_i64_inclusive(-20, 20) * 6,
+            rng.next_i64_inclusive(-20, 20) * 6,
+        );
+        if !origins.contains(&candidate) {
+            origins.push(candidate);
+        }
+    }
+    origins
+}
+
+#[cfg(feature = "geometry-checks")]
+fn pick_distinct_indices(rng: &mut DeterministicRng, len: usize) -> (usize, usize) {
+    assert!(len >= 2, "need at least two indices");
+    let first = rng.next_usize_inclusive(0, len - 1);
+    let mut second = rng.next_usize_inclusive(0, len - 2);
+    if second >= first {
+        second += 1;
+    }
+    (first, second)
+}
+
+#[cfg(feature = "geometry-checks")]
 fn relabel_vertices_in_face_cycles(
     vertices: &[RuntimePoint3],
     faces: &[Vec<usize>],
@@ -1011,6 +1095,85 @@ fn diagnostic_witness_is_real_counterexample(
         for mesh in fixtures {
             assert!(mesh.is_valid(), "fixture must satisfy Phase 4 validity");
             assert_forbidden_face_face_checker_broad_phase_sound(&mesh);
+        }
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn differential_randomized_forbidden_intersection_checker_harness() {
+        const CASES: usize = 40;
+        let mut rng = DeterministicRng::new(0xD1FFEA5E);
+
+        for _ in 0..CASES {
+            let component_count = rng.next_usize_inclusive(2, 7);
+            let disjoint_origins =
+                random_well_separated_component_origins(&mut rng, component_count);
+
+            let disjoint_mesh =
+                build_disconnected_translated_tetrahedra_mesh(&disjoint_origins);
+            assert!(
+                disjoint_mesh.is_valid(),
+                "generated disjoint fixture should satisfy Phase 4 validity"
+            );
+            assert_forbidden_face_face_checker_broad_phase_sound(&disjoint_mesh);
+            assert_eq!(
+                disjoint_mesh.check_geometric_topological_consistency(),
+                disjoint_mesh
+                    .check_geometric_topological_consistency_diagnostic()
+                    .is_ok()
+            );
+
+            let quarter_turns = rng.next_u64() % 4;
+            let tx = rng.next_i64_inclusive(-25, 25);
+            let ty = rng.next_i64_inclusive(-25, 25);
+            let tz = rng.next_i64_inclusive(-25, 25);
+            let rigid_disjoint = transform_mesh_positions(&disjoint_mesh, |point| {
+                rigid_rotate_z_quarter_turns_then_translate(point, quarter_turns, tx, ty, tz)
+            });
+            assert!(
+                rigid_disjoint.is_valid(),
+                "rigidly transformed fixture should preserve Phase 4 validity"
+            );
+            assert_forbidden_face_face_checker_broad_phase_sound(&rigid_disjoint);
+            assert_eq!(
+                rigid_disjoint.check_geometric_topological_consistency(),
+                rigid_disjoint
+                    .check_geometric_topological_consistency_diagnostic()
+                    .is_ok()
+            );
+
+            let (source_component, perturbed_component) =
+                pick_distinct_indices(&mut rng, component_count);
+            let mut perturbed_origins = disjoint_origins.clone();
+            let perturbation = match rng.next_u64() % 3 {
+                0 => (0, 0, 0),
+                1 => (1, 0, 0),
+                _ => (0, 1, 0),
+            };
+            let (ox, oy, oz) = perturbed_origins[source_component];
+            perturbed_origins[perturbed_component] =
+                (ox + perturbation.0, oy + perturbation.1, oz + perturbation.2);
+
+            let perturbed_mesh =
+                build_disconnected_translated_tetrahedra_mesh(&perturbed_origins);
+            assert!(
+                perturbed_mesh.is_valid(),
+                "topology should remain valid under coordinate perturbations"
+            );
+            assert_forbidden_face_face_checker_broad_phase_sound(&perturbed_mesh);
+            assert_eq!(
+                perturbed_mesh.check_geometric_topological_consistency(),
+                perturbed_mesh
+                    .check_geometric_topological_consistency_diagnostic()
+                    .is_ok()
+            );
+
+            if perturbation == (0, 0, 0) {
+                assert!(
+                    !perturbed_mesh.check_no_forbidden_face_face_intersections(),
+                    "exactly overlapping disconnected components must be rejected"
+                );
+            }
         }
     }
 
@@ -2199,6 +2362,68 @@ fn diagnostic_witness_is_real_counterexample(
         assert!(
             offenders.is_empty(),
             "floating-point type tokens found in vcad-topology source: {:?}",
+            offenders
+        );
+    }
+
+    #[test]
+    fn topology_sources_contain_no_trusted_verification_boundaries() {
+        let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let source_root = manifest_dir.join("src");
+        let assume_spec_token = ["assume", "_specification"].concat();
+        let external_fn_spec_token = ["external_fn", "_specification"].concat();
+        let verifier_external_body_marker = ["[verifier::external", "_body]"].concat();
+        let verus_trusted_marker = ["verus::", "trusted"].concat();
+
+        let mut source_files = Vec::new();
+        collect_rs_files_recursively(&source_root, &mut source_files);
+        source_files.sort();
+
+        let mut offenders = Vec::new();
+        for source_file in source_files {
+            let source_name = source_file
+                .file_name()
+                .and_then(|name| name.to_str())
+                .unwrap_or_default();
+            if source_name == "tests.rs" {
+                continue;
+            }
+
+            let contents = fs::read_to_string(&source_file)
+                .expect("Rust source file should be readable");
+
+            let mut violation_tokens = Vec::new();
+            if has_identifier_token(&contents, &assume_spec_token) {
+                violation_tokens.push(assume_spec_token.clone());
+            }
+            if has_identifier_token(&contents, &external_fn_spec_token) {
+                violation_tokens.push(external_fn_spec_token.clone());
+            }
+            if has_identifier_token(&contents, "admit") {
+                violation_tokens.push("admit".to_string());
+            }
+            if contents.contains(&verifier_external_body_marker) {
+                violation_tokens.push(verifier_external_body_marker.clone());
+            }
+            if contents.contains(&verus_trusted_marker) {
+                violation_tokens.push(verus_trusted_marker.clone());
+            }
+
+            if !violation_tokens.is_empty() {
+                offenders.push((
+                    source_file
+                        .strip_prefix(&manifest_dir)
+                        .expect("source file should be inside crate manifest dir")
+                        .display()
+                        .to_string(),
+                    violation_tokens,
+                ));
+            }
+        }
+
+        assert!(
+            offenders.is_empty(),
+            "trusted verification boundary tokens found in vcad-topology source: {:?}",
             offenders
         );
     }

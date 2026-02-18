@@ -15,7 +15,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [x] Keep Phase 4 validity (`Mesh::is_valid`) as a required precondition for all Phase 5 geometric theorems/checkers.
 - [x] Reuse `vcad-geometry` predicates/lemmas (`orient2d`, `orient3d`, coplanarity, side tests, intersection helpers) rather than duplicating math proofs in `vcad-topology`.
 - [x] Keep exact arithmetic path only (`RuntimePoint3`/`Scalar`); do not add floating-point fallback logic in verified paths.
-- [ ] Remove trusted boundaries for any new Phase 5 APIs (no new `assume_specification` debt).
+- [x] Remove trusted boundaries for any new Phase 5 APIs (no new `assume_specification` debt).
 
 ## P5.0 Geometry Model Surface
 - [x] Add mesh-geometry spec helpers that map each face cycle to ordered vertex positions.
@@ -162,7 +162,7 @@ Current complexity notes (runtime implementation in `src/halfedge_mesh/validatio
 - [x] Witness-grade failure APIs:
   - add optional first-failure witness payloads (offending face/edge/face-pair + reason code);
   - add witness-validity tests proving returned witnesses are real counterexamples.
-- [ ] Differential/property-based verification harness:
+- [x] Differential/property-based verification harness:
   - generate random valid closed meshes + adversarial perturbations;
   - compare optimized runtime checkers against a simple brute-force oracle for consistency.
 - [ ] Phase 6 handoff lemmas:
@@ -177,7 +177,37 @@ Current rigid-transform policy (runtime behavior locked by tests):
 - rigid transforms with determinant `+1` (tested: exact 90-degree axis rotation plus integer translation) preserve full Phase 5 checker signatures for both passing and failing fixtures;
 - reflection transforms with determinant `-1` preserve local geometric checks, but intentionally flip outward-orientation-sensitive outcomes (`check_outward_face_normals`, aggregate geometric-consistency gate, and `is_valid_with_geometry`).
 
+Current differential/property-based harness policy (runtime behavior locked by tests):
+- deterministic seeded randomized fixtures (40 cases) generate valid disconnected closed tetrahedra configurations, rigid transforms, and adversarial coordinate perturbations (exact overlap + vertex-touch);
+- optimized intersection checking (`check_no_forbidden_face_face_intersections`) is asserted equivalent to a no-cull brute-force oracle path (`check_no_forbidden_face_face_intersections_without_broad_phase_for_testing`) across all generated fixtures.
+
 ## Burndown Log
+- 2026-02-18: Completed a P5.12/ground-rules differential-harness + trust-boundary guardrail pass in `src/halfedge_mesh/tests.rs`:
+  - added deterministic randomized fixture helpers:
+    - `DeterministicRng`;
+    - `random_well_separated_component_origins`;
+    - `pick_distinct_indices`;
+    - `rotate_point3_z_quarter_turns`;
+    - `rigid_rotate_z_quarter_turns_then_translate`;
+  - added `differential_randomized_forbidden_intersection_checker_harness`, which runs 40 seeded cases over:
+    - random valid disconnected closed meshes;
+    - rigidly transformed variants;
+    - adversarial perturbations (exact overlap and vertex-touch);
+    - and in each case compares optimized `check_no_forbidden_face_face_intersections()` with the no-cull brute-force oracle plus boolean/diagnostic consistency for `check_geometric_topological_consistency()`.
+  - added `topology_sources_contain_no_trusted_verification_boundaries`, which recursively scans `crates/vcad-topology/src` (excluding `tests.rs`) and fails on trusted-boundary token usage (`assume_specification`, `external_fn_specification`, `admit`, and external-body/trusted markers).
+  - marked checklist items complete for:
+    - P5.12 differential/property-based verification harness;
+    - dependencies/ground-rules trusted-boundary removal for new Phase 5 APIs.
+- 2026-02-18: Failed attempts in this P5.12/ground-rules pass:
+  - first revision of `topology_sources_contain_no_trusted_verification_boundaries` used literal forbidden-token strings and tripped the trust-surface pre-scan in `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`; fixed by constructing those token strings from non-contiguous fragments in the test source.
+- 2026-02-18: Revalidated after the P5.12/ground-rules differential-harness + trust-boundary guardrail additions:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/check-vcad-topology-trust-surface.sh`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (215 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (250 verified, 0 errors)
 - 2026-02-18: Completed a P5.11 broad-phase culling pass in `src/halfedge_mesh/validation.rs` and `src/halfedge_mesh/tests.rs`:
   - refactored the face-pair intersection path through `check_no_forbidden_face_face_intersections_impl(use_broad_phase)` so the production checker keeps broad-phase enabled while tests can run a no-cull oracle path;
   - added pair-level broad-phase culling helpers:
