@@ -10,19 +10,21 @@ Ordered by dependency. Each phase builds on the one above it.
 
 Wrap `rug::Integer` and `rug::Rational` with the interface the kernel needs. State the algebraic properties as trusted axioms since GMP is unverified C.
 
+Status (2026-02-18): partially complete in `vcad-math`; core wrappers and arithmetic law surface are in place, while conversion/testing hardening items remain open.
+
 **Wrapper types**
 
-- [ ] Define thin wrappers around `rug::Integer` and `rug::Rational` with the operations the kernel uses
+- [x] Define thin wrappers around `rug::Integer` and `rug::Rational` with the operations the kernel uses
 - [ ] Document which `rug` operations are used and what properties are assumed about each
 - [ ] Implement `From`/`Into` conversions for i64, f64 → Rational
 
 **Axiomatized properties**
 
-- [ ] State as axioms: Rational forms an ordered field (commutativity, associativity, distributivity, multiplicative inverse, total order compatibility)
-- [ ] State as axioms: sign rules (positive × positive = positive, etc.)
-- [ ] State as axioms: comparison compatibility with arithmetic (a ≤ b ⟹ a+c ≤ b+c, etc.)
-- [ ] State as axiom: division is exact (a/b × b = a for b ≠ 0)
-- [ ] Document trust boundary explicitly: "we assume GMP is correct"
+- [x] State as axioms: Rational forms an ordered field (commutativity, associativity, distributivity, multiplicative inverse, total order compatibility)
+- [x] State as axioms: sign rules (positive × positive = positive, etc.)
+- [x] State as axioms: comparison compatibility with arithmetic (a ≤ b ⟹ a+c ≤ b+c, etc.)
+- [x] State as axiom: division is exact (a/b × b = a for b ≠ 0)
+- [x] Document trust boundary explicitly: "we assume GMP is correct"
 
 **Sanity tests**
 
@@ -35,22 +37,24 @@ Wrap `rug::Integer` and `rug::Rational` with the interface the kernel needs. Sta
 
 Define geometric primitives over exact rationals. No matrices — just the specific operations the predicates need.
 
+Status (2026-02-18): implemented and formally verified in `vcad-math`.
+
 **Primitives**
 
-- [ ] Define Point2, Point3, Vec2, Vec3 over Rational. Points and vectors as distinct types.
-- [ ] Vector operations: add, sub, scale. Prove basic properties (linearity, etc.) from the axioms.
-- [ ] Dot product. Prove bilinearity and commutativity: a·b = b·a
-- [ ] Cross product (3D). Prove anti-commutativity: a×b = -(b×a)
-- [ ] Prove cross product orthogonality: a·(a×b) = 0
+- [x] Define Point2, Point3, Vec2, Vec3 over Rational. Points and vectors as distinct types.
+- [x] Vector operations: add, sub, scale. Prove basic properties (linearity, etc.) from the axioms.
+- [x] Dot product. Prove bilinearity and commutativity: a·b = b·a
+- [x] Cross product (3D). Prove anti-commutativity: a×b = -(b×a)
+- [x] Prove cross product orthogonality: a·(a×b) = 0
 
 **Helper expressions for predicates**
 
-- [ ] Implement 2D signed-area formula: (bx - ax)(cy - ay) - (by - ay)(cx - ax). This is the polynomial that orient2d evaluates.
-- [ ] Implement 3D signed-volume formula: the explicit expansion of the 3×3 determinant of edge vectors from orient3d. Write it out directly, no matrix type.
-- [ ] Prove: signed-area formula flips sign when any two input points are swapped (antisymmetry)
-- [ ] Prove: signed-volume formula flips sign when any two input points are swapped (antisymmetry)
-- [ ] Prove: signed-area = 0 iff the three points are collinear (vectors linearly dependent)
-- [ ] Prove: signed-volume = 0 iff the four points are coplanar (vectors linearly dependent)
+- [x] Implement 2D signed-area formula: (bx - ax)(cy - ay) - (by - ay)(cx - ax). This is the polynomial that orient2d evaluates.
+- [x] Implement 3D signed-volume formula: the explicit expansion of the 3×3 determinant of edge vectors from orient3d. Write it out directly, no matrix type.
+- [x] Prove: signed-area formula flips sign when any two input points are swapped (antisymmetry)
+- [x] Prove: signed-volume formula flips sign when any two input points are swapped (antisymmetry)
+- [x] Prove: signed-area = 0 iff the three points are collinear (vectors linearly dependent)
+- [x] Prove: signed-volume = 0 iff the four points are coplanar (vectors linearly dependent)
 
 ---
 
@@ -58,28 +62,30 @@ Define geometric primitives over exact rationals. No matrices — just the speci
 
 The critical layer. Every topological decision invokes these. Verify both computation and geometric meaning.
 
+Status (2026-02-18): implemented and formally verified in `vcad-geometry` (with refinement bridges to `vcad-math`).
+
 **Orientation predicates**
 
-- [ ] orient2d(a, b, c): wraps signed-area formula from Phase 2. Returns +1 (CCW), -1 (CW), 0 (collinear). Prove = 2× signed area of triangle abc.
-- [ ] orient3d(a, b, c, d): wraps signed-volume formula from Phase 2. Returns +1/−1/0. Prove = 6× signed volume of tetrahedron abcd.
-- [ ] Prove orient3d geometric meaning: positive iff d is on positive side of plane(a,b,c)
+- [x] orient2d(a, b, c): wraps signed-area formula from Phase 2. Returns +1 (CCW), -1 (CW), 0 (collinear). Prove = 2× signed area of triangle abc.
+- [x] orient3d(a, b, c, d): wraps signed-volume formula from Phase 2. Returns +1/−1/0. Prove = 6× signed volume of tetrahedron abcd.
+- [x] Prove orient3d geometric meaning: positive iff d is on positive side of plane(a,b,c)
 
 **Sidedness and separation**
 
-- [ ] point_above_plane(p, plane) — reduce to orient3d, prove equivalence
-- [ ] Prove: if orient3d(a,b,c,d) > 0 and orient3d(a,b,c,e) < 0 then segment de crosses plane abc
-- [ ] Segment-plane intersection point: compute exact rational intersection parameter t. Prove 0 < t < 1 when crossing confirmed.
+- [x] point_above_plane(p, plane) — reduce to orient3d, prove equivalence
+- [x] Prove: if orient3d(a,b,c,d) > 0 and orient3d(a,b,c,e) < 0 then segment de crosses plane abc
+- [x] Segment-plane intersection point: compute exact rational intersection parameter t. Prove 0 < t < 1 when crossing confirmed.
 
 **Collinearity and coplanarity**
 
-- [ ] collinear(a, b, c): orient2d = 0 (2D) or cross product = zero vector (3D). Verify.
-- [ ] coplanar(a, b, c, d): orient3d = 0. Verify.
-- [ ] Prove transitivity-like property: if {a,b,c,d} coplanar and {a,b,c,e} coplanar and a,b,c non-collinear, then {a,b,c,d,e} coplanar.
+- [x] collinear(a, b, c): orient2d = 0 (2D) or cross product = zero vector (3D). Verify.
+- [x] coplanar(a, b, c, d): orient3d = 0. Verify.
+- [x] Prove transitivity-like property: if {a,b,c,d} coplanar and {a,b,c,e} coplanar and a,b,c non-collinear, then {a,b,c,d,e} coplanar.
 
 **Point-in-convex-polygon (2D projected)**
 
-- [ ] Implement: reduce to sequence of orient2d tests against each edge
-- [ ] Prove: returns true iff point is on or inside the convex polygon
+- [x] Implement: reduce to sequence of orient2d tests against each edge
+- [x] Prove: returns true iff point is on or inside the convex polygon
 
 ---
 
@@ -87,32 +93,34 @@ The critical layer. Every topological decision invokes these. Verify both comput
 
 Define the half-edge data structure and formalize what "valid mesh" means. No mutation yet — just representation and checking.
 
+Status (2026-02-18): implemented and formally verified in `vcad-topology` (see `crates/vcad-topology/docs/verification-todo.md`, sections F/G).
+
 **Data structure definition**
 
-- [ ] Define HalfEdge, Vertex, Edge, Face, Mesh types. Half-edge stores: twin, next, prev, vertex, edge, face.
-- [ ] Choose indexing strategy (arena indices vs references) and document
+- [x] Define HalfEdge, Vertex, Edge, Face, Mesh types. Half-edge stores: twin, next, prev, vertex, edge, face.
+- [x] Choose indexing strategy (arena indices vs references) and document
 
 **Structural invariants**
 
-- [ ] Inv: twin(twin(h)) = h for all half-edges h
-- [ ] Inv: next-cycle is a valid cycle (following next from h returns to h). Prove cycle length ≥ 3 per face.
-- [ ] Inv: prev is the inverse of next (prev(next(h)) = h)
-- [ ] Inv: vertex(h) ≠ vertex(twin(h)) — no degenerate edges
-- [ ] Inv: all half-edges around a vertex form a single cycle via twin/next (manifold condition)
-- [ ] Inv: each face's half-edges all reference that face
-- [ ] Inv: each edge has exactly two half-edges (its twin pair)
+- [x] Inv: twin(twin(h)) = h for all half-edges h
+- [x] Inv: next-cycle is a valid cycle (following next from h returns to h). Prove cycle length ≥ 3 per face.
+- [x] Inv: prev is the inverse of next (prev(next(h)) = h)
+- [x] Inv: vertex(h) ≠ vertex(twin(h)) — no degenerate edges
+- [x] Inv: all half-edges around a vertex form a single cycle via twin/next (manifold condition)
+- [x] Inv: each face's half-edges all reference that face
+- [x] Inv: each edge has exactly two half-edges (its twin pair)
 
 **Euler formula and connectivity**
 
-- [ ] Implement component counting (BFS/DFS on half-edge graph)
-- [ ] State and verify Euler's formula: V - E + F = 2 per closed component
-- [ ] Implement is_valid(mesh) → bool checking all invariants. Prove soundness.
+- [x] Implement component counting (BFS/DFS on half-edge graph)
+- [x] State and verify Euler's formula: V - E + F = 2 per closed component
+- [x] Implement is_valid(mesh) → bool checking all invariants. Prove soundness.
 
 **Test meshes**
 
-- [ ] Construct tetrahedron by hand, prove is_valid
-- [ ] Construct cube by hand, prove is_valid
-- [ ] Construct triangular prism by hand, prove is_valid
+- [x] Construct tetrahedron by hand, prove is_valid
+- [x] Construct cube by hand, prove is_valid
+- [x] Construct triangular prism by hand, prove is_valid
 
 ---
 
