@@ -172,20 +172,23 @@ pub open spec fn mesh_no_degenerate_edges_spec(m: MeshModel) -> bool {
     }
 }
 
+pub open spec fn mesh_edge_exactly_two_half_edges_at_spec(m: MeshModel, e: int) -> bool {
+    let h0 = #[trigger] m.edge_half_edges[e];
+    let h1 = m.half_edges[h0].twin;
+    &&& 0 <= h0 < mesh_half_edge_count_spec(m)
+    &&& 0 <= h1 < mesh_half_edge_count_spec(m)
+    &&& h0 != h1
+    &&& m.half_edges[h0].edge == e
+    &&& m.half_edges[h1].edge == e
+    &&& m.half_edges[h1].twin == h0
+    &&& forall|h: int|
+        0 <= h < mesh_half_edge_count_spec(m)
+            ==> (#[trigger] m.half_edges[h].edge == e ==> (h == h0 || h == h1))
+}
+
 pub open spec fn mesh_edge_exactly_two_half_edges_spec(m: MeshModel) -> bool {
-    forall|e: int| 0 <= e < mesh_edge_count_spec(m) ==> {
-        let h0 = #[trigger] m.edge_half_edges[e];
-        let h1 = m.half_edges[h0].twin;
-        &&& 0 <= h0 < mesh_half_edge_count_spec(m)
-        &&& 0 <= h1 < mesh_half_edge_count_spec(m)
-        &&& h0 != h1
-        &&& m.half_edges[h0].edge == e
-        &&& m.half_edges[h1].edge == e
-        &&& m.half_edges[h1].twin == h0
-        &&& forall|h: int|
-            0 <= h < mesh_half_edge_count_spec(m)
-                ==> (#[trigger] m.half_edges[h].edge == e ==> (h == h0 || h == h1))
-    }
+    forall|e: int|
+        0 <= e < mesh_edge_count_spec(m) ==> #[trigger] mesh_edge_exactly_two_half_edges_at_spec(m, e)
 }
 
 pub open spec fn mesh_next_or_self_spec(m: MeshModel, h: int) -> int {
@@ -1015,6 +1018,171 @@ pub fn from_face_cycles_constructive_twin_assignment_total_involution(
     match out0 {
         Result::Ok(m) => {
             let ok = runtime_check_twin_assignment_total_involution(&m);
+            if ok {
+                Result::Ok(m)
+            } else {
+                Result::Err(mesh_build_error_empty_face_set())
+            }
+        }
+        Result::Err(e) => Result::Err(e),
+    }
+}
+
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
+pub fn runtime_check_edge_exactly_two_half_edges(m: &Mesh) -> (out: bool)
+    ensures
+        out ==> mesh_edge_exactly_two_half_edges_spec(m@),
+{
+    let hcnt = m.half_edges.len();
+    let ecnt = m.edges.len();
+    let mut e: usize = 0;
+    while e < ecnt
+        invariant
+            hcnt == m.half_edges.len(),
+            ecnt == m.edges.len(),
+            0 <= e <= ecnt,
+            forall|ep: int| 0 <= ep < e as int ==> mesh_edge_exactly_two_half_edges_at_spec(m@, ep),
+    {
+        let h0 = m.edges[e].half_edge;
+        if h0 >= hcnt {
+            return false;
+        }
+        let he0 = &m.half_edges[h0];
+        if he0.edge != e {
+            return false;
+        }
+        let h1 = he0.twin;
+        if h1 >= hcnt || h1 == h0 {
+            return false;
+        }
+        let he1 = &m.half_edges[h1];
+        if he1.edge != e {
+            return false;
+        }
+        if he1.twin != h0 {
+            return false;
+        }
+
+        let mut h: usize = 0;
+        while h < hcnt
+            invariant
+                hcnt == m.half_edges.len(),
+                ecnt == m.edges.len(),
+                0 <= e < ecnt,
+                0 <= h <= hcnt,
+                0 <= h0 < hcnt,
+                0 <= h1 < hcnt,
+                h0 != h1,
+                m@.edge_half_edges[e as int] == h0 as int,
+                m@.half_edges[h0 as int].edge == e as int,
+                m@.half_edges[h0 as int].twin == h1 as int,
+                m@.half_edges[h1 as int].edge == e as int,
+                m@.half_edges[h1 as int].twin == h0 as int,
+                forall|hp: int|
+                    0 <= hp < h as int
+                        ==> (#[trigger] m@.half_edges[hp].edge == e as int ==> (hp == h0 as int || hp == h1 as int)),
+        {
+            let edge_at_h = m.half_edges[h].edge;
+            if edge_at_h == e {
+                if h != h0 && h != h1 {
+                    return false;
+                }
+            }
+
+            proof {
+                assert(m@.half_edges[h as int].edge == edge_at_h as int);
+                assert(forall|hp: int|
+                    0 <= hp < (h + 1) as int
+                        ==> (#[trigger] m@.half_edges[hp].edge == e as int ==> (hp == h0 as int || hp == h1 as int))) by {
+                    assert forall|hp: int|
+                        0 <= hp < (h + 1) as int && #[trigger] m@.half_edges[hp].edge == e as int
+                            implies (hp == h0 as int || hp == h1 as int) by {
+                        if hp < h as int {
+                            assert(0 <= hp < h as int);
+                        } else {
+                            assert(hp == h as int);
+                            assert(edge_at_h as int == e as int);
+                            if h != h0 {
+                                assert(h == h1);
+                            } else {
+                                assert(h == h0);
+                            }
+                            assert(hp == h0 as int || hp == h1 as int);
+                        }
+                    };
+                }
+            }
+
+            h += 1;
+        }
+
+        proof {
+            assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+            assert(mesh_edge_count_spec(m@) == ecnt as int);
+            assert(m@.edge_half_edges[e as int] == h0 as int);
+            assert(m@.half_edges[h0 as int].twin == h1 as int);
+            assert(m@.half_edges[h1 as int].twin == h0 as int);
+            assert(m@.half_edges[h0 as int].edge == e as int);
+            assert(m@.half_edges[h1 as int].edge == e as int);
+            assert(forall|hp: int|
+                0 <= hp < mesh_half_edge_count_spec(m@)
+                    ==> (#[trigger] m@.half_edges[hp].edge == e as int ==> (hp == h0 as int || hp == h1 as int))) by {
+                assert forall|hp: int|
+                    0 <= hp < mesh_half_edge_count_spec(m@) && #[trigger] m@.half_edges[hp].edge == e as int
+                        implies (hp == h0 as int || hp == h1 as int) by {
+                    assert(mesh_half_edge_count_spec(m@) == h as int);
+                    assert(0 <= hp < h as int);
+                };
+            }
+            assert(mesh_edge_exactly_two_half_edges_at_spec(m@, e as int));
+            assert(forall|ep: int|
+                0 <= ep < (e + 1) as int ==> mesh_edge_exactly_two_half_edges_at_spec(m@, ep)) by {
+                assert forall|ep: int|
+                    0 <= ep < (e + 1) as int implies mesh_edge_exactly_two_half_edges_at_spec(m@, ep) by {
+                    if ep < e as int {
+                        assert(0 <= ep < e as int);
+                    } else {
+                        assert(ep == e as int);
+                        assert(mesh_edge_exactly_two_half_edges_at_spec(m@, e as int));
+                    }
+                };
+            }
+        }
+
+        e += 1;
+    }
+
+    proof {
+        assert(mesh_edge_count_spec(m@) == ecnt as int);
+        assert(forall|ep: int|
+            0 <= ep < mesh_edge_count_spec(m@) ==> mesh_edge_exactly_two_half_edges_at_spec(m@, ep)) by {
+            assert forall|ep: int|
+                0 <= ep < mesh_edge_count_spec(m@) implies mesh_edge_exactly_two_half_edges_at_spec(m@, ep) by {
+                assert(mesh_edge_count_spec(m@) == e as int);
+                assert(0 <= ep < e as int);
+            };
+        }
+        assert(mesh_edge_exactly_two_half_edges_spec(m@));
+    }
+    true
+}
+
+#[allow(dead_code)]
+pub fn from_face_cycles_constructive_edge_exactly_two_half_edges(
+    vertex_positions: Vec<RuntimePoint3>,
+    face_cycles: &[Vec<usize>],
+) -> (out: Result<Mesh, MeshBuildError>)
+    ensures
+        match out {
+            Result::Ok(m) => mesh_edge_exactly_two_half_edges_spec(m@),
+            Result::Err(_) => true,
+        },
+{
+    let out0 = ex_mesh_from_face_cycles(vertex_positions, face_cycles);
+    match out0 {
+        Result::Ok(m) => {
+            let ok = runtime_check_edge_exactly_two_half_edges(&m);
             if ok {
                 Result::Ok(m)
             } else {

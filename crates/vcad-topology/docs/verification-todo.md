@@ -100,7 +100,28 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 - [ ] Prove undirected-edge grouping induces exactly-two-half-edges per edge.
+  - burndown update (2026-02-18):
+    - landed edge-local refinement predicate factoring in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      `mesh_edge_exactly_two_half_edges_at_spec`.
+    - added constructive executable checker
+      `runtime_check_edge_exactly_two_half_edges` and wrapper
+      `from_face_cycles_constructive_edge_exactly_two_half_edges`, yielding a
+      non-trusted runtime proof path
+      (`Ok(m) ==> mesh_edge_exactly_two_half_edges_spec(m@)`).
+    - proof-shape note:
+      the stable invariant was to keep edge-local witness state (`h0`, `h1`) fixed
+      per edge and prove the "no third half-edge" condition with an indexed
+      processed-prefix quantifier over all half-edges.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` passed
+      (`27 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`61 verified, 0 errors`).
+    - remaining gap: this is still a constructive wrapper path; direct linkage from
+      raw `Mesh::from_face_cycles` success semantics to this property remains tracked
+      under section C.
   - file: `src/halfedge_mesh.rs`
+  - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 - [ ] Prove vertex representative (`vertex.half_edge`) is valid and non-isolated.
   - burndown update (2026-02-18):
     - landed explicit refinement predicate in `src/runtime_halfedge_mesh_refinement.rs`:
