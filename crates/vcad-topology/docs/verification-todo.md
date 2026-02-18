@@ -2724,3 +2724,47 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `cargo test -p vcad-topology` passed (`4 passed, 0 failed`);
       `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
       passed (`6 passed, 0 failed`).
+  - burndown update (2026-02-18, Euler bridge removal follow-up):
+    - selected task in this pass:
+      continue Exit Condition maintenance by reducing the remaining
+      `external_body` bridge surface.
+    - code hardening:
+      in `src/runtime_halfedge_mesh_refinement.rs`, removed
+      `ex_mesh_euler_characteristics_per_component` and replaced that bridge
+      call path with a new constructive helper:
+      `runtime_compute_euler_characteristics_from_components`.
+      in `src/halfedge_mesh.rs`, removed now-unused bridge accessor
+      `euler_characteristics_per_component_for_verification` and updated the
+      reference-mesh bridge regression to compare against
+      `euler_characteristics_per_component_raw()` directly.
+      - `euler_characteristics_per_component_constructive` and
+        `check_euler_formula_closed_components_constructive` now compute
+        `chis` from checked component witnesses and then validate with the
+        existing verified checker
+        (`runtime_check_euler_characteristics_per_component`).
+    - failed attempt (rolled back in-pass):
+      attempted to remove `#[verifier::external_body]` directly from both
+      `ex_mesh_half_edge_components` and
+      `ex_mesh_euler_characteristics_per_component`, but Verus rejected direct
+      calls to `Mesh::*_for_verification` methods (ignored/outside `verus!`).
+      kept `ex_mesh_half_edge_components` as `external_body` and eliminated the
+      Euler bridge via constructive computation instead.
+    - trusted-boundary/interpreted-spec scans:
+      - `rg -n "\\[verifier::external_body\\]" crates/vcad-topology/src/runtime_halfedge_mesh_refinement.rs`
+        now reports two wrappers (down from three in the previous pass).
+      - `rg -n "assume_specification|external_fn_specification|\\buninterpreted\\b|admit\\(|assume\\("`
+        over `runtime_halfedge_mesh_refinement.rs`,
+        `verified_checker_kernels.rs`, and `halfedge_mesh.rs`
+        returned no matches.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_compute_euler_characteristics_from_components`
+      passed (`3 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement euler_characteristics_per_component_constructive`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement check_euler_formula_closed_components_constructive`
+      passed (`2 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`179 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`214 verified, 0 errors`);
+      `cargo test -p vcad-topology` passed (`4 passed, 0 failed`);
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`6 passed, 0 failed`).

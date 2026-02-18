@@ -7751,12 +7751,6 @@ pub fn ex_mesh_half_edge_components(m: &Mesh) -> (out: Vec<Vec<usize>>)
     m.half_edge_components_for_verification()
 }
 
-#[verifier::external_body]
-pub fn ex_mesh_euler_characteristics_per_component(m: &Mesh) -> (out: Vec<isize>)
-{
-    m.euler_characteristics_per_component_for_verification()
-}
-
 #[allow(dead_code)]
 pub fn runtime_check_mesh_counts(
     m: &Mesh,
@@ -10395,6 +10389,56 @@ pub fn runtime_check_half_edge_components_representative_complete(
     true
 }
 
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
+pub fn runtime_compute_euler_characteristics_from_components(
+    m: &Mesh,
+    components: &[Vec<usize>],
+) -> (out: Option<Vec<isize>>)
+{
+    let mut chis: Vec<isize> = Vec::new();
+    let mut c: usize = 0;
+    while c < components.len() {
+        let component = vstd::slice::slice_index_get(components, c);
+
+        let mut vertex_present = vec![false; m.vertices.len()];
+        let mut edge_present = vec![false; m.edges.len()];
+        let mut face_present = vec![false; m.faces.len()];
+
+        let mut i: usize = 0;
+        while i < component.len() {
+            let h = *vstd::slice::slice_index_get(component, i);
+            if h >= m.half_edges.len() {
+                return Option::None;
+            }
+            let he = &m.half_edges[h];
+            let v = he.vertex;
+            let e = he.edge;
+            let f = he.face;
+            if v >= vertex_present.len() || e >= edge_present.len() || f >= face_present.len() {
+                return Option::None;
+            }
+            vertex_present[v] = true;
+            edge_present[e] = true;
+            face_present[f] = true;
+            i += 1;
+        }
+
+        let vcount = runtime_count_true(&vertex_present) as i128;
+        let ecount = runtime_count_true(&edge_present) as i128;
+        let fcount = runtime_count_true(&face_present) as i128;
+        let expected = vcount - ecount + fcount;
+        if expected < isize::MIN as i128 || expected > isize::MAX as i128 {
+            return Option::None;
+        }
+        chis.push(expected as isize);
+
+        c += 1;
+    }
+
+    Option::Some(chis)
+}
+
 #[allow(dead_code)]
 pub fn half_edge_components_constructive(
     m: &Mesh,
@@ -10498,7 +10542,10 @@ pub fn euler_characteristics_per_component_constructive(
         Option::None => return Option::None,
     };
 
-    let chis = ex_mesh_euler_characteristics_per_component(m);
+    let chis = match runtime_compute_euler_characteristics_from_components(m, &components) {
+        Option::Some(chis) => chis,
+        Option::None => return Option::None,
+    };
     let chis_ok = runtime_check_euler_characteristics_per_component(m, &components, &chis);
     if !chis_ok {
         return Option::None;
@@ -10541,7 +10588,10 @@ pub fn check_euler_formula_closed_components_constructive(
         Option::None => return Option::None,
     };
 
-    let chis = ex_mesh_euler_characteristics_per_component(m);
+    let chis = match runtime_compute_euler_characteristics_from_components(m, &components) {
+        Option::Some(chis) => chis,
+        Option::None => return Option::None,
+    };
     let chis_ok = runtime_check_euler_characteristics_per_component(m, &components, &chis);
     if !chis_ok {
         return Option::None;

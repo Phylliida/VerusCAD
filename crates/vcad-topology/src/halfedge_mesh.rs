@@ -441,11 +441,6 @@ impl Mesh {
     }
 
     #[cfg(feature = "verus-proofs")]
-    pub(crate) fn euler_characteristics_per_component_for_verification(&self) -> Vec<isize> {
-        self.euler_characteristics_per_component_raw()
-    }
-
-    #[cfg(feature = "verus-proofs")]
     pub(crate) fn bridge_index_and_twin_checks_agree(&self) -> bool {
         let runtime_index_ok = self.check_index_bounds();
         let kernel_index_ok = self.check_index_bounds_via_kernel();
@@ -869,7 +864,7 @@ mod tests {
         );
         assert_eq!(
             t.euler_characteristics_per_component(),
-            t.euler_characteristics_per_component_for_verification()
+            t.euler_characteristics_per_component_raw()
         );
         assert_eq!(
             t.check_euler_formula_closed_components(),
@@ -891,7 +886,7 @@ mod tests {
         );
         assert_eq!(
             c.euler_characteristics_per_component(),
-            c.euler_characteristics_per_component_for_verification()
+            c.euler_characteristics_per_component_raw()
         );
         assert_eq!(
             c.check_euler_formula_closed_components(),
@@ -913,7 +908,7 @@ mod tests {
         );
         assert_eq!(
             p.euler_characteristics_per_component(),
-            p.euler_characteristics_per_component_for_verification()
+            p.euler_characteristics_per_component_raw()
         );
         assert_eq!(
             p.check_euler_formula_closed_components(),
