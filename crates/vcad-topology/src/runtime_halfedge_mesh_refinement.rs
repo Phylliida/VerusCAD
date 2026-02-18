@@ -1101,6 +1101,95 @@ pub proof fn lemma_mesh_half_edge_connected_extend_direct_step(
     assert(mesh_half_edge_connected_spec(m, from, to));
 }
 
+pub proof fn lemma_mesh_half_edge_walk_closed_set_contains_index(
+    m: MeshModel,
+    path: Seq<int>,
+    i: int,
+    in_set: Seq<bool>,
+)
+    requires
+        in_set.len() == mesh_half_edge_count_spec(m),
+        mesh_half_edge_walk_spec(m, path),
+        0 <= i < path.len() as int,
+        in_set[path[0]],
+        forall|a: int, b: int|
+            #![trigger in_set[a], mesh_half_edge_adjacent_spec(m, a, b)]
+            0 <= a < mesh_half_edge_count_spec(m)
+                && 0 <= b < mesh_half_edge_count_spec(m)
+                && in_set[a]
+                && mesh_half_edge_adjacent_spec(m, a, b)
+                ==> in_set[b],
+    ensures
+        in_set[path[i]],
+    decreases i,
+{
+    let hcnt = mesh_half_edge_count_spec(m);
+    if i == 0 {
+        assert(path[i] == path[0]);
+        assert(in_set[path[i]]);
+    } else {
+        assert(0 <= i - 1 < path.len() as int);
+        lemma_mesh_half_edge_walk_closed_set_contains_index(m, path, i - 1, in_set);
+
+        let prev = path[(i - 1) as int];
+        let cur = path[i];
+        assert(0 <= prev < hcnt);
+        assert(0 <= cur < hcnt);
+        assert(i - 1 < path.len() as int - 1);
+        let j = i - 1;
+        assert(0 <= j < path.len() as int - 1);
+        assert(mesh_half_edge_adjacent_spec(m, path[j], path[j + 1]));
+        assert(j + 1 == i);
+        assert(path[j] == path[(i - 1) as int]);
+        assert(path[j + 1] == path[i]);
+        assert(mesh_half_edge_adjacent_spec(m, prev, cur));
+        assert(in_set[prev]);
+        assert(in_set[cur]);
+    }
+}
+
+pub proof fn lemma_mesh_half_edge_closed_set_contains_connected(
+    m: MeshModel,
+    rep: int,
+    h: int,
+    in_set: Seq<bool>,
+)
+    requires
+        in_set.len() == mesh_half_edge_count_spec(m),
+        0 <= rep < mesh_half_edge_count_spec(m),
+        0 <= h < mesh_half_edge_count_spec(m),
+        in_set[rep],
+        forall|a: int, b: int|
+            #![trigger in_set[a], mesh_half_edge_adjacent_spec(m, a, b)]
+            0 <= a < mesh_half_edge_count_spec(m)
+                && 0 <= b < mesh_half_edge_count_spec(m)
+                && in_set[a]
+                && mesh_half_edge_adjacent_spec(m, a, b)
+                ==> in_set[b],
+        mesh_half_edge_connected_spec(m, rep, h),
+    ensures
+        in_set[h],
+{
+    let hcnt = mesh_half_edge_count_spec(m);
+    let path = choose|path: Seq<int>| {
+        &&& 0 <= rep < hcnt
+        &&& 0 <= h < hcnt
+        &&& 0 < path.len()
+        &&& path[0] == rep
+        &&& path[(path.len() - 1) as int] == h
+        &&& mesh_half_edge_walk_spec(m, path)
+    };
+
+    assert(path.len() > 0);
+    assert(path[0] == rep);
+    assert(in_set[path[0]]);
+    assert(0 <= path.len() - 1);
+    assert(path.len() - 1 < path.len());
+    lemma_mesh_half_edge_walk_closed_set_contains_index(m, path, path.len() - 1, in_set);
+    assert(path[(path.len() - 1) as int] == h);
+    assert(in_set[h]);
+}
+
 pub open spec fn mesh_component_representative_spec(m: MeshModel, r: int) -> bool {
     let hcnt = mesh_half_edge_count_spec(m);
     &&& 0 <= r < hcnt
@@ -1263,6 +1352,30 @@ pub open spec fn mesh_half_edge_components_representative_minimal_spec(
             ==> mesh_half_edge_component_representative_minimal_at_spec(m, components, c)
 }
 
+pub open spec fn mesh_half_edge_component_representative_complete_at_spec(
+    m: MeshModel,
+    components: Seq<Vec<usize>>,
+    c: int,
+) -> bool {
+    &&& 0 <= c < components.len() as int
+    &&& components[c]@.len() > 0
+    &&& forall|h: int|
+        #![trigger mesh_half_edge_connected_spec(m, mesh_half_edge_component_entry_spec(components, c, 0), h)]
+        0 <= h < mesh_half_edge_count_spec(m)
+            && mesh_half_edge_connected_spec(m, mesh_half_edge_component_entry_spec(components, c, 0), h)
+            ==> mesh_half_edge_component_contains_spec(m, components, c, h)
+}
+
+pub open spec fn mesh_half_edge_components_representative_complete_spec(
+    m: MeshModel,
+    components: Seq<Vec<usize>>,
+) -> bool {
+    forall|c: int|
+        #![trigger components[c]@]
+        0 <= c < components.len() as int
+            ==> mesh_half_edge_component_representative_complete_at_spec(m, components, c)
+}
+
 pub open spec fn mesh_half_edge_components_partition_neighbor_closed_spec(
     m: MeshModel,
     components: Seq<Vec<usize>>,
@@ -1271,6 +1384,7 @@ pub open spec fn mesh_half_edge_components_partition_neighbor_closed_spec(
     &&& mesh_half_edge_components_neighbor_closed_spec(m, components)
     &&& mesh_half_edge_components_representative_connected_spec(m, components)
     &&& mesh_half_edge_components_representative_minimal_spec(m, components)
+    &&& mesh_half_edge_components_representative_complete_spec(m, components)
 }
 
 pub open spec fn mesh_component_count_partition_witness_spec(m: MeshModel, count: int) -> bool {
@@ -7279,6 +7393,484 @@ pub fn runtime_check_half_edge_components_representative_minimal(
     true
 }
 
+#[verifier::exec_allows_no_decreases_clause]
+#[verifier::rlimit(400)]
+#[allow(dead_code)]
+pub fn runtime_check_half_edge_components_representative_complete(
+    m: &Mesh,
+    components: &[Vec<usize>],
+) -> (out: bool)
+    ensures
+        out ==> mesh_half_edge_components_representative_complete_spec(m@, components@),
+{
+    let hcnt = m.half_edges.len();
+    let mut c: usize = 0;
+    while c < components.len()
+        invariant
+            hcnt == m.half_edges.len(),
+            0 <= c <= components.len(),
+            forall|cp: int|
+                #![trigger components@[cp]@]
+                0 <= cp < c as int
+                    ==> mesh_half_edge_component_representative_complete_at_spec(m@, components@, cp),
+    {
+        let component = vstd::slice::slice_index_get(components, c);
+        let clen = component.len();
+        if clen == 0 {
+            return false;
+        }
+
+        let rep = component[0];
+        if rep >= hcnt {
+            return false;
+        }
+
+        let mut in_component = vec![false; hcnt];
+        let mut i: usize = 0;
+        while i < clen
+            invariant
+                hcnt == m.half_edges.len(),
+                0 <= c < components.len(),
+                *component == components@.index(c as int),
+                clen == component.len(),
+                component@.len() == clen as int,
+                rep == component[0],
+                rep < hcnt,
+                0 <= i <= clen,
+                in_component@.len() == hcnt as int,
+                forall|ip: int|
+                    #![trigger component@[ip]]
+                    0 <= ip < i as int ==> 0 <= component@[ip] as int
+                        && (component@[ip] as int) < (hcnt as int),
+                forall|ip: int|
+                    #![trigger component@[ip]]
+                    0 <= ip < i as int ==> #[trigger] in_component@[component@[ip] as int],
+                forall|ip1: int, ip2: int|
+                    #![trigger component@[ip1], component@[ip2]]
+                    0 <= ip1 && ip1 < ip2 && ip2 < i as int ==> component@[ip1] != component@[ip2],
+                forall|hp: int|
+                    0 <= hp < hcnt as int && #[trigger] in_component@[hp]
+                        ==> exists|ip: int| {
+                            &&& 0 <= ip < i as int
+                            &&& #[trigger] component@[ip] as int == hp
+                        },
+        {
+            let h = component[i];
+            if h >= hcnt {
+                return false;
+            }
+            if in_component[h] {
+                return false;
+            }
+
+            let ghost in_component_before = in_component@;
+            in_component[h] = true;
+
+            proof {
+                assert(component@[i as int] == h);
+                assert(forall|ip: int|
+                    #![trigger component@[ip]]
+                    0 <= ip < (i + 1) as int ==> 0 <= component@[ip] as int
+                        && (component@[ip] as int) < (hcnt as int)) by {
+                    assert forall|ip: int|
+                        #![trigger component@[ip]]
+                        0 <= ip < (i + 1) as int implies 0 <= component@[ip] as int
+                            && (component@[ip] as int) < (hcnt as int) by {
+                        if ip < i as int {
+                        } else {
+                            assert(ip == i as int);
+                            assert(component@[ip] as int == h as int);
+                        }
+                    };
+                }
+                assert(forall|ip: int|
+                    #![trigger component@[ip]]
+                    0 <= ip < (i + 1) as int ==> #[trigger] in_component@[component@[ip] as int]) by {
+                    assert forall|ip: int|
+                        #![trigger component@[ip]]
+                        0 <= ip < (i + 1) as int implies #[trigger] in_component@[component@[ip] as int] by {
+                        if ip < i as int {
+                            assert(in_component_before[component@[ip] as int]);
+                            assert(in_component@[component@[ip] as int]);
+                        } else {
+                            assert(ip == i as int);
+                            assert(component@[ip] as int == h as int);
+                            assert(in_component@[h as int]);
+                        }
+                    };
+                }
+                assert(forall|ip1: int, ip2: int|
+                    #![trigger component@[ip1], component@[ip2]]
+                    0 <= ip1 && ip1 < ip2 && ip2 < (i + 1) as int ==> component@[ip1] != component@[ip2]) by {
+                    assert forall|ip1: int, ip2: int|
+                        #![trigger component@[ip1], component@[ip2]]
+                        0 <= ip1 && ip1 < ip2 && ip2 < (i + 1) as int
+                            implies component@[ip1] != component@[ip2] by {
+                        if ip2 < i as int {
+                        } else {
+                            assert(ip2 == i as int);
+                            assert(component@[ip2] as int == h as int);
+                            assert(in_component_before[component@[ip1] as int]);
+                            assert(!in_component_before[h as int]);
+                            assert(component@[ip1] as int != component@[ip2] as int);
+                        }
+                    };
+                }
+                assert(forall|hp: int|
+                    0 <= hp < hcnt as int && #[trigger] in_component@[hp]
+                        ==> exists|ip: int| {
+                            &&& 0 <= ip < (i + 1) as int
+                            &&& #[trigger] component@[ip] as int == hp
+                        }) by {
+                    assert forall|hp: int|
+                        0 <= hp < hcnt as int && #[trigger] in_component@[hp]
+                            implies exists|ip: int| {
+                                &&& 0 <= ip < (i + 1) as int
+                                &&& #[trigger] component@[ip] as int == hp
+                            } by {
+                        if hp == h as int {
+                            assert(exists|ip: int| {
+                                &&& 0 <= ip < (i + 1) as int
+                                &&& #[trigger] component@[ip] as int == hp
+                            });
+                        } else {
+                            assert(in_component_before[hp]);
+                            assert(exists|ip: int| {
+                                &&& 0 <= ip < i as int
+                                &&& #[trigger] component@[ip] as int == hp
+                            });
+                            let ip = choose|ip: int| {
+                                &&& 0 <= ip < i as int
+                                &&& #[trigger] component@[ip] as int == hp
+                            };
+                            assert(0 <= ip < (i + 1) as int);
+                            assert(component@[ip] as int == hp);
+                            assert(exists|ip2: int| {
+                                &&& 0 <= ip2 < (i + 1) as int
+                                &&& #[trigger] component@[ip2] as int == hp
+                            });
+                        }
+                    };
+                }
+            }
+
+            i += 1;
+        }
+
+        let mut h: usize = 0;
+        while h < hcnt
+            invariant
+                hcnt == m.half_edges.len(),
+                0 <= c < components.len(),
+                *component == components@.index(c as int),
+                clen == component.len(),
+                component@.len() == clen as int,
+                rep == component[0],
+                rep < hcnt,
+                in_component@.len() == hcnt as int,
+                0 <= h <= hcnt,
+                forall|ip: int|
+                    #![trigger component@[ip]]
+                    0 <= ip < clen as int ==> 0 <= component@[ip] as int
+                        && (component@[ip] as int) < (hcnt as int),
+                forall|ip: int|
+                    #![trigger component@[ip]]
+                    0 <= ip < clen as int ==> #[trigger] in_component@[component@[ip] as int],
+                forall|ip1: int, ip2: int|
+                    #![trigger component@[ip1], component@[ip2]]
+                    0 <= ip1 && ip1 < ip2 && ip2 < clen as int ==> component@[ip1] != component@[ip2],
+                forall|hp: int|
+                    0 <= hp < hcnt as int && #[trigger] in_component@[hp]
+                        ==> exists|ip: int| {
+                            &&& 0 <= ip < clen as int
+                            &&& #[trigger] component@[ip] as int == hp
+                        },
+                forall|hp: int|
+                    #![trigger m@.half_edges[hp]]
+                    0 <= hp < h as int ==> {
+                        let t = m@.half_edges[hp].twin;
+                        let n = m@.half_edges[hp].next;
+                        let p = m@.half_edges[hp].prev;
+                        &&& 0 <= t < hcnt as int
+                        &&& 0 <= n < hcnt as int
+                        &&& 0 <= p < hcnt as int
+                    },
+                forall|hp: int|
+                    0 <= hp < h as int && #[trigger] in_component@[hp] ==> {
+                        let t = m@.half_edges[hp].twin;
+                        let n = m@.half_edges[hp].next;
+                        let p = m@.half_edges[hp].prev;
+                        &&& in_component@[t]
+                        &&& in_component@[n]
+                        &&& in_component@[p]
+                    },
+                forall|hp: int|
+                    0 <= hp < h as int && !#[trigger] in_component@[hp] ==> {
+                        let t = m@.half_edges[hp].twin;
+                        let n = m@.half_edges[hp].next;
+                        let p = m@.half_edges[hp].prev;
+                        &&& !in_component@[t]
+                        &&& !in_component@[n]
+                        &&& !in_component@[p]
+                    },
+        {
+            let he = &m.half_edges[h];
+            let t = he.twin;
+            let n = he.next;
+            let p = he.prev;
+            let h_in = in_component[h];
+            if t >= hcnt || n >= hcnt || p >= hcnt {
+                return false;
+            }
+            let t_in = in_component[t];
+            let n_in = in_component[n];
+            let p_in = in_component[p];
+            if h_in {
+                if !t_in || !n_in || !p_in {
+                    return false;
+                }
+            } else {
+                if t_in || n_in || p_in {
+                    return false;
+                }
+            }
+
+            proof {
+                assert(m@.half_edges[h as int].twin == t as int);
+                assert(m@.half_edges[h as int].next == n as int);
+                assert(m@.half_edges[h as int].prev == p as int);
+                assert(in_component@[h as int] == h_in);
+                assert(in_component@[t as int] == t_in);
+                assert(in_component@[n as int] == n_in);
+                assert(in_component@[p as int] == p_in);
+
+                assert(forall|hp: int|
+                    #![trigger m@.half_edges[hp]]
+                    0 <= hp < (h + 1) as int ==> {
+                        let tp = m@.half_edges[hp].twin;
+                        let np = m@.half_edges[hp].next;
+                        let pp = m@.half_edges[hp].prev;
+                        &&& 0 <= tp < hcnt as int
+                        &&& 0 <= np < hcnt as int
+                        &&& 0 <= pp < hcnt as int
+                    }) by {
+                    assert forall|hp: int|
+                        #![trigger m@.half_edges[hp]]
+                        0 <= hp < (h + 1) as int implies {
+                            let tp = m@.half_edges[hp].twin;
+                            let np = m@.half_edges[hp].next;
+                            let pp = m@.half_edges[hp].prev;
+                            &&& 0 <= tp < hcnt as int
+                            &&& 0 <= np < hcnt as int
+                            &&& 0 <= pp < hcnt as int
+                        } by {
+                        if hp < h as int {
+                        } else {
+                            assert(hp == h as int);
+                            assert(m@.half_edges[hp].twin == t as int);
+                            assert(m@.half_edges[hp].next == n as int);
+                            assert(m@.half_edges[hp].prev == p as int);
+                            assert(t < hcnt);
+                            assert(n < hcnt);
+                            assert(p < hcnt);
+                        }
+                    };
+                };
+
+                assert(forall|hp: int|
+                    0 <= hp < (h + 1) as int && #[trigger] in_component@[hp] ==> {
+                        let tp = m@.half_edges[hp].twin;
+                        let np = m@.half_edges[hp].next;
+                        let pp = m@.half_edges[hp].prev;
+                        &&& in_component@[tp]
+                        &&& in_component@[np]
+                        &&& in_component@[pp]
+                    }) by {
+                    assert forall|hp: int|
+                        0 <= hp < (h + 1) as int && #[trigger] in_component@[hp] implies {
+                            let tp = m@.half_edges[hp].twin;
+                            let np = m@.half_edges[hp].next;
+                            let pp = m@.half_edges[hp].prev;
+                            &&& in_component@[tp]
+                            &&& in_component@[np]
+                            &&& in_component@[pp]
+                        } by {
+                        if hp < h as int {
+                        } else {
+                            assert(hp == h as int);
+                            assert(in_component@[h as int]);
+                            assert(in_component@[t as int]);
+                            assert(in_component@[n as int]);
+                            assert(in_component@[p as int]);
+                        }
+                    };
+                };
+
+                assert(forall|hp: int|
+                    0 <= hp < (h + 1) as int && !#[trigger] in_component@[hp] ==> {
+                        let tp = m@.half_edges[hp].twin;
+                        let np = m@.half_edges[hp].next;
+                        let pp = m@.half_edges[hp].prev;
+                        &&& !in_component@[tp]
+                        &&& !in_component@[np]
+                        &&& !in_component@[pp]
+                    }) by {
+                    assert forall|hp: int|
+                        0 <= hp < (h + 1) as int && !#[trigger] in_component@[hp] implies {
+                            let tp = m@.half_edges[hp].twin;
+                            let np = m@.half_edges[hp].next;
+                            let pp = m@.half_edges[hp].prev;
+                            &&& !in_component@[tp]
+                            &&& !in_component@[np]
+                            &&& !in_component@[pp]
+                        } by {
+                        if hp < h as int {
+                        } else {
+                            assert(hp == h as int);
+                            assert(!in_component@[h as int]);
+                            assert(!in_component@[t as int]);
+                            assert(!in_component@[n as int]);
+                            assert(!in_component@[p as int]);
+                        }
+                    };
+                };
+            }
+
+            h += 1;
+        }
+
+        proof {
+            assert(h == hcnt);
+            assert(mesh_half_edge_component_representative_complete_at_spec(m@, components@, c as int)) by {
+                assert(0 <= c as int);
+                assert((c as int) < components@.len() as int);
+                assert(components@[c as int]@.len() > 0);
+                assert(mesh_half_edge_component_entry_spec(components@, c as int, 0) == rep as int);
+                assert(0 <= 0 < clen as int);
+                assert(component@[0] as int == rep as int);
+                assert(in_component@[rep as int]);
+
+                assert(forall|a: int, b: int|
+                    #![trigger in_component@[a], mesh_half_edge_adjacent_spec(m@, a, b)]
+                    0 <= a < hcnt as int
+                        && 0 <= b < hcnt as int
+                        && in_component@[a]
+                        && mesh_half_edge_adjacent_spec(m@, a, b)
+                        ==> in_component@[b]) by {
+                    assert forall|a: int, b: int|
+                        #![trigger in_component@[a], mesh_half_edge_adjacent_spec(m@, a, b)]
+                        0 <= a < hcnt as int
+                            && 0 <= b < hcnt as int
+                            && in_component@[a]
+                            && mesh_half_edge_adjacent_spec(m@, a, b)
+                            implies in_component@[b] by {
+                        if mesh_half_edge_direct_step_spec(m@, a, b) {
+                            let ta = m@.half_edges[a].twin;
+                            let na = m@.half_edges[a].next;
+                            let pa = m@.half_edges[a].prev;
+                            assert(0 <= a < h as int);
+                            assert(0 <= ta < hcnt as int);
+                            assert(0 <= na < hcnt as int);
+                            assert(0 <= pa < hcnt as int);
+                            assert(in_component@[ta]);
+                            assert(in_component@[na]);
+                            assert(in_component@[pa]);
+                            assert(b == ta || b == na || b == pa);
+                            if b == ta {
+                                assert(in_component@[b]);
+                            } else if b == na {
+                                assert(in_component@[b]);
+                            } else {
+                                assert(in_component@[b]);
+                            }
+                        } else {
+                            assert(mesh_half_edge_direct_step_spec(m@, b, a));
+                            if !in_component@[b] {
+                                let tb = m@.half_edges[b].twin;
+                                let nb = m@.half_edges[b].next;
+                                let pb = m@.half_edges[b].prev;
+                                assert(0 <= b < h as int);
+                                assert(0 <= tb < hcnt as int);
+                                assert(0 <= nb < hcnt as int);
+                                assert(0 <= pb < hcnt as int);
+                                assert(!in_component@[tb]);
+                                assert(!in_component@[nb]);
+                                assert(!in_component@[pb]);
+                                assert(a == tb || a == nb || a == pb);
+                                if a == tb {
+                                    assert(!in_component@[a]);
+                                } else if a == nb {
+                                    assert(!in_component@[a]);
+                                } else {
+                                    assert(!in_component@[a]);
+                                }
+                                assert(false);
+                            }
+                            assert(in_component@[b]);
+                        }
+                    };
+                };
+
+                assert forall|target: int|
+                    #![trigger mesh_half_edge_connected_spec(m@, mesh_half_edge_component_entry_spec(components@, c as int, 0), target)]
+                    0 <= target < hcnt as int
+                        && mesh_half_edge_connected_spec(
+                            m@,
+                            mesh_half_edge_component_entry_spec(components@, c as int, 0),
+                            target,
+                        )
+                        implies mesh_half_edge_component_contains_spec(m@, components@, c as int, target) by {
+                    assert(mesh_half_edge_connected_spec(m@, rep as int, target));
+                    lemma_mesh_half_edge_closed_set_contains_connected(m@, rep as int, target, in_component@);
+                    assert(in_component@[target]);
+                    assert(exists|ip: int| {
+                        &&& 0 <= ip < clen as int
+                        &&& #[trigger] component@[ip] as int == target
+                    });
+                    let ip = choose|ip: int| {
+                        &&& 0 <= ip < clen as int
+                        &&& #[trigger] component@[ip] as int == target
+                    };
+                    assert(0 <= ip < components@[c as int]@.len() as int);
+                    assert(mesh_half_edge_component_entry_spec(components@, c as int, ip) == target);
+                    assert(mesh_half_edge_component_contains_spec(m@, components@, c as int, target));
+                };
+            }
+            assert(forall|cp: int|
+                #![trigger components@[cp]@]
+                0 <= cp < (c + 1) as int
+                    ==> mesh_half_edge_component_representative_complete_at_spec(m@, components@, cp)) by {
+                assert forall|cp: int|
+                    #![trigger components@[cp]@]
+                    0 <= cp < (c + 1) as int
+                        implies mesh_half_edge_component_representative_complete_at_spec(m@, components@, cp) by {
+                    if cp < c as int {
+                    } else {
+                        assert(cp == c as int);
+                        assert(mesh_half_edge_component_representative_complete_at_spec(m@, components@, cp));
+                    }
+                };
+            }
+        }
+
+        c += 1;
+    }
+
+    proof {
+        assert(c == components.len());
+        assert(mesh_half_edge_components_representative_complete_spec(m@, components@)) by {
+            assert forall|cp: int|
+                #![trigger components@[cp]@]
+                0 <= cp < components@.len() as int
+                    implies mesh_half_edge_component_representative_complete_at_spec(m@, components@, cp) by {
+                assert(components@.len() as int == c as int);
+                assert(0 <= cp < c as int);
+            };
+        }
+    }
+    true
+}
+
 #[allow(dead_code)]
 pub fn half_edge_components_constructive(
     m: &Mesh,
@@ -7310,6 +7902,13 @@ pub fn half_edge_components_constructive(
         &components,
     );
     if !representative_minimal_ok {
+        return Option::None;
+    }
+    let representative_complete_ok = runtime_check_half_edge_components_representative_complete(
+        m,
+        &components,
+    );
+    if !representative_complete_ok {
         Option::None
     } else {
         proof {
@@ -7317,6 +7916,7 @@ pub fn half_edge_components_constructive(
             assert(mesh_half_edge_components_neighbor_closed_spec(m@, components@));
             assert(mesh_half_edge_components_representative_connected_spec(m@, components@));
             assert(mesh_half_edge_components_representative_minimal_spec(m@, components@));
+            assert(mesh_half_edge_components_representative_complete_spec(m@, components@));
             assert(mesh_half_edge_components_partition_neighbor_closed_spec(m@, components@));
         }
         Option::Some(components)
@@ -7356,6 +7956,13 @@ pub fn component_count_constructive(
     if !representative_minimal_ok {
         return Option::None;
     }
+    let representative_complete_ok = runtime_check_half_edge_components_representative_complete(
+        m,
+        &components,
+    );
+    if !representative_complete_ok {
+        return Option::None;
+    }
 
     let count = ex_mesh_component_count(m);
     if count != components.len() {
@@ -7367,6 +7974,7 @@ pub fn component_count_constructive(
         assert(mesh_half_edge_components_neighbor_closed_spec(m@, components@));
         assert(mesh_half_edge_components_representative_connected_spec(m@, components@));
         assert(mesh_half_edge_components_representative_minimal_spec(m@, components@));
+        assert(mesh_half_edge_components_representative_complete_spec(m@, components@));
         assert(mesh_half_edge_components_partition_neighbor_closed_spec(m@, components@));
         assert(count as int == components@.len() as int);
         assert(mesh_component_count_partition_witness_spec(m@, count as int));
@@ -7409,6 +8017,13 @@ pub fn euler_characteristics_per_component_constructive(
     if !representative_minimal_ok {
         return Option::None;
     }
+    let representative_complete_ok = runtime_check_half_edge_components_representative_complete(
+        m,
+        &components,
+    );
+    if !representative_complete_ok {
+        return Option::None;
+    }
 
     let chis = ex_mesh_euler_characteristics_per_component(m);
     let chis_ok = runtime_check_euler_characteristics_per_component(m, &components, &chis);
@@ -7421,6 +8036,7 @@ pub fn euler_characteristics_per_component_constructive(
         assert(mesh_half_edge_components_neighbor_closed_spec(m@, components@));
         assert(mesh_half_edge_components_representative_connected_spec(m@, components@));
         assert(mesh_half_edge_components_representative_minimal_spec(m@, components@));
+        assert(mesh_half_edge_components_representative_complete_spec(m@, components@));
         assert(mesh_half_edge_components_partition_neighbor_closed_spec(m@, components@));
         assert(mesh_euler_characteristics_per_component_spec(m@, components@, chis@));
         assert(mesh_euler_characteristics_partition_witness_spec(m@, chis@));
@@ -7467,6 +8083,13 @@ pub fn check_euler_formula_closed_components_constructive(
         &components,
     );
     if !representative_minimal_ok {
+        return Option::None;
+    }
+    let representative_complete_ok = runtime_check_half_edge_components_representative_complete(
+        m,
+        &components,
+    );
+    if !representative_complete_ok {
         return Option::None;
     }
 
@@ -7527,6 +8150,7 @@ pub fn check_euler_formula_closed_components_constructive(
         assert(mesh_half_edge_components_neighbor_closed_spec(m@, components@));
         assert(mesh_half_edge_components_representative_connected_spec(m@, components@));
         assert(mesh_half_edge_components_representative_minimal_spec(m@, components@));
+        assert(mesh_half_edge_components_representative_complete_spec(m@, components@));
         assert(mesh_half_edge_components_partition_neighbor_closed_spec(m@, components@));
         assert(mesh_euler_characteristics_per_component_spec(m@, components@, chis@));
         assert(chis@.len() > 0);

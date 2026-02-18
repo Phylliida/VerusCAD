@@ -1,1 +1,1 @@
-Added a verified from_face_cycles incidence-core checker for counts/index-bounds/face-start mapping and threaded it into the constructive constructor path in vcad-topology.
+Completed vcad-topology BFS verification by exporting reverse-direction component completeness and wiring the new representative-completeness checker through all connectivity/Euler constructive wrappers.

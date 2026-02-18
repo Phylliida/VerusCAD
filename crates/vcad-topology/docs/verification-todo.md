@@ -752,7 +752,7 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
   - file: `src/halfedge_mesh.rs`
 
 ## E. Verify Connectivity + Euler Computation
-- [ ] Verify `half_edge_components` BFS soundness and completeness.
+- [x] Verify `half_edge_components` BFS soundness and completeness.
   - burndown update (2026-02-18):
     - landed explicit component-output spec scaffolding in
       `src/runtime_halfedge_mesh_refinement.rs`:
@@ -931,6 +931,46 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`124 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`124 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`158 verified, 0 errors`).
+  - burndown update (2026-02-18, reverse-direction connectivity completion):
+    - completed the missing reverse-direction export in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      - added specs
+        `mesh_half_edge_component_representative_complete_at_spec` and
+        `mesh_half_edge_components_representative_complete_spec`,
+      - strengthened
+        `mesh_half_edge_components_partition_neighbor_closed_spec` to include
+        representative completeness
+        (`mesh_half_edge_connected_spec(rep, h) ==> component_contains(...)`).
+    - added reusable proof lemmas:
+      - `lemma_mesh_half_edge_walk_closed_set_contains_index`,
+      - `lemma_mesh_half_edge_closed_set_contains_connected`.
+      these provide path-based closure lifting: if a set contains the
+      representative and is closed under adjacency, it contains every
+      connected half-edge.
+    - added executable checker
+      `runtime_check_half_edge_components_representative_complete` and required
+      it in:
+      - `half_edge_components_constructive`,
+      - `component_count_constructive`,
+      - `euler_characteristics_per_component_constructive`,
+      - `check_euler_formula_closed_components_constructive`.
+    - failed proof shapes (not kept):
+      - first attempt used a proof `while` in a `proof fn` for path lifting;
+        Verus rejected this (`cannot use while in proof or spec mode`), so the
+        lemma was refactored to recursive proof shape.
+      - first checker invariant used a single conjunctive quantified closure
+        fact (bounds + inside-closure + outside-closure); preservation was
+        brittle, so it was split into three quantified invariants.
+    - outcome:
+      this closes the remaining BFS soundness/completeness gap at the
+      representative boundary in the exported constructive witness surface.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_half_edge_components_representative_complete`
+      passed (`4 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`132 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`132 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`166 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 - [ ] Verify `component_count` equals number of connected components.
@@ -979,10 +1019,17 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `component_count_constructive` results now also carry per-component
       representative-minimality (`component[0] <= each member`) in addition to
       partition/coverage/neighbor-closure/representative-reachability.
+  - burndown update (2026-02-18, aligned with representative-completeness increment):
+    - due the strengthened shared witness
+      `mesh_half_edge_components_partition_neighbor_closed_spec`, successful
+      `component_count_constructive` results now also carry reverse-direction
+      representative completeness
+      (`mesh_half_edge_connected_spec(rep, h) ==> component_contains(...)`).
   - remaining gap:
       `component_count` still lacks the full model-level linkage to
-      `mesh_component_count_spec` until reverse-direction minimality
-      (`connected ==> same component`) is exported.
+      `mesh_component_count_spec`; reverse-direction connectivity export is now
+      available, so the remaining work is to prove the partition witness
+      cardinality equivalence against the model representative-set definition.
   - file: `src/halfedge_mesh.rs`
 - [ ] Verify `euler_characteristics_per_component` computes `V - E + F` per BFS component.
   - burndown update (2026-02-18):
