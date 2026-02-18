@@ -485,6 +485,26 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
     - remaining gap: this is still a constructive wrapper path; direct linkage from
       raw `Mesh::from_face_cycles` success semantics to this property remains tracked
       under section C.
+  - burndown update (2026-02-18, direct-success implication attempt + counterexample):
+    - attempted to prove a direct model linkage lemma in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      `from_face_cycles_success_spec(...) ==> mesh_edge_exactly_two_half_edges_spec(...)`.
+    - this proof shape was rolled back after solver/resource failure
+      (`Resource limit (rlimit) exceeded`) and a semantic counterexample check.
+    - counterexample found/documented in runtime tests:
+      `Mesh::from_face_cycles` currently accepts a self-loop oriented edge input
+      (`faces = [[0, 0, 1]]`), which builds successfully but violates
+      `check_edge_has_exactly_two_half_edges` (and `check_no_degenerate_edges`).
+      this means direct implication from current `from_face_cycles_success_spec`
+      to exactly-two-half-edges is not valid without additional input/output
+      constraints.
+    - added regression test in `src/halfedge_mesh.rs`:
+      `self_loop_face_cycle_can_build_but_is_not_structurally_valid`.
+    - verification checks:
+      `cargo test -p vcad-topology self_loop_face_cycle_can_build_but_is_not_structurally_valid -- --nocapture`
+      passed (`1 passed, 0 failed`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`150 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 - [ ] Prove vertex representative (`vertex.half_edge`) is valid and non-isolated.

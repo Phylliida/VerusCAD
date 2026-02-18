@@ -1,1 +1,1 @@
-Strengthened Euler closed-components constructive verification by adding an explicit gate witness path (including false-case equivalence) and threading it through validity model-link witnesses.
+Added a regression test and burndown note documenting that self-loop face cycles can build but violate edge-two-half-edges, which blocks direct success-spec linkage for that invariant.

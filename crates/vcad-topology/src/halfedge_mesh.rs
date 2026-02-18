@@ -670,6 +670,7 @@ impl Mesh {
 #[cfg(test)]
 mod tests {
     use super::Mesh;
+    use vcad_math::runtime_point3::RuntimePoint3;
 
     #[test]
     fn tetrahedron_is_valid() {
@@ -708,6 +709,21 @@ mod tests {
         assert_eq!(mesh.half_edges.len(), 18);
         assert_eq!(mesh.component_count(), 1);
         assert_eq!(mesh.euler_characteristics_per_component(), vec![2]);
+    }
+
+    #[test]
+    fn self_loop_face_cycle_can_build_but_is_not_structurally_valid() {
+        let vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+        ];
+        let faces = vec![vec![0, 0, 1]];
+        let mesh = Mesh::from_face_cycles(vertices, &faces)
+            .expect("self-loop face cycle currently passes constructor checks");
+
+        assert!(!mesh.check_no_degenerate_edges());
+        assert!(!mesh.check_edge_has_exactly_two_half_edges());
+        assert!(!mesh.is_structurally_valid());
     }
 
     #[cfg(feature = "verus-proofs")]
