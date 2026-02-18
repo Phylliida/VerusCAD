@@ -481,6 +481,91 @@ pub open spec fn mesh_half_edge_to_vertex_spec(m: MeshModel, h: int) -> int {
     m.half_edges[m.half_edges[h].next].vertex
 }
 
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_half_edge_from_position_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    h: int,
+) -> vcad_math::point3::Point3 {
+    vertex_positions[mesh_half_edge_from_vertex_spec(m, h)]
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_half_edge_to_position_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    h: int,
+) -> vcad_math::point3::Point3 {
+    vertex_positions[mesh_half_edge_to_vertex_spec(m, h)]
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_half_edge_segment_geometry_at_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    h: int,
+) -> bool {
+    &&& mesh_index_bounds_spec(m)
+    &&& mesh_geometry_input_spec(m, vertex_positions)
+    &&& 0 <= h < mesh_half_edge_count_spec(m)
+    &&& 0 <= mesh_half_edge_from_vertex_spec(m, h) < vertex_positions.len()
+    &&& 0 <= mesh_half_edge_to_vertex_spec(m, h) < vertex_positions.len()
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_all_half_edges_segment_geometry_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+) -> bool {
+    forall|h: int|
+        0 <= h < mesh_half_edge_count_spec(m)
+            ==> #[trigger] mesh_half_edge_segment_geometry_at_spec(m, vertex_positions, h)
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_half_edge_segment_geometry_at_from_model_and_positions(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    h: int,
+)
+    requires
+        mesh_index_bounds_spec(m),
+        mesh_geometry_input_spec(m, vertex_positions),
+        0 <= h < mesh_half_edge_count_spec(m),
+    ensures
+        mesh_half_edge_segment_geometry_at_spec(m, vertex_positions, h),
+{
+    let hcnt = mesh_half_edge_count_spec(m);
+    let vcnt = mesh_vertex_count_spec(m);
+    let n = m.half_edges[h].next;
+    assert(0 <= m.half_edges[h].vertex < vcnt);
+    assert(0 <= n < hcnt);
+    assert(0 <= m.half_edges[n].vertex < vcnt);
+    assert(vcnt == vertex_positions.len());
+    assert(mesh_half_edge_from_vertex_spec(m, h) == m.half_edges[h].vertex);
+    assert(mesh_half_edge_to_vertex_spec(m, h) == m.half_edges[n].vertex);
+    assert(0 <= mesh_half_edge_from_vertex_spec(m, h) < vertex_positions.len());
+    assert(0 <= mesh_half_edge_to_vertex_spec(m, h) < vertex_positions.len());
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_all_half_edges_segment_geometry_from_model_and_positions(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+)
+    requires
+        mesh_index_bounds_spec(m),
+        mesh_geometry_input_spec(m, vertex_positions),
+    ensures
+        mesh_all_half_edges_segment_geometry_spec(m, vertex_positions),
+{
+    assert forall|h: int|
+        0 <= h < mesh_half_edge_count_spec(m) implies #[trigger]
+            mesh_half_edge_segment_geometry_at_spec(m, vertex_positions, h) by {
+        lemma_mesh_half_edge_segment_geometry_at_from_model_and_positions(m, vertex_positions, h);
+    };
+}
+
 pub open spec fn mesh_undirected_key_spec(a: int, b: int) -> (int, int) {
     if a <= b {
         (a, b)
@@ -651,6 +736,103 @@ pub open spec fn from_face_cycles_twin_endpoint_correspondence_spec(m: MeshModel
     forall|h: int|
         #![trigger m.half_edges[h].twin]
         0 <= h < hcnt ==> from_face_cycles_twin_endpoint_correspondence_at_spec(m, h)
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_twin_half_edges_reverse_segment_at_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    h: int,
+) -> bool {
+    let hcnt = mesh_half_edge_count_spec(m);
+    let t = m.half_edges[h].twin;
+    &&& mesh_index_bounds_spec(m)
+    &&& mesh_geometry_input_spec(m, vertex_positions)
+    &&& 0 <= h < hcnt
+    &&& 0 <= t < hcnt
+    &&& mesh_half_edge_from_position_spec(m, vertex_positions, t)
+        == mesh_half_edge_to_position_spec(m, vertex_positions, h)
+    &&& mesh_half_edge_to_position_spec(m, vertex_positions, t)
+        == mesh_half_edge_from_position_spec(m, vertex_positions, h)
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_all_twin_half_edges_reverse_segments_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+) -> bool {
+    forall|h: int|
+        0 <= h < mesh_half_edge_count_spec(m)
+            ==> #[trigger] mesh_twin_half_edges_reverse_segment_at_spec(m, vertex_positions, h)
+}
+
+#[cfg(verus_keep_ghost)]
+#[verifier::spinoff_prover]
+pub proof fn lemma_mesh_twin_half_edges_reverse_segment_at_from_model_and_positions(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    h: int,
+)
+    requires
+        mesh_index_bounds_spec(m),
+        mesh_geometry_input_spec(m, vertex_positions),
+        from_face_cycles_twin_endpoint_correspondence_spec(m),
+        0 <= h < mesh_half_edge_count_spec(m),
+    ensures
+        mesh_twin_half_edges_reverse_segment_at_spec(m, vertex_positions, h),
+{
+    let hcnt = mesh_half_edge_count_spec(m);
+    let vcnt = mesh_vertex_count_spec(m);
+    assert(from_face_cycles_twin_endpoint_correspondence_at_spec(m, h));
+    let t = m.half_edges[h].twin;
+    assert(0 <= t < hcnt);
+    assert(mesh_half_edge_from_vertex_spec(m, t) == mesh_half_edge_to_vertex_spec(m, h));
+    assert(mesh_half_edge_to_vertex_spec(m, t) == mesh_half_edge_from_vertex_spec(m, h));
+
+    let from_t = mesh_half_edge_from_vertex_spec(m, t);
+    let to_h = mesh_half_edge_to_vertex_spec(m, h);
+    let to_t = mesh_half_edge_to_vertex_spec(m, t);
+    let from_h = mesh_half_edge_from_vertex_spec(m, h);
+    let n_h = m.half_edges[h].next;
+    let n_t = m.half_edges[t].next;
+    assert(0 <= m.half_edges[h].vertex < vcnt);
+    assert(0 <= m.half_edges[t].vertex < vcnt);
+    assert(0 <= n_h < hcnt);
+    assert(0 <= n_t < hcnt);
+    assert(0 <= m.half_edges[n_h].vertex < vcnt);
+    assert(0 <= m.half_edges[n_t].vertex < vcnt);
+    assert(mesh_half_edge_from_vertex_spec(m, h) == m.half_edges[h].vertex);
+    assert(mesh_half_edge_from_vertex_spec(m, t) == m.half_edges[t].vertex);
+    assert(mesh_half_edge_to_vertex_spec(m, h) == m.half_edges[n_h].vertex);
+    assert(mesh_half_edge_to_vertex_spec(m, t) == m.half_edges[n_t].vertex);
+    assert(vcnt == vertex_positions.len());
+    assert(from_t == to_h);
+    assert(to_t == from_h);
+    assert(0 <= from_t < vertex_positions.len());
+    assert(0 <= to_h < vertex_positions.len());
+    assert(0 <= to_t < vertex_positions.len());
+    assert(0 <= from_h < vertex_positions.len());
+    assert(vertex_positions[from_t] == vertex_positions[to_h]);
+    assert(vertex_positions[to_t] == vertex_positions[from_h]);
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_all_twin_half_edges_reverse_segments_from_model_and_positions(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+)
+    requires
+        mesh_index_bounds_spec(m),
+        mesh_geometry_input_spec(m, vertex_positions),
+        from_face_cycles_twin_endpoint_correspondence_spec(m),
+    ensures
+        mesh_all_twin_half_edges_reverse_segments_spec(m, vertex_positions),
+{
+    assert forall|h: int|
+        0 <= h < mesh_half_edge_count_spec(m) implies #[trigger]
+            mesh_twin_half_edges_reverse_segment_at_spec(m, vertex_positions, h) by {
+        lemma_mesh_twin_half_edges_reverse_segment_at_from_model_and_positions(m, vertex_positions, h);
+    };
 }
 
 pub open spec fn from_face_cycles_undirected_edge_pair_equivalent_spec(

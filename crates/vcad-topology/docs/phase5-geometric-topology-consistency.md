@@ -34,10 +34,10 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [x] Proof: coplanarity is stable under cyclic reindexing of a face cycle.
 
 ## P5.2 Invariant: Edge Straightness (Implied by Phase 5 Intro)
-- [ ] Spec: each half-edge geometrically denotes the segment between `vertex(h)` and `vertex(next(h))`.
-- [ ] Spec: twin half-edges denote the same segment with opposite orientation.
+- [x] Spec: each half-edge geometrically denotes the segment between `vertex(h)` and `vertex(next(h))`.
+- [x] Spec: twin half-edges denote the same segment with opposite orientation.
 - [x] Runtime checker: reject zero-length geometric edges (in addition to topological non-degeneracy).
-- [ ] Proof: edge-geometry facts are derivable from mesh model + vertex positions.
+- [x] Proof: edge-geometry facts are derivable from mesh model + vertex positions.
 
 ## P5.3 Invariant: Face Convexity (Roadmap)
 - [x] Choose deterministic face-local orientation strategy for convexity tests (implemented with per-face reference normal + `orient3d_sign`, without 2D projection).
@@ -139,6 +139,21 @@ This doc expands those targets into executable TODOs aligned with the current `v
   - document which Euler-operator preconditions must preserve geometric invariants versus recheck them.
 
 ## Burndown Log
+- 2026-02-18: Completed a P5.2 spec/proof pass in `src/runtime_halfedge_mesh_refinement/from_face_cycles_specs_and_lemmas.rs`:
+  - added geometry-level half-edge segment specs over vertex positions (`mesh_half_edge_from_position_spec`, `mesh_half_edge_to_position_spec`, `mesh_half_edge_segment_geometry_at_spec`, and aggregate `mesh_all_half_edges_segment_geometry_spec`);
+  - added geometry-level twin reversed-segment specs (`mesh_twin_half_edges_reverse_segment_at_spec` and aggregate `mesh_all_twin_half_edges_reverse_segments_spec`);
+  - proved these facts are derivable from model assumptions and runtime vertex positions via:
+    - `lemma_mesh_half_edge_segment_geometry_at_from_model_and_positions`
+    - `lemma_mesh_all_half_edges_segment_geometry_from_model_and_positions`
+    - `lemma_mesh_twin_half_edges_reverse_segment_at_from_model_and_positions`
+    - `lemma_mesh_all_twin_half_edges_reverse_segments_from_model_and_positions`.
+- 2026-02-18: Failed attempt in this P5.2 pass: first version of `lemma_mesh_twin_half_edges_reverse_segment_at_from_model_and_positions` hit Verus rlimit during `./scripts/verify-vcad-topology.sh`; resolved by simplifying `mesh_twin_half_edges_reverse_segment_at_spec` to avoid nested segment-spec expansion and proving index/position equalities directly.
+- 2026-02-18: Revalidated after the P5.2 edge-segment spec/proof additions:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (198 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (233 verified, 0 errors)
 - 2026-02-18: Completed the P5.1 cyclic-reindexing coplanarity proof item in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
   - added `mesh_face_cycle_shift_index_spec` and `lemma_mesh_face_cycle_shift_index_in_bounds`;
   - proved `lemma_mesh_face_coplanar_witness_stable_under_cyclic_reindexing`, showing that any cyclic shift of face-cycle indices preserves the coplanarity witness relation.
