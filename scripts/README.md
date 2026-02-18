@@ -16,7 +16,11 @@ Helper scripts for local Verus workflows.
    - function: `./scripts/verify-vcad-geometry-fast.sh runtime_sidedness_refinement runtime_segment_crosses_plane_from_opposite_sides`
 6. `check-vcad-topology-trust-surface.sh`: scans `crates/vcad-topology/src` for forbidden trust markers (`assume_specification`, `external_fn_specification`, `uninterpreted`, `admit(`, `assume(`, and `#[verifier::external_body]`).
 7. `verify-vcad-topology.sh`: full `vcad-topology` verification with `verus-proofs` (runs trust-surface scan first).
+   - execution path:
+     prefers `nix-shell -p rustup`; if unavailable (for example Nix daemon socket is blocked), automatically falls back to direct `cargo verus` with a temporary local `rustup` shim wired to `VERUS_TOOLCHAIN` under `$RUSTUP_HOME`/`$HOME/.rustup`.
 8. `verify-vcad-topology-fast.sh`: fast dev loop for `vcad-topology` using focused verification (runs trust-surface scan first).
+   - execution path:
+     same automatic `nix-shell` -> direct `cargo verus` fallback behavior as `verify-vcad-topology.sh`.
    - default: `./scripts/verify-vcad-topology-fast.sh`
      verifies `runtime_halfedge_mesh_refinement`.
    - module: `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
@@ -25,6 +29,7 @@ Helper scripts for local Verus workflows.
    - runs in order: trust-surface guard, `verify-vcad-topology-fast.sh`,
      `verify-vcad-topology.sh`, and cargo tests for baseline, `geometry-checks`,
      and `geometry-checks,verus-proofs`.
+   - no separate fallback logic in this script; topology verifier fallback behavior is inherited from `verify-vcad-topology-fast.sh` / `verify-vcad-topology.sh`.
 10. `verify-vad-topology.sh`: compatibility alias that forwards to `verify-vcad-topology.sh`.
 11. `run-codex-task.sh`: lightweight client that POSTs to the looper service (`http://127.0.0.1:3456/run` by default).
    - sends a `zulip_message` to looper; looper handles Zulip DM + VS Code restart/new Codex panel

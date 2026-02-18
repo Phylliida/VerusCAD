@@ -1,1 +1,1 @@
-Added a vcad-topology matrix verification script with a nix-shell fallback path, documented it, and logged a full passing matrix replay in the verification burndown.
+Unified vcad-topology no-daemon verification fallback into the fast/full entrypoints, simplified the matrix runner to reuse them, and recorded a full passing matrix replay in the verification burndown.

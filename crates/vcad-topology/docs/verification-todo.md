@@ -4921,3 +4921,44 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       post-generalization rerun at `2026-02-18T08:26:17-08:00` (switching the
       shim source from a hardcoded home path to `$RUSTUP_HOME`/`$HOME`) also
       passed with the same verification/test results.
+  - burndown update (2026-02-18, verifier-entrypoint fallback unification + matrix replay):
+    - selected task in this pass:
+      harden Exit Condition maintenance by moving the no-daemon fallback path
+      into the topology verifier entrypoints themselves and deduplicating
+      matrix-runner fallback logic.
+    - run timestamp:
+      `2026-02-18T08:30:38-08:00`.
+    - code hardening:
+      - strengthened `scripts/verify-vcad-topology-fast.sh` with the same
+        `nix-shell` usability probe + direct `cargo verus` fallback used by the
+        matrix runner:
+        - temporary local `rustup` shim under `mktemp`,
+        - toolchain source from `$RUSTUP_HOME`/`$HOME/.rustup`,
+        - fallback fast scope uses `--verify-module` (and optional
+          `--verify-function`) to avoid dependency-module filter failures.
+      - strengthened `scripts/verify-vcad-topology.sh` with matching fallback
+        behavior for full verification.
+      - simplified `scripts/verify-vcad-topology-matrix.sh` to call the
+        topology verifier entrypoints directly (no separate local fallback
+        implementation), so fallback behavior is now maintained in one place.
+      - updated `scripts/README.md` to document the new entrypoint fallback
+        behavior and matrix-runner reuse.
+    - warning-scope note:
+      all cargo tests in this pass emitted warnings only from dependency crates
+      (`vstd`, `vcad-math`, `vcad-geometry`), with no warnings from
+      `vcad-topology`.
+    - failed attempts:
+      none in this pass.
+    - verification checks:
+      `./scripts/verify-vcad-topology-matrix.sh`
+      passed:
+      - trust-surface guard passed,
+      - fast verification passed via entrypoint fallback
+        (`192 verified, 0 errors` partial),
+      - full verification passed via entrypoint fallback
+        (`227 verified, 0 errors`),
+      - `cargo test -p vcad-topology` passed (`4 passed, 0 failed`),
+      - `cargo test -p vcad-topology --features geometry-checks` passed
+        (`5 passed, 0 failed`),
+      - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+        passed (`6 passed, 0 failed`).
