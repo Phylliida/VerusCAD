@@ -60,8 +60,8 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [ ] Spec: define allowed contact relation between two faces (shared edge, shared vertex, or disjoint).
 - [ ] Spec: define forbidden intersection relation for non-adjacent face pairs.
 - [x] Runtime checker: implement pairwise face intersection check with adjacency exemptions.
-- [ ] Runtime checker: tighten adjacency exemptions to the exact allowed-contact spec (avoid broad "shared vertex => always exempt" behavior).
-- [ ] Runtime checker: reject adjacent-face overlap beyond declared shared boundary (for example coplanar interior overlap with shared edge/vertex).
+- [x] Runtime checker: tighten adjacency exemptions to the exact allowed-contact spec (avoid broad "shared vertex => always exempt" behavior).
+- [x] Runtime checker: reject adjacent-face overlap beyond declared shared boundary (for example coplanar interior overlap with shared edge/vertex).
 - [ ] Proof: checker soundness (if checker passes, forbidden intersections do not exist).
 - [ ] Proof: checker completeness for convex coplanar-face assumptions used by Phase 5.
 - [ ] Proof: shared-edge and shared-vertex contacts are never misclassified as forbidden intersections.
@@ -114,10 +114,10 @@ This doc expands those targets into executable TODOs aligned with the current `v
 
 Current explicit policy (runtime behavior locked by tests):
 - Coplanar neighboring faces:
-  - accepted when the pair is topologically adjacent by shared vertex index and all other Phase 5 checks pass;
-  - rejected when coplanar overlap yields a zero-volume closed component (fails outward-normal signed-volume check).
+  - accepted only when pairwise face contact matches the exact allowed-contact topology (disjoint boundary, one shared vertex, or one shared edge) and geometric intersection is limited to that declared shared boundary;
+  - rejected when pairwise shared boundary is broader than allowed (for example, coincident/double-face boundaries with multiple shared edges) or when overlap extends beyond the declared shared boundary.
 - Vertex-touch-only contacts between components:
-  - rejected when the touch is geometric only (coincident positions with distinct vertex indices), because adjacency exemptions are index-based;
+  - rejected when the touch is geometric only (coincident positions with distinct vertex indices), because allowed-contact exemptions are topological (shared indices) and geometric coincidence alone is non-exempt;
   - accepted when disconnected components are geometrically disjoint.
 - Zero-volume / near-degenerate closed components:
   - exact arithmetic only (no floating-point epsilon path, so "near-degenerate" means exact degeneracy in this checker set);
@@ -177,6 +177,29 @@ Current rigid-transform policy (runtime behavior locked by tests):
 - reflection transforms with determinant `-1` preserve local geometric checks, but intentionally flip outward-orientation-sensitive outcomes (`check_outward_face_normals`, aggregate geometric-consistency gate, and `is_valid_with_geometry`).
 
 ## Burndown Log
+- 2026-02-18: Completed a P5.5 adjacency-exemption tightening and boundary-overlap rejection pass in `src/halfedge_mesh/validation.rs` and `src/halfedge_mesh/tests.rs`:
+  - replaced broad "shared vertex => skip pair" logic in `Mesh::check_no_forbidden_face_face_intersections()`/diagnostic path with an explicit allowed-contact runtime relation:
+    - allowed: disjoint boundary, exactly one shared vertex, or exactly one shared edge;
+    - rejected: broader shared boundaries (for example, multiple shared edges / coincident double-face boundaries).
+  - added boundary-aware segment-vs-face filtering so shared-vertex/shared-edge contact is accepted only when geometric intersection stays on the declared shared boundary, while overlap beyond that boundary is rejected.
+  - updated policy-lock tests:
+    - `coplanar_neighboring_faces_policy_coincident_double_face_is_rejected` now fails at the intersection checker (`ForbiddenFaceFaceIntersection`) instead of relying on outward-volume rejection;
+    - `zero_volume_policy_planar_closed_component_is_rejected` now locks the same earlier forbidden-intersection failure;
+    - added `shared_vertex_only_face_contact_is_allowed_when_geometrically_limited_to_that_vertex` (octahedron) as a positive shared-vertex-only contact case.
+  - adjusted diagnostic witness-validation test helper to permit forbidden-intersection witnesses on shared-vertex/edge pairs when overlap exceeds allowed boundary.
+  - marked the two remaining P5.5 runtime checker tasks complete:
+    - tighten adjacency exemptions to exact allowed-contact spec;
+    - reject adjacent-face overlap beyond declared shared boundary.
+- 2026-02-18: Failed attempts in this P5.5 tightening pass:
+  - first revision of the new octahedron positive fixture used inward face winding and failed `check_outward_face_normals()`; fixed by reversing all octahedron face cycles.
+  - `cargo fmt --all` could not be run in this environment (`cargo fmt` subcommand unavailable), so no formatter pass was applied.
+- 2026-02-18: Revalidated after the P5.5 adjacency/boundary tightening changes:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (215 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (250 verified, 0 errors)
 - 2026-02-18: Completed a P5.12 rigid-transform invariance pass in `src/halfedge_mesh/tests.rs`:
   - added exact-arithmetic transform helpers:
     - `transform_mesh_positions`;

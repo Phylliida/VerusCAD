@@ -322,15 +322,6 @@ fn diagnostic_witness_is_real_counterexample(
         Some(out)
     }
 
-    fn faces_share_vertex(face_a_vertices: &[usize], face_b_vertices: &[usize]) -> bool {
-        for &va in face_a_vertices {
-            if face_b_vertices.contains(&va) {
-                return true;
-            }
-        }
-        false
-    }
-
     match failure {
         GeometricTopologicalConsistencyFailure::Phase4Validity => !mesh.is_valid(),
         GeometricTopologicalConsistencyFailure::InternalInconsistency => false,
@@ -477,15 +468,9 @@ fn diagnostic_witness_is_real_counterexample(
                 return false;
             }
 
-            let face_a_vertices = match ordered_face_vertex_cycle(mesh, *face_a) {
-                Some(vs) => vs,
-                None => return false,
-            };
-            let face_b_vertices = match ordered_face_vertex_cycle(mesh, *face_b) {
-                Some(vs) => vs,
-                None => return false,
-            };
-            if faces_share_vertex(&face_a_vertices, &face_b_vertices) {
+            if ordered_face_vertex_cycle(mesh, *face_a).is_none()
+                || ordered_face_vertex_cycle(mesh, *face_b).is_none()
+            {
                 return false;
             }
 
@@ -1495,6 +1480,44 @@ fn diagnostic_witness_is_real_counterexample(
 
     #[cfg(feature = "geometry-checks")]
     #[test]
+    fn shared_vertex_only_face_contact_is_allowed_when_geometrically_limited_to_that_vertex() {
+        let vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 1),
+            RuntimePoint3::from_ints(0, 0, -1),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(0, 1, 0),
+            RuntimePoint3::from_ints(-1, 0, 0),
+            RuntimePoint3::from_ints(0, -1, 0),
+        ];
+        let faces = vec![
+            vec![0, 3, 2],
+            vec![0, 4, 3],
+            vec![0, 5, 4],
+            vec![0, 2, 5],
+            vec![1, 2, 3],
+            vec![1, 3, 4],
+            vec![1, 4, 5],
+            vec![1, 5, 2],
+        ];
+
+        let mesh = Mesh::from_face_cycles(vertices, &faces)
+            .expect("octahedron fixture should build");
+        assert!(mesh.is_structurally_valid());
+        assert!(mesh.is_valid());
+        assert!(mesh.check_no_zero_length_geometric_edges());
+        assert!(mesh.check_face_corner_non_collinearity());
+        assert!(mesh.check_face_coplanarity());
+        assert!(mesh.check_face_convexity());
+        assert!(mesh.check_face_plane_consistency());
+        assert!(mesh.check_shared_edge_local_orientation_consistency());
+        assert!(mesh.check_no_forbidden_face_face_intersections());
+        assert!(mesh.check_outward_face_normals());
+        assert!(mesh.check_geometric_topological_consistency());
+        assert!(mesh.is_valid_with_geometry());
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
     fn coplanar_neighboring_faces_policy_coincident_double_face_is_rejected() {
         let vertices = vec![
             RuntimePoint3::from_ints(0, 0, 1),
@@ -1513,7 +1536,11 @@ fn diagnostic_witness_is_real_counterexample(
         assert!(mesh.check_face_convexity());
         assert!(mesh.check_face_plane_consistency());
         assert!(mesh.check_shared_edge_local_orientation_consistency());
-        assert!(mesh.check_no_forbidden_face_face_intersections());
+        assert!(!mesh.check_no_forbidden_face_face_intersections());
+        assert!(matches!(
+            mesh.check_geometric_topological_consistency_diagnostic(),
+            Err(GeometricTopologicalConsistencyFailure::ForbiddenFaceFaceIntersection { .. })
+        ));
         assert!(!mesh.check_outward_face_normals());
         assert!(!mesh.check_geometric_topological_consistency());
         assert!(!mesh.is_valid_with_geometry());
@@ -1719,7 +1746,11 @@ fn diagnostic_witness_is_real_counterexample(
         assert!(mesh.check_face_convexity());
         assert!(mesh.check_face_plane_consistency());
         assert!(mesh.check_shared_edge_local_orientation_consistency());
-        assert!(mesh.check_no_forbidden_face_face_intersections());
+        assert!(!mesh.check_no_forbidden_face_face_intersections());
+        assert!(matches!(
+            mesh.check_geometric_topological_consistency_diagnostic(),
+            Err(GeometricTopologicalConsistencyFailure::ForbiddenFaceFaceIntersection { .. })
+        ));
         assert!(!mesh.check_outward_face_normals());
         assert!(!mesh.check_geometric_topological_consistency());
         assert!(!mesh.is_valid_with_geometry());

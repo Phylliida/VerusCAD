@@ -8,7 +8,9 @@ use vcad_geometry::collinearity_coplanarity::{collinear3d, coplanar};
 #[cfg(feature = "geometry-checks")]
 use vcad_geometry::orientation_predicates::{orient3d_sign, orient3d_value};
 #[cfg(feature = "geometry-checks")]
-use vcad_geometry::segment_intersection::{segment_intersection_kind_2d, SegmentIntersection2dKind};
+use vcad_geometry::segment_intersection::{
+    segment_intersection_kind_2d, segment_intersection_point_2d, SegmentIntersection2dKind,
+};
 #[cfg(feature = "geometry-checks")]
 use vcad_geometry::sidedness::segment_plane_intersection_point_strict;
 #[cfg(feature = "geometry-checks")]
@@ -546,13 +548,62 @@ impl Mesh {
     }
 
     #[cfg(feature = "geometry-checks")]
-    fn faces_share_vertex(face_a_vertices: &[usize], face_b_vertices: &[usize]) -> bool {
+    fn normalized_edge_key(a: usize, b: usize) -> (usize, usize) {
+        if a <= b { (a, b) } else { (b, a) }
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn collect_shared_face_vertices(face_a_vertices: &[usize], face_b_vertices: &[usize]) -> Vec<usize> {
+        let mut shared = Vec::new();
         for &va in face_a_vertices {
-            if face_b_vertices.contains(&va) {
-                return true;
+            if face_b_vertices.contains(&va) && !shared.contains(&va) {
+                shared.push(va);
             }
         }
-        false
+        shared
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn collect_shared_face_edge_keys(
+        face_a_vertices: &[usize],
+        face_b_vertices: &[usize],
+    ) -> Vec<(usize, usize)> {
+        let mut face_b_edge_keys = Vec::with_capacity(face_b_vertices.len());
+        for i in 0..face_b_vertices.len() {
+            face_b_edge_keys.push(Self::normalized_edge_key(
+                face_b_vertices[i],
+                face_b_vertices[(i + 1) % face_b_vertices.len()],
+            ));
+        }
+
+        let mut shared = Vec::new();
+        for i in 0..face_a_vertices.len() {
+            let edge = Self::normalized_edge_key(
+                face_a_vertices[i],
+                face_a_vertices[(i + 1) % face_a_vertices.len()],
+            );
+            if face_b_edge_keys.contains(&edge) && !shared.contains(&edge) {
+                shared.push(edge);
+            }
+        }
+        shared
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn edge_key_in_set(edge: (usize, usize), edge_keys: &[(usize, usize)]) -> bool {
+        edge_keys.contains(&edge)
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn face_pair_has_allowed_contact_topology(
+        shared_vertices: &[usize],
+        shared_edge_keys: &[(usize, usize)],
+    ) -> bool {
+        if shared_edge_keys.is_empty() {
+            shared_vertices.len() <= 1
+        } else {
+            shared_edge_keys.len() == 1 && shared_vertices.len() == 2
+        }
     }
 
     #[cfg(feature = "geometry-checks")]
@@ -619,15 +670,37 @@ impl Mesh {
     }
 
     #[cfg(feature = "geometry-checks")]
-    fn coplanar_segment_intersects_face_boundary_or_interior(
+    fn vertex_in_shared_set(shared_vertices: &[usize], vertex: usize) -> bool {
+        shared_vertices.contains(&vertex)
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn point_matches_shared_vertex_position(
+        &self,
+        point: &RuntimePoint3,
+        shared_vertices: &[usize],
+    ) -> bool {
+        for &vertex in shared_vertices {
+            if &self.vertices[vertex].position == point {
+                return true;
+            }
+        }
+        false
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn coplanar_segment_has_forbidden_intersection_with_face(
         &self,
         seg_start: &RuntimePoint3,
         seg_end: &RuntimePoint3,
+        seg_start_vertex: usize,
+        seg_end_vertex: usize,
         face_vertices: &[usize],
         face_normal: &RuntimeVec3,
+        shared_vertices: &[usize],
     ) -> bool {
         if face_vertices.len() < 3 {
-            return false;
+            return true;
         }
 
         let axis = Self::dominant_projection_axis(face_normal);
@@ -637,9 +710,18 @@ impl Mesh {
             .iter()
             .map(|&vid| Self::project_point3_to_2d(&self.vertices[vid].position, axis))
             .collect();
+        let shared_vertex_points_2d: Vec<RuntimePoint2> = shared_vertices
+            .iter()
+            .map(|&vid| Self::project_point3_to_2d(&self.vertices[vid].position, axis))
+            .collect();
 
         if point_in_convex_polygon_2d(&seg_start_2d, &face_polygon_2d)
-            || point_in_convex_polygon_2d(&seg_end_2d, &face_polygon_2d)
+            && !Self::vertex_in_shared_set(shared_vertices, seg_start_vertex)
+        {
+            return true;
+        }
+        if point_in_convex_polygon_2d(&seg_end_2d, &face_polygon_2d)
+            && !Self::vertex_in_shared_set(shared_vertices, seg_end_vertex)
         {
             return true;
         }
@@ -648,8 +730,20 @@ impl Mesh {
             let a = &face_polygon_2d[i];
             let b = &face_polygon_2d[(i + 1) % face_polygon_2d.len()];
             let kind = segment_intersection_kind_2d(&seg_start_2d, &seg_end_2d, a, b);
-            if kind != SegmentIntersection2dKind::Disjoint {
-                return true;
+            match kind {
+                SegmentIntersection2dKind::Disjoint => {}
+                SegmentIntersection2dKind::Proper | SegmentIntersection2dKind::CollinearOverlap => {
+                    return true;
+                }
+                SegmentIntersection2dKind::EndpointTouch => {
+                    let intersection = match segment_intersection_point_2d(&seg_start_2d, &seg_end_2d, a, b) {
+                        Some(p) => p,
+                        None => return true,
+                    };
+                    if !shared_vertex_points_2d.contains(&intersection) {
+                        return true;
+                    }
+                }
             }
         }
 
@@ -657,8 +751,10 @@ impl Mesh {
     }
 
     #[cfg(feature = "geometry-checks")]
-    fn segment_intersects_convex_face(
+    fn segment_has_forbidden_intersection_with_face(
         &self,
+        seg_start_vertex: usize,
+        seg_end_vertex: usize,
         seg_start: &RuntimePoint3,
         seg_end: &RuntimePoint3,
         face_vertices: &[usize],
@@ -666,23 +762,33 @@ impl Mesh {
         face_plane_b: &RuntimePoint3,
         face_plane_c: &RuntimePoint3,
         face_normal: &RuntimeVec3,
+        shared_vertices: &[usize],
     ) -> bool {
         let start_side = orient3d_sign(face_plane_a, face_plane_b, face_plane_c, seg_start);
         let end_side = orient3d_sign(face_plane_a, face_plane_b, face_plane_c, seg_end);
 
         if start_side == 0 && end_side == 0 {
-            return self.coplanar_segment_intersects_face_boundary_or_interior(
+            return self.coplanar_segment_has_forbidden_intersection_with_face(
                 seg_start,
                 seg_end,
+                seg_start_vertex,
+                seg_end_vertex,
                 face_vertices,
                 face_normal,
+                shared_vertices,
             );
         }
         if start_side == 0 {
-            return self.point_in_convex_face_boundary(seg_start, face_vertices, face_normal);
+            if !self.point_in_convex_face_boundary(seg_start, face_vertices, face_normal) {
+                return false;
+            }
+            return !Self::vertex_in_shared_set(shared_vertices, seg_start_vertex);
         }
         if end_side == 0 {
-            return self.point_in_convex_face_boundary(seg_end, face_vertices, face_normal);
+            if !self.point_in_convex_face_boundary(seg_end, face_vertices, face_normal) {
+                return false;
+            }
+            return !Self::vertex_in_shared_set(shared_vertices, seg_end_vertex);
         }
         if start_side == end_side {
             return false;
@@ -698,7 +804,11 @@ impl Mesh {
             Some(p) => p,
             None => return false,
         };
-        self.point_in_convex_face_boundary(&intersection, face_vertices, face_normal)
+        if !self.point_in_convex_face_boundary(&intersection, face_vertices, face_normal) {
+            return false;
+        }
+
+        !self.point_matches_shared_vertex_position(&intersection, shared_vertices)
     }
 
     #[cfg(feature = "geometry-checks")]
@@ -713,6 +823,12 @@ impl Mesh {
             return true;
         }
 
+        let shared_vertices = Self::collect_shared_face_vertices(face_a_vertices, face_b_vertices);
+        let shared_edge_keys = Self::collect_shared_face_edge_keys(face_a_vertices, face_b_vertices);
+        if !Self::face_pair_has_allowed_contact_topology(&shared_vertices, &shared_edge_keys) {
+            return true;
+        }
+
         let face_a_plane_a = &self.vertices[face_a_vertices[0]].position;
         let face_a_plane_b = &self.vertices[face_a_vertices[1]].position;
         let face_a_plane_c = &self.vertices[face_a_vertices[2]].position;
@@ -721,9 +837,18 @@ impl Mesh {
         let face_b_plane_c = &self.vertices[face_b_vertices[2]].position;
 
         for i in 0..face_a_vertices.len() {
-            let seg_start = &self.vertices[face_a_vertices[i]].position;
-            let seg_end = &self.vertices[face_a_vertices[(i + 1) % face_a_vertices.len()]].position;
-            if self.segment_intersects_convex_face(
+            let seg_start_vertex = face_a_vertices[i];
+            let seg_end_vertex = face_a_vertices[(i + 1) % face_a_vertices.len()];
+            let edge_key = Self::normalized_edge_key(seg_start_vertex, seg_end_vertex);
+            if Self::edge_key_in_set(edge_key, &shared_edge_keys) {
+                continue;
+            }
+
+            let seg_start = &self.vertices[seg_start_vertex].position;
+            let seg_end = &self.vertices[seg_end_vertex].position;
+            if self.segment_has_forbidden_intersection_with_face(
+                seg_start_vertex,
+                seg_end_vertex,
                 seg_start,
                 seg_end,
                 face_b_vertices,
@@ -731,15 +856,25 @@ impl Mesh {
                 face_b_plane_b,
                 face_b_plane_c,
                 face_b_normal,
+                &shared_vertices,
             ) {
                 return true;
             }
         }
 
         for i in 0..face_b_vertices.len() {
-            let seg_start = &self.vertices[face_b_vertices[i]].position;
-            let seg_end = &self.vertices[face_b_vertices[(i + 1) % face_b_vertices.len()]].position;
-            if self.segment_intersects_convex_face(
+            let seg_start_vertex = face_b_vertices[i];
+            let seg_end_vertex = face_b_vertices[(i + 1) % face_b_vertices.len()];
+            let edge_key = Self::normalized_edge_key(seg_start_vertex, seg_end_vertex);
+            if Self::edge_key_in_set(edge_key, &shared_edge_keys) {
+                continue;
+            }
+
+            let seg_start = &self.vertices[seg_start_vertex].position;
+            let seg_end = &self.vertices[seg_end_vertex].position;
+            if self.segment_has_forbidden_intersection_with_face(
+                seg_start_vertex,
+                seg_end_vertex,
                 seg_start,
                 seg_end,
                 face_a_vertices,
@@ -747,6 +882,7 @@ impl Mesh {
                 face_a_plane_b,
                 face_a_plane_c,
                 face_a_normal,
+                &shared_vertices,
             ) {
                 return true;
             }
@@ -756,12 +892,16 @@ impl Mesh {
     }
 
     #[cfg(feature = "geometry-checks")]
-    /// Optional geometric extension: non-adjacent face pairs must not
-    /// intersect.
+    /// Optional geometric extension: each face pair may only realize
+    /// boundary contact allowed by topology.
     ///
     /// Degeneracy policy:
-    /// - adjacency exemptions are index-based: if two face cycles share any
-    ///   vertex index, this checker skips that pair;
+    /// - allowed topological contact between two faces is exactly one of:
+    ///   disjoint boundary, one shared vertex, or one shared edge;
+    /// - face pairs with broader shared boundary (for example multiple shared
+    ///   edges or full coincident boundaries) are rejected;
+    /// - geometric intersection is rejected whenever it includes points beyond
+    ///   the allowed shared boundary contact for that pair;
     /// - geometric position coincidence with different vertex indices is not
     ///   exempt (for example, disconnected components touching at a vertex,
     ///   along an edge, or across an entire face);
@@ -800,9 +940,6 @@ impl Mesh {
 
         for fa in 0..self.faces.len() {
             for fb in (fa + 1)..self.faces.len() {
-                if Self::faces_share_vertex(&face_vertices[fa], &face_vertices[fb]) {
-                    continue;
-                }
                 if self.face_pair_has_forbidden_intersection(
                     &face_vertices[fa],
                     &face_normals[fa],
@@ -1060,9 +1197,6 @@ impl Mesh {
 
         for fa in 0..self.faces.len() {
             for fb in (fa + 1)..self.faces.len() {
-                if Self::faces_share_vertex(&face_vertices[fa], &face_vertices[fb]) {
-                    continue;
-                }
                 if self.face_pair_has_forbidden_intersection(
                     &face_vertices[fa],
                     &face_normals[fa],

@@ -1,1 +1,1 @@
-Completed the P5.12 rigid-transform invariance burndown task by adding exact-arithmetic translation/rotation/reflection Phase 5 tests in vcad-topology, marking the checklist item done, and revalidating the full test/proof matrix (250 verified, 0 errors).
+Completed the P5.5 adjacency-exemption tightening task by enforcing exact allowed face-contact relations in the intersection checker, adding shared-vertex/coincident-face policy tests, updating the burndown, and revalidating the full vcad-topology test/proof matrix (250 verified, 0 errors).
