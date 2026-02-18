@@ -1,1 +1,1 @@
-Added and verified neighbor-closure guarantees for half-edge components, strengthened the component-count witness contract, and documented the new progress and remaining connectivity gap in the topology burndown.
+Added constructive count verification wrappers for tetrahedron/cube/triangular_prism and documented the constructor burndown progress in vcad-topology.

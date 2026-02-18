@@ -611,6 +611,31 @@ pub open spec fn mesh_valid_spec(m: MeshModel) -> bool {
     mesh_structurally_valid_spec(m) && mesh_euler_closed_components_spec(m)
 }
 
+pub open spec fn mesh_counts_spec(
+    m: MeshModel,
+    vertex_count: int,
+    edge_count: int,
+    face_count: int,
+    half_edge_count: int,
+) -> bool {
+    &&& mesh_vertex_count_spec(m) == vertex_count
+    &&& mesh_edge_count_spec(m) == edge_count
+    &&& mesh_face_count_spec(m) == face_count
+    &&& mesh_half_edge_count_spec(m) == half_edge_count
+}
+
+pub open spec fn mesh_tetrahedron_counts_spec(m: MeshModel) -> bool {
+    mesh_counts_spec(m, 4, 6, 4, 12)
+}
+
+pub open spec fn mesh_cube_counts_spec(m: MeshModel) -> bool {
+    mesh_counts_spec(m, 8, 12, 6, 24)
+}
+
+pub open spec fn mesh_triangular_prism_counts_spec(m: MeshModel) -> bool {
+    mesh_counts_spec(m, 6, 9, 5, 18)
+}
+
 pub open spec fn input_face_local_index_valid_spec(face_cycles: Seq<Seq<int>>, f: int, i: int) -> bool {
     0 <= f < face_cycles.len() as int && 0 <= i < face_cycles[f].len() as int
 }
@@ -1753,6 +1778,82 @@ pub fn ex_mesh_component_count(m: &Mesh) -> (out: usize)
 pub fn ex_mesh_euler_characteristics_per_component(m: &Mesh) -> (out: Vec<isize>)
 {
     m.euler_characteristics_per_component()
+}
+
+#[verifier::external_body]
+pub fn ex_mesh_tetrahedron() -> (out: Mesh)
+{
+    Mesh::tetrahedron()
+}
+
+#[verifier::external_body]
+pub fn ex_mesh_cube() -> (out: Mesh)
+{
+    Mesh::cube()
+}
+
+#[verifier::external_body]
+pub fn ex_mesh_triangular_prism() -> (out: Mesh)
+{
+    Mesh::triangular_prism()
+}
+
+#[allow(dead_code)]
+pub fn runtime_check_mesh_counts(
+    m: &Mesh,
+    vertex_count: usize,
+    edge_count: usize,
+    face_count: usize,
+    half_edge_count: usize,
+) -> (out: bool)
+    ensures
+        out ==> mesh_counts_spec(
+            m@,
+            vertex_count as int,
+            edge_count as int,
+            face_count as int,
+            half_edge_count as int,
+        ),
+{
+    if m.vertices.len() != vertex_count {
+        return false;
+    }
+    if m.edges.len() != edge_count {
+        return false;
+    }
+    if m.faces.len() != face_count {
+        return false;
+    }
+    if m.half_edges.len() != half_edge_count {
+        return false;
+    }
+
+    proof {
+        assert(mesh_vertex_count_spec(m@) == m@.vertex_half_edges.len() as int);
+        assert(mesh_edge_count_spec(m@) == m@.edge_half_edges.len() as int);
+        assert(mesh_face_count_spec(m@) == m@.face_half_edges.len() as int);
+        assert(mesh_half_edge_count_spec(m@) == m@.half_edges.len() as int);
+
+        assert(m@.vertex_half_edges.len() == m.vertices@.len());
+        assert(m@.edge_half_edges.len() == m.edges@.len());
+        assert(m@.face_half_edges.len() == m.faces@.len());
+        assert(m@.half_edges.len() == m.half_edges@.len());
+
+        assert(m.vertices@.len() == m.vertices.len());
+        assert(m.edges@.len() == m.edges.len());
+        assert(m.faces@.len() == m.faces.len());
+        assert(m.half_edges@.len() == m.half_edges.len());
+
+        assert(mesh_counts_spec(
+            m@,
+            vertex_count as int,
+            edge_count as int,
+            face_count as int,
+            half_edge_count as int,
+        ));
+    }
+
+    true
 }
 
 #[verifier::exec_allows_no_decreases_clause]
@@ -3498,6 +3599,72 @@ pub fn euler_characteristics_per_component_constructive(
     }
 
     Option::Some(chis)
+}
+
+#[allow(dead_code)]
+pub fn tetrahedron_constructive_counts() -> (out: Option<Mesh>)
+    ensures
+        match out {
+            Option::Some(m) => mesh_tetrahedron_counts_spec(m@),
+            Option::None => true,
+        },
+{
+    let m = ex_mesh_tetrahedron();
+    let counts_ok = runtime_check_mesh_counts(&m, 4, 6, 4, 12);
+    if !counts_ok {
+        return Option::None;
+    }
+
+    proof {
+        assert(mesh_counts_spec(m@, 4, 6, 4, 12));
+        assert(mesh_tetrahedron_counts_spec(m@));
+    }
+
+    Option::Some(m)
+}
+
+#[allow(dead_code)]
+pub fn cube_constructive_counts() -> (out: Option<Mesh>)
+    ensures
+        match out {
+            Option::Some(m) => mesh_cube_counts_spec(m@),
+            Option::None => true,
+        },
+{
+    let m = ex_mesh_cube();
+    let counts_ok = runtime_check_mesh_counts(&m, 8, 12, 6, 24);
+    if !counts_ok {
+        return Option::None;
+    }
+
+    proof {
+        assert(mesh_counts_spec(m@, 8, 12, 6, 24));
+        assert(mesh_cube_counts_spec(m@));
+    }
+
+    Option::Some(m)
+}
+
+#[allow(dead_code)]
+pub fn triangular_prism_constructive_counts() -> (out: Option<Mesh>)
+    ensures
+        match out {
+            Option::Some(m) => mesh_triangular_prism_counts_spec(m@),
+            Option::None => true,
+        },
+{
+    let m = ex_mesh_triangular_prism();
+    let counts_ok = runtime_check_mesh_counts(&m, 6, 9, 5, 18);
+    if !counts_ok {
+        return Option::None;
+    }
+
+    proof {
+        assert(mesh_counts_spec(m@, 6, 9, 5, 18));
+        assert(mesh_triangular_prism_counts_spec(m@));
+    }
+
+    Option::Some(m)
 }
 
 } // verus!

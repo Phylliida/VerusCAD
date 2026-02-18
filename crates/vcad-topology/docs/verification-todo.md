@@ -726,13 +726,57 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
 ## G. Verify Reference Mesh Constructors End-to-End
 - [ ] Prove `tetrahedron` builds and satisfies `is_valid`.
   - prove counts: `V=4, E=6, F=4, H=12`.
+  - burndown update (2026-02-18):
+    - landed constructor-count refinement scaffolding in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      - `mesh_counts_spec`,
+      - `mesh_tetrahedron_counts_spec`,
+      - generic checker `runtime_check_mesh_counts`,
+      - constructor bridge `ex_mesh_tetrahedron`,
+      - constructive wrapper `tetrahedron_constructive_counts`.
+    - proved stable intermediate guarantee:
+      `tetrahedron_constructive_counts` returns `Some(m)` only when
+      `mesh_tetrahedron_counts_spec(m@)` holds.
+    - remaining gap:
+      end-to-end `is_valid` linkage is still open for this constructor.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`59 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`59 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`93 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
+  - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 - [ ] Prove `cube` builds and satisfies `is_valid`.
   - prove counts: `V=8, E=12, F=6, H=24`.
+  - burndown update (2026-02-18):
+    - landed constructor-count bridge + wrapper in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      `ex_mesh_cube` + `cube_constructive_counts`.
+    - proved stable intermediate guarantee:
+      `cube_constructive_counts` returns `Some(m)` only when
+      `mesh_cube_counts_spec(m@)` holds.
+    - remaining gap:
+      end-to-end `is_valid` linkage is still open for this constructor.
   - file: `src/halfedge_mesh.rs`
+  - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 - [ ] Prove `triangular_prism` builds and satisfies `is_valid`.
   - prove counts: `V=6, E=9, F=5, H=18`.
+  - burndown update (2026-02-18):
+    - landed constructor-count bridge + wrapper in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      `ex_mesh_triangular_prism` + `triangular_prism_constructive_counts`.
+    - proved stable intermediate guarantee:
+      `triangular_prism_constructive_counts` returns `Some(m)` only when
+      `mesh_triangular_prism_counts_spec(m@)` holds.
+    - remaining gap:
+      end-to-end `is_valid` linkage is still open for this constructor.
+    - failed attempt (tooling only):
+      tried running `verify-vcad-topology-fast.sh` with multiple function
+      arguments in one invocation; the script accepts at most
+      `[module] [function_pattern]`, so verification was rerun with supported
+      invocations.
   - file: `src/halfedge_mesh.rs`
+  - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 
 ## H. Reuse-Focused Hardening (No Reinventing)
 - [ ] Reuse `vcad-math` proof surfaces for arithmetic/cardinality/order where applicable.
