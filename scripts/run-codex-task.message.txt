@@ -1,1 +1,1 @@
-Refreshed vcad-topology Exit Condition burndown evidence with clean trust-surface scans and a fully green verification/test matrix.
+Replayed vcad-topology Exit Condition scans and the full verification/test matrix with all checks green.
