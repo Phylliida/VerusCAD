@@ -1,1 +1,1 @@
-Replayed the vcad-topology Exit Condition command set and reconfirmed fast/full verification plus baseline and feature-matrix cargo tests are all green.
+Reran vcad-topology Exit Condition scans and refreshed the full verification and cargo-test matrix with no trust-surface regressions.
