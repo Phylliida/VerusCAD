@@ -1980,6 +1980,36 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`208 verified, 0 errors`);
       `cargo test -p vcad-topology`
       passed (`4 passed, 0 failed`).
+  - burndown update (2026-02-18, top-level gate bridge cleanup):
+    - removed two additional runtime external-body gate bridges from
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      - `ex_mesh_is_structurally_valid`,
+      - `ex_mesh_is_valid`.
+    - strengthened constructive top-level gate wiring to compute `api_ok`
+      by construction from already-checked booleans:
+      - `is_structurally_valid_constructive` now sets
+        `api_ok = formula_ok` (same structural conjunction as runtime API),
+      - `is_valid_constructive` now sets
+        `api_ok = structural_ok && euler_ok`.
+    - rationale:
+      this removes two unused runtime-call trust edges while preserving the
+      existing witness contracts (`structural_validity_gate_witness_spec` and
+      `validity_gate_witness_spec`) at the same constructive proof boundary.
+    - failed attempts:
+      none in this pass.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement is_structurally_valid_constructive`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement is_valid_constructive`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh`
+      passed (`173 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh`
+      passed (`208 verified, 0 errors`);
+      `cargo test -p vcad-topology`
+      passed (`4 passed, 0 failed`).
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`6 passed, 0 failed`).
   - file: `src/halfedge_mesh.rs`
 - [x] Verify `is_valid` exactly matches `is_structurally_valid && check_euler_formula_closed_components`.
   - burndown update (2026-02-18):

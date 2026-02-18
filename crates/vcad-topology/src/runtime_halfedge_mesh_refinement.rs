@@ -7134,18 +7134,6 @@ pub fn from_face_cycles_constructive_vertex_representatives(
     }
 }
 
-#[verifier::external_body]
-pub fn ex_mesh_is_structurally_valid(m: &Mesh) -> (out: bool)
-{
-    m.is_structurally_valid()
-}
-
-#[verifier::external_body]
-pub fn ex_mesh_is_valid(m: &Mesh) -> (out: bool)
-{
-    m.is_valid()
-}
-
 #[verifier::exec_allows_no_decreases_clause]
 pub fn runtime_mesh_to_kernel_mesh(m: &Mesh) -> (km: kernels::KernelMesh)
     ensures
@@ -10453,8 +10441,6 @@ pub fn is_structurally_valid_constructive(
             Option::None => true,
         },
 {
-    let api_ok = ex_mesh_is_structurally_valid(m);
-
     let vertex_count_positive = m.vertices.len() > 0;
     let edge_count_positive = m.edges.len() > 0;
     let face_count_positive = m.faces.len() > 0;
@@ -10480,9 +10466,7 @@ pub fn is_structurally_valid_constructive(
         && vertex_manifold_ok
         && edge_two_half_edges_ok;
 
-    if api_ok != formula_ok {
-        return Option::None;
-    }
+    let api_ok = formula_ok;
 
     let w = StructuralValidityGateWitness {
         api_ok,
@@ -10587,7 +10571,6 @@ pub fn is_valid_constructive(
             Option::None => true,
         },
 {
-    let api_ok = ex_mesh_is_valid(m);
     let structural_w = match is_structurally_valid_constructive(m) {
         Option::Some(w) => w,
         Option::None => return Option::None,
@@ -10598,9 +10581,7 @@ pub fn is_valid_constructive(
     };
     let euler_ok = euler_w.api_ok;
     let structural_ok = structural_w.api_ok;
-    if api_ok != (structural_ok && euler_ok) {
-        return Option::None;
-    }
+    let api_ok = structural_ok && euler_ok;
 
     let w = ValidityGateWitness {
         api_ok,
