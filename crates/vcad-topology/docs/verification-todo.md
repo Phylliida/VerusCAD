@@ -672,7 +672,48 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       soundness proof is exported.
   - file: `src/halfedge_mesh.rs`
 - [ ] Verify `euler_characteristics_per_component` computes `V - E + F` per BFS component.
+  - burndown update (2026-02-18):
+    - landed explicit Euler-per-component refinement scaffolding in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      - `mesh_component_has_vertex_spec`,
+      - `mesh_component_has_edge_spec`,
+      - `mesh_component_has_face_spec`,
+      - `mesh_component_euler_characteristic_witness_spec`,
+      - `mesh_component_euler_characteristic_spec`,
+      - `mesh_euler_characteristics_per_component_spec`,
+      - `mesh_euler_characteristics_partition_witness_spec`.
+    - added proof-facing runtime bridge and constructive checker pipeline:
+      - external-body bridge: `ex_mesh_euler_characteristics_per_component`,
+      - helper checker: `runtime_check_component_euler_characteristic`,
+      - vector checker: `runtime_check_euler_characteristics_per_component`,
+      - constructive wrapper: `euler_characteristics_per_component_constructive`.
+    - proof-shape note:
+      stable verification came from splitting obligations into:
+      (1) a marking pass over component half-edges,
+      (2) an explicit first-direction membership pass (`component entry -> mark`),
+      (3) per-domain witness scans (`mark -> exists component entry`),
+      then counting via `runtime_count_true` + `bool_true_count_spec`.
+    - failed attempt (not kept):
+      directly preserving `component entry -> mark` facts inside the marking loop
+      with sequence-update equalities (`new_marks[idx] == old_marks[idx]`) was brittle;
+      a separate post-mark membership pass proved more stable.
+    - remaining gap:
+      this is currently a constructive witness path (`Some(chis)` certifies the
+      Euler-per-BFS-component contract); direct total linkage of
+      `Mesh::euler_characteristics_per_component` itself to the same spec is still open.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_component_euler_characteristic`
+      passed (`9 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_euler_characteristics_per_component`
+      passed (`2 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement euler_characteristics_per_component_constructive`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`55 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`55 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`89 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
+  - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 - [ ] Verify `check_euler_formula_closed_components` iff all closed components have characteristic `2`.
   - file: `src/halfedge_mesh.rs`
 

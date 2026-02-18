@@ -465,6 +465,117 @@ pub open spec fn mesh_component_count_partition_witness_spec(m: MeshModel, count
     }
 }
 
+pub open spec fn bool_true_count_prefix_spec(bits: Seq<bool>, n: int) -> int
+    decreases if n <= 0 { 0 } else { n }
+{
+    if n <= 0 {
+        0
+    } else {
+        bool_true_count_prefix_spec(bits, n - 1) + if bits[(n - 1) as int] { 1int } else { 0int }
+    }
+}
+
+pub open spec fn bool_true_count_spec(bits: Seq<bool>) -> int {
+    bool_true_count_prefix_spec(bits, bits.len() as int)
+}
+
+pub open spec fn mesh_component_has_vertex_spec(m: MeshModel, component: Seq<usize>, v: int) -> bool {
+    &&& 0 <= v < mesh_vertex_count_spec(m)
+    &&& exists|i: int| {
+        &&& 0 <= i < component.len() as int
+        &&& 0 <= (component[i] as int)
+        &&& (component[i] as int) < mesh_half_edge_count_spec(m)
+        &&& #[trigger] m.half_edges[(component[i] as int)].vertex == v
+    }
+}
+
+pub open spec fn mesh_component_has_edge_spec(m: MeshModel, component: Seq<usize>, e: int) -> bool {
+    &&& 0 <= e < mesh_edge_count_spec(m)
+    &&& exists|i: int| {
+        &&& 0 <= i < component.len() as int
+        &&& 0 <= (component[i] as int)
+        &&& (component[i] as int) < mesh_half_edge_count_spec(m)
+        &&& #[trigger] m.half_edges[(component[i] as int)].edge == e
+    }
+}
+
+pub open spec fn mesh_component_has_face_spec(m: MeshModel, component: Seq<usize>, f: int) -> bool {
+    &&& 0 <= f < mesh_face_count_spec(m)
+    &&& exists|i: int| {
+        &&& 0 <= i < component.len() as int
+        &&& 0 <= (component[i] as int)
+        &&& (component[i] as int) < mesh_half_edge_count_spec(m)
+        &&& #[trigger] m.half_edges[(component[i] as int)].face == f
+    }
+}
+
+pub open spec fn mesh_component_euler_characteristic_witness_spec(
+    m: MeshModel,
+    component: Seq<usize>,
+    chi: int,
+    vertex_present: Seq<bool>,
+    edge_present: Seq<bool>,
+    face_present: Seq<bool>,
+) -> bool {
+    &&& vertex_present.len() == mesh_vertex_count_spec(m)
+    &&& edge_present.len() == mesh_edge_count_spec(m)
+    &&& face_present.len() == mesh_face_count_spec(m)
+    &&& forall|v: int|
+        #![trigger vertex_present[v]]
+        0 <= v < mesh_vertex_count_spec(m)
+            ==> (#[trigger] vertex_present[v] <==> mesh_component_has_vertex_spec(m, component, v))
+    &&& forall|e: int|
+        #![trigger edge_present[e]]
+        0 <= e < mesh_edge_count_spec(m)
+            ==> (#[trigger] edge_present[e] <==> mesh_component_has_edge_spec(m, component, e))
+    &&& forall|f: int|
+        #![trigger face_present[f]]
+        0 <= f < mesh_face_count_spec(m)
+            ==> (#[trigger] face_present[f] <==> mesh_component_has_face_spec(m, component, f))
+    &&& chi
+        == bool_true_count_spec(vertex_present) - bool_true_count_spec(edge_present)
+            + bool_true_count_spec(face_present)
+}
+
+pub open spec fn mesh_component_euler_characteristic_spec(
+    m: MeshModel,
+    component: Seq<usize>,
+    chi: int,
+) -> bool {
+    exists|vertex_present: Seq<bool>, edge_present: Seq<bool>, face_present: Seq<bool>| {
+        &&& mesh_component_euler_characteristic_witness_spec(
+            m,
+            component,
+            chi,
+            vertex_present,
+            edge_present,
+            face_present,
+        )
+    }
+}
+
+pub open spec fn mesh_euler_characteristics_per_component_spec(
+    m: MeshModel,
+    components: Seq<Vec<usize>>,
+    chis: Seq<isize>,
+) -> bool {
+    &&& chis.len() == components.len()
+    &&& forall|c: int|
+        #![trigger components[c]@]
+        0 <= c < components.len() as int
+            ==> mesh_component_euler_characteristic_spec(m, components[c]@, chis[c] as int)
+}
+
+pub open spec fn mesh_euler_characteristics_partition_witness_spec(
+    m: MeshModel,
+    chis: Seq<isize>,
+) -> bool {
+    exists|components: Seq<Vec<usize>>| {
+        &&& mesh_half_edge_components_partition_neighbor_closed_spec(m, components)
+        &&& mesh_euler_characteristics_per_component_spec(m, components, chis)
+    }
+}
+
 /// Euler relation under the current closed-component model:
 /// each connected closed component contributes characteristic `2`,
 /// so globally `V - E + F = 2 * component_count`.
@@ -1638,6 +1749,723 @@ pub fn ex_mesh_component_count(m: &Mesh) -> (out: usize)
     m.component_count()
 }
 
+#[verifier::external_body]
+pub fn ex_mesh_euler_characteristics_per_component(m: &Mesh) -> (out: Vec<isize>)
+{
+    m.euler_characteristics_per_component()
+}
+
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
+pub fn runtime_count_true(bits: &[bool]) -> (out: usize)
+    ensures
+        out as int == bool_true_count_spec(bits@),
+{
+    let mut i: usize = 0;
+    let mut count: usize = 0;
+
+    while i < bits.len()
+        invariant
+            0 <= i <= bits.len(),
+            0 <= count <= i,
+            count as int == bool_true_count_prefix_spec(bits@, i as int),
+    {
+        let bit = bits[i];
+        let ghost count_before = count as int;
+        if bit {
+            count += 1;
+        }
+        proof {
+            assert(bit == bits@[i as int]);
+            assert(count_before == bool_true_count_prefix_spec(bits@, i as int));
+            assert(bool_true_count_prefix_spec(bits@, (i + 1) as int)
+                == bool_true_count_prefix_spec(bits@, i as int) + if bits@[i as int] { 1int } else { 0int });
+            if bit {
+                assert(count as int == count_before + 1);
+            } else {
+                assert(count as int == count_before);
+            }
+            assert(count as int == bool_true_count_prefix_spec(bits@, (i + 1) as int));
+            assert(0 <= count);
+            assert(count <= i + 1);
+        }
+        i += 1;
+    }
+
+    proof {
+        assert(i == bits.len());
+        assert(bool_true_count_spec(bits@) == bool_true_count_prefix_spec(bits@, i as int));
+    }
+
+    count
+}
+
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
+pub fn runtime_check_component_euler_characteristic(
+    m: &Mesh,
+    component: &[usize],
+    chi: isize,
+) -> (out: bool)
+    ensures
+        out ==> mesh_component_euler_characteristic_spec(m@, component@, chi as int),
+{
+    let hcnt = m.half_edges.len();
+    let vcnt = m.vertices.len();
+    let ecnt = m.edges.len();
+    let fcnt = m.faces.len();
+
+    let mut vertex_present = vec![false; vcnt];
+    let mut edge_present = vec![false; ecnt];
+    let mut face_present = vec![false; fcnt];
+
+    let mut i: usize = 0;
+    while i < component.len()
+        invariant
+            hcnt == m.half_edges.len(),
+            vcnt == m.vertices.len(),
+            ecnt == m.edges.len(),
+            fcnt == m.faces.len(),
+            0 <= i <= component.len(),
+            vertex_present@.len() == vcnt as int,
+            edge_present@.len() == ecnt as int,
+            face_present@.len() == fcnt as int,
+            forall|ip: int|
+                #![trigger component@[ip]]
+                0 <= ip < i as int ==> 0 <= (component@[ip] as int) && (component@[ip] as int) < hcnt as int,
+    {
+        let h = component[i];
+        if h >= hcnt {
+            return false;
+        }
+        let he = &m.half_edges[h];
+        let v = he.vertex;
+        let e = he.edge;
+        let f = he.face;
+        if v >= vcnt || e >= ecnt || f >= fcnt {
+            return false;
+        }
+
+        vertex_present[v] = true;
+        edge_present[e] = true;
+        face_present[f] = true;
+
+        proof {
+            assert(component@[i as int] == h);
+            assert(forall|ip: int|
+                #![trigger component@[ip]]
+                0 <= ip < (i + 1) as int
+                    ==> 0 <= (component@[ip] as int) && (component@[ip] as int) < hcnt as int) by {
+                assert forall|ip: int|
+                    #![trigger component@[ip]]
+                    0 <= ip < (i + 1) as int
+                        implies 0 <= (component@[ip] as int) && (component@[ip] as int) < hcnt as int by {
+                    if ip < i as int {
+                    } else {
+                        assert(ip == i as int);
+                        assert(component@[ip] as int == h as int);
+                        assert(0 <= h as int);
+                        assert((h as int) < (hcnt as int));
+                    }
+                };
+            }
+        }
+
+        i += 1;
+    }
+
+    let mut j: usize = 0;
+    while j < component.len()
+        invariant
+            hcnt == m.half_edges.len(),
+            vcnt == m.vertices.len(),
+            ecnt == m.edges.len(),
+            fcnt == m.faces.len(),
+            i == component.len(),
+            0 <= j <= component.len(),
+            vertex_present@.len() == vcnt as int,
+            edge_present@.len() == ecnt as int,
+            face_present@.len() == fcnt as int,
+            forall|ip: int|
+                #![trigger component@[ip]]
+                0 <= ip < component@.len() as int
+                    ==> 0 <= (component@[ip] as int) && (component@[ip] as int) < hcnt as int,
+            forall|ip: int|
+                #![trigger component@[ip]]
+                0 <= ip < j as int ==> {
+                    &&& #[trigger] vertex_present@[m@.half_edges[component@[ip] as int].vertex]
+                    &&& #[trigger] edge_present@[m@.half_edges[component@[ip] as int].edge]
+                    &&& #[trigger] face_present@[m@.half_edges[component@[ip] as int].face]
+                },
+    {
+        let h = component[j];
+        if h >= hcnt {
+            return false;
+        }
+        let he = &m.half_edges[h];
+        let hv = he.vertex;
+        let hee = he.edge;
+        let hf = he.face;
+        if hv >= vcnt || hee >= ecnt || hf >= fcnt {
+            return false;
+        }
+        if !vertex_present[hv] || !edge_present[hee] || !face_present[hf] {
+            return false;
+        }
+
+        proof {
+            assert(component@[j as int] == h);
+            assert(forall|ip: int|
+                #![trigger component@[ip]]
+                0 <= ip < (j + 1) as int ==> {
+                    &&& #[trigger] vertex_present@[m@.half_edges[component@[ip] as int].vertex]
+                    &&& #[trigger] edge_present@[m@.half_edges[component@[ip] as int].edge]
+                    &&& #[trigger] face_present@[m@.half_edges[component@[ip] as int].face]
+                }) by {
+                assert forall|ip: int|
+                    #![trigger component@[ip]]
+                    0 <= ip < (j + 1) as int implies {
+                        &&& #[trigger] vertex_present@[m@.half_edges[component@[ip] as int].vertex]
+                        &&& #[trigger] edge_present@[m@.half_edges[component@[ip] as int].edge]
+                        &&& #[trigger] face_present@[m@.half_edges[component@[ip] as int].face]
+                    } by {
+                    if ip < j as int {
+                    } else {
+                        assert(ip == j as int);
+                        assert(component@[ip] as int == h as int);
+                        assert(vertex_present@[m@.half_edges[h as int].vertex]);
+                        assert(edge_present@[m@.half_edges[h as int].edge]);
+                        assert(face_present@[m@.half_edges[h as int].face]);
+                    }
+                };
+            }
+        }
+
+        j += 1;
+    }
+
+    let mut v: usize = 0;
+    while v < vcnt
+        invariant
+            hcnt == m.half_edges.len(),
+            vcnt == m.vertices.len(),
+            i == component.len(),
+            j == component.len(),
+            0 <= v <= vcnt,
+            vertex_present@.len() == vcnt as int,
+            forall|ip: int|
+                #![trigger component@[ip]]
+                0 <= ip < component@.len() as int ==> {
+                    &&& 0 <= (component@[ip] as int)
+                    &&& (component@[ip] as int) < hcnt as int
+                    &&& #[trigger] vertex_present@[m@.half_edges[component@[ip] as int].vertex]
+                },
+            forall|ip: int|
+                #![trigger component@[ip]]
+                0 <= ip < component@.len() as int
+                    ==> #[trigger] edge_present@[m@.half_edges[component@[ip] as int].edge],
+            forall|ip: int|
+                #![trigger component@[ip]]
+                0 <= ip < component@.len() as int
+                    ==> #[trigger] face_present@[m@.half_edges[component@[ip] as int].face],
+            forall|vp: int|
+                0 <= vp < v as int && #[trigger] vertex_present@[vp] ==> exists|ip: int| {
+                    &&& 0 <= ip < component@.len() as int
+                    &&& #[trigger] m@.half_edges[component@[ip] as int].vertex == vp
+                },
+    {
+        if vertex_present[v] {
+            let mut found = false;
+            let mut ip: usize = 0;
+            while ip < component.len()
+                invariant
+                    hcnt == m.half_edges.len(),
+                    0 <= ip <= component.len(),
+                    0 <= v < vcnt,
+                    found <==> exists|jp: int| {
+                        &&& 0 <= jp < ip as int
+                        &&& #[trigger] m@.half_edges[component@[jp] as int].vertex == v as int
+                    },
+            {
+                let h = component[ip];
+                if h >= hcnt {
+                    return false;
+                }
+                if m.half_edges[h].vertex == v {
+                    found = true;
+                }
+                proof {
+                    assert(component@[ip as int] == h);
+                    if m@.half_edges[h as int].vertex == v as int {
+                        assert(exists|jp: int| {
+                            &&& 0 <= jp < (ip + 1) as int
+                            &&& #[trigger] m@.half_edges[component@[jp] as int].vertex == v as int
+                        });
+                    } else {
+                        assert((exists|jp: int| {
+                            &&& 0 <= jp < (ip + 1) as int
+                            &&& #[trigger] m@.half_edges[component@[jp] as int].vertex == v as int
+                        }) <==> (exists|jp: int| {
+                            &&& 0 <= jp < ip as int
+                            &&& #[trigger] m@.half_edges[component@[jp] as int].vertex == v as int
+                        }));
+                    }
+                    assert(found <==> exists|jp: int| {
+                        &&& 0 <= jp < (ip + 1) as int
+                        &&& #[trigger] m@.half_edges[component@[jp] as int].vertex == v as int
+                    });
+                }
+                ip += 1;
+            }
+            if !found {
+                return false;
+            }
+        }
+
+        proof {
+            assert(forall|vp: int|
+                0 <= vp < (v + 1) as int && #[trigger] vertex_present@[vp] ==> exists|ip: int| {
+                    &&& 0 <= ip < component@.len() as int
+                    &&& #[trigger] m@.half_edges[component@[ip] as int].vertex == vp
+                }) by {
+                assert forall|vp: int|
+                    0 <= vp < (v + 1) as int && #[trigger] vertex_present@[vp] implies exists|ip: int| {
+                        &&& 0 <= ip < component@.len() as int
+                        &&& #[trigger] m@.half_edges[component@[ip] as int].vertex == vp
+                    } by {
+                    if vp < v as int {
+                    } else {
+                        assert(vp == v as int);
+                        assert(vertex_present@[vp]);
+                        assert(v as int == vp);
+                        assert(exists|ip: int| {
+                            &&& 0 <= ip < component@.len() as int
+                            &&& #[trigger] m@.half_edges[component@[ip] as int].vertex == vp
+                        });
+                    }
+                };
+            }
+        }
+
+        v += 1;
+    }
+
+    let mut e: usize = 0;
+    while e < ecnt
+        invariant
+            hcnt == m.half_edges.len(),
+            ecnt == m.edges.len(),
+            i == component.len(),
+            0 <= e <= ecnt,
+            edge_present@.len() == ecnt as int,
+            forall|ip: int|
+                #![trigger component@[ip]]
+                0 <= ip < component@.len() as int ==> {
+                    &&& 0 <= (component@[ip] as int)
+                    &&& (component@[ip] as int) < hcnt as int
+                    &&& #[trigger] edge_present@[m@.half_edges[component@[ip] as int].edge]
+                },
+            forall|ip: int|
+                #![trigger component@[ip]]
+                0 <= ip < component@.len() as int
+                    ==> #[trigger] vertex_present@[m@.half_edges[component@[ip] as int].vertex],
+            forall|ip: int|
+                #![trigger component@[ip]]
+                0 <= ip < component@.len() as int
+                    ==> #[trigger] face_present@[m@.half_edges[component@[ip] as int].face],
+            forall|ep: int|
+                0 <= ep < e as int && #[trigger] edge_present@[ep] ==> exists|ip: int| {
+                    &&& 0 <= ip < component@.len() as int
+                    &&& #[trigger] m@.half_edges[component@[ip] as int].edge == ep
+                },
+    {
+        if edge_present[e] {
+            let mut found = false;
+            let mut ip: usize = 0;
+            while ip < component.len()
+                invariant
+                    hcnt == m.half_edges.len(),
+                    0 <= ip <= component.len(),
+                    0 <= e < ecnt,
+                    found <==> exists|jp: int| {
+                        &&& 0 <= jp < ip as int
+                        &&& #[trigger] m@.half_edges[component@[jp] as int].edge == e as int
+                    },
+            {
+                let h = component[ip];
+                if h >= hcnt {
+                    return false;
+                }
+                if m.half_edges[h].edge == e {
+                    found = true;
+                }
+                proof {
+                    assert(component@[ip as int] == h);
+                    if m@.half_edges[h as int].edge == e as int {
+                        assert(exists|jp: int| {
+                            &&& 0 <= jp < (ip + 1) as int
+                            &&& #[trigger] m@.half_edges[component@[jp] as int].edge == e as int
+                        });
+                    } else {
+                        assert((exists|jp: int| {
+                            &&& 0 <= jp < (ip + 1) as int
+                            &&& #[trigger] m@.half_edges[component@[jp] as int].edge == e as int
+                        }) <==> (exists|jp: int| {
+                            &&& 0 <= jp < ip as int
+                            &&& #[trigger] m@.half_edges[component@[jp] as int].edge == e as int
+                        }));
+                    }
+                    assert(found <==> exists|jp: int| {
+                        &&& 0 <= jp < (ip + 1) as int
+                        &&& #[trigger] m@.half_edges[component@[jp] as int].edge == e as int
+                    });
+                }
+                ip += 1;
+            }
+            if !found {
+                return false;
+            }
+        }
+
+        proof {
+            assert(forall|ep: int|
+                0 <= ep < (e + 1) as int && #[trigger] edge_present@[ep] ==> exists|ip: int| {
+                    &&& 0 <= ip < component@.len() as int
+                    &&& #[trigger] m@.half_edges[component@[ip] as int].edge == ep
+                }) by {
+                assert forall|ep: int|
+                    0 <= ep < (e + 1) as int && #[trigger] edge_present@[ep] implies exists|ip: int| {
+                        &&& 0 <= ip < component@.len() as int
+                        &&& #[trigger] m@.half_edges[component@[ip] as int].edge == ep
+                    } by {
+                    if ep < e as int {
+                    } else {
+                        assert(ep == e as int);
+                        assert(edge_present@[ep]);
+                        assert(exists|ip: int| {
+                            &&& 0 <= ip < component@.len() as int
+                            &&& #[trigger] m@.half_edges[component@[ip] as int].edge == ep
+                        });
+                    }
+                };
+            }
+        }
+
+        e += 1;
+    }
+
+    let mut f: usize = 0;
+    while f < fcnt
+        invariant
+            hcnt == m.half_edges.len(),
+            fcnt == m.faces.len(),
+            i == component.len(),
+            0 <= f <= fcnt,
+            face_present@.len() == fcnt as int,
+            forall|ip: int|
+                #![trigger component@[ip]]
+                0 <= ip < component@.len() as int ==> {
+                    &&& 0 <= (component@[ip] as int)
+                    &&& (component@[ip] as int) < hcnt as int
+                    &&& #[trigger] face_present@[m@.half_edges[component@[ip] as int].face]
+                },
+            forall|ip: int|
+                #![trigger component@[ip]]
+                0 <= ip < component@.len() as int
+                    ==> #[trigger] vertex_present@[m@.half_edges[component@[ip] as int].vertex],
+            forall|ip: int|
+                #![trigger component@[ip]]
+                0 <= ip < component@.len() as int
+                    ==> #[trigger] edge_present@[m@.half_edges[component@[ip] as int].edge],
+            forall|fp: int|
+                0 <= fp < f as int && #[trigger] face_present@[fp] ==> exists|ip: int| {
+                    &&& 0 <= ip < component@.len() as int
+                    &&& #[trigger] m@.half_edges[component@[ip] as int].face == fp
+                },
+    {
+        if face_present[f] {
+            let mut found = false;
+            let mut ip: usize = 0;
+            while ip < component.len()
+                invariant
+                    hcnt == m.half_edges.len(),
+                    0 <= ip <= component.len(),
+                    0 <= f < fcnt,
+                    found <==> exists|jp: int| {
+                        &&& 0 <= jp < ip as int
+                        &&& #[trigger] m@.half_edges[component@[jp] as int].face == f as int
+                    },
+            {
+                let h = component[ip];
+                if h >= hcnt {
+                    return false;
+                }
+                if m.half_edges[h].face == f {
+                    found = true;
+                }
+                proof {
+                    assert(component@[ip as int] == h);
+                    if m@.half_edges[h as int].face == f as int {
+                        assert(exists|jp: int| {
+                            &&& 0 <= jp < (ip + 1) as int
+                            &&& #[trigger] m@.half_edges[component@[jp] as int].face == f as int
+                        });
+                    } else {
+                        assert((exists|jp: int| {
+                            &&& 0 <= jp < (ip + 1) as int
+                            &&& #[trigger] m@.half_edges[component@[jp] as int].face == f as int
+                        }) <==> (exists|jp: int| {
+                            &&& 0 <= jp < ip as int
+                            &&& #[trigger] m@.half_edges[component@[jp] as int].face == f as int
+                        }));
+                    }
+                    assert(found <==> exists|jp: int| {
+                        &&& 0 <= jp < (ip + 1) as int
+                        &&& #[trigger] m@.half_edges[component@[jp] as int].face == f as int
+                    });
+                }
+                ip += 1;
+            }
+            if !found {
+                return false;
+            }
+        }
+
+        proof {
+            assert(forall|fp: int|
+                0 <= fp < (f + 1) as int && #[trigger] face_present@[fp] ==> exists|ip: int| {
+                    &&& 0 <= ip < component@.len() as int
+                    &&& #[trigger] m@.half_edges[component@[ip] as int].face == fp
+                }) by {
+                assert forall|fp: int|
+                    0 <= fp < (f + 1) as int && #[trigger] face_present@[fp] implies exists|ip: int| {
+                        &&& 0 <= ip < component@.len() as int
+                        &&& #[trigger] m@.half_edges[component@[ip] as int].face == fp
+                    } by {
+                    if fp < f as int {
+                    } else {
+                        assert(fp == f as int);
+                        assert(face_present@[fp]);
+                        assert(exists|ip: int| {
+                            &&& 0 <= ip < component@.len() as int
+                            &&& #[trigger] m@.half_edges[component@[ip] as int].face == fp
+                        });
+                    }
+                };
+            }
+        }
+
+        f += 1;
+    }
+
+    let vcount = runtime_count_true(&vertex_present);
+    let ecount = runtime_count_true(&edge_present);
+    let fcount = runtime_count_true(&face_present);
+    let expected = vcount as i128 - ecount as i128 + fcount as i128;
+    if chi as i128 != expected {
+        return false;
+    }
+
+    proof {
+        assert(i == component.len());
+        assert(v == vcnt);
+        assert(e == ecnt);
+        assert(f == fcnt);
+        assert(forall|vp: int|
+            0 <= vp < mesh_vertex_count_spec(m@)
+                ==> (#[trigger] vertex_present@[vp] <==> mesh_component_has_vertex_spec(
+                    m@,
+                    component@,
+                    vp,
+                ))) by {
+            assert forall|vp: int|
+                0 <= vp < mesh_vertex_count_spec(m@) implies (#[trigger] vertex_present@[vp]
+                    <==> mesh_component_has_vertex_spec(m@, component@, vp)) by {
+                if vertex_present@[vp] {
+                    assert(exists|ip: int| {
+                        &&& 0 <= ip < component@.len() as int
+                        &&& #[trigger] m@.half_edges[component@[ip] as int].vertex == vp
+                    });
+                    assert(mesh_component_has_vertex_spec(m@, component@, vp));
+                } else if mesh_component_has_vertex_spec(m@, component@, vp) {
+                    let ip = choose|ip: int| {
+                        &&& 0 <= ip < component@.len() as int
+                        &&& 0 <= (component@[ip] as int)
+                        &&& (component@[ip] as int) < mesh_half_edge_count_spec(m@)
+                        &&& #[trigger] m@.half_edges[(component@[ip] as int)].vertex == vp
+                    };
+                    assert(0 <= ip < component@.len() as int);
+                    let h = component@[ip] as int;
+                    assert(0 <= h < hcnt as int);
+                    assert(#[trigger] vertex_present@[m@.half_edges[h].vertex]);
+                    assert(m@.half_edges[h].vertex == vp);
+                    assert(vertex_present@[vp]);
+                }
+            };
+        }
+        assert(forall|ep: int|
+            0 <= ep < mesh_edge_count_spec(m@)
+                ==> (#[trigger] edge_present@[ep] <==> mesh_component_has_edge_spec(
+                    m@,
+                    component@,
+                    ep,
+                ))) by {
+            assert forall|ep: int|
+                0 <= ep < mesh_edge_count_spec(m@) implies (#[trigger] edge_present@[ep]
+                    <==> mesh_component_has_edge_spec(m@, component@, ep)) by {
+                if edge_present@[ep] {
+                    assert(exists|ip: int| {
+                        &&& 0 <= ip < component@.len() as int
+                        &&& #[trigger] m@.half_edges[component@[ip] as int].edge == ep
+                    });
+                    assert(mesh_component_has_edge_spec(m@, component@, ep));
+                } else if mesh_component_has_edge_spec(m@, component@, ep) {
+                    let ip = choose|ip: int| {
+                        &&& 0 <= ip < component@.len() as int
+                        &&& 0 <= (component@[ip] as int)
+                        &&& (component@[ip] as int) < mesh_half_edge_count_spec(m@)
+                        &&& #[trigger] m@.half_edges[(component@[ip] as int)].edge == ep
+                    };
+                    assert(0 <= ip < component@.len() as int);
+                    let h = component@[ip] as int;
+                    assert(0 <= h < hcnt as int);
+                    assert(#[trigger] edge_present@[m@.half_edges[h].edge]);
+                    assert(m@.half_edges[h].edge == ep);
+                    assert(edge_present@[ep]);
+                }
+            };
+        }
+        assert(forall|fp: int|
+            0 <= fp < mesh_face_count_spec(m@)
+                ==> (#[trigger] face_present@[fp] <==> mesh_component_has_face_spec(
+                    m@,
+                    component@,
+                    fp,
+                ))) by {
+            assert forall|fp: int|
+                0 <= fp < mesh_face_count_spec(m@) implies (#[trigger] face_present@[fp]
+                    <==> mesh_component_has_face_spec(m@, component@, fp)) by {
+                if face_present@[fp] {
+                    assert(exists|ip: int| {
+                        &&& 0 <= ip < component@.len() as int
+                        &&& #[trigger] m@.half_edges[component@[ip] as int].face == fp
+                    });
+                    assert(mesh_component_has_face_spec(m@, component@, fp));
+                } else if mesh_component_has_face_spec(m@, component@, fp) {
+                    let ip = choose|ip: int| {
+                        &&& 0 <= ip < component@.len() as int
+                        &&& 0 <= (component@[ip] as int)
+                        &&& (component@[ip] as int) < mesh_half_edge_count_spec(m@)
+                        &&& #[trigger] m@.half_edges[(component@[ip] as int)].face == fp
+                    };
+                    assert(0 <= ip < component@.len() as int);
+                    let h = component@[ip] as int;
+                    assert(0 <= h < hcnt as int);
+                    assert(#[trigger] face_present@[m@.half_edges[h].face]);
+                    assert(m@.half_edges[h].face == fp);
+                    assert(face_present@[fp]);
+                }
+            };
+        }
+        assert(vcount as int == bool_true_count_spec(vertex_present@));
+        assert(ecount as int == bool_true_count_spec(edge_present@));
+        assert(fcount as int == bool_true_count_spec(face_present@));
+        assert(chi as int == expected as int);
+        assert(expected as int == vcount as int - ecount as int + fcount as int);
+        assert(mesh_component_euler_characteristic_witness_spec(
+            m@,
+            component@,
+            chi as int,
+            vertex_present@,
+            edge_present@,
+            face_present@,
+        ));
+        assert(mesh_component_euler_characteristic_spec(m@, component@, chi as int));
+    }
+
+    true
+}
+
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
+pub fn runtime_check_euler_characteristics_per_component(
+    m: &Mesh,
+    components: &[Vec<usize>],
+    chis: &[isize],
+) -> (out: bool)
+    ensures
+        out ==> mesh_euler_characteristics_per_component_spec(m@, components@, chis@),
+{
+    if chis.len() != components.len() {
+        return false;
+    }
+
+    let mut c: usize = 0;
+    while c < components.len()
+        invariant
+            c <= components.len(),
+            chis@.len() == components@.len(),
+            forall|cp: int|
+                #![trigger components@[cp]@]
+                0 <= cp < c as int
+                    ==> mesh_component_euler_characteristic_spec(
+                        m@,
+                        components@[cp]@,
+                        chis@[cp] as int,
+                    ),
+    {
+        let component = vstd::slice::slice_index_get(components, c);
+        let chi = *vstd::slice::slice_index_get(chis, c);
+        let ok = runtime_check_component_euler_characteristic(m, component, chi);
+        if !ok {
+            return false;
+        }
+        proof {
+            assert(*component == components@.index(c as int));
+            assert(chi == chis@[c as int]);
+            assert(mesh_component_euler_characteristic_spec(m@, component@, chi as int));
+            assert(mesh_component_euler_characteristic_spec(
+                m@,
+                components@[c as int]@,
+                chis@[c as int] as int,
+            ));
+            assert(forall|cp: int|
+                #![trigger components@[cp]@]
+                0 <= cp < (c + 1) as int
+                    ==> mesh_component_euler_characteristic_spec(
+                        m@,
+                        components@[cp]@,
+                        chis@[cp] as int,
+                    )) by {
+                assert forall|cp: int|
+                    #![trigger components@[cp]@]
+                    0 <= cp < (c + 1) as int implies mesh_component_euler_characteristic_spec(
+                        m@,
+                        components@[cp]@,
+                        chis@[cp] as int,
+                    ) by {
+                    if cp < c as int {
+                    } else {
+                        assert(cp == c as int);
+                        assert(mesh_component_euler_characteristic_spec(
+                            m@,
+                            components@[cp]@,
+                            chis@[cp] as int,
+                        ));
+                    }
+                };
+            }
+        }
+        c += 1;
+    }
+
+    proof {
+        assert(c == components.len());
+        assert(mesh_euler_characteristics_per_component_spec(m@, components@, chis@));
+    }
+    true
+}
+
 #[verifier::exec_allows_no_decreases_clause]
 #[allow(dead_code)]
 pub fn runtime_check_half_edge_components_partition(
@@ -2632,6 +3460,44 @@ pub fn component_count_constructive(
     }
 
     Option::Some(count)
+}
+
+#[allow(dead_code)]
+pub fn euler_characteristics_per_component_constructive(
+    m: &Mesh,
+) -> (out: Option<Vec<isize>>)
+    ensures
+        match out {
+            Option::Some(chis) => mesh_euler_characteristics_partition_witness_spec(m@, chis@),
+            Option::None => true,
+        },
+{
+    let components = ex_mesh_half_edge_components(m);
+    let partition_ok = runtime_check_half_edge_components_partition(m, &components);
+    if !partition_ok {
+        return Option::None;
+    }
+
+    let neighbor_closed_ok = runtime_check_half_edge_components_neighbor_closed(m, &components);
+    if !neighbor_closed_ok {
+        return Option::None;
+    }
+
+    let chis = ex_mesh_euler_characteristics_per_component(m);
+    let chis_ok = runtime_check_euler_characteristics_per_component(m, &components, &chis);
+    if !chis_ok {
+        return Option::None;
+    }
+
+    proof {
+        assert(mesh_half_edge_components_partition_spec(m@, components@));
+        assert(mesh_half_edge_components_neighbor_closed_spec(m@, components@));
+        assert(mesh_half_edge_components_partition_neighbor_closed_spec(m@, components@));
+        assert(mesh_euler_characteristics_per_component_spec(m@, components@, chis@));
+        assert(mesh_euler_characteristics_partition_witness_spec(m@, chis@));
+    }
+
+    Option::Some(chis)
 }
 
 } // verus!
