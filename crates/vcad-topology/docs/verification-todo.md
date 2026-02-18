@@ -113,7 +113,9 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
     - groundwork landed in `src/verified_checker_kernels.rs`:
       `lemma_kernel_next_iter_step`, `lemma_kernel_next_or_self_in_bounds`, `lemma_kernel_next_iter_in_bounds`
       to support bounded next-iteration witness construction.
-    - strengthen `kernel_check_face_cycles` postcondition from `out ==> kernel_index_bounds_spec` to `out ==> kernel_face_representative_cycles_total_spec`.
+    - strengthen `kernel_check_face_cycles` postcondition from
+      `out ==> kernel_face_has_incident_half_edge_total_spec(m)` to
+      `out ==> kernel_face_representative_cycles_total_spec(m)`.
     - add per-face cycle-length witness threading invariant (`forall fp < f. exists k ...`) in outer loop.
     - prove representative-cycle witness construction at face loop boundary (`k = steps`).
   - burndown update (2026-02-17):
@@ -151,6 +153,17 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       stable contract `out ==> kernel_index_bounds_spec(m)`.
     - post-rollback verification check: `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels`
       passed (`34 verified, 0 errors`).
+  - burndown update (2026-02-18, later):
+    - landed stable intermediate strengthening in `src/verified_checker_kernels.rs`:
+      introduced `kernel_face_has_incident_half_edge_spec` /
+      `kernel_face_has_incident_half_edge_total_spec` and strengthened the executable contract to
+      `out ==> kernel_face_has_incident_half_edge_total_spec(m)`.
+    - proof shape now threads a representative-face invariant
+      (`half_edges[face_half_edges[f]].face == f`) across the outer loop, avoiding brittle
+      existential witness threading while still proving a non-trivial semantic guarantee stronger
+      than `out ==> kernel_index_bounds_spec(m)`.
+    - verification check:
+      `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` passed (`34 verified, 0 errors`).
   - file: `src/verified_checker_kernels.rs`
 - [x] Verify `check_no_degenerate_edges`.
   - in `verus-proofs` builds, this is delegated to verified kernel checker.

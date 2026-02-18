@@ -279,6 +279,19 @@ pub open spec fn kernel_face_representative_cycles_total_spec(m: &KernelMesh) ->
     kernel_index_bounds_spec(m) && kernel_face_representative_cycles_spec(m)
 }
 
+pub open spec fn kernel_face_has_incident_half_edge_spec(m: &KernelMesh) -> bool {
+    forall|f: int|
+        #![trigger m.face_half_edges@[f]]
+        0 <= f < kernel_face_count_spec(m) ==> {
+            &&& (m.face_half_edges@[f] as int) < kernel_half_edge_count_spec(m)
+            &&& #[trigger] m.half_edges@[m.face_half_edges@[f] as int].face as int == f
+        }
+}
+
+pub open spec fn kernel_face_has_incident_half_edge_total_spec(m: &KernelMesh) -> bool {
+    kernel_index_bounds_spec(m) && kernel_face_has_incident_half_edge_spec(m)
+}
+
 pub open spec fn kernel_vertex_representative_cycle_witness_spec(m: &KernelMesh, v: int, k: int) -> bool {
     let hcnt = kernel_half_edge_count_spec(m);
     let start = m.vertex_half_edges@[v] as int;
@@ -637,7 +650,7 @@ pub fn kernel_check_no_degenerate_edges(m: &KernelMesh) -> (out: bool)
 #[allow(unused_variables, unused_assignments)]
 pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
     ensures
-        out ==> kernel_index_bounds_spec(m),
+        out ==> kernel_face_has_incident_half_edge_total_spec(m),
 {
     let bounds_ok = kernel_check_index_bounds(m);
     if !bounds_ok {
@@ -655,8 +668,15 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
             fcnt == m.face_half_edges.len(),
             global_seen@.len() == hcnt as int,
             0 <= f <= fcnt,
+            forall|fp: int|
+                #![trigger m.face_half_edges@[fp]]
+                0 <= fp < f as int
+                    ==> (#[trigger] m.half_edges@[m.face_half_edges@[fp] as int].face as int) == fp,
     {
         let start = m.face_half_edges[f];
+        if m.half_edges[start].face != f {
+            return false;
+        }
         let mut local_seen: Vec<bool> = vec![false; hcnt];
         let mut h = start;
         let mut steps: usize = 0;
@@ -720,6 +740,27 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
             return false;
         }
 
+        proof {
+            assert(start as int == m.face_half_edges@[f as int] as int);
+            assert((m.half_edges@[start as int].face as int) == f as int);
+            assert(forall|fp: int|
+                #![trigger m.face_half_edges@[fp]]
+                0 <= fp < (f + 1) as int
+                    ==> (#[trigger] m.half_edges@[m.face_half_edges@[fp] as int].face as int) == fp) by {
+                assert forall|fp: int|
+                    #![trigger m.face_half_edges@[fp]]
+                    0 <= fp < (f + 1) as int
+                        implies (#[trigger] m.half_edges@[m.face_half_edges@[fp] as int].face as int) == fp by {
+                    if fp < f as int {
+                        assert((#[trigger] m.half_edges@[m.face_half_edges@[fp] as int].face as int) == fp);
+                    } else {
+                        assert(fp == f as int);
+                        assert((#[trigger] m.half_edges@[m.face_half_edges@[fp] as int].face as int) == f as int);
+                    }
+                };
+            }
+        }
+
         f += 1;
     }
 
@@ -740,6 +781,23 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
 
     proof {
         assert(bounds_ok);
+        assert(f == fcnt);
+        assert(kernel_face_has_incident_half_edge_spec(m)) by {
+            assert forall|fp: int|
+                #![trigger m.face_half_edges@[fp]]
+                0 <= fp < kernel_face_count_spec(m) implies {
+                    &&& (m.face_half_edges@[fp] as int) < kernel_half_edge_count_spec(m)
+                    &&& #[trigger] m.half_edges@[m.face_half_edges@[fp] as int].face as int == fp
+                } by {
+                assert(kernel_face_count_spec(m) == fcnt as int);
+                assert(kernel_half_edge_count_spec(m) == hcnt as int);
+                assert(fp < (fcnt as int));
+                assert(fp < f as int);
+                assert((m.face_half_edges@[fp] as int) < kernel_half_edge_count_spec(m));
+                assert((#[trigger] m.half_edges@[m.face_half_edges@[fp] as int].face as int) == fp);
+            };
+        }
+        assert(kernel_face_has_incident_half_edge_total_spec(m));
     }
     true
 }
