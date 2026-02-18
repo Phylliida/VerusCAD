@@ -18,8 +18,8 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [ ] Remove trusted boundaries for any new Phase 5 APIs (no new `assume_specification` debt).
 
 ## P5.0 Geometry Model Surface
-- [ ] Add mesh-geometry spec helpers that map each face cycle to ordered vertex positions.
-- [ ] Add spec-level adjacency relations:
+- [x] Add mesh-geometry spec helpers that map each face cycle to ordered vertex positions.
+- [x] Add spec-level adjacency relations:
   - shared vertex
   - shared edge
   - disjoint boundary
@@ -27,8 +27,8 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [ ] Add bridge specs from runtime mesh to any kernel geometry checker representation used for proofs.
 
 ## P5.1 Invariant: Face Coplanarity (Roadmap)
-- [ ] Spec: define `mesh_face_coplanar_spec(m, f)` (equivalent to orient3d = 0 for all face-vertex quadruples).
-- [ ] Spec: define aggregate `mesh_all_faces_coplanar_spec(m)`.
+- [x] Spec: define `mesh_face_coplanar_spec(m, f)` (equivalent to orient3d = 0 for all face-vertex quadruples).
+- [x] Spec: define aggregate `mesh_all_faces_coplanar_spec(m)`.
 - [x] Runtime checker: implement `check_face_coplanarity` (or equivalent) over all faces.
 - [ ] Proof: runtime checker correctness vs spec (sound + complete under documented preconditions).
 - [ ] Proof: coplanarity is stable under cyclic reindexing of a face cycle.
@@ -65,7 +65,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 ## P5.6 Plane Computation (Roadmap)
 - [x] Runtime API: compute face plane `(normal, offset)` from face vertices via cross product + dot product.
 - [x] Handle face-normal seed selection robustly (first non-collinear triple or explicit precondition).
-- [ ] Spec: `face_plane_contains_vertex_spec` for every vertex on the face.
+- [x] Spec: `face_plane_contains_vertex_spec` for every vertex on the face.
 - [ ] Proof: computed plane contains all vertices of that face (using coplanarity invariant).
 - [ ] Proof: computed normal direction matches face orientation/winding.
 - [ ] Proof: twin/adjacent orientation interactions agree with plane-normal conventions.
@@ -79,7 +79,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [ ] Prove aggregate checker equivalence to aggregate Phase 5 spec.
 
 ## P5.8 Proof-Layer Integration (Current Refinement Layout)
-- [ ] Extend `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs` with Phase 5 geometry specs.
+- [x] Extend `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs` with Phase 5 geometry specs.
 - [ ] Add Phase 5 bridge lemmas alongside `src/runtime_halfedge_mesh_refinement/kernel_bridge_lemmas.rs`.
 - [ ] Add runtime constructive check wrappers analogous to current structural check wrappers.
 - [ ] If kernelized checkers are added, extend `src/verified_checker_kernels.rs` and prove bridge equivalence.
@@ -98,6 +98,18 @@ This doc expands those targets into executable TODOs aligned with the current `v
   - `--features "geometry-checks,verus-proofs"`
 
 ## Burndown Log
+- 2026-02-18: Completed a P5.8/P5.0/P5.1 spec-layer pass in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
+  - added Phase 5 geometry model helpers for ordered face-cycle vertex positions and runtime vertex-position bridging (`mesh_runtime_vertex_positions_spec`, `mesh_runtime_geometry_bridge_spec`, and face-cycle position accessors);
+  - added adjacency specs (`mesh_faces_share_vertex_spec`, `mesh_faces_share_edge_spec`, `mesh_faces_disjoint_boundary_spec`);
+  - finalized coplanarity/plane specs (`mesh_face_coplanar_spec`, `mesh_all_faces_coplanar_spec`, `face_plane_contains_vertex_spec`) with explicit face-index guards so witness specs are well-scoped.
+- 2026-02-18: Failed attempt in this spec-layer pass: first revision left two competing `mesh_face_coplanar_spec`/`mesh_all_faces_coplanar_spec` definitions in the same module, causing Verus compile failure (`E0428` duplicate definitions) in `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`; resolved by consolidating to a single canonical coplanarity spec family.
+- 2026-02-18: Revalidated after the Phase 5 spec-layer integration changes:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (192 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (227 verified, 0 errors)
 - 2026-02-18: Implemented P5.6 runtime plane computation in `src/halfedge_mesh/validation.rs`:
   - added `Mesh::compute_face_plane(face_id) -> Option<(RuntimeVec3, RuntimeScalar)>`, computing `normal . p = offset` in exact arithmetic;
   - seed selection now scans each face cycle for the first non-collinear consecutive triple and returns `None` when no such triple exists.

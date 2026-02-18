@@ -1,1 +1,1 @@
-Implemented exact-arithmetic face-plane computation and plane-consistency checks in vcad-topology, tightened coplanarity to require non-degenerate face triples, updated Phase 5 tests/docs, and re-verified the full vcad-topology matrix.
+Extended Phase 5 refinement specs in vcad-topology with face-cycle geometry/adjacency/coplanarity/plane predicates, fixed duplicate coplanarity spec definitions, updated the burndown checklist/log, and re-verified all vcad-topology tests and verification scripts.
