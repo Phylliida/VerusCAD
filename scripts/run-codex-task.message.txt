@@ -1,1 +1,1 @@
-Replayed the vcad-topology exit-condition burndown with clean trust-surface scans and a fully passing verification and test matrix.
+Revalidated vcad-topology exit-condition trust-surface scans and replayed the full verification and test matrix with all checks passing.
