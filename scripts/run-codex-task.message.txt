@@ -1,1 +1,1 @@
-Revalidated vcad-topology Exit Condition with fresh trust-surface scans and full verification/test matrix all green.
+Documented a sandbox-constrained exit-condition rerun for vcad-topology, with trust-surface scans and all cargo test variants passing while Verus script runs are blocked by Nix/rustup environment limits.

@@ -3470,3 +3470,39 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`5 passed, 0 failed`);
       `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
       passed (`6 passed, 0 failed`).
+  - burndown update (2026-02-18, exit-condition maintenance rerun + sandbox-constrained matrix):
+    - selected task in this pass:
+      rerun the Exit Condition trust-surface scans and verification/test
+      matrix on the current tree, documenting sandbox-constrained failures
+      explicitly to avoid repeated dead-end command retries.
+    - trust-surface scans:
+      - `rg -n "assume_specification|external_fn_specification|\\buninterpreted\\b|admit\\(|assume\\("`
+        over
+        `runtime_halfedge_mesh_refinement.rs`,
+        `verified_checker_kernels.rs`, and `halfedge_mesh.rs`
+        returned no matches.
+      - `rg -n "\\[verifier::external_body\\]" crates/vcad-topology/src`
+        returned no matches.
+      - `rg -n "\\[verifier::external_type_specification\\]" crates/vcad-topology/src/runtime_halfedge_mesh_refinement.rs`
+        returned 6 expected proof-facing type shims (`ExMesh`,
+        `ExMeshBuildError`, `ExHalfEdge`, `ExVertex`, `ExEdge`, `ExFace`).
+    - warning-scope note:
+      all `cargo test -p vcad-topology` invocations in this pass emitted
+      warnings only from dependency crates (`vstd`, `vcad-math`,
+      `vcad-geometry`), with no new warnings from `vcad-topology`.
+    - failed attempts:
+      - `./scripts/verify-vcad-topology-fast.sh` failed in this sandbox with
+        `error: cannot connect to socket at '/nix/var/nix/daemon-socket/socket': Operation not permitted`.
+      - `./scripts/verify-vcad-topology.sh` failed in this sandbox with the
+        same Nix daemon socket permission error.
+      - direct fallback command
+        `cargo verus verify --manifest-path crates/vcad-topology/Cargo.toml -p vcad-topology --features verus-proofs -- --verify-only-module runtime_halfedge_mesh_refinement --triggers-mode silent`
+        failed because Verus requires `rustup` in this environment
+        (`verus: rustup not found, or not executable`).
+    - verification checks:
+      `cargo test -p vcad-topology`
+      passed (`4 passed, 0 failed`);
+      `cargo test -p vcad-topology --features geometry-checks`
+      passed (`5 passed, 0 failed`);
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`6 passed, 0 failed`).
