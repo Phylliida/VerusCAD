@@ -1,1 +1,1 @@
-Completed check_face_cycles no-overlap verification by strengthening the kernel face-cycle coverage spec with cross-face uniqueness and updated the vcad-topology burndown.
+Added a proof-facing half_edge_components bridge and a verified constructive partition checker for component outputs, and documented the remaining BFS soundness/completeness gap in the vcad-topology burndown.

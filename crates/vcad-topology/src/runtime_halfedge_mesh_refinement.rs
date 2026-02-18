@@ -349,6 +349,55 @@ pub open spec fn mesh_component_count_spec(m: MeshModel) -> int {
     Set::new(|r: int| 0 <= r < hcnt && mesh_component_representative_spec(m, r)).len() as int
 }
 
+pub open spec fn mesh_half_edge_component_contains_spec(
+    m: MeshModel,
+    components: Seq<Vec<usize>>,
+    c: int,
+    h: int,
+) -> bool {
+    &&& 0 <= c < components.len() as int
+    &&& 0 <= h < mesh_half_edge_count_spec(m)
+    &&& exists|i: int|
+        #![trigger mesh_half_edge_component_entry_spec(components, c, i)]
+        0 <= i < components[c]@.len() as int
+            && mesh_half_edge_component_entry_spec(components, c, i) == h
+}
+
+pub open spec fn mesh_half_edge_component_entry_spec(
+    components: Seq<Vec<usize>>,
+    c: int,
+    i: int,
+) -> int {
+    components[c]@[i] as int
+}
+
+pub open spec fn mesh_half_edge_components_partition_spec(
+    m: MeshModel,
+    components: Seq<Vec<usize>>,
+) -> bool {
+    let hcnt = mesh_half_edge_count_spec(m);
+    &&& forall|c: int|
+        #![trigger components[c]@]
+        0 <= c < components.len() as int ==> components[c]@.len() > 0
+    &&& forall|c: int, i: int|
+        #![trigger mesh_half_edge_component_entry_spec(components, c, i)]
+        0 <= c < components.len() as int && 0 <= i < components[c]@.len() as int
+            ==> 0 <= mesh_half_edge_component_entry_spec(components, c, i)
+                && mesh_half_edge_component_entry_spec(components, c, i) < hcnt
+    &&& forall|c: int, i: int, j: int|
+        #![trigger mesh_half_edge_component_entry_spec(components, c, i), mesh_half_edge_component_entry_spec(components, c, j)]
+        0 <= c < components.len() as int
+            && 0 <= i
+            && i < j
+            && j < components[c]@.len() as int
+            ==> mesh_half_edge_component_entry_spec(components, c, i)
+                != mesh_half_edge_component_entry_spec(components, c, j)
+    &&& forall|c1: int, c2: int, h: int|
+        mesh_half_edge_component_contains_spec(m, components, c1, h)
+            && mesh_half_edge_component_contains_spec(m, components, c2, h)
+            ==> c1 == c2
+}
+
 /// Euler relation under the current closed-component model:
 /// each connected closed component contributes characteristic `2`,
 /// so globally `V - E + F = 2 * component_count`.
@@ -1130,7 +1179,7 @@ pub fn runtime_check_twin_assignment_total_involution(m: &Mesh) -> (out: bool)
         invariant
             hcnt == m.half_edges.len(),
             0 <= h <= hcnt,
-            forall|hp: int| 0 <= hp < h as int ==> 0 <= #[trigger] m@.half_edges[hp].twin < hcnt as int,
+            forall|hp: int| 0 <= hp < h as int ==> 0 <= #[trigger] m@.half_edges[hp].twin < (hcnt as int),
             forall|hp: int|
                 0 <= hp < h as int ==> #[trigger] m@.half_edges[m@.half_edges[hp].twin].twin == hp,
     {
@@ -1150,23 +1199,23 @@ pub fn runtime_check_twin_assignment_total_involution(m: &Mesh) -> (out: bool)
             assert(m.half_edges@[t as int].twin == tt as int);
             assert(tt == h);
             assert(m@.half_edges[t as int].twin == h as int);
-            assert(0 <= #[trigger] m@.half_edges[h as int].twin < hcnt as int);
+            assert(0 <= #[trigger] m@.half_edges[h as int].twin < (hcnt as int));
             assert(
                 #[trigger] m@.half_edges[m@.half_edges[h as int].twin].twin
                     == m@.half_edges[t as int].twin
             );
             assert(#[trigger] m@.half_edges[m@.half_edges[h as int].twin].twin == h as int);
             assert(forall|hp: int|
-                0 <= hp < (h + 1) as int ==> 0 <= #[trigger] m@.half_edges[hp].twin < hcnt as int) by {
+                0 <= hp < (h + 1) as int ==> 0 <= #[trigger] m@.half_edges[hp].twin < (hcnt as int)) by {
                 assert forall|hp: int|
-                    0 <= hp < (h + 1) as int implies 0 <= #[trigger] m@.half_edges[hp].twin < hcnt as int by {
+                    0 <= hp < (h + 1) as int implies 0 <= #[trigger] m@.half_edges[hp].twin < (hcnt as int) by {
                     if hp < h as int {
                         assert(0 <= hp < h as int);
                     } else {
                         assert(hp == h as int);
                         assert(#[trigger] m@.half_edges[hp].twin == t as int);
                         assert(0 <= t as int);
-                        assert((t as int) < hcnt as int);
+                        assert((t as int) < (hcnt as int));
                     }
                 };
             }
@@ -1507,6 +1556,574 @@ pub fn from_face_cycles_constructive_vertex_representatives(
             }
         }
         Result::Err(e) => Result::Err(e),
+    }
+}
+
+#[verifier::external_body]
+pub fn ex_mesh_half_edge_components(m: &Mesh) -> (out: Vec<Vec<usize>>)
+{
+    m.half_edge_components_for_verification()
+}
+
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
+pub fn runtime_check_half_edge_components_partition(
+    m: &Mesh,
+    components: &[Vec<usize>],
+) -> (out: bool)
+    ensures
+        out ==> mesh_half_edge_components_partition_spec(m@, components@),
+{
+    let hcnt = m.half_edges.len();
+    let mut global_seen = vec![false; hcnt];
+    let mut c: usize = 0;
+    while c < components.len()
+        invariant
+            hcnt == m.half_edges.len(),
+            0 <= c <= components.len(),
+            global_seen@.len() == hcnt as int,
+            forall|cp: int|
+                #![trigger components@[cp]@]
+                0 <= cp < c as int ==> components@[cp]@.len() > 0,
+            forall|cp: int, ip: int|
+                #![trigger components@[cp]@[ip]]
+                0 <= cp < c as int && 0 <= ip < components@[cp]@.len() as int
+                    ==> 0 <= mesh_half_edge_component_entry_spec(components@, cp, ip)
+                        && mesh_half_edge_component_entry_spec(components@, cp, ip) < (hcnt as int),
+            forall|cp: int, i: int, j: int|
+                #![trigger components@[cp]@[i], components@[cp]@[j]]
+                0 <= cp < c as int
+                    && 0 <= i
+                    && i < j
+                    && j < components@[cp]@.len() as int
+                    ==> components@[cp]@[i] != components@[cp]@[j],
+            forall|hp: int|
+                0 <= hp < (hcnt as int) && #[trigger] global_seen@[hp]
+                    ==> exists|cp: int| {
+                        &&& 0 <= cp < c as int
+                        &&& mesh_half_edge_component_contains_spec(m@, components@, cp, hp)
+                    },
+            forall|cp: int, hp: int|
+                0 <= cp < c as int && mesh_half_edge_component_contains_spec(m@, components@, cp, hp)
+                    ==> global_seen@[hp],
+            forall|cp1: int, cp2: int, hp: int|
+                0 <= cp1 < c as int
+                    && 0 <= cp2 < c as int
+                    && mesh_half_edge_component_contains_spec(m@, components@, cp1, hp)
+                    && mesh_half_edge_component_contains_spec(m@, components@, cp2, hp)
+                    ==> cp1 == cp2,
+    {
+        let component = vstd::slice::slice_index_get(components, c);
+        let clen = component.len();
+        if clen == 0 {
+            return false;
+        }
+
+        let mut local_seen = vec![false; hcnt];
+        let ghost global_seen_before = global_seen@;
+        proof {
+            assert(*component == components@.index(c as int));
+            assert(global_seen_before.len() == hcnt as int);
+            assert(forall|hp: int|
+                0 <= hp < (hcnt as int) && #[trigger] global_seen_before[hp]
+                    ==> exists|cp: int| {
+                        &&& 0 <= cp < c as int
+                        &&& mesh_half_edge_component_contains_spec(m@, components@, cp, hp)
+                    });
+            assert(forall|cp: int, hp: int|
+                0 <= cp < c as int && mesh_half_edge_component_contains_spec(m@, components@, cp, hp)
+                    ==> global_seen_before[hp]);
+        }
+
+        let mut i: usize = 0;
+        while i < clen
+            invariant
+                hcnt == m.half_edges.len(),
+                0 <= c < components.len(),
+                *component == components@.index(c as int),
+                clen == component.len(),
+                component@.len() == clen as int,
+                0 <= i <= clen,
+                local_seen@.len() == hcnt as int,
+                global_seen@.len() == hcnt as int,
+                global_seen_before.len() == hcnt as int,
+                forall|hp: int| 0 <= hp < (hcnt as int) && #[trigger] global_seen_before[hp] ==> global_seen@[hp],
+                forall|hp: int|
+                    0 <= hp < (hcnt as int) && #[trigger] global_seen_before[hp]
+                        ==> exists|cp: int| {
+                            &&& 0 <= cp < c as int
+                            &&& mesh_half_edge_component_contains_spec(m@, components@, cp, hp)
+                        },
+                forall|cp: int, hp: int|
+                    0 <= cp < c as int && mesh_half_edge_component_contains_spec(m@, components@, cp, hp)
+                        ==> global_seen_before[hp],
+                forall|ip: int|
+                    #![trigger component@[ip]]
+                    0 <= ip < i as int
+                        ==> 0 <= component@[ip] as int
+                            && (component@[ip] as int) < (hcnt as int),
+                forall|ip: int|
+                    #![trigger component@[ip]]
+                    0 <= ip < i as int ==> #[trigger] local_seen@[component@[ip] as int],
+                forall|ip: int|
+                    #![trigger component@[ip]]
+                    0 <= ip < i as int ==> #[trigger] global_seen@[component@[ip] as int],
+                forall|ip1: int, ip2: int|
+                    #![trigger component@[ip1], component@[ip2]]
+                    0 <= ip1
+                        && ip1 < ip2
+                        && ip2 < i as int
+                        ==> component@[ip1] != component@[ip2],
+                forall|ip: int|
+                    #![trigger component@[ip]]
+                    0 <= ip < i as int ==> !global_seen_before[component@[ip] as int],
+                forall|hp: int|
+                    0 <= hp < (hcnt as int) && #[trigger] global_seen@[hp]
+                        ==> global_seen_before[hp]
+                            || exists|ip: int| {
+                                &&& 0 <= ip < i as int
+                                &&& #[trigger] component@[ip] as int == hp
+                            },
+                forall|hp: int|
+                    0 <= hp < (hcnt as int)
+                        && (global_seen_before[hp] || exists|ip: int| {
+                            &&& 0 <= ip < i as int
+                            &&& #[trigger] component@[ip] as int == hp
+                        })
+                        ==> global_seen@[hp],
+        {
+            let h = component[i];
+            if h >= hcnt {
+                return false;
+            }
+            if local_seen[h] {
+                return false;
+            }
+            if global_seen[h] {
+                return false;
+            }
+
+            let ghost local_seen_before_iter = local_seen@;
+            let ghost global_seen_before_iter = global_seen@;
+
+            local_seen[h] = true;
+            global_seen[h] = true;
+
+            proof {
+                assert(component@[i as int] == h);
+                assert(0 <= h as int);
+                assert((h as int) < (hcnt as int));
+                assert(!local_seen_before_iter[h as int]);
+                assert(!global_seen_before_iter[h as int]);
+                assert(global_seen_before_iter == global_seen_before
+                    || global_seen_before_iter.len() == global_seen_before.len());
+                assert(forall|hp: int| 0 <= hp < (hcnt as int) && #[trigger] global_seen_before[hp]
+                    ==> global_seen_before_iter[hp]) by {
+                    assert forall|hp: int|
+                        0 <= hp < (hcnt as int) && #[trigger] global_seen_before[hp]
+                            implies global_seen_before_iter[hp] by {
+                        assert(global_seen_before[hp] ==> global_seen_before_iter[hp]);
+                    };
+                }
+                assert(!global_seen_before[h as int]);
+                assert(forall|ip: int|
+                    #![trigger component@[ip]]
+                    0 <= ip < (i + 1) as int
+                        ==> 0 <= component@[ip] as int
+                            && (component@[ip] as int) < (hcnt as int)) by {
+                    assert forall|ip: int|
+                        #![trigger component@[ip]]
+                        0 <= ip < (i + 1) as int
+                            implies 0 <= component@[ip] as int
+                                && (component@[ip] as int) < (hcnt as int) by {
+                        if ip < i as int {
+                        } else {
+                            assert(ip == i as int);
+                            assert(component@[ip] as int == h as int);
+                        }
+                    };
+                }
+                assert(forall|ip: int|
+                    #![trigger component@[ip]]
+                    0 <= ip < (i + 1) as int ==> #[trigger] local_seen@[component@[ip] as int]) by {
+                    assert forall|ip: int|
+                        #![trigger component@[ip]]
+                        0 <= ip < (i + 1) as int implies #[trigger] local_seen@[component@[ip] as int] by {
+                        if ip < i as int {
+                            assert(local_seen_before_iter[component@[ip] as int]);
+                            assert(local_seen@[component@[ip] as int]);
+                        } else {
+                            assert(ip == i as int);
+                            assert(component@[ip] as int == h as int);
+                            assert(local_seen@[h as int]);
+                        }
+                    };
+                }
+                assert(forall|ip: int|
+                    #![trigger component@[ip]]
+                    0 <= ip < (i + 1) as int ==> #[trigger] global_seen@[component@[ip] as int]) by {
+                    assert forall|ip: int|
+                        #![trigger component@[ip]]
+                        0 <= ip < (i + 1) as int implies #[trigger] global_seen@[component@[ip] as int] by {
+                        if ip < i as int {
+                            assert(global_seen_before_iter[component@[ip] as int]);
+                            assert(global_seen@[component@[ip] as int]);
+                        } else {
+                            assert(ip == i as int);
+                            assert(component@[ip] as int == h as int);
+                            assert(global_seen@[h as int]);
+                        }
+                    };
+                }
+                assert(forall|ip1: int, ip2: int|
+                    #![trigger component@[ip1], component@[ip2]]
+                    0 <= ip1
+                        && ip1 < ip2
+                        && ip2 < (i + 1) as int
+                        ==> component@[ip1] != component@[ip2]) by {
+                    assert forall|ip1: int, ip2: int|
+                        #![trigger component@[ip1], component@[ip2]]
+                        0 <= ip1
+                            && ip1 < ip2
+                            && ip2 < (i + 1) as int
+                            implies component@[ip1] != component@[ip2] by {
+                        if ip2 < i as int {
+                        } else {
+                            assert(ip2 == i as int);
+                            assert(local_seen_before_iter[component@[ip1] as int]);
+                            assert(!local_seen_before_iter[h as int]);
+                            assert(component@[ip2] as int == h as int);
+                            assert(component@[ip1] as int != component@[ip2] as int);
+                        }
+                    };
+                }
+                assert(forall|ip: int|
+                    #![trigger component@[ip]]
+                    0 <= ip < (i + 1) as int ==> !global_seen_before[component@[ip] as int]) by {
+                    assert forall|ip: int|
+                        #![trigger component@[ip]]
+                        0 <= ip < (i + 1) as int implies !global_seen_before[component@[ip] as int] by {
+                        if ip < i as int {
+                        } else {
+                            assert(ip == i as int);
+                            assert(component@[ip] as int == h as int);
+                            assert(!global_seen_before[h as int]);
+                        }
+                    };
+                }
+                assert(forall|hp: int|
+                    0 <= hp < (hcnt as int) && #[trigger] global_seen@[hp]
+                        ==> global_seen_before[hp]
+                            || exists|ip: int| {
+                                &&& 0 <= ip < (i + 1) as int
+                                &&& #[trigger] component@[ip] as int == hp
+                            }) by {
+                    assert forall|hp: int|
+                        0 <= hp < (hcnt as int) && #[trigger] global_seen@[hp]
+                            implies global_seen_before[hp]
+                                || exists|ip: int| {
+                                    &&& 0 <= ip < (i + 1) as int
+                                    &&& #[trigger] component@[ip] as int == hp
+                                } by {
+                        if global_seen_before_iter[hp] {
+                            if global_seen_before[hp] {
+                                assert(global_seen_before[hp]);
+                            } else {
+                                assert(exists|ip: int| {
+                                    &&& 0 <= ip < i as int
+                                    &&& #[trigger] component@[ip] as int == hp
+                                });
+                                assert(exists|ip: int| {
+                                    &&& 0 <= ip < (i + 1) as int
+                                    &&& #[trigger] component@[ip] as int == hp
+                                });
+                            }
+                        } else {
+                            assert(hp == h as int);
+                            assert(exists|ip: int| {
+                                &&& 0 <= ip < (i + 1) as int
+                                &&& #[trigger] component@[ip] as int == hp
+                            });
+                        }
+                    };
+                }
+                assert(forall|hp: int|
+                    0 <= hp < (hcnt as int)
+                        && (global_seen_before[hp] || exists|ip: int| {
+                            &&& 0 <= ip < (i + 1) as int
+                            &&& #[trigger] component@[ip] as int == hp
+                        })
+                        ==> global_seen@[hp]) by {
+                    assert forall|hp: int|
+                        0 <= hp < (hcnt as int)
+                            && (global_seen_before[hp] || exists|ip: int| {
+                                &&& 0 <= ip < (i + 1) as int
+                                &&& #[trigger] component@[ip] as int == hp
+                            })
+                            implies #[trigger] global_seen@[hp] by {
+                        if global_seen_before[hp] {
+                            assert(global_seen_before_iter[hp]);
+                            assert(global_seen@[hp]);
+                        } else {
+                            assert(exists|ip: int| {
+                                &&& 0 <= ip < (i + 1) as int
+                                &&& #[trigger] component@[ip] as int == hp
+                            });
+                            assert(hp == h as int || exists|ip: int| {
+                                &&& 0 <= ip < i as int
+                                &&& #[trigger] component@[ip] as int == hp
+                            });
+                            if hp == h as int {
+                                assert(global_seen@[h as int]);
+                            } else {
+                                assert(exists|ip: int| {
+                                    &&& 0 <= ip < i as int
+                                    &&& #[trigger] component@[ip] as int == hp
+                                });
+                                assert(global_seen_before_iter[hp]);
+                                assert(global_seen@[hp]);
+                            }
+                        }
+                    };
+                }
+            }
+
+            i += 1;
+        }
+
+        proof {
+            assert(i == clen);
+            assert(clen > 0);
+            assert(forall|cp: int|
+                #![trigger components@[cp]@]
+                0 <= cp < (c + 1) as int ==> components@[cp]@.len() > 0) by {
+                assert forall|cp: int|
+                    #![trigger components@[cp]@]
+                    0 <= cp < (c + 1) as int implies components@[cp]@.len() > 0 by {
+                    if cp < c as int {
+                    } else {
+                        assert(cp == c as int);
+                        assert(components@[cp] == *component);
+                        assert(components@[cp]@.len() == clen as int);
+                    }
+                };
+            }
+            assert(forall|cp: int, ip: int|
+                #![trigger components@[cp]@[ip]]
+                0 <= cp < (c + 1) as int && 0 <= ip < components@[cp]@.len() as int
+                    ==> 0 <= mesh_half_edge_component_entry_spec(components@, cp, ip)
+                        && mesh_half_edge_component_entry_spec(components@, cp, ip) < (hcnt as int)) by {
+                assert forall|cp: int, ip: int|
+                    #![trigger components@[cp]@[ip]]
+                    0 <= cp < (c + 1) as int && 0 <= ip < components@[cp]@.len() as int
+                        implies 0 <= mesh_half_edge_component_entry_spec(components@, cp, ip)
+                            && mesh_half_edge_component_entry_spec(components@, cp, ip) < (hcnt as int) by {
+                    if cp < c as int {
+                    } else {
+                        assert(cp == c as int);
+                        assert(components@[cp] == *component);
+                        assert(0 <= ip < clen as int);
+                    }
+                };
+            }
+            assert(forall|cp: int, i1: int, i2: int|
+                #![trigger components@[cp]@[i1], components@[cp]@[i2]]
+                0 <= cp < (c + 1) as int
+                    && 0 <= i1
+                    && i1 < i2
+                    && i2 < components@[cp]@.len() as int
+                    ==> components@[cp]@[i1] != components@[cp]@[i2]) by {
+                assert forall|cp: int, i1: int, i2: int|
+                    #![trigger components@[cp]@[i1], components@[cp]@[i2]]
+                    0 <= cp < (c + 1) as int
+                        && 0 <= i1
+                        && i1 < i2
+                        && i2 < components@[cp]@.len() as int
+                        implies components@[cp]@[i1] != components@[cp]@[i2] by {
+                    if cp < c as int {
+                    } else {
+                        assert(cp == c as int);
+                        assert(components@[cp] == *component);
+                        assert(0 <= i1);
+                        assert(i1 < i2);
+                        assert(i2 < i as int);
+                    }
+                };
+            }
+            assert(forall|hp: int|
+                0 <= hp < (hcnt as int) && #[trigger] global_seen@[hp]
+                    ==> exists|cp: int| {
+                        &&& 0 <= cp < (c + 1) as int
+                        &&& mesh_half_edge_component_contains_spec(m@, components@, cp, hp)
+                    }) by {
+                assert forall|hp: int|
+                    0 <= hp < (hcnt as int) && #[trigger] global_seen@[hp]
+                        implies exists|cp: int| {
+                            &&& 0 <= cp < (c + 1) as int
+                            &&& mesh_half_edge_component_contains_spec(m@, components@, cp, hp)
+                        } by {
+                    if global_seen_before[hp] {
+                        assert(exists|cp: int| {
+                            &&& 0 <= cp < c as int
+                            &&& mesh_half_edge_component_contains_spec(m@, components@, cp, hp)
+                        });
+                    } else {
+                        assert(exists|ip: int| {
+                            &&& 0 <= ip < i as int
+                            &&& #[trigger] component@[ip] as int == hp
+                        });
+                        assert(mesh_half_edge_component_contains_spec(m@, components@, c as int, hp));
+                    }
+                };
+            }
+            assert(forall|cp: int, hp: int|
+                0 <= cp < (c + 1) as int && mesh_half_edge_component_contains_spec(m@, components@, cp, hp)
+                    ==> global_seen@[hp]) by {
+                assert forall|cp: int, hp: int|
+                    0 <= cp < (c + 1) as int && mesh_half_edge_component_contains_spec(m@, components@, cp, hp)
+                        implies global_seen@[hp] by {
+                    if cp < c as int {
+                        assert(global_seen_before[hp]);
+                        assert(global_seen@[hp]);
+                    } else {
+                        assert(cp == c as int);
+                        assert(exists|ip: int|
+                            0 <= ip < component@.len() as int && #[trigger] component@[ip] as int == hp);
+                        assert(exists|ip: int|
+                            0 <= ip < i as int && #[trigger] component@[ip] as int == hp);
+                        assert(global_seen@[hp]);
+                    }
+                };
+            }
+            assert(forall|cp1: int, cp2: int, hp: int|
+                0 <= cp1 < (c + 1) as int
+                    && 0 <= cp2 < (c + 1) as int
+                    && mesh_half_edge_component_contains_spec(m@, components@, cp1, hp)
+                    && mesh_half_edge_component_contains_spec(m@, components@, cp2, hp)
+                    ==> cp1 == cp2) by {
+                assert forall|cp1: int, cp2: int, hp: int|
+                    0 <= cp1 < (c + 1) as int
+                        && 0 <= cp2 < (c + 1) as int
+                        && mesh_half_edge_component_contains_spec(m@, components@, cp1, hp)
+                        && mesh_half_edge_component_contains_spec(m@, components@, cp2, hp)
+                        implies cp1 == cp2 by {
+                    if cp1 < c as int && cp2 < c as int {
+                    } else if cp1 == c as int && cp2 == c as int {
+                    } else if cp1 == c as int {
+                        assert(cp2 < c as int);
+                        assert(global_seen_before[hp]);
+                        assert(exists|ip: int|
+                            0 <= ip < component@.len() as int && #[trigger] component@[ip] as int == hp);
+                        assert(exists|ip: int|
+                            0 <= ip < i as int && #[trigger] component@[ip] as int == hp);
+                        assert(!global_seen_before[hp]);
+                    } else {
+                        assert(cp2 == c as int);
+                        assert(cp1 < c as int);
+                        assert(global_seen_before[hp]);
+                        assert(exists|ip: int|
+                            0 <= ip < component@.len() as int && #[trigger] component@[ip] as int == hp);
+                        assert(exists|ip: int|
+                            0 <= ip < i as int && #[trigger] component@[ip] as int == hp);
+                        assert(!global_seen_before[hp]);
+                    }
+                };
+            }
+        }
+
+        c += 1;
+    }
+
+    let mut h: usize = 0;
+    while h < hcnt
+        invariant
+            hcnt == m.half_edges.len(),
+            c == components.len(),
+            global_seen@.len() == hcnt as int,
+            0 <= h <= hcnt,
+            forall|cp: int|
+                #![trigger components@[cp]@]
+                0 <= cp < c as int ==> components@[cp]@.len() > 0,
+            forall|cp: int, ip: int|
+                #![trigger components@[cp]@[ip]]
+                0 <= cp < c as int && 0 <= ip < components@[cp]@.len() as int
+                    ==> 0 <= mesh_half_edge_component_entry_spec(components@, cp, ip)
+                        && mesh_half_edge_component_entry_spec(components@, cp, ip) < (hcnt as int),
+            forall|cp: int, i: int, j: int|
+                #![trigger components@[cp]@[i], components@[cp]@[j]]
+                0 <= cp < c as int
+                    && 0 <= i
+                    && i < j
+                    && j < components@[cp]@.len() as int
+                    ==> components@[cp]@[i] != components@[cp]@[j],
+            forall|hp: int|
+                0 <= hp < (hcnt as int) && #[trigger] global_seen@[hp]
+                    ==> exists|cp: int| {
+                        &&& 0 <= cp < c as int
+                        &&& mesh_half_edge_component_contains_spec(m@, components@, cp, hp)
+                    },
+            forall|cp: int, hp: int|
+                0 <= cp < c as int && mesh_half_edge_component_contains_spec(m@, components@, cp, hp)
+                    ==> global_seen@[hp],
+            forall|cp1: int, cp2: int, hp: int|
+                0 <= cp1 < c as int
+                    && 0 <= cp2 < c as int
+                    && mesh_half_edge_component_contains_spec(m@, components@, cp1, hp)
+                    && mesh_half_edge_component_contains_spec(m@, components@, cp2, hp)
+                    ==> cp1 == cp2,
+            forall|hp: int| 0 <= hp < h as int ==> global_seen@[hp],
+    {
+        if !global_seen[h] {
+            return false;
+        }
+
+        proof {
+            assert(forall|hp: int| 0 <= hp < (h + 1) as int ==> global_seen@[hp]) by {
+                assert forall|hp: int|
+                    0 <= hp < (h + 1) as int implies #[trigger] global_seen@[hp] by {
+                    if hp < h as int {
+                    } else {
+                        assert(hp == h as int);
+                    }
+                };
+            }
+        }
+
+        h += 1;
+    }
+
+    proof {
+        assert(h == hcnt);
+        assert(c == components.len());
+        assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+        assert(forall|hp: int| 0 <= hp < mesh_half_edge_count_spec(m@) ==> global_seen@[hp]) by {
+            assert forall|hp: int|
+                0 <= hp < mesh_half_edge_count_spec(m@) implies #[trigger] global_seen@[hp] by {
+                assert(mesh_half_edge_count_spec(m@) == h as int);
+                assert(0 <= hp < h as int);
+            };
+        }
+        assert(mesh_half_edge_components_partition_spec(m@, components@));
+    }
+    true
+}
+
+#[allow(dead_code)]
+pub fn half_edge_components_constructive(
+    m: &Mesh,
+) -> (out: Option<Vec<Vec<usize>>>)
+    ensures
+        match out {
+            Option::Some(components) => mesh_half_edge_components_partition_spec(m@, components@),
+            Option::None => true,
+        },
+{
+    let components = ex_mesh_half_edge_components(m);
+    let ok = runtime_check_half_edge_components_partition(m, &components);
+    if ok {
+        Option::Some(components)
+    } else {
+        Option::None
     }
 }
 

@@ -539,6 +539,37 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
 
 ## E. Verify Connectivity + Euler Computation
 - [ ] Verify `half_edge_components` BFS soundness and completeness.
+  - burndown update (2026-02-18):
+    - landed explicit component-output spec scaffolding in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      `mesh_half_edge_component_entry_spec`,
+      `mesh_half_edge_component_contains_spec`,
+      `mesh_half_edge_components_partition_spec`.
+    - added proof-facing runtime bridge for the private BFS routine:
+      `Mesh::half_edge_components_for_verification` in `src/halfedge_mesh.rs`,
+      consumed by new external-body bridge
+      `ex_mesh_half_edge_components` in
+      `src/runtime_halfedge_mesh_refinement.rs`.
+    - added constructive executable checker +
+      wrapper in `src/runtime_halfedge_mesh_refinement.rs`:
+      `runtime_check_half_edge_components_partition` and
+      `half_edge_components_constructive`.
+    - failed attempt (rolled back from the stable spec):
+      direct inclusion of an exported per-half-edge global-coverage existential
+      clause in `mesh_half_edge_components_partition_spec` caused brittle final
+      existential-packaging obligations in function-exit proof blocks.
+      the checker still performs a runtime `global_seen` completion scan, but
+      that coverage fact is not yet exported as part of the stable proved spec.
+    - remaining gap:
+      explicit BFS soundness/completeness linkage is still open
+      (connectivity/closure characterization of each reported component, plus
+      stable exported completeness packaging).
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_half_edge_components_partition`
+      passed (`4 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`35 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`69 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
 - [ ] Verify `component_count` equals number of connected components.
   - file: `src/halfedge_mesh.rs`

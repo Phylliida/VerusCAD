@@ -352,6 +352,11 @@ impl Mesh {
     }
 
     #[cfg(feature = "verus-proofs")]
+    pub(crate) fn half_edge_components_for_verification(&self) -> Vec<Vec<usize>> {
+        self.half_edge_components()
+    }
+
+    #[cfg(feature = "verus-proofs")]
     pub(crate) fn bridge_index_and_twin_checks_agree(&self) -> bool {
         let runtime_index_ok = self.check_index_bounds();
         let kernel_index_ok = self.check_index_bounds_via_kernel();
