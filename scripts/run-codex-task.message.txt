@@ -1,1 +1,1 @@
-Revalidated vcad-topology exit conditions with a full trust-surface scan and verification/test matrix refresh, and documented the results in verification-todo.md.
+Replayed the vcad-topology exit-condition trust-surface scans and full verification/test matrix, documenting green results and the parallel cargo lock-wait note in verification-todo.md.
