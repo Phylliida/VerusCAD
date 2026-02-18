@@ -15,6 +15,7 @@ use vcad_math::runtime_scalar::RuntimeScalar;
             assert!(mesh.check_face_coplanarity());
             assert!(mesh.check_face_convexity());
             assert!(mesh.check_face_plane_consistency());
+            assert!(mesh.check_no_forbidden_face_face_intersections());
             assert!(mesh.check_outward_face_normals());
             assert!(mesh.check_geometric_topological_consistency());
             assert!(mesh.is_valid_with_geometry());
@@ -39,6 +40,7 @@ use vcad_math::runtime_scalar::RuntimeScalar;
             assert!(mesh.check_face_coplanarity());
             assert!(mesh.check_face_convexity());
             assert!(mesh.check_face_plane_consistency());
+            assert!(mesh.check_no_forbidden_face_face_intersections());
             assert!(mesh.check_outward_face_normals());
             assert!(mesh.check_geometric_topological_consistency());
             assert!(mesh.is_valid_with_geometry());
@@ -63,6 +65,7 @@ use vcad_math::runtime_scalar::RuntimeScalar;
             assert!(mesh.check_face_coplanarity());
             assert!(mesh.check_face_convexity());
             assert!(mesh.check_face_plane_consistency());
+            assert!(mesh.check_no_forbidden_face_face_intersections());
             assert!(mesh.check_outward_face_normals());
             assert!(mesh.check_geometric_topological_consistency());
             assert!(mesh.is_valid_with_geometry());
@@ -161,6 +164,7 @@ use vcad_math::runtime_scalar::RuntimeScalar;
         assert!(!mesh.check_face_coplanarity());
         assert!(!mesh.check_face_convexity());
         assert!(!mesh.check_face_plane_consistency());
+        assert!(!mesh.check_no_forbidden_face_face_intersections());
         assert!(!mesh.check_outward_face_normals());
         assert!(!mesh.check_geometric_topological_consistency());
         assert!(!mesh.is_valid_with_geometry());
@@ -297,6 +301,45 @@ use vcad_math::runtime_scalar::RuntimeScalar;
         assert!(mesh.check_face_convexity());
         assert!(mesh.check_face_plane_consistency());
         assert!(!mesh.check_outward_face_normals());
+        assert!(!mesh.check_geometric_topological_consistency());
+        assert!(!mesh.is_valid_with_geometry());
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn nonadjacent_face_intersection_fails_self_intersection_checker() {
+        let vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(4, 0, 0),
+            RuntimePoint3::from_ints(0, 4, 0),
+            RuntimePoint3::from_ints(0, 0, 4),
+            RuntimePoint3::from_ints(1, 1, 1),
+            RuntimePoint3::from_ints(5, 1, 1),
+            RuntimePoint3::from_ints(1, 5, 1),
+            RuntimePoint3::from_ints(1, 1, 5),
+        ];
+        let faces = vec![
+            vec![0, 1, 2],
+            vec![0, 3, 1],
+            vec![1, 3, 2],
+            vec![2, 3, 0],
+            vec![4, 5, 6],
+            vec![4, 7, 5],
+            vec![5, 7, 6],
+            vec![6, 7, 4],
+        ];
+
+        let mesh = Mesh::from_face_cycles(vertices, &faces)
+            .expect("two overlapping tetrahedra should still build topologically");
+        assert!(mesh.is_structurally_valid());
+        assert!(mesh.is_valid());
+        assert!(mesh.check_no_zero_length_geometric_edges());
+        assert!(mesh.check_face_corner_non_collinearity());
+        assert!(mesh.check_face_coplanarity());
+        assert!(mesh.check_face_convexity());
+        assert!(mesh.check_face_plane_consistency());
+        assert!(mesh.check_outward_face_normals());
+        assert!(!mesh.check_no_forbidden_face_face_intersections());
         assert!(!mesh.check_geometric_topological_consistency());
         assert!(!mesh.is_valid_with_geometry());
     }

@@ -2,9 +2,17 @@
 use std::collections::HashSet;
 
 #[cfg(feature = "geometry-checks")]
+use vcad_geometry::convex_polygon::point_in_convex_polygon_2d;
+#[cfg(feature = "geometry-checks")]
 use vcad_geometry::collinearity_coplanarity::{collinear3d, coplanar};
 #[cfg(feature = "geometry-checks")]
 use vcad_geometry::orientation_predicates::{orient3d_sign, orient3d_value};
+#[cfg(feature = "geometry-checks")]
+use vcad_geometry::segment_intersection::{segment_intersection_kind_2d, SegmentIntersection2dKind};
+#[cfg(feature = "geometry-checks")]
+use vcad_geometry::sidedness::segment_plane_intersection_point_strict;
+#[cfg(feature = "geometry-checks")]
+use vcad_math::runtime_point2::RuntimePoint2;
 #[cfg(feature = "geometry-checks")]
 use vcad_math::runtime_point3::RuntimePoint3;
 #[cfg(feature = "geometry-checks")]
@@ -19,6 +27,15 @@ use crate::verified_checker_kernels::{
 };
 
 use super::Mesh;
+
+#[cfg(feature = "geometry-checks")]
+#[derive(Clone, Copy)]
+enum ProjectionAxis {
+    DropX,
+    DropY,
+    DropZ,
+}
+
 impl Mesh {
     pub fn is_structurally_valid(&self) -> bool {
         !self.vertices.is_empty()
@@ -418,6 +435,306 @@ impl Mesh {
     }
 
     #[cfg(feature = "geometry-checks")]
+    fn scalar_abs(value: &RuntimeScalar) -> RuntimeScalar {
+        if value.signum_i8() < 0 {
+            value.neg()
+        } else {
+            value.clone()
+        }
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn scalar_ge(lhs: &RuntimeScalar, rhs: &RuntimeScalar) -> bool {
+        lhs.sub(rhs).signum_i8() >= 0
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn dominant_projection_axis(normal: &RuntimeVec3) -> ProjectionAxis {
+        let ax = Self::scalar_abs(normal.x());
+        let ay = Self::scalar_abs(normal.y());
+        let az = Self::scalar_abs(normal.z());
+
+        if Self::scalar_ge(&ax, &ay) && Self::scalar_ge(&ax, &az) {
+            ProjectionAxis::DropX
+        } else if Self::scalar_ge(&ay, &az) {
+            ProjectionAxis::DropY
+        } else {
+            ProjectionAxis::DropZ
+        }
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn project_point3_to_2d(point: &RuntimePoint3, axis: ProjectionAxis) -> RuntimePoint2 {
+        match axis {
+            ProjectionAxis::DropX => RuntimePoint2::new(point.y().clone(), point.z().clone()),
+            ProjectionAxis::DropY => RuntimePoint2::new(point.x().clone(), point.z().clone()),
+            ProjectionAxis::DropZ => RuntimePoint2::new(point.x().clone(), point.y().clone()),
+        }
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn ordered_face_vertex_cycle(&self, face_id: usize) -> Option<Vec<usize>> {
+        if face_id >= self.faces.len() {
+            return None;
+        }
+
+        let hcnt = self.half_edges.len();
+        let start = self.faces[face_id].half_edge;
+        let mut h = start;
+        let mut steps = 0usize;
+        let mut out = Vec::new();
+
+        loop {
+            out.push(self.half_edges[h].vertex);
+            h = self.half_edges[h].next;
+            steps += 1;
+            if h == start {
+                break;
+            }
+            if steps > hcnt {
+                return None;
+            }
+        }
+
+        if out.len() < 3 {
+            return None;
+        }
+        Some(out)
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn faces_share_vertex(face_a_vertices: &[usize], face_b_vertices: &[usize]) -> bool {
+        for &va in face_a_vertices {
+            if face_b_vertices.contains(&va) {
+                return true;
+            }
+        }
+        false
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn point_in_convex_face_boundary(
+        &self,
+        point: &RuntimePoint3,
+        face_vertices: &[usize],
+        face_normal: &RuntimeVec3,
+    ) -> bool {
+        if face_vertices.len() < 3 {
+            return false;
+        }
+
+        let mut expected_sign = 0i8;
+        for i in 0..face_vertices.len() {
+            let a = &self.vertices[face_vertices[i]].position;
+            let b = &self.vertices[face_vertices[(i + 1) % face_vertices.len()]].position;
+            let edge = b.sub(a);
+            let to_point = point.sub(a);
+            let side = edge.cross(&to_point).dot(face_normal).signum_i8();
+            if side == 0 {
+                continue;
+            }
+            if expected_sign == 0 {
+                expected_sign = side;
+            } else if side != expected_sign {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn coplanar_segment_intersects_face_boundary_or_interior(
+        &self,
+        seg_start: &RuntimePoint3,
+        seg_end: &RuntimePoint3,
+        face_vertices: &[usize],
+        face_normal: &RuntimeVec3,
+    ) -> bool {
+        if face_vertices.len() < 3 {
+            return false;
+        }
+
+        let axis = Self::dominant_projection_axis(face_normal);
+        let seg_start_2d = Self::project_point3_to_2d(seg_start, axis);
+        let seg_end_2d = Self::project_point3_to_2d(seg_end, axis);
+        let face_polygon_2d: Vec<RuntimePoint2> = face_vertices
+            .iter()
+            .map(|&vid| Self::project_point3_to_2d(&self.vertices[vid].position, axis))
+            .collect();
+
+        if point_in_convex_polygon_2d(&seg_start_2d, &face_polygon_2d)
+            || point_in_convex_polygon_2d(&seg_end_2d, &face_polygon_2d)
+        {
+            return true;
+        }
+
+        for i in 0..face_polygon_2d.len() {
+            let a = &face_polygon_2d[i];
+            let b = &face_polygon_2d[(i + 1) % face_polygon_2d.len()];
+            let kind = segment_intersection_kind_2d(&seg_start_2d, &seg_end_2d, a, b);
+            if kind != SegmentIntersection2dKind::Disjoint {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn segment_intersects_convex_face(
+        &self,
+        seg_start: &RuntimePoint3,
+        seg_end: &RuntimePoint3,
+        face_vertices: &[usize],
+        face_plane_a: &RuntimePoint3,
+        face_plane_b: &RuntimePoint3,
+        face_plane_c: &RuntimePoint3,
+        face_normal: &RuntimeVec3,
+    ) -> bool {
+        let start_side = orient3d_sign(face_plane_a, face_plane_b, face_plane_c, seg_start);
+        let end_side = orient3d_sign(face_plane_a, face_plane_b, face_plane_c, seg_end);
+
+        if start_side == 0 && end_side == 0 {
+            return self.coplanar_segment_intersects_face_boundary_or_interior(
+                seg_start,
+                seg_end,
+                face_vertices,
+                face_normal,
+            );
+        }
+        if start_side == 0 {
+            return self.point_in_convex_face_boundary(seg_start, face_vertices, face_normal);
+        }
+        if end_side == 0 {
+            return self.point_in_convex_face_boundary(seg_end, face_vertices, face_normal);
+        }
+        if start_side == end_side {
+            return false;
+        }
+
+        let intersection = match segment_plane_intersection_point_strict(
+            seg_start,
+            seg_end,
+            face_plane_a,
+            face_plane_b,
+            face_plane_c,
+        ) {
+            Some(p) => p,
+            None => return false,
+        };
+        self.point_in_convex_face_boundary(&intersection, face_vertices, face_normal)
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn face_pair_has_forbidden_intersection(
+        &self,
+        face_a_vertices: &[usize],
+        face_a_normal: &RuntimeVec3,
+        face_b_vertices: &[usize],
+        face_b_normal: &RuntimeVec3,
+    ) -> bool {
+        if face_a_vertices.len() < 3 || face_b_vertices.len() < 3 {
+            return true;
+        }
+
+        let face_a_plane_a = &self.vertices[face_a_vertices[0]].position;
+        let face_a_plane_b = &self.vertices[face_a_vertices[1]].position;
+        let face_a_plane_c = &self.vertices[face_a_vertices[2]].position;
+        let face_b_plane_a = &self.vertices[face_b_vertices[0]].position;
+        let face_b_plane_b = &self.vertices[face_b_vertices[1]].position;
+        let face_b_plane_c = &self.vertices[face_b_vertices[2]].position;
+
+        for i in 0..face_a_vertices.len() {
+            let seg_start = &self.vertices[face_a_vertices[i]].position;
+            let seg_end = &self.vertices[face_a_vertices[(i + 1) % face_a_vertices.len()]].position;
+            if self.segment_intersects_convex_face(
+                seg_start,
+                seg_end,
+                face_b_vertices,
+                face_b_plane_a,
+                face_b_plane_b,
+                face_b_plane_c,
+                face_b_normal,
+            ) {
+                return true;
+            }
+        }
+
+        for i in 0..face_b_vertices.len() {
+            let seg_start = &self.vertices[face_b_vertices[i]].position;
+            let seg_end = &self.vertices[face_b_vertices[(i + 1) % face_b_vertices.len()]].position;
+            if self.segment_intersects_convex_face(
+                seg_start,
+                seg_end,
+                face_a_vertices,
+                face_a_plane_a,
+                face_a_plane_b,
+                face_a_plane_c,
+                face_a_normal,
+            ) {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    /// Optional geometric extension: non-adjacent face pairs must not
+    /// intersect; shared-vertex and shared-edge contacts are exempt.
+    pub fn check_no_forbidden_face_face_intersections(&self) -> bool {
+        if !self.is_valid() {
+            return false;
+        }
+        if !self.check_index_bounds() || !self.check_face_cycles() {
+            return false;
+        }
+        if !self.check_no_zero_length_geometric_edges() {
+            return false;
+        }
+        if !self.check_face_coplanarity() || !self.check_face_corner_non_collinearity() {
+            return false;
+        }
+        if !self.check_face_convexity() {
+            return false;
+        }
+
+        let mut face_vertices = Vec::with_capacity(self.faces.len());
+        let mut face_normals = Vec::with_capacity(self.faces.len());
+        for face_id in 0..self.faces.len() {
+            let vertices = match self.ordered_face_vertex_cycle(face_id) {
+                Some(vs) => vs,
+                None => return false,
+            };
+            let (normal, _) = match self.compute_face_plane(face_id) {
+                Some(plane) => plane,
+                None => return false,
+            };
+            face_vertices.push(vertices);
+            face_normals.push(normal);
+        }
+
+        for fa in 0..self.faces.len() {
+            for fb in (fa + 1)..self.faces.len() {
+                if Self::faces_share_vertex(&face_vertices[fa], &face_vertices[fb]) {
+                    continue;
+                }
+                if self.face_pair_has_forbidden_intersection(
+                    &face_vertices[fa],
+                    &face_normals[fa],
+                    &face_vertices[fb],
+                    &face_normals[fb],
+                ) {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+
+    #[cfg(feature = "geometry-checks")]
     pub fn check_geometric_topological_consistency(&self) -> bool {
         self.is_valid()
             && self.check_no_zero_length_geometric_edges()
@@ -425,6 +742,7 @@ impl Mesh {
             && self.check_face_coplanarity()
             && self.check_face_convexity()
             && self.check_face_plane_consistency()
+            && self.check_no_forbidden_face_face_intersections()
             && self.check_outward_face_normals()
     }
 

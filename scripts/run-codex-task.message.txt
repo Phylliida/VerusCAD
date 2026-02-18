@@ -1,1 +1,1 @@
-Extended Phase 5 refinement specs in vcad-topology with face-cycle geometry/adjacency/coplanarity/plane predicates, fixed duplicate coplanarity spec definitions, updated the burndown checklist/log, and re-verified all vcad-topology tests and verification scripts.
+Implemented Phase 5 face self-intersection runtime checking with adjacency exemptions, added overlapping-tetrahedron regression coverage, and updated the burndown log with full verification results.

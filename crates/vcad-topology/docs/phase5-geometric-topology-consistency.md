@@ -57,7 +57,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 ## P5.5 Invariant: No Self-Intersection Except Shared Boundary (Roadmap)
 - [ ] Spec: define allowed contact relation between two faces (shared edge, shared vertex, or disjoint).
 - [ ] Spec: define forbidden intersection relation for non-adjacent face pairs.
-- [ ] Runtime checker: implement pairwise face intersection check with adjacency exemptions.
+- [x] Runtime checker: implement pairwise face intersection check with adjacency exemptions.
 - [ ] Proof: checker soundness (if checker passes, forbidden intersections do not exist).
 - [ ] Proof: checker completeness for convex coplanar-face assumptions used by Phase 5.
 - [ ] Proof: shared-edge and shared-vertex contacts are never misclassified as forbidden intersections.
@@ -91,13 +91,27 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [x] Negative fixture: zero-length geometric edge fails edge-straightness checker.
 - [x] Negative fixture: concave polygon face fails convexity checker.
 - [x] Negative fixture: flipped face winding fails outward-normal checker.
-- [ ] Negative fixture: non-adjacent face intersection fails self-intersection checker.
+- [x] Negative fixture: non-adjacent face intersection fails self-intersection checker.
 - [x] Regression tests under:
   - default build
   - `--features geometry-checks`
   - `--features "geometry-checks,verus-proofs"`
 
 ## Burndown Log
+- 2026-02-18: Implemented P5.5 runtime self-intersection checker in `src/halfedge_mesh/validation.rs`:
+  - added `Mesh::check_no_forbidden_face_face_intersections()` and integrated it into `Mesh::check_geometric_topological_consistency()`;
+  - checker behavior: for each non-adjacent face pair (shared-vertex pairs exempt), test edge-vs-face intersections in exact arithmetic, including coplanar overlap/touch handling via dominant-axis 2D projection and `vcad_geometry` segment intersection predicates.
+- 2026-02-18: Extended `src/halfedge_mesh/tests.rs` for P5.5 coverage:
+  - positive fixtures (`tetrahedron`, `cube`, `triangular_prism`) now assert `check_no_forbidden_face_face_intersections()`;
+  - added `nonadjacent_face_intersection_fails_self_intersection_checker` using two overlapping closed tetrahedra (topologically valid but geometrically intersecting) as the explicit P5.9 self-intersection counterexample.
+- 2026-02-18: Failed attempts in this P5.5 pass: none.
+- 2026-02-18: Revalidated after P5.5 runtime checker/test integration:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (192 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (227 verified, 0 errors)
 - 2026-02-18: Completed a P5.8/P5.0/P5.1 spec-layer pass in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
   - added Phase 5 geometry model helpers for ordered face-cycle vertex positions and runtime vertex-position bridging (`mesh_runtime_vertex_positions_spec`, `mesh_runtime_geometry_bridge_spec`, and face-cycle position accessors);
   - added adjacency specs (`mesh_faces_share_vertex_spec`, `mesh_faces_share_edge_spec`, `mesh_faces_disjoint_boundary_spec`);
