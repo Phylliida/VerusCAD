@@ -1,1 +1,1 @@
-Added a constructive witness path for check_euler_formula_closed_components, documented the burndown update including a failed loop-decreases attempt, and kept vcad-topology verification green.
+Added constructive runtime gate witnesses for is_structurally_valid and is_valid, documented the Section F burndown update including a failed direct-call attempt, and kept vcad-topology verification green.
