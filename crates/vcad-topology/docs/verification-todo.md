@@ -907,6 +907,26 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`59 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`59 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`93 verified, 0 errors`).
+  - burndown update (2026-02-18, constructor validity witness):
+    - landed constructor validity wrapper in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      `tetrahedron_constructive_counts_and_is_valid`.
+    - stable guarantee now exported:
+      `Some((m, w))` only when all of the following hold:
+      - `mesh_tetrahedron_counts_spec(m@)`,
+      - `validity_gate_witness_spec(w)`,
+      - `w.api_ok` (runtime `is_valid` gate evaluates true under the
+        constructive witness path).
+    - remaining gap:
+      this is still a constructive runtime witness path; direct linkage from the
+      constructor output to model-level `mesh_valid_spec(m@)` remains open.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement tetrahedron_constructive_counts_and_is_valid`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`76 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`76 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`110 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 - [ ] Prove `cube` builds and satisfies `is_valid`.
@@ -920,6 +940,21 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `mesh_cube_counts_spec(m@)` holds.
     - remaining gap:
       end-to-end `is_valid` linkage is still open for this constructor.
+  - burndown update (2026-02-18, constructor validity witness):
+    - landed constructor validity wrapper in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      `cube_constructive_counts_and_is_valid`.
+    - stable guarantee now exported:
+      `Some((m, w))` only when:
+      - `mesh_cube_counts_spec(m@)`,
+      - `validity_gate_witness_spec(w)`,
+      - `w.api_ok`.
+    - remaining gap:
+      this remains a constructive runtime witness path; model-level
+      `mesh_valid_spec(m@)` linkage for constructor output is still open.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement cube_constructive_counts_and_is_valid`
+      passed (`1 verified, 0 errors`);
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 - [ ] Prove `triangular_prism` builds and satisfies `is_valid`.
@@ -938,6 +973,21 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       arguments in one invocation; the script accepts at most
       `[module] [function_pattern]`, so verification was rerun with supported
       invocations.
+  - burndown update (2026-02-18, constructor validity witness):
+    - landed constructor validity wrapper in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      `triangular_prism_constructive_counts_and_is_valid`.
+    - stable guarantee now exported:
+      `Some((m, w))` only when:
+      - `mesh_triangular_prism_counts_spec(m@)`,
+      - `validity_gate_witness_spec(w)`,
+      - `w.api_ok`.
+    - remaining gap:
+      still constructive-only; direct proof that constructor output satisfies
+      model-level `mesh_valid_spec(m@)` remains open.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement triangular_prism_constructive_counts_and_is_valid`
+      passed (`1 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 

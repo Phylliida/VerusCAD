@@ -1,1 +1,1 @@
-Added constructive runtime gate witnesses for is_structurally_valid and is_valid, documented the Section F burndown update including a failed direct-call attempt, and kept vcad-topology verification green.
+Added constructive constructor-validity wrappers for tetrahedron, cube, and triangular prism and updated the vcad-topology verification burndown with new guarantees and verification results.

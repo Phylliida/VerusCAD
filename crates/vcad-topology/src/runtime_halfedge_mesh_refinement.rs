@@ -4322,6 +4322,38 @@ pub fn tetrahedron_constructive_counts() -> (out: Option<Mesh>)
 }
 
 #[allow(dead_code)]
+pub fn tetrahedron_constructive_counts_and_is_valid() -> (out: Option<(Mesh, ValidityGateWitness)>)
+    ensures
+        match out {
+            Option::Some((m, w)) => mesh_tetrahedron_counts_spec(m@) && validity_gate_witness_spec(w)
+                && w.api_ok,
+            Option::None => true,
+        },
+{
+    let counted = tetrahedron_constructive_counts();
+    match counted {
+        Option::Some(m) => {
+            let valid = is_valid_constructive(&m);
+            match valid {
+                Option::Some(w) => {
+                    if !w.api_ok {
+                        Option::None
+                    } else {
+                        proof {
+                            assert(mesh_tetrahedron_counts_spec(m@));
+                            assert(validity_gate_witness_spec(w));
+                        }
+                        Option::Some((m, w))
+                    }
+                }
+                Option::None => Option::None,
+            }
+        }
+        Option::None => Option::None,
+    }
+}
+
+#[allow(dead_code)]
 pub fn cube_constructive_counts() -> (out: Option<Mesh>)
     ensures
         match out {
@@ -4344,6 +4376,38 @@ pub fn cube_constructive_counts() -> (out: Option<Mesh>)
 }
 
 #[allow(dead_code)]
+pub fn cube_constructive_counts_and_is_valid() -> (out: Option<(Mesh, ValidityGateWitness)>)
+    ensures
+        match out {
+            Option::Some((m, w)) => mesh_cube_counts_spec(m@) && validity_gate_witness_spec(w)
+                && w.api_ok,
+            Option::None => true,
+        },
+{
+    let counted = cube_constructive_counts();
+    match counted {
+        Option::Some(m) => {
+            let valid = is_valid_constructive(&m);
+            match valid {
+                Option::Some(w) => {
+                    if !w.api_ok {
+                        Option::None
+                    } else {
+                        proof {
+                            assert(mesh_cube_counts_spec(m@));
+                            assert(validity_gate_witness_spec(w));
+                        }
+                        Option::Some((m, w))
+                    }
+                }
+                Option::None => Option::None,
+            }
+        }
+        Option::None => Option::None,
+    }
+}
+
+#[allow(dead_code)]
 pub fn triangular_prism_constructive_counts() -> (out: Option<Mesh>)
     ensures
         match out {
@@ -4363,6 +4427,38 @@ pub fn triangular_prism_constructive_counts() -> (out: Option<Mesh>)
     }
 
     Option::Some(m)
+}
+
+#[allow(dead_code)]
+pub fn triangular_prism_constructive_counts_and_is_valid() -> (out: Option<(Mesh, ValidityGateWitness)>)
+    ensures
+        match out {
+            Option::Some((m, w)) => mesh_triangular_prism_counts_spec(m@)
+                && validity_gate_witness_spec(w) && w.api_ok,
+            Option::None => true,
+        },
+{
+    let counted = triangular_prism_constructive_counts();
+    match counted {
+        Option::Some(m) => {
+            let valid = is_valid_constructive(&m);
+            match valid {
+                Option::Some(w) => {
+                    if !w.api_ok {
+                        Option::None
+                    } else {
+                        proof {
+                            assert(mesh_triangular_prism_counts_spec(m@));
+                            assert(validity_gate_witness_spec(w));
+                        }
+                        Option::Some((m, w))
+                    }
+                }
+                Option::None => Option::None,
+            }
+        }
+        Option::None => Option::None,
+    }
 }
 
 } // verus!
