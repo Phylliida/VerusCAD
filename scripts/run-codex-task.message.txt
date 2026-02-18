@@ -1,1 +1,1 @@
-Replayed the vcad-topology exit-condition verification matrix under no-daemon fallback and recorded a fresh all-green burndown snapshot.
+Revalidated the vertex-representative checker’s two-way proof contract and replayed the full vcad-topology verification/test matrix with all checks passing.

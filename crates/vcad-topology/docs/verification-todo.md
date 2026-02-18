@@ -5097,3 +5097,25 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
         (`5 passed, 0 failed`),
       - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
         passed (`6 passed, 0 failed`).
+  - burndown update (2026-02-18, vertex-representative checker completeness revalidation + matrix replay):
+    - selected task in this pass:
+      revalidate the completed
+      `runtime_check_vertex_representative_valid_nonisolated` two-way
+      checker contract and replay the full `vcad-topology` matrix.
+    - run timestamp:
+      `2026-02-18T08:39:24-08:00`.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_vertex_representative_valid_nonisolated`
+      passed (`2 verified, 0 errors` partial);
+      `./scripts/verify-vcad-topology-matrix.sh`
+      passed:
+      - trust-surface guard passed,
+      - fast verification passed (`192 verified, 0 errors` partial),
+      - full verification passed (`227 verified, 0 errors`),
+      - `cargo test -p vcad-topology` passed (`4 passed, 0 failed`),
+      - `cargo test -p vcad-topology --features geometry-checks` passed
+        (`5 passed, 0 failed`),
+      - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+        passed (`6 passed, 0 failed`).
+    - failed attempts:
+      none in this pass.
