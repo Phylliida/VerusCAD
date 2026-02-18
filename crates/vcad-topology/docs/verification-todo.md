@@ -819,6 +819,47 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`40 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`40 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`74 verified, 0 errors`).
+  - burndown update (2026-02-18, representative-reachability increment):
+    - strengthened the exported component witness surface in
+      `src/runtime_halfedge_mesh_refinement.rs` with:
+      - `mesh_half_edge_component_representative_connected_at_spec`,
+      - `mesh_half_edge_components_representative_connected_spec`,
+      - and a strengthened
+        `mesh_half_edge_components_partition_neighbor_closed_spec` that now
+        includes representative-to-member connectivity.
+    - added reusable connectivity lemmas:
+      `lemma_mesh_half_edge_connected_refl`,
+      `lemma_mesh_half_edge_connected_extend_direct_step`.
+    - added constructive checker
+      `runtime_check_half_edge_components_representative_connected` and
+      required it in:
+      - `half_edge_components_constructive`,
+      - `component_count_constructive`,
+      - `euler_characteristics_per_component_constructive`,
+      - `check_euler_formula_closed_components_constructive`.
+      this lifts the returned constructive witnesses from
+      partition+coverage+neighbor-closure to also include explicit
+      representative reachability for every reported component member.
+    - proof-shape note:
+      a stable approach was a monotone `seen` propagation pass over bounded
+      half-edge indices, with connectivity preserved by one-step extension
+      (`mesh_half_edge_direct_step_spec`) instead of queue-specific witness
+      invariants.
+    - spec cleanup:
+      removed the explicit path-length upper bound from
+      `mesh_half_edge_connected_spec`; this keeps the connectivity relation
+      stable for extension lemmas while preserving finite-walk semantics.
+    - remaining gap:
+      this advances BFS soundness (members are connected to their component
+      representative), but full soundness/completeness is still open at the
+      reverse direction/minimality boundary
+      (`mesh_half_edge_connected_spec(rep, h) ==> component_contains(...)`).
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_half_edge_components_representative_connected`
+      passed (`5 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`121 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`155 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 - [ ] Verify `component_count` equals number of connected components.
@@ -855,6 +896,16 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       count is still not linked to the full connected-components spec
       (`mesh_component_count_spec`) until the pending reachability/minimality
       soundness proof is exported.
+  - burndown update (2026-02-18, aligned with representative-reachability increment):
+    - due the strengthened shared witness
+      `mesh_half_edge_components_partition_neighbor_closed_spec`, successful
+      `component_count_constructive` results now also carry per-component
+      representative reachability (in addition to partition/coverage and
+      neighbor-closure).
+    - remaining gap:
+      `component_count` still lacks the full model-level linkage to
+      `mesh_component_count_spec` until reverse-direction minimality
+      (`connected ==> same component`) is exported.
   - file: `src/halfedge_mesh.rs`
 - [ ] Verify `euler_characteristics_per_component` computes `V - E + F` per BFS component.
   - burndown update (2026-02-18):
