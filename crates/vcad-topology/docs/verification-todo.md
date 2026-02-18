@@ -797,7 +797,35 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 - [ ] Verify `check_euler_formula_closed_components` iff all closed components have characteristic `2`.
+  - burndown update (2026-02-18):
+    - landed constructive witness surface in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      - `mesh_euler_formula_closed_components_partition_witness_spec`,
+      - external-body bridge `ex_mesh_check_euler_formula_closed_components`,
+      - constructive wrapper `check_euler_formula_closed_components_constructive`.
+    - stable guarantee now exported:
+      `check_euler_formula_closed_components_constructive` returns `Some(true)`
+      only when runtime `check_euler_formula_closed_components` is true and there
+      exists a checked BFS partition witness whose per-component Euler values are
+      all `2` and non-empty.
+    - failed attempt (kept documented):
+      first wrapper revision omitted a decreases opt-out on its quantified scan
+      loop and failed with `loop must have a decreases clause`; fixed by adding
+      `#[verifier::exec_allows_no_decreases_clause]`.
+    - remaining gap:
+      this is still a constructive witness path; full `iff` linkage to the
+      model-level closed-components relation
+      (`mesh_euler_closed_components_spec`, which depends on the pending
+      connected-components count model) remains open.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement check_euler_formula_closed_components_constructive`
+      passed (`2 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`69 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`69 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`103 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
+  - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 
 ## F. Verify Top-Level APIs
 - [ ] Verify `is_structurally_valid` exactly matches conjunction of structural invariants.

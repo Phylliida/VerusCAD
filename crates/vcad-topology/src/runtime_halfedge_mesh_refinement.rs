@@ -576,6 +576,17 @@ pub open spec fn mesh_euler_characteristics_partition_witness_spec(
     }
 }
 
+pub open spec fn mesh_euler_formula_closed_components_partition_witness_spec(m: MeshModel) -> bool {
+    exists|components: Seq<Vec<usize>>, chis: Seq<isize>| {
+        &&& mesh_half_edge_components_partition_neighbor_closed_spec(m, components)
+        &&& mesh_euler_characteristics_per_component_spec(m, components, chis)
+        &&& chis.len() > 0
+        &&& forall|c: int|
+            #![trigger chis[c]]
+            0 <= c < chis.len() as int ==> chis[c] as int == 2
+    }
+}
+
 /// Euler relation under the current closed-component model:
 /// each connected closed component contributes characteristic `2`,
 /// so globally `V - E + F = 2 * component_count`.
@@ -2186,6 +2197,12 @@ pub fn ex_mesh_component_count(m: &Mesh) -> (out: usize)
 pub fn ex_mesh_euler_characteristics_per_component(m: &Mesh) -> (out: Vec<isize>)
 {
     m.euler_characteristics_per_component()
+}
+
+#[verifier::external_body]
+pub fn ex_mesh_check_euler_formula_closed_components(m: &Mesh) -> (out: bool)
+{
+    m.check_euler_formula_closed_components()
 }
 
 #[verifier::external_body]
@@ -4007,6 +4024,97 @@ pub fn euler_characteristics_per_component_constructive(
     }
 
     Option::Some(chis)
+}
+
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
+pub fn check_euler_formula_closed_components_constructive(
+    m: &Mesh,
+) -> (out: Option<bool>)
+    ensures
+        match out {
+            Option::Some(ok) => ok && mesh_euler_formula_closed_components_partition_witness_spec(m@),
+            Option::None => true,
+        },
+{
+    let api_ok = ex_mesh_check_euler_formula_closed_components(m);
+    if !api_ok {
+        return Option::None;
+    }
+
+    let components = ex_mesh_half_edge_components(m);
+    let partition_ok = runtime_check_half_edge_components_partition(m, &components);
+    if !partition_ok {
+        return Option::None;
+    }
+
+    let neighbor_closed_ok = runtime_check_half_edge_components_neighbor_closed(m, &components);
+    if !neighbor_closed_ok {
+        return Option::None;
+    }
+
+    let chis = ex_mesh_euler_characteristics_per_component(m);
+    let chis_ok = runtime_check_euler_characteristics_per_component(m, &components, &chis);
+    if !chis_ok {
+        return Option::None;
+    }
+    if chis.len() == 0 {
+        return Option::None;
+    }
+
+    let mut c: usize = 0;
+    while c < chis.len()
+        invariant
+            c <= chis.len(),
+            forall|cp: int|
+                #![trigger chis@[cp]]
+                0 <= cp < c as int ==> chis@[cp] as int == 2,
+    {
+        let chi = *vstd::slice::slice_index_get(&chis, c);
+        if chi != 2 {
+            return Option::None;
+        }
+        proof {
+            assert(chi == chis@[c as int]);
+            assert(forall|cp: int|
+                #![trigger chis@[cp]]
+                0 <= cp < (c + 1) as int ==> chis@[cp] as int == 2) by {
+                assert forall|cp: int|
+                    #![trigger chis@[cp]]
+                    0 <= cp < (c + 1) as int implies chis@[cp] as int == 2 by {
+                    if cp < c as int {
+                    } else {
+                        assert(cp == c as int);
+                        assert(chis@[cp] as int == chi as int);
+                        assert(chi as int == 2);
+                    }
+                };
+            }
+        }
+        c += 1;
+    }
+
+    proof {
+        assert(c == chis.len());
+        assert(forall|cp: int|
+            #![trigger chis@[cp]]
+            0 <= cp < chis@.len() as int ==> chis@[cp] as int == 2) by {
+            assert forall|cp: int|
+                #![trigger chis@[cp]]
+                0 <= cp < chis@.len() as int implies chis@[cp] as int == 2 by {
+                assert(chis@.len() as int == c as int);
+                assert(0 <= cp < c as int);
+            };
+        }
+        assert(mesh_half_edge_components_partition_spec(m@, components@));
+        assert(mesh_half_edge_components_neighbor_closed_spec(m@, components@));
+        assert(mesh_half_edge_components_partition_neighbor_closed_spec(m@, components@));
+        assert(mesh_euler_characteristics_per_component_spec(m@, components@, chis@));
+        assert(chis@.len() > 0);
+        assert(mesh_euler_formula_closed_components_partition_witness_spec(m@));
+    }
+
+    Option::Some(true)
 }
 
 #[allow(dead_code)]

@@ -1,1 +1,1 @@
-Added and wired a stable runtime no-isolated-vertex gate for from_face_cycles with prefix-witness proof scaffolding, documented the rolled-back spec-export attempt, and kept vcad-topology verification green.
+Added a constructive witness path for check_euler_formula_closed_components, documented the burndown update including a failed loop-decreases attempt, and kept vcad-topology verification green.
