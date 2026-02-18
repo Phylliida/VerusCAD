@@ -1,1 +1,1 @@
-Added a twin-involution negative regression test and revalidated the full vcad-topology verification matrix.
+Replayed the full vcad-topology exit-condition verification matrix and logged a fresh trust-surface snapshot in verification-todo.md.
