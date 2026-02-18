@@ -1,1 +1,1 @@
-Completed the P5.6 plane-containment burndown task in vcad-topology by proving coplanarity-derived face-plane vertex containment lemmas in the refinement layer with passing tests and full Verus revalidation (246 verified, 0 errors).
+Completed a P5.3 convexity burndown pass by adding projected orient2d turn-sign consistency specs plus a triangle-trivial proof lemma in the refinement layer, with full vcad-topology tests and Verus verification passing (247 verified, 0 errors).

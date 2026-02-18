@@ -533,6 +533,209 @@ pub open spec fn mesh_all_faces_coplanar_spec(
 }
 
 #[cfg(verus_keep_ghost)]
+pub open spec fn mesh_face_projection_axis_from_normal_spec(
+    normal: vcad_math::vec3::Vec3,
+) -> int {
+    if normal.x.signum() != 0 {
+        0
+    } else if normal.y.signum() != 0 {
+        1
+    } else {
+        2
+    }
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_project_point3_to_2d_for_face_axis_spec(
+    point: vcad_math::point3::Point3,
+    axis: int,
+) -> vcad_math::point2::Point2 {
+    if axis == 0 {
+        vcad_math::point2::Point2 { x: point.y, y: point.z }
+    } else if axis == 1 {
+        vcad_math::point2::Point2 { x: point.x, y: point.z }
+    } else {
+        vcad_math::point2::Point2 { x: point.x, y: point.y }
+    }
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_face_cycle_prev_index_spec(i: int, k: int) -> int {
+    if i == 0 {
+        k - 1
+    } else {
+        i - 1
+    }
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_face_cycle_next_index_spec(i: int, k: int) -> int {
+    if i + 1 < k {
+        i + 1
+    } else {
+        0
+    }
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_face_projected_turn_sign_at_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+    k: int,
+    seed_i: int,
+    i: int,
+) -> int {
+    let normal = mesh_face_seed_plane_normal_spec(m, vertex_positions, f, seed_i);
+    let axis = mesh_face_projection_axis_from_normal_spec(normal);
+    let prev_point = mesh_face_cycle_vertex_position_or_default_at_int_spec(
+        m,
+        vertex_positions,
+        f,
+        mesh_face_cycle_prev_index_spec(i, k),
+    );
+    let curr_point = mesh_face_cycle_vertex_position_or_default_at_int_spec(
+        m,
+        vertex_positions,
+        f,
+        i,
+    );
+    let next_point = mesh_face_cycle_vertex_position_or_default_at_int_spec(
+        m,
+        vertex_positions,
+        f,
+        mesh_face_cycle_next_index_spec(i, k),
+    );
+    vcad_math::orientation::orient2d_spec(
+        mesh_project_point3_to_2d_for_face_axis_spec(prev_point, axis),
+        mesh_project_point3_to_2d_for_face_axis_spec(curr_point, axis),
+        mesh_project_point3_to_2d_for_face_axis_spec(next_point, axis),
+    ).signum()
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_face_projected_turn_sign_consistency_witness_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+    k: int,
+    seed_i: int,
+    expected_sign: int,
+) -> bool {
+    &&& mesh_index_bounds_spec(m)
+    &&& mesh_geometry_input_spec(m, vertex_positions)
+    &&& 0 <= f < mesh_face_count_spec(m)
+    &&& #[trigger] mesh_face_cycle_witness_spec(m, f, k)
+    &&& 0 <= seed_i
+    &&& seed_i + 2 < k
+    &&& mesh_face_seed_plane_normal_spec(m, vertex_positions, f, seed_i).norm2_spec().signum() != 0
+    &&& if k == 3 {
+        let triangle_turn_sign = mesh_face_projected_turn_sign_at_spec(
+            m,
+            vertex_positions,
+            f,
+            k,
+            seed_i,
+            0,
+        );
+        &&& expected_sign != 0
+        &&& triangle_turn_sign == expected_sign
+    } else {
+        &&& expected_sign != 0
+        &&& forall|i: int|
+            0 <= i < k ==> #[trigger] mesh_face_projected_turn_sign_at_spec(
+                m,
+                vertex_positions,
+                f,
+                k,
+                seed_i,
+                i,
+            ) == expected_sign
+    }
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_face_projected_turn_sign_consistency_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+) -> bool {
+    &&& 0 <= f < mesh_face_count_spec(m)
+    &&& exists|k: int, seed_i: int, expected_sign: int| #[trigger]
+        mesh_face_projected_turn_sign_consistency_witness_spec(
+            m,
+            vertex_positions,
+            f,
+            k,
+            seed_i,
+            expected_sign,
+        )
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_all_faces_projected_turn_sign_consistency_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+) -> bool {
+    &&& mesh_geometry_input_spec(m, vertex_positions)
+    &&& forall|f: int| 0 <= f < mesh_face_count_spec(m)
+        ==> #[trigger] mesh_face_projected_turn_sign_consistency_spec(m, vertex_positions, f)
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_triangle_face_projected_turn_sign_consistency_trivial(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+    seed_i: int,
+)
+    requires
+        mesh_index_bounds_spec(m),
+        mesh_geometry_input_spec(m, vertex_positions),
+        0 <= f < mesh_face_count_spec(m),
+        mesh_face_cycle_witness_spec(m, f, 3),
+        0 <= seed_i,
+        seed_i + 2 < 3,
+        mesh_face_seed_plane_normal_spec(m, vertex_positions, f, seed_i).norm2_spec().signum() != 0,
+        mesh_face_projected_turn_sign_at_spec(m, vertex_positions, f, 3, seed_i, 0) != 0,
+    ensures
+        mesh_face_projected_turn_sign_consistency_spec(m, vertex_positions, f),
+{
+    let expected_sign = mesh_face_projected_turn_sign_at_spec(m, vertex_positions, f, 3, seed_i, 0);
+    assert(expected_sign != 0);
+
+    assert(mesh_face_projected_turn_sign_consistency_witness_spec(
+        m,
+        vertex_positions,
+        f,
+        3,
+        seed_i,
+        expected_sign,
+    ));
+    assert(exists|k: int, si: int, s: int| #[trigger]
+        mesh_face_projected_turn_sign_consistency_witness_spec(
+            m,
+            vertex_positions,
+            f,
+            k,
+            si,
+            s,
+        )) by {
+        let k = 3;
+        let si = seed_i;
+        let s = expected_sign;
+        assert(mesh_face_projected_turn_sign_consistency_witness_spec(
+            m,
+            vertex_positions,
+            f,
+            k,
+            si,
+            s,
+        ));
+    };
+}
+
+#[cfg(verus_keep_ghost)]
 pub open spec fn mesh_face_cycle_shift_index_spec(i: int, shift: int, k: int) -> int {
     if i + shift < k {
         i + shift

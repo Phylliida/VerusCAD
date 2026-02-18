@@ -41,11 +41,11 @@ This doc expands those targets into executable TODOs aligned with the current `v
 
 ## P5.3 Invariant: Face Convexity (Roadmap)
 - [x] Choose deterministic face-local orientation strategy for convexity tests (implemented with per-face reference normal + `orient3d_sign`, without 2D projection).
-- [ ] Spec: projected consecutive `orient2d` signs are globally consistent per face.
+- [x] Spec: projected consecutive `orient2d` signs are globally consistent per face.
 - [x] Runtime checker: implement `check_face_convexity`.
 - [ ] Proof: runtime checker correctness vs convexity spec.
 - [ ] Proof: convexity checker uses only legally projected points from a coplanar face.
-- [ ] Proof: triangle faces satisfy convexity trivially.
+- [x] Proof: triangle faces satisfy convexity trivially.
 
 ## P5.4 Invariant: Outward Face Normals (Roadmap)
 - [ ] Define oriented face-normal spec from face winding and plane normal.
@@ -139,6 +139,26 @@ This doc expands those targets into executable TODOs aligned with the current `v
   - document which Euler-operator preconditions must preserve geometric invariants versus recheck them.
 
 ## Burndown Log
+- 2026-02-18: Completed the P5.3 projected-turn convexity spec + triangle-trivial proof item in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
+  - added face-local projected convexity spec helpers:
+    - `mesh_face_projection_axis_from_normal_spec`
+    - `mesh_project_point3_to_2d_for_face_axis_spec`
+    - `mesh_face_cycle_prev_index_spec`
+    - `mesh_face_cycle_next_index_spec`
+    - `mesh_face_projected_turn_sign_at_spec`
+  - added projected turn-sign consistency specs:
+    - `mesh_face_projected_turn_sign_consistency_witness_spec`
+    - `mesh_face_projected_turn_sign_consistency_spec`
+    - `mesh_all_faces_projected_turn_sign_consistency_spec`
+  - added triangle lemma `lemma_triangle_face_projected_turn_sign_consistency_trivial`, proving the triangle case discharges to the projected-turn convexity spec under explicit nondegenerate witness preconditions.
+- 2026-02-18: Failed attempts in this P5.3 projected-turn pass: none.
+- 2026-02-18: Revalidated after the P5.3 projected-turn convexity additions:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (212 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology.sh` (247 verified, 0 errors)
 - 2026-02-18: Completed the P5.6 plane-containment proof item in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
   - added seed-plane helpers:
     - `mesh_face_seed_plane_normal_spec`
