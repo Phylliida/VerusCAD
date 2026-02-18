@@ -59,10 +59,18 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
 - [ ] Prove face-cycle construction assigns coherent `next/prev/face` fields.
   - foundation added: `from_face_cycles_next_prev_face_coherent_spec` with projection lemmas from
     `from_face_cycles_incidence_model_spec` / `from_face_cycles_success_spec`.
-  - executable bridge added: `ex_mesh_from_face_cycles` maps runtime `Result` outcomes to
-    `from_face_cycles_success_spec` / `from_face_cycles_failure_spec`.
-  - note: the bridge currently uses `#[verifier::external_fn_specification]` (trusted); replace with
-    constructive proof from implementation as this section advances.
+  - burndown update (2026-02-18):
+    - removed the trusted success/failure contract on `ex_mesh_from_face_cycles` by replacing
+      `#[verifier::external_fn_specification]` with a minimal `#[verifier::external_body]`
+      bridge in `src/runtime_halfedge_mesh_refinement.rs`.
+    - constructive wrappers now call this bridge (instead of direct `Mesh::from_face_cycles`)
+      so verus-proof builds stay well-typed without assuming
+      `from_face_cycles_success_spec` / `from_face_cycles_failure_spec`.
+    - active constructive path remains:
+      `runtime_check_from_face_cycles_next_prev_face_coherent` +
+      `from_face_cycles_constructive_next_prev_face`.
+    - remaining gap: direct constructive `Result`-level linkage to full
+      `from_face_cycles_success_spec` / `from_face_cycles_failure_spec` is still open.
   - file: `src/halfedge_mesh.rs`
 - [ ] Prove twin assignment is total for closed inputs and involutive.
   - file: `src/halfedge_mesh.rs`
@@ -228,6 +236,17 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels`
       passed (`34 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`49 verified, 0 errors`).
+  - burndown update (2026-02-18, later):
+    - attempted to strengthen `kernel_check_face_cycles` toward explicit spec-level
+      no-overlap/global-coverage linkage by introducing coverage witness predicates and
+      threading additional `global_seen`/`local_seen` existential invariants in
+      `src/verified_checker_kernels.rs`.
+    - this attempt was rolled back: quantified trigger obligations around local witness
+      preservation and completed-face witness lifting remained brittle, and the proof state
+      regressed verifier stability.
+    - no executable-proof behavior change was kept from this attempt; the stable contract
+      remains `out ==> kernel_face_representative_cycles_total_spec(m)` and the pending
+      no-overlap/global-coverage linkage is still tracked here.
   - file: `src/verified_checker_kernels.rs`
 - [x] Verify `check_no_degenerate_edges`.
   - in `verus-proofs` builds, this is delegated to verified kernel checker.

@@ -715,23 +715,11 @@ pub proof fn lemma_from_face_cycles_success_implies_vertex_representatives(
     }
 }
 
-#[verifier::external_fn_specification]
+#[verifier::external_body]
 pub fn ex_mesh_from_face_cycles(
     vertex_positions: Vec<RuntimePoint3>,
     face_cycles: &[Vec<usize>],
 ) -> (out: Result<Mesh, MeshBuildError>)
-    ensures
-        match out {
-            Result::Ok(m) => from_face_cycles_success_spec(
-                vertex_positions@.len() as int,
-                face_cycles_exec_to_model_spec(face_cycles@),
-                m@,
-            ),
-            Result::Err(_) => from_face_cycles_failure_spec(
-                vertex_positions@.len() as int,
-                face_cycles_exec_to_model_spec(face_cycles@),
-            ),
-        },
 {
     Mesh::from_face_cycles(vertex_positions, face_cycles)
 }
@@ -891,7 +879,7 @@ pub fn from_face_cycles_constructive_next_prev_face(
             Result::Err(_) => true,
         },
 {
-    let out0 = Mesh::from_face_cycles(vertex_positions, face_cycles);
+    let out0 = ex_mesh_from_face_cycles(vertex_positions, face_cycles);
     match out0 {
         Result::Ok(m) => {
             let ok = runtime_check_from_face_cycles_next_prev_face_coherent(&m, face_cycles);
@@ -994,7 +982,7 @@ pub fn from_face_cycles_constructive_vertex_representatives(
             Result::Err(_) => true,
         },
 {
-    let out0 = Mesh::from_face_cycles(vertex_positions, face_cycles);
+    let out0 = ex_mesh_from_face_cycles(vertex_positions, face_cycles);
     match out0 {
         Result::Ok(m) => {
             let ok = runtime_check_vertex_representative_valid_nonisolated(&m);
