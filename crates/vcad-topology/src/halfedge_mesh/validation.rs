@@ -2,7 +2,7 @@
 use std::collections::HashSet;
 
 #[cfg(feature = "geometry-checks")]
-use vcad_geometry::collinearity_coplanarity::collinear3d;
+use vcad_geometry::collinearity_coplanarity::{collinear3d, coplanar};
 #[cfg(feature = "verus-proofs")]
 use crate::verified_checker_kernels::{
     kernel_check_edge_has_exactly_two_half_edges, kernel_check_face_cycles, kernel_check_index_bounds,
@@ -78,8 +78,49 @@ impl Mesh {
     }
 
     #[cfg(feature = "geometry-checks")]
+    /// Optional geometric extension: each face cycle's vertices are coplanar.
+    pub fn check_face_coplanarity(&self) -> bool {
+        if !self.check_index_bounds() || !self.check_face_cycles() {
+            return false;
+        }
+
+        let hcnt = self.half_edges.len();
+        for face in &self.faces {
+            let h0 = face.half_edge;
+            let h1 = self.half_edges[h0].next;
+            let h2 = self.half_edges[h1].next;
+
+            let a = &self.vertices[self.half_edges[h0].vertex].position;
+            let b = &self.vertices[self.half_edges[h1].vertex].position;
+            let c = &self.vertices[self.half_edges[h2].vertex].position;
+
+            let mut h = self.half_edges[h2].next;
+            let mut steps = 0usize;
+            while h != h0 {
+                let d = &self.vertices[self.half_edges[h].vertex].position;
+                if !coplanar(a, b, c, d) {
+                    return false;
+                }
+
+                h = self.half_edges[h].next;
+                steps += 1;
+                if steps > hcnt {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    pub fn check_geometric_topological_consistency(&self) -> bool {
+        self.check_face_corner_non_collinearity() && self.check_face_coplanarity()
+    }
+
+    #[cfg(feature = "geometry-checks")]
     pub fn is_valid_with_geometry(&self) -> bool {
-        self.is_valid() && self.check_face_corner_non_collinearity()
+        self.is_valid() && self.check_geometric_topological_consistency()
     }
     #[cfg(feature = "verus-proofs")]
     pub(crate) fn to_kernel_mesh_for_verification(&self) -> KernelMesh {

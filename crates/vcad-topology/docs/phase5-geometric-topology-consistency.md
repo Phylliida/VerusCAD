@@ -13,7 +13,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 
 ## Dependencies and Ground Rules
 - [ ] Keep Phase 4 validity (`Mesh::is_valid`) as a required precondition for all Phase 5 geometric theorems/checkers.
-- [ ] Reuse `vcad-geometry` predicates/lemmas (`orient2d`, `orient3d`, coplanarity, side tests, intersection helpers) rather than duplicating math proofs in `vcad-topology`.
+- [x] Reuse `vcad-geometry` predicates/lemmas (`orient2d`, `orient3d`, coplanarity, side tests, intersection helpers) rather than duplicating math proofs in `vcad-topology`.
 - [ ] Keep exact arithmetic path only (`RuntimePoint3`/`Scalar`); do not add floating-point fallback logic in verified paths.
 - [ ] Remove trusted boundaries for any new Phase 5 APIs (no new `assume_specification` debt).
 
@@ -29,7 +29,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 ## P5.1 Invariant: Face Coplanarity (Roadmap)
 - [ ] Spec: define `mesh_face_coplanar_spec(m, f)` (equivalent to orient3d = 0 for all face-vertex quadruples).
 - [ ] Spec: define aggregate `mesh_all_faces_coplanar_spec(m)`.
-- [ ] Runtime checker: implement `check_face_coplanarity` (or equivalent) over all faces.
+- [x] Runtime checker: implement `check_face_coplanarity` (or equivalent) over all faces.
 - [ ] Proof: runtime checker correctness vs spec (sound + complete under documented preconditions).
 - [ ] Proof: coplanarity is stable under cyclic reindexing of a face cycle.
 
@@ -71,10 +71,10 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [ ] Proof: twin/adjacent orientation interactions agree with plane-normal conventions.
 
 ## P5.7 Validity Gate Integration
-- [ ] Add an explicit Phase 5 aggregate predicate/checker, for example:
+- [x] Add an explicit Phase 5 aggregate predicate/checker, for example:
   - `mesh_geometric_topological_consistency_spec`
   - `Mesh::check_geometric_topological_consistency()`
-- [ ] Define final gate composition (for example `is_valid_phase5 = is_valid && geometric_consistency`).
+- [x] Define final gate composition (for example `is_valid_phase5 = is_valid && geometric_consistency`).
 - [ ] Keep existing optional `geometry-checks` feature behavior coherent with new verified gate (document if Phase 5 stays feature-gated or becomes default).
 - [ ] Prove aggregate checker equivalence to aggregate Phase 5 spec.
 
@@ -87,14 +87,30 @@ This doc expands those targets into executable TODOs aligned with the current `v
 
 ## P5.9 Tests and Counterexamples
 - [ ] Positive fixtures: tetrahedron, cube, triangular prism pass Phase 5 gate.
-- [ ] Negative fixture: non-coplanar face fails coplanarity checker.
+- [x] Negative fixture: non-coplanar face fails coplanarity checker.
 - [ ] Negative fixture: concave polygon face fails convexity checker.
 - [ ] Negative fixture: flipped face winding fails outward-normal checker.
 - [ ] Negative fixture: non-adjacent face intersection fails self-intersection checker.
-- [ ] Regression tests under:
+- [x] Regression tests under:
   - default build
   - `--features geometry-checks`
   - `--features "geometry-checks,verus-proofs"`
+
+## Burndown Log
+- 2026-02-18: Implemented `Mesh::check_face_coplanarity()` in `src/halfedge_mesh/validation.rs`, using `vcad_geometry::collinearity_coplanarity::coplanar` on each face cycle with a fixed local `(a,b,c)` plane basis and checking all remaining face vertices against that plane.
+- 2026-02-18: Added `Mesh::check_geometric_topological_consistency()` as a Phase-5-in-progress aggregate checker (`corner_non_collinearity && face_coplanarity`) and updated `Mesh::is_valid_with_geometry()` to require this aggregate.
+- 2026-02-18: Extended `src/halfedge_mesh/tests.rs`:
+  - positive fixtures (`tetrahedron`, `cube`, `triangular_prism`) now assert `check_face_coplanarity()` and the aggregate checker;
+  - added `noncoplanar_quad_faces_fail_face_coplanarity` negative test;
+  - strengthened collinear negative test to assert coplanarity can still pass while aggregate fails.
+- 2026-02-18: Verification/test commands run after changes:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (192 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (227 verified, 0 errors)
+- 2026-02-18: Failed attempts: none in this pass.
 
 ## Suggested File Landing Zones
 - Runtime checks: `src/halfedge_mesh/validation.rs`

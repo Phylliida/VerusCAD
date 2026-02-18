@@ -9,6 +9,8 @@ use vcad_math::runtime_point3::RuntimePoint3;
         #[cfg(feature = "geometry-checks")]
         {
             assert!(mesh.check_face_corner_non_collinearity());
+            assert!(mesh.check_face_coplanarity());
+            assert!(mesh.check_geometric_topological_consistency());
             assert!(mesh.is_valid_with_geometry());
         }
         assert_eq!(mesh.vertices.len(), 4);
@@ -27,6 +29,8 @@ use vcad_math::runtime_point3::RuntimePoint3;
         #[cfg(feature = "geometry-checks")]
         {
             assert!(mesh.check_face_corner_non_collinearity());
+            assert!(mesh.check_face_coplanarity());
+            assert!(mesh.check_geometric_topological_consistency());
             assert!(mesh.is_valid_with_geometry());
         }
         assert_eq!(mesh.vertices.len(), 8);
@@ -45,6 +49,8 @@ use vcad_math::runtime_point3::RuntimePoint3;
         #[cfg(feature = "geometry-checks")]
         {
             assert!(mesh.check_face_corner_non_collinearity());
+            assert!(mesh.check_face_coplanarity());
+            assert!(mesh.check_geometric_topological_consistency());
             assert!(mesh.is_valid_with_geometry());
         }
         assert_eq!(mesh.vertices.len(), 6);
@@ -120,6 +126,29 @@ use vcad_math::runtime_point3::RuntimePoint3;
         assert!(mesh.is_structurally_valid());
         assert!(mesh.is_valid());
         assert!(!mesh.check_face_corner_non_collinearity());
+        assert!(mesh.check_face_coplanarity());
+        assert!(!mesh.check_geometric_topological_consistency());
+        assert!(!mesh.is_valid_with_geometry());
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn noncoplanar_quad_faces_fail_face_coplanarity() {
+        let vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(0, 1, 0),
+            RuntimePoint3::from_ints(0, 0, 1),
+        ];
+        let faces = vec![vec![0, 1, 2, 3], vec![0, 3, 2, 1]];
+
+        let mesh = Mesh::from_face_cycles(vertices, &faces)
+            .expect("closed opposite-orientation noncoplanar quad faces should build");
+        assert!(mesh.is_structurally_valid());
+        assert!(mesh.is_valid());
+        assert!(mesh.check_face_corner_non_collinearity());
+        assert!(!mesh.check_face_coplanarity());
+        assert!(!mesh.check_geometric_topological_consistency());
         assert!(!mesh.is_valid_with_geometry());
     }
 
