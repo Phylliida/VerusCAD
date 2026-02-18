@@ -420,6 +420,10 @@ impl Mesh {
     ///
     /// This treats negative signed volume as the outward-orientation
     /// convention for closed components.
+    ///
+    /// Degeneracy policy:
+    /// - zero signed-volume components are rejected;
+    /// - exact arithmetic is used throughout (no epsilon tolerance path).
     pub fn check_outward_face_normals(&self) -> bool {
         if !self.is_valid() {
             return false;
@@ -751,7 +755,14 @@ impl Mesh {
 
     #[cfg(feature = "geometry-checks")]
     /// Optional geometric extension: non-adjacent face pairs must not
-    /// intersect; shared-vertex and shared-edge contacts are exempt.
+    /// intersect.
+    ///
+    /// Degeneracy policy:
+    /// - adjacency exemptions are index-based: if two face cycles share any
+    ///   vertex index, this checker skips that pair;
+    /// - geometric position coincidence with different vertex indices is not
+    ///   exempt (for example, disconnected components touching at one point);
+    /// - exact arithmetic is used throughout (no epsilon tolerance path).
     pub fn check_no_forbidden_face_face_intersections(&self) -> bool {
         if !self.is_valid() {
             return false;

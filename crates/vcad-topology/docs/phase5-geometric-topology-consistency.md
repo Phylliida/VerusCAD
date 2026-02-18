@@ -105,12 +105,24 @@ This doc expands those targets into executable TODOs aligned with the current `v
   - `--features "geometry-checks,verus-proofs"`
 
 ## P5.10 Degeneracy Policy and Contract Hardening
-- [ ] Write an explicit Phase 5 degeneracy policy (accepted vs rejected cases) for:
+- [x] Write an explicit Phase 5 degeneracy policy (accepted vs rejected cases) for:
   - coplanar neighboring faces
   - vertex-touch-only contacts between components
   - zero-volume or near-degenerate closed components (in exact arithmetic terms)
-- [ ] Ensure each runtime checker contract and precondition text matches that policy (no implicit checker-specific behavior).
-- [ ] Add policy-lock tests: at least one positive and one negative fixture for each documented boundary case.
+- [x] Ensure each runtime checker contract and precondition text matches that policy (no implicit checker-specific behavior).
+- [x] Add policy-lock tests: at least one positive and one negative fixture for each documented boundary case.
+
+Current explicit policy (runtime behavior locked by tests):
+- Coplanar neighboring faces:
+  - accepted when the pair is topologically adjacent by shared vertex index and all other Phase 5 checks pass;
+  - rejected when coplanar overlap yields a zero-volume closed component (fails outward-normal signed-volume check).
+- Vertex-touch-only contacts between components:
+  - rejected when the touch is geometric only (coincident positions with distinct vertex indices), because adjacency exemptions are index-based;
+  - accepted when disconnected components are geometrically disjoint.
+- Zero-volume / near-degenerate closed components:
+  - exact arithmetic only (no floating-point epsilon path, so "near-degenerate" means exact degeneracy in this checker set);
+  - rejected when component signed volume is zero (or positive) under the outward convention;
+  - rejected earlier for exact face/edge degeneracy by non-collinearity and zero-length edge checks.
 
 ## P5.11 Diagnostics and Scalability Guardrails
 - [ ] Add diagnostic checker variants that return a first failing witness (face id / edge id / face-pair + reason), not only `bool`.
@@ -139,6 +151,29 @@ This doc expands those targets into executable TODOs aligned with the current `v
   - document which Euler-operator preconditions must preserve geometric invariants versus recheck them.
 
 ## Burndown Log
+- 2026-02-18: Completed the P5.10 degeneracy-policy and contract-hardening pass:
+  - in `src/halfedge_mesh/validation.rs`, documented explicit checker-contract policy in runtime APIs:
+    - `Mesh::check_no_forbidden_face_face_intersections()` now states adjacency exemption is index-based (shared vertex index), and geometric-only position coincidence across distinct vertex indices is not exempt;
+    - `Mesh::check_outward_face_normals()` now states zero signed-volume components are rejected in exact arithmetic (no epsilon tolerance path).
+  - in `src/halfedge_mesh/tests.rs`, added policy-lock fixtures (positive + negative for each documented boundary class):
+    - coplanar neighboring faces:
+      - `coplanar_neighboring_faces_policy_split_prism_side_is_accepted`
+      - `coplanar_neighboring_faces_policy_coincident_double_face_is_rejected`
+    - vertex-touch-only component contact:
+      - `vertex_touch_only_components_policy_separated_components_are_accepted`
+      - `vertex_touch_only_components_policy_position_touch_is_rejected`
+    - zero-volume boundary:
+      - `zero_volume_policy_nonzero_tetrahedron_is_accepted`
+      - `zero_volume_policy_planar_closed_component_is_rejected`
+  - in this Phase 5 burndown doc, marked all P5.10 checklist items complete and recorded explicit accepted/rejected policy statements under `## P5.10`.
+- 2026-02-18: Failed attempts in this P5.10 policy-hardening pass: none.
+- 2026-02-18: Revalidated after the P5.10 policy and tests pass:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (215 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (250 verified, 0 errors)
 - 2026-02-18: Completed the P5.4 local-orientation proof item by adding explicit shared-edge orientation specs and constructive proof wiring:
   - in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
     - added `mesh_twin_faces_distinct_at_spec`, `mesh_twin_faces_distinct_spec`, and aggregate `mesh_shared_edge_local_orientation_consistency_spec`;
@@ -403,7 +438,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 ## Exit Criteria
 - [ ] Every roadmap Phase 5 checkbox is implemented and proved in `vcad-topology`.
 - [ ] No trusted assumptions remain for Phase 5 APIs.
-- [ ] Phase 5 degeneracy policy and checker contracts are explicit and test-locked.
+- [x] Phase 5 degeneracy policy and checker contracts are explicit and test-locked.
 - [x] Verification passes:
   - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
   - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels`
