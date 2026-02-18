@@ -69,7 +69,25 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
 - [ ] Prove undirected-edge grouping induces exactly-two-half-edges per edge.
   - file: `src/halfedge_mesh.rs`
 - [ ] Prove vertex representative (`vertex.half_edge`) is valid and non-isolated.
+  - burndown update (2026-02-18):
+    - landed explicit refinement predicate in `src/runtime_halfedge_mesh_refinement.rs`:
+      `mesh_vertex_representative_valid_nonisolated_spec`.
+    - added constructor-facing projection predicate
+      `from_face_cycles_vertex_representatives_spec` plus projection lemmas:
+      `lemma_from_face_cycles_incidence_implies_vertex_representatives` and
+      `lemma_from_face_cycles_success_implies_vertex_representatives`.
+    - added constructive executable checker
+      `runtime_check_vertex_representative_valid_nonisolated` and wrapper
+      `from_face_cycles_constructive_vertex_representatives` to expose a non-trusted
+      runtime proof path (`Ok(m) ==> from_face_cycles_vertex_representatives_spec(m@)`).
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` passed
+      (`20 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`54 verified, 0 errors`).
+    - remaining gap: direct untrusted linkage from the raw `Mesh::from_face_cycles`
+      implementation to full constructor success semantics is still tracked under section C.
   - file: `src/halfedge_mesh.rs`
+  - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 
 ## D. Verify Invariant Checker Functions
 - [x] Verify checker kernel `kernel_check_index_bounds` against explicit spec (`kernel_index_bounds_spec`).

@@ -354,6 +354,15 @@ pub open spec fn mesh_euler_closed_components_spec(m: MeshModel) -> bool {
         == 2 * mesh_component_count_spec(m)
 }
 
+pub open spec fn mesh_vertex_representative_valid_nonisolated_spec(m: MeshModel) -> bool {
+    forall|v: int|
+        #![trigger m.vertex_half_edges[v]]
+        0 <= v < mesh_vertex_count_spec(m) ==> {
+            &&& 0 <= m.vertex_half_edges[v] < mesh_half_edge_count_spec(m)
+            &&& m.half_edges[m.vertex_half_edges[v]].vertex == v
+        }
+}
+
 pub open spec fn mesh_structurally_valid_spec(m: MeshModel) -> bool {
     &&& mesh_vertex_count_spec(m) > 0
     &&& mesh_edge_count_spec(m) > 0
@@ -632,6 +641,10 @@ pub open spec fn from_face_cycles_next_prev_face_coherent_spec(
             ==> from_face_cycles_next_prev_face_at_spec(face_cycles, m, f, i)
 }
 
+pub open spec fn from_face_cycles_vertex_representatives_spec(m: MeshModel) -> bool {
+    mesh_vertex_representative_valid_nonisolated_spec(m)
+}
+
 pub open spec fn from_face_cycles_success_spec(
     vertex_count: int,
     face_cycles: Seq<Seq<int>>,
@@ -670,6 +683,35 @@ pub proof fn lemma_from_face_cycles_success_implies_next_prev_face_coherent(
     if from_face_cycles_success_spec(vertex_count, face_cycles, m) {
         assert(from_face_cycles_incidence_model_spec(vertex_count, face_cycles, m));
         lemma_from_face_cycles_incidence_implies_next_prev_face_coherent(vertex_count, face_cycles, m);
+    }
+}
+
+pub proof fn lemma_from_face_cycles_incidence_implies_vertex_representatives(
+    vertex_count: int,
+    face_cycles: Seq<Seq<int>>,
+    m: MeshModel,
+)
+    ensures
+        from_face_cycles_incidence_model_spec(vertex_count, face_cycles, m)
+            ==> from_face_cycles_vertex_representatives_spec(m),
+{
+    if from_face_cycles_incidence_model_spec(vertex_count, face_cycles, m) {
+        assert(from_face_cycles_vertex_representatives_spec(m));
+    }
+}
+
+pub proof fn lemma_from_face_cycles_success_implies_vertex_representatives(
+    vertex_count: int,
+    face_cycles: Seq<Seq<int>>,
+    m: MeshModel,
+)
+    ensures
+        from_face_cycles_success_spec(vertex_count, face_cycles, m)
+            ==> from_face_cycles_vertex_representatives_spec(m),
+{
+    if from_face_cycles_success_spec(vertex_count, face_cycles, m) {
+        assert(from_face_cycles_incidence_model_spec(vertex_count, face_cycles, m));
+        lemma_from_face_cycles_incidence_implies_vertex_representatives(vertex_count, face_cycles, m);
     }
 }
 
@@ -853,6 +895,109 @@ pub fn from_face_cycles_constructive_next_prev_face(
     match out0 {
         Result::Ok(m) => {
             let ok = runtime_check_from_face_cycles_next_prev_face_coherent(&m, face_cycles);
+            if ok {
+                Result::Ok(m)
+            } else {
+                Result::Err(mesh_build_error_empty_face_set())
+            }
+        }
+        Result::Err(e) => Result::Err(e),
+    }
+}
+
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
+pub fn runtime_check_vertex_representative_valid_nonisolated(m: &Mesh) -> (out: bool)
+    ensures
+        out ==> mesh_vertex_representative_valid_nonisolated_spec(m@),
+{
+    let hcnt = m.half_edges.len();
+    let mut v: usize = 0;
+    while v < m.vertices.len()
+        invariant
+            hcnt == m.half_edges.len(),
+            0 <= v <= m.vertices.len(),
+            forall|vp: int| 0 <= vp < v as int ==> {
+                &&& 0 <= #[trigger] m@.vertex_half_edges[vp] < mesh_half_edge_count_spec(m@)
+                &&& m@.half_edges[m@.vertex_half_edges[vp]].vertex == vp
+            },
+    {
+        let h = m.vertices[v].half_edge;
+        if h >= hcnt {
+            return false;
+        }
+        let hv = m.half_edges[h].vertex;
+        if hv != v {
+            return false;
+        }
+
+        proof {
+            assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+            assert(m@.vertex_half_edges[v as int] == h as int);
+            assert(m@.half_edges[h as int].vertex == m.half_edges@[h as int].vertex);
+            assert(m.half_edges@[h as int].vertex == hv as int);
+            assert(m@.half_edges[h as int].vertex == v as int);
+            assert(forall|vp: int| 0 <= vp < (v + 1) as int ==> {
+                &&& 0 <= #[trigger] m@.vertex_half_edges[vp] < mesh_half_edge_count_spec(m@)
+                &&& m@.half_edges[m@.vertex_half_edges[vp]].vertex == vp
+            }) by {
+                assert forall|vp: int|
+                    0 <= vp < (v + 1) as int implies {
+                        &&& 0 <= #[trigger] m@.vertex_half_edges[vp] < mesh_half_edge_count_spec(m@)
+                        &&& m@.half_edges[m@.vertex_half_edges[vp]].vertex == vp
+                    } by {
+                    if vp < v as int {
+                        assert(0 <= vp < v as int);
+                    } else {
+                        assert(vp == v as int);
+                        assert(#[trigger] m@.vertex_half_edges[vp] == h as int);
+                        assert(0 <= h as int);
+                        assert((h as int) < mesh_half_edge_count_spec(m@));
+                        assert(#[trigger] m@.half_edges[h as int].vertex == vp);
+                    }
+                };
+            }
+        }
+
+        v += 1;
+    }
+
+    proof {
+        assert(v == m.vertices.len());
+        assert(mesh_vertex_count_spec(m@) == m.vertices.len() as int);
+        assert(forall|vp: int| 0 <= vp < mesh_vertex_count_spec(m@) ==> {
+            &&& 0 <= #[trigger] m@.vertex_half_edges[vp] < mesh_half_edge_count_spec(m@)
+            &&& m@.half_edges[m@.vertex_half_edges[vp]].vertex == vp
+        }) by {
+            assert forall|vp: int|
+                0 <= vp < mesh_vertex_count_spec(m@) implies {
+                    &&& 0 <= #[trigger] m@.vertex_half_edges[vp] < mesh_half_edge_count_spec(m@)
+                    &&& m@.half_edges[m@.vertex_half_edges[vp]].vertex == vp
+                } by {
+                assert(mesh_vertex_count_spec(m@) == v as int);
+                assert(0 <= vp < v as int);
+            };
+        }
+        assert(mesh_vertex_representative_valid_nonisolated_spec(m@));
+    }
+    true
+}
+
+#[allow(dead_code)]
+pub fn from_face_cycles_constructive_vertex_representatives(
+    vertex_positions: Vec<RuntimePoint3>,
+    face_cycles: &[Vec<usize>],
+) -> (out: Result<Mesh, MeshBuildError>)
+    ensures
+        match out {
+            Result::Ok(m) => from_face_cycles_vertex_representatives_spec(m@),
+            Result::Err(_) => true,
+        },
+{
+    let out0 = Mesh::from_face_cycles(vertex_positions, face_cycles);
+    match out0 {
+        Result::Ok(m) => {
+            let ok = runtime_check_vertex_representative_valid_nonisolated(&m);
             if ok {
                 Result::Ok(m)
             } else {
