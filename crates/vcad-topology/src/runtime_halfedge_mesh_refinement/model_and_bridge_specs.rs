@@ -1016,6 +1016,54 @@ pub open spec fn mesh_face_seed_plane_normal_spec(
 }
 
 #[cfg(verus_keep_ghost)]
+pub open spec fn mesh_face_seed_plane_edge_direction_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+    seed_i: int,
+) -> vcad_math::vec3::Vec3 {
+    let p0 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, seed_i);
+    let p1 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, seed_i + 1);
+    p1.sub_spec(p0)
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_face_seed_plane_corner_direction_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+    seed_i: int,
+) -> vcad_math::vec3::Vec3 {
+    let p0 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, seed_i);
+    let p2 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, seed_i + 2);
+    p2.sub_spec(p0)
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_face_seed_plane_normal_decomposes_into_seed_directions(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+    seed_i: int,
+)
+    ensures
+        mesh_face_seed_plane_normal_spec(m, vertex_positions, f, seed_i)
+            == mesh_face_seed_plane_edge_direction_spec(m, vertex_positions, f, seed_i).cross_spec(
+                mesh_face_seed_plane_corner_direction_spec(m, vertex_positions, f, seed_i),
+            ),
+{
+    let p0 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, seed_i);
+    let p1 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, seed_i + 1);
+    let p2 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, seed_i + 2);
+    assert(
+        mesh_face_seed_plane_normal_spec(m, vertex_positions, f, seed_i)
+            == p1.sub_spec(p0).cross_spec(p2.sub_spec(p0))
+    );
+    assert(mesh_face_seed_plane_edge_direction_spec(m, vertex_positions, f, seed_i) == p1.sub_spec(p0));
+    assert(mesh_face_seed_plane_corner_direction_spec(m, vertex_positions, f, seed_i) == p2.sub_spec(p0));
+}
+
+#[cfg(verus_keep_ghost)]
 pub open spec fn mesh_face_seed_plane_offset_relative_to_origin_spec(
     m: MeshModel,
     vertex_positions: Seq<vcad_math::point3::Point3>,

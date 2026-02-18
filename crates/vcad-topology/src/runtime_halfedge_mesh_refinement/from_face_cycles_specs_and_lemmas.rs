@@ -835,6 +835,95 @@ pub proof fn lemma_mesh_all_twin_half_edges_reverse_segments_from_model_and_posi
     };
 }
 
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_half_edge_direction_vector_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    h: int,
+) -> vcad_math::vec3::Vec3 {
+    mesh_half_edge_to_position_spec(m, vertex_positions, h).sub_spec(
+        mesh_half_edge_from_position_spec(m, vertex_positions, h),
+    )
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_twin_half_edges_opposite_direction_vectors_at_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    h: int,
+) -> bool {
+    let t = m.half_edges[h].twin;
+    &&& mesh_twin_half_edges_reverse_segment_at_spec(m, vertex_positions, h)
+    &&& mesh_half_edge_direction_vector_spec(m, vertex_positions, t)
+        == mesh_half_edge_direction_vector_spec(m, vertex_positions, h).neg_spec()
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_all_twin_half_edges_opposite_direction_vectors_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+) -> bool {
+    forall|h: int|
+        0 <= h < mesh_half_edge_count_spec(m) ==> #[trigger]
+            mesh_twin_half_edges_opposite_direction_vectors_at_spec(m, vertex_positions, h)
+}
+
+#[cfg(verus_keep_ghost)]
+#[verifier::spinoff_prover]
+pub proof fn lemma_mesh_twin_half_edges_opposite_direction_vectors_at_from_model_and_positions(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    h: int,
+)
+    requires
+        mesh_index_bounds_spec(m),
+        mesh_geometry_input_spec(m, vertex_positions),
+        from_face_cycles_twin_endpoint_correspondence_spec(m),
+        0 <= h < mesh_half_edge_count_spec(m),
+    ensures
+        mesh_twin_half_edges_opposite_direction_vectors_at_spec(m, vertex_positions, h),
+{
+    lemma_mesh_twin_half_edges_reverse_segment_at_from_model_and_positions(m, vertex_positions, h);
+
+    let t = m.half_edges[h].twin;
+    let h_from = mesh_half_edge_from_position_spec(m, vertex_positions, h);
+    let h_to = mesh_half_edge_to_position_spec(m, vertex_positions, h);
+    let t_from = mesh_half_edge_from_position_spec(m, vertex_positions, t);
+    let t_to = mesh_half_edge_to_position_spec(m, vertex_positions, t);
+
+    assert(mesh_twin_half_edges_reverse_segment_at_spec(m, vertex_positions, h));
+    assert(t_from == h_to);
+    assert(t_to == h_from);
+    assert(mesh_half_edge_direction_vector_spec(m, vertex_positions, t) == t_to.sub_spec(t_from));
+    assert(mesh_half_edge_direction_vector_spec(m, vertex_positions, h) == h_to.sub_spec(h_from));
+    assert(t_to.sub_spec(t_from) == h_from.sub_spec(h_to));
+    vcad_math::point3::Point3::lemma_sub_antisymmetric(h_from, h_to);
+    assert(h_from.sub_spec(h_to) == h_to.sub_spec(h_from).neg_spec());
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_all_twin_half_edges_opposite_direction_vectors_from_model_and_positions(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+)
+    requires
+        mesh_index_bounds_spec(m),
+        mesh_geometry_input_spec(m, vertex_positions),
+        from_face_cycles_twin_endpoint_correspondence_spec(m),
+    ensures
+        mesh_all_twin_half_edges_opposite_direction_vectors_spec(m, vertex_positions),
+{
+    assert forall|h: int|
+        0 <= h < mesh_half_edge_count_spec(m) implies #[trigger]
+            mesh_twin_half_edges_opposite_direction_vectors_at_spec(m, vertex_positions, h) by {
+        lemma_mesh_twin_half_edges_opposite_direction_vectors_at_from_model_and_positions(
+            m,
+            vertex_positions,
+            h,
+        );
+    };
+}
+
 pub open spec fn from_face_cycles_undirected_edge_pair_equivalent_spec(
     m: MeshModel,
     h1: int,

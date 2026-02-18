@@ -74,7 +74,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [x] Define canonical face-plane representation for comparisons (`normal` sign/scale normalization policy).
 - [x] Proof: computed plane contains all vertices of that face (using coplanarity invariant).
 - [x] Proof: computed normal direction matches face orientation/winding.
-- [ ] Proof: twin/adjacent orientation interactions agree with plane-normal conventions.
+- [x] Proof: twin/adjacent orientation interactions agree with plane-normal conventions.
 - [x] Proof: canonicalized plane is stable under cyclic face reindexing and seed-triple choice.
 
 ## P5.7 Validity Gate Integration
@@ -182,6 +182,30 @@ Current differential/property-based harness policy (runtime behavior locked by t
 - optimized intersection checking (`check_no_forbidden_face_face_intersections`) is asserted equivalent to a no-cull brute-force oracle path (`check_no_forbidden_face_face_intersections_without_broad_phase_for_testing`) across all generated fixtures.
 
 ## Burndown Log
+- 2026-02-18: Completed the remaining P5.6 twin/adjacent orientation interaction proof item across
+  `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs` and
+  `src/runtime_halfedge_mesh_refinement/from_face_cycles_specs_and_lemmas.rs`:
+  - added explicit seed-plane decomposition helpers:
+    - `mesh_face_seed_plane_edge_direction_spec`;
+    - `mesh_face_seed_plane_corner_direction_spec`;
+    - `lemma_mesh_face_seed_plane_normal_decomposes_into_seed_directions`.
+  - added twin-edge direction-vector specs and bridge lemmas:
+    - `mesh_half_edge_direction_vector_spec`;
+    - `mesh_twin_half_edges_opposite_direction_vectors_at_spec`;
+    - `mesh_all_twin_half_edges_opposite_direction_vectors_spec`;
+    - `lemma_mesh_twin_half_edges_opposite_direction_vectors_at_from_model_and_positions`;
+    - `lemma_mesh_all_twin_half_edges_opposite_direction_vectors_from_model_and_positions`.
+  - this locks that twin half-edges induce opposite directed geometric edge vectors, consistent with the
+    plane-normal seed convention (seed normal built from directed edge factor `p1 - p0`).
+  - marked the P5.6 checklist item complete:
+    - proof that twin/adjacent orientation interactions agree with plane-normal conventions.
+- 2026-02-18: Failed attempts in this P5.6 twin/adjacent orientation interaction pass: none.
+- 2026-02-18: Revalidated after the P5.6 twin/adjacent orientation interaction proof additions:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (220 verified, 0 errors)
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology.sh` (255 verified, 0 errors)
 - 2026-02-18: Completed the remaining P5.6 oriented-normal proof item in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
   - added `lemma_mesh_non_collinear_seed_normal_self_dot_sign_is_positive`, proving that a non-collinear seed triple yields positive self-dot sign (`signum == 1`) for the seed face normal;
   - added `lemma_mesh_face_coplanar_witness_non_collinear_seed_implies_oriented_seed_plane`, proving that for a coplanar face cycle and any non-collinear seed triple:
