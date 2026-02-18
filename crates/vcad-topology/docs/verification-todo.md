@@ -72,8 +72,33 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
     - remaining gap: direct constructive `Result`-level linkage to full
       `from_face_cycles_success_spec` / `from_face_cycles_failure_spec` is still open.
   - file: `src/halfedge_mesh.rs`
-- [ ] Prove twin assignment is total for closed inputs and involutive.
+- [x] Prove twin assignment is total for closed inputs and involutive.
+  - burndown update (2026-02-18):
+    - landed constructor-facing refinement predicate in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      `from_face_cycles_twin_assignment_total_involution_spec`.
+    - added constructive executable checker
+      `runtime_check_twin_assignment_total_involution` and wrapper
+      `from_face_cycles_constructive_twin_assignment_total_involution`, yielding a
+      non-trusted constructor path
+      (`Ok(m) ==> from_face_cycles_twin_assignment_total_involution_spec(m@)`).
+    - failed proof-shape attempts (not kept):
+      - quantified bodies using `let t = #[trigger] ...` were rejected by Verus
+        (`let variables in triggers not supported`).
+      - a single conjunctive processed-prefix invariant
+        (`forall hp < h ==> twin_in_bounds && twin_of_twin`) led to brittle
+        preservation/packaging obligations.
+    - stable proof shape now used:
+      split processed-prefix invariants into two quantified facts (bounds and
+      involution separately), then discharge the `hp == h` step with explicit
+      substitution assertions.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` passed
+      (`23 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`23 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`57 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
+  - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 - [ ] Prove undirected-edge grouping induces exactly-two-half-edges per edge.
   - file: `src/halfedge_mesh.rs`
 - [ ] Prove vertex representative (`vertex.half_edge`) is valid and non-isolated.

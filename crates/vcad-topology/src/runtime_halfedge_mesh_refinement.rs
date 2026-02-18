@@ -645,6 +645,14 @@ pub open spec fn from_face_cycles_vertex_representatives_spec(m: MeshModel) -> b
     mesh_vertex_representative_valid_nonisolated_spec(m)
 }
 
+pub open spec fn from_face_cycles_twin_assignment_total_involution_spec(m: MeshModel) -> bool {
+    let hcnt = mesh_half_edge_count_spec(m);
+    forall|h: int| 0 <= h < hcnt ==> {
+        &&& 0 <= #[trigger] m.half_edges[h].twin < hcnt
+        &&& #[trigger] m.half_edges[m.half_edges[h].twin].twin == h
+    }
+}
+
 pub open spec fn from_face_cycles_success_spec(
     vertex_count: int,
     face_cycles: Seq<Seq<int>>,
@@ -883,6 +891,130 @@ pub fn from_face_cycles_constructive_next_prev_face(
     match out0 {
         Result::Ok(m) => {
             let ok = runtime_check_from_face_cycles_next_prev_face_coherent(&m, face_cycles);
+            if ok {
+                Result::Ok(m)
+            } else {
+                Result::Err(mesh_build_error_empty_face_set())
+            }
+        }
+        Result::Err(e) => Result::Err(e),
+    }
+}
+
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
+pub fn runtime_check_twin_assignment_total_involution(m: &Mesh) -> (out: bool)
+    ensures
+        out ==> from_face_cycles_twin_assignment_total_involution_spec(m@),
+{
+    let hcnt = m.half_edges.len();
+    let mut h: usize = 0;
+    while h < hcnt
+        invariant
+            hcnt == m.half_edges.len(),
+            0 <= h <= hcnt,
+            forall|hp: int| 0 <= hp < h as int ==> 0 <= #[trigger] m@.half_edges[hp].twin < hcnt as int,
+            forall|hp: int|
+                0 <= hp < h as int ==> #[trigger] m@.half_edges[m@.half_edges[hp].twin].twin == hp,
+    {
+        let t = m.half_edges[h].twin;
+        if t >= hcnt {
+            return false;
+        }
+        let tt = m.half_edges[t].twin;
+        if tt != h {
+            return false;
+        }
+
+        proof {
+            assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+            assert(m@.half_edges[h as int].twin == t as int);
+            assert(m@.half_edges[t as int].twin == m.half_edges@[t as int].twin);
+            assert(m.half_edges@[t as int].twin == tt as int);
+            assert(tt == h);
+            assert(m@.half_edges[t as int].twin == h as int);
+            assert(0 <= #[trigger] m@.half_edges[h as int].twin < hcnt as int);
+            assert(
+                #[trigger] m@.half_edges[m@.half_edges[h as int].twin].twin
+                    == m@.half_edges[t as int].twin
+            );
+            assert(#[trigger] m@.half_edges[m@.half_edges[h as int].twin].twin == h as int);
+            assert(forall|hp: int|
+                0 <= hp < (h + 1) as int ==> 0 <= #[trigger] m@.half_edges[hp].twin < hcnt as int) by {
+                assert forall|hp: int|
+                    0 <= hp < (h + 1) as int implies 0 <= #[trigger] m@.half_edges[hp].twin < hcnt as int by {
+                    if hp < h as int {
+                        assert(0 <= hp < h as int);
+                    } else {
+                        assert(hp == h as int);
+                        assert(#[trigger] m@.half_edges[hp].twin == t as int);
+                        assert(0 <= t as int);
+                        assert((t as int) < hcnt as int);
+                    }
+                };
+            }
+            assert(forall|hp: int|
+                0 <= hp < (h + 1) as int
+                    ==> #[trigger] m@.half_edges[m@.half_edges[hp].twin].twin == hp) by {
+                assert forall|hp: int|
+                    0 <= hp < (h + 1) as int
+                        implies #[trigger] m@.half_edges[m@.half_edges[hp].twin].twin == hp by {
+                    if hp < h as int {
+                        assert(0 <= hp < h as int);
+                    } else {
+                        assert(hp == h as int);
+                        assert(#[trigger] m@.half_edges[m@.half_edges[hp].twin].twin == h as int);
+                    }
+                };
+            }
+        }
+
+        h += 1;
+    }
+
+    proof {
+        assert(h == hcnt);
+        assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+        assert(forall|hp: int|
+            0 <= hp < mesh_half_edge_count_spec(m@)
+                ==> 0 <= #[trigger] m@.half_edges[hp].twin < mesh_half_edge_count_spec(m@)) by {
+            assert forall|hp: int|
+                0 <= hp < mesh_half_edge_count_spec(m@)
+                    implies 0 <= #[trigger] m@.half_edges[hp].twin < mesh_half_edge_count_spec(m@) by {
+                assert(mesh_half_edge_count_spec(m@) == h as int);
+                assert(0 <= hp < h as int);
+            };
+        }
+        assert(forall|hp: int|
+            0 <= hp < mesh_half_edge_count_spec(m@)
+                ==> #[trigger] m@.half_edges[m@.half_edges[hp].twin].twin == hp) by {
+            assert forall|hp: int|
+                0 <= hp < mesh_half_edge_count_spec(m@)
+                    implies #[trigger] m@.half_edges[m@.half_edges[hp].twin].twin == hp by {
+                assert(mesh_half_edge_count_spec(m@) == h as int);
+                assert(0 <= hp < h as int);
+            };
+        }
+        assert(from_face_cycles_twin_assignment_total_involution_spec(m@));
+    }
+    true
+}
+
+#[allow(dead_code)]
+pub fn from_face_cycles_constructive_twin_assignment_total_involution(
+    vertex_positions: Vec<RuntimePoint3>,
+    face_cycles: &[Vec<usize>],
+) -> (out: Result<Mesh, MeshBuildError>)
+    ensures
+        match out {
+            Result::Ok(m) => from_face_cycles_twin_assignment_total_involution_spec(m@),
+            Result::Err(_) => true,
+        },
+{
+    let out0 = ex_mesh_from_face_cycles(vertex_positions, face_cycles);
+    match out0 {
+        Result::Ok(m) => {
+            let ok = runtime_check_twin_assignment_total_involution(&m);
             if ok {
                 Result::Ok(m)
             } else {
