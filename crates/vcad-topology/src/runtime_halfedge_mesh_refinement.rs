@@ -737,6 +737,201 @@ pub fn ex_mesh_from_face_cycles(
 
 #[verifier::exec_allows_no_decreases_clause]
 #[allow(dead_code)]
+pub fn runtime_check_from_face_cycles_basic_input(
+    vertex_count: usize,
+    face_cycles: &[Vec<usize>],
+) -> (out: bool)
+    ensures
+        out ==> from_face_cycles_basic_input_spec(
+            vertex_count as int,
+            face_cycles_exec_to_model_spec(face_cycles@),
+        ),
+{
+    if vertex_count == 0 {
+        return false;
+    }
+    if face_cycles.len() == 0 {
+        return false;
+    }
+
+    let ghost model_cycles = face_cycles_exec_to_model_spec(face_cycles@);
+    proof {
+        assert(model_cycles.len() == face_cycles.len() as int);
+    }
+
+    let mut f: usize = 0;
+    while f < face_cycles.len()
+        invariant
+            vertex_count > 0,
+            face_cycles.len() > 0,
+            0 <= f <= face_cycles.len(),
+            model_cycles == face_cycles_exec_to_model_spec(face_cycles@),
+            model_cycles.len() == face_cycles.len() as int,
+            forall|fp: int|
+                #![trigger model_cycles[fp]]
+                0 <= fp < f as int ==> {
+                    let n = model_cycles[fp].len() as int;
+                    &&& n >= 3
+                    &&& forall|ip: int|
+                        #![trigger model_cycles[fp][ip]]
+                        0 <= ip < n ==> 0 <= model_cycles[fp][ip] < vertex_count as int
+                },
+    {
+        let face = vstd::slice::slice_index_get(face_cycles, f);
+        let n = face.len();
+        if n < 3 {
+            return false;
+        }
+
+        proof {
+            assert(*face == face_cycles@.index(f as int));
+            lemma_face_cycles_exec_to_model_face_len_exec(face_cycles, f, face, n);
+            assert(model_cycles[f as int].len() == n as int);
+        }
+
+        let mut i: usize = 0;
+        while i < n
+            invariant
+                vertex_count > 0,
+                face_cycles.len() > 0,
+                0 <= f < face_cycles.len(),
+                0 <= i <= n,
+                n == face.len(),
+                face@.len() == n as int,
+                *face == face_cycles@.index(f as int),
+                model_cycles == face_cycles_exec_to_model_spec(face_cycles@),
+                model_cycles.len() == face_cycles.len() as int,
+                model_cycles[f as int].len() == n as int,
+                n >= 3,
+                forall|fp: int|
+                    #![trigger model_cycles[fp]]
+                    0 <= fp < f as int ==> {
+                        let nfp = model_cycles[fp].len() as int;
+                        &&& nfp >= 3
+                        &&& forall|ip: int|
+                            #![trigger model_cycles[fp][ip]]
+                            0 <= ip < nfp ==> 0 <= model_cycles[fp][ip] < vertex_count as int
+                    },
+                forall|ip: int|
+                    #![trigger model_cycles[f as int][ip]]
+                    0 <= ip < i as int ==> 0 <= model_cycles[f as int][ip] < vertex_count as int,
+        {
+            proof {
+                assert(i < n);
+                assert(n == face.len());
+            }
+            let v = face[i];
+            if v >= vertex_count {
+                return false;
+            }
+
+            proof {
+                assert(0 <= i as int);
+                assert((i as int) < (n as int));
+                assert(face@.len() == face.len());
+                assert(face.len() == n);
+                assert(face@.len() == n as int);
+                assert(face@[i as int] == v);
+                assert(face_cycles@.index(f as int) == face_cycles@[f as int]);
+                assert(face_cycles@[f as int] == *face);
+                assert(model_cycles[f as int]
+                    == Seq::new(face_cycles@[f as int]@.len(), |j: int| face_cycles@[f as int]@[j] as int));
+                assert(model_cycles[f as int][i as int] == face_cycles@[f as int]@[i as int] as int);
+                assert(model_cycles[f as int][i as int] == v as int);
+                assert(0 <= model_cycles[f as int][i as int] < vertex_count as int);
+                assert(forall|ip: int|
+                    #![trigger model_cycles[f as int][ip]]
+                    0 <= ip < (i + 1) as int ==> 0 <= model_cycles[f as int][ip] < vertex_count as int) by {
+                    assert forall|ip: int|
+                        #![trigger model_cycles[f as int][ip]]
+                        0 <= ip < (i + 1) as int
+                            implies 0 <= model_cycles[f as int][ip] < vertex_count as int by {
+                        if ip < i as int {
+                            assert(0 <= ip < i as int);
+                        } else {
+                            assert(ip == i as int);
+                            assert(model_cycles[f as int][ip] == v as int);
+                        }
+                    };
+                }
+            }
+
+            i += 1;
+        }
+
+        proof {
+            assert(i == n);
+            assert(forall|fp: int|
+                #![trigger model_cycles[fp]]
+                0 <= fp < (f + 1) as int ==> {
+                    let nfp = model_cycles[fp].len() as int;
+                    &&& nfp >= 3
+                    &&& forall|ip: int|
+                        #![trigger model_cycles[fp][ip]]
+                        0 <= ip < nfp ==> 0 <= model_cycles[fp][ip] < vertex_count as int
+                }) by {
+                assert forall|fp: int|
+                    #![trigger model_cycles[fp]]
+                    0 <= fp < (f + 1) as int implies {
+                        let nfp = model_cycles[fp].len() as int;
+                        &&& nfp >= 3
+                        &&& forall|ip: int|
+                            #![trigger model_cycles[fp][ip]]
+                            0 <= ip < nfp ==> 0 <= model_cycles[fp][ip] < vertex_count as int
+                    } by {
+                    if fp < f as int {
+                    } else {
+                        assert(fp == f as int);
+                        assert(model_cycles[fp].len() == n as int);
+                        assert(n as int >= 3);
+                        assert(forall|ip: int|
+                            #![trigger model_cycles[f as int][ip]]
+                            0 <= ip < i as int ==> 0 <= model_cycles[f as int][ip] < vertex_count as int);
+                        assert(forall|ip: int|
+                            #![trigger model_cycles[fp][ip]]
+                            0 <= ip < model_cycles[fp].len() as int
+                                ==> 0 <= model_cycles[fp][ip] < vertex_count as int);
+                    }
+                };
+            };
+        }
+
+        f += 1;
+    }
+
+    proof {
+        assert(f == face_cycles.len());
+        assert(vertex_count as int > 0);
+        assert(face_cycles.len() as int > 0);
+        assert(forall|fp: int|
+            #![trigger model_cycles[fp]]
+            0 <= fp < face_cycles.len() as int ==> {
+                let nfp = model_cycles[fp].len() as int;
+                &&& nfp >= 3
+                &&& forall|ip: int|
+                    #![trigger model_cycles[fp][ip]]
+                    0 <= ip < nfp ==> 0 <= model_cycles[fp][ip] < vertex_count as int
+            }) by {
+            assert forall|fp: int|
+                #![trigger model_cycles[fp]]
+                0 <= fp < face_cycles.len() as int implies {
+                    let nfp = model_cycles[fp].len() as int;
+                    &&& nfp >= 3
+                    &&& forall|ip: int|
+                        #![trigger model_cycles[fp][ip]]
+                        0 <= ip < nfp ==> 0 <= model_cycles[fp][ip] < vertex_count as int
+                } by {
+                assert(face_cycles.len() as int == f as int);
+                assert(0 <= fp < f as int);
+            };
+        };
+        assert(from_face_cycles_basic_input_spec(vertex_count as int, model_cycles));
+    }
+    true
+}
+
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
 pub fn runtime_check_from_face_cycles_next_prev_face_coherent(
     m: &Mesh,
     face_cycles: &[Vec<usize>],
@@ -883,18 +1078,37 @@ pub fn from_face_cycles_constructive_next_prev_face(
 ) -> (out: Result<Mesh, MeshBuildError>)
     ensures
         match out {
-            Result::Ok(m) => from_face_cycles_next_prev_face_coherent_spec(
-                face_cycles_exec_to_model_spec(face_cycles@),
-                m@,
-            ),
+            Result::Ok(m) => {
+                &&& from_face_cycles_basic_input_spec(
+                    vertex_positions@.len() as int,
+                    face_cycles_exec_to_model_spec(face_cycles@),
+                )
+                &&& from_face_cycles_next_prev_face_coherent_spec(
+                    face_cycles_exec_to_model_spec(face_cycles@),
+                    m@,
+                )
+            }
             Result::Err(_) => true,
         },
 {
+    let vertex_count = vertex_positions.len();
+    let input_ok = runtime_check_from_face_cycles_basic_input(vertex_count, face_cycles);
+    if !input_ok {
+        return Result::Err(mesh_build_error_empty_face_set());
+    }
+
     let out0 = ex_mesh_from_face_cycles(vertex_positions, face_cycles);
     match out0 {
         Result::Ok(m) => {
             let ok = runtime_check_from_face_cycles_next_prev_face_coherent(&m, face_cycles);
             if ok {
+                proof {
+                    assert(input_ok);
+                    assert(from_face_cycles_basic_input_spec(
+                        vertex_count as int,
+                        face_cycles_exec_to_model_spec(face_cycles@),
+                    ));
+                }
                 Result::Ok(m)
             } else {
                 Result::Err(mesh_build_error_empty_face_set())

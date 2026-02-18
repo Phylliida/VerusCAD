@@ -71,6 +71,28 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `from_face_cycles_constructive_next_prev_face`.
     - remaining gap: direct constructive `Result`-level linkage to full
       `from_face_cycles_success_spec` / `from_face_cycles_failure_spec` is still open.
+  - burndown update (2026-02-18, latest):
+    - landed constructor-input constructive checking in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      `runtime_check_from_face_cycles_basic_input`.
+    - strengthened `from_face_cycles_constructive_next_prev_face` so its `Ok` branch now carries
+      both:
+      - `from_face_cycles_basic_input_spec(vertex_count, face_cycles)`, and
+      - `from_face_cycles_next_prev_face_coherent_spec(face_cycles, m@)`.
+    - proof-shape note:
+      a stable approach was to keep the face-slice witness
+      (`*face == face_cycles@.index(f)`) and per-face model-length equality in loop invariants,
+      then discharge vertex-bound obligations via a processed-prefix quantifier over local indices.
+    - remaining gap:
+      constructor-level linkage to the full `from_face_cycles_success_spec` /
+      `from_face_cycles_failure_spec` still needs the other input/output clauses
+      (no-duplicate-oriented-edge, twin existence, no-isolated-vertex, full incidence model).
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` passed
+      (`30 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` passed
+      (`34 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`64 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
 - [x] Prove twin assignment is total for closed inputs and involutive.
   - burndown update (2026-02-18):
