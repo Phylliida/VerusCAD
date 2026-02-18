@@ -1,1 +1,1 @@
-Strengthened vcad-topology Euler constructive witnesses to align Euler vector length with model component count and documented the burndown verification results.
+Exported twin-endpoint correspondence into the from_face_cycles structural core and reran vcad-topology verification with all 176 proofs passing.

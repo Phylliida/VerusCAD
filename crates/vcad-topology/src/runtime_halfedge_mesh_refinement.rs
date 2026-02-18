@@ -2449,6 +2449,24 @@ pub open spec fn from_face_cycles_twin_assignment_total_involution_spec(m: MeshM
     }
 }
 
+pub open spec fn from_face_cycles_twin_endpoint_correspondence_at_spec(
+    m: MeshModel,
+    h: int,
+) -> bool {
+    let hcnt = mesh_half_edge_count_spec(m);
+    let t = m.half_edges[h].twin;
+    &&& 0 <= t < hcnt
+    &&& mesh_half_edge_from_vertex_spec(m, t) == mesh_half_edge_to_vertex_spec(m, h)
+    &&& mesh_half_edge_to_vertex_spec(m, t) == mesh_half_edge_from_vertex_spec(m, h)
+}
+
+pub open spec fn from_face_cycles_twin_endpoint_correspondence_spec(m: MeshModel) -> bool {
+    let hcnt = mesh_half_edge_count_spec(m);
+    forall|h: int|
+        #![trigger m.half_edges[h].twin]
+        0 <= h < hcnt ==> from_face_cycles_twin_endpoint_correspondence_at_spec(m, h)
+}
+
 pub open spec fn from_face_cycles_counts_index_face_starts_spec(
     vertex_count: int,
     face_cycles: Seq<Seq<int>>,
@@ -2477,6 +2495,7 @@ pub open spec fn from_face_cycles_structural_core_spec(
     &&& from_face_cycles_next_prev_face_coherent_spec(face_cycles, m)
     &&& from_face_cycles_vertex_assignment_coherent_spec(face_cycles, m)
     &&& from_face_cycles_twin_assignment_total_involution_spec(m)
+    &&& from_face_cycles_twin_endpoint_correspondence_spec(m)
     &&& mesh_edge_exactly_two_half_edges_spec(m)
     &&& from_face_cycles_vertex_representatives_spec(m)
 }
@@ -2548,6 +2567,53 @@ pub proof fn lemma_from_face_cycles_success_implies_vertex_assignment_coherent(
     if from_face_cycles_success_spec(vertex_count, face_cycles, m) {
         assert(from_face_cycles_incidence_model_spec(vertex_count, face_cycles, m));
         lemma_from_face_cycles_incidence_implies_vertex_assignment_coherent(vertex_count, face_cycles, m);
+    }
+}
+
+pub proof fn lemma_from_face_cycles_incidence_implies_twin_endpoint_correspondence(
+    vertex_count: int,
+    face_cycles: Seq<Seq<int>>,
+    m: MeshModel,
+)
+    ensures
+        from_face_cycles_incidence_model_spec(vertex_count, face_cycles, m)
+            ==> from_face_cycles_twin_endpoint_correspondence_spec(m),
+{
+    if from_face_cycles_incidence_model_spec(vertex_count, face_cycles, m) {
+        let hcnt = mesh_half_edge_count_spec(m);
+        assert(forall|h: int|
+            #![trigger m.half_edges[h].twin]
+            0 <= h < hcnt ==> from_face_cycles_twin_endpoint_correspondence_at_spec(m, h)) by {
+            assert forall|h: int|
+                #![trigger m.half_edges[h].twin]
+                0 <= h < hcnt implies from_face_cycles_twin_endpoint_correspondence_at_spec(m, h) by {
+                let t = m.half_edges[h].twin;
+                assert(0 <= t < hcnt);
+                assert(mesh_half_edge_from_vertex_spec(m, t) == mesh_half_edge_to_vertex_spec(m, h));
+                assert(mesh_half_edge_to_vertex_spec(m, t) == mesh_half_edge_from_vertex_spec(m, h));
+                assert(from_face_cycles_twin_endpoint_correspondence_at_spec(m, h));
+            };
+        }
+        assert(from_face_cycles_twin_endpoint_correspondence_spec(m));
+    }
+}
+
+pub proof fn lemma_from_face_cycles_success_implies_twin_endpoint_correspondence(
+    vertex_count: int,
+    face_cycles: Seq<Seq<int>>,
+    m: MeshModel,
+)
+    ensures
+        from_face_cycles_success_spec(vertex_count, face_cycles, m)
+            ==> from_face_cycles_twin_endpoint_correspondence_spec(m),
+{
+    if from_face_cycles_success_spec(vertex_count, face_cycles, m) {
+        assert(from_face_cycles_incidence_model_spec(vertex_count, face_cycles, m));
+        lemma_from_face_cycles_incidence_implies_twin_endpoint_correspondence(
+            vertex_count,
+            face_cycles,
+            m,
+        );
     }
 }
 
@@ -4217,41 +4283,47 @@ pub fn from_face_cycles_constructive_next_prev_face(
                     if !twin_ok {
                         Result::Err(mesh_build_error_empty_face_set())
                     } else {
-                        let edge_ok = runtime_check_edge_exactly_two_half_edges(&m);
-                        if !edge_ok {
+                        let twin_endpoints_ok = runtime_check_twin_endpoint_correspondence(&m);
+                        if !twin_endpoints_ok {
                             Result::Err(mesh_build_error_empty_face_set())
                         } else {
-                            let vertex_ok = runtime_check_vertex_representative_valid_nonisolated(&m);
-                            if !vertex_ok {
+                            let edge_ok = runtime_check_edge_exactly_two_half_edges(&m);
+                            if !edge_ok {
                                 Result::Err(mesh_build_error_empty_face_set())
                             } else {
-                                proof {
-                                    assert(input_ok);
-                                    assert(no_duplicate_ok);
-                                    assert(all_twin_ok);
-                                    assert(no_isolated_ok);
-                                    assert(counts_index_face_starts_ok);
-                                    assert(from_face_cycles_basic_input_spec(vertex_count as int, model_cycles));
-                                    assert(from_face_cycles_no_duplicate_oriented_edges_spec(model_cycles));
-                                    assert(from_face_cycles_all_oriented_edges_have_twin_spec(model_cycles));
-                                    assert(from_face_cycles_no_isolated_vertices_spec(vertex_count as int, model_cycles));
-                                    assert(from_face_cycles_counts_index_face_starts_spec(
-                                        vertex_count as int,
-                                        model_cycles,
-                                        m@,
-                                    ));
-                                    assert(from_face_cycles_next_prev_face_coherent_spec(model_cycles, m@));
-                                    assert(from_face_cycles_vertex_assignment_coherent_spec(model_cycles, m@));
-                                    assert(from_face_cycles_twin_assignment_total_involution_spec(m@));
-                                    assert(mesh_edge_exactly_two_half_edges_spec(m@));
-                                    assert(from_face_cycles_vertex_representatives_spec(m@));
-                                    assert(from_face_cycles_structural_core_spec(
-                                        vertex_count as int,
-                                        model_cycles,
-                                        m@,
-                                    ));
+                                let vertex_ok = runtime_check_vertex_representative_valid_nonisolated(&m);
+                                if !vertex_ok {
+                                    Result::Err(mesh_build_error_empty_face_set())
+                                } else {
+                                    proof {
+                                        assert(input_ok);
+                                        assert(no_duplicate_ok);
+                                        assert(all_twin_ok);
+                                        assert(no_isolated_ok);
+                                        assert(counts_index_face_starts_ok);
+                                        assert(from_face_cycles_basic_input_spec(vertex_count as int, model_cycles));
+                                        assert(from_face_cycles_no_duplicate_oriented_edges_spec(model_cycles));
+                                        assert(from_face_cycles_all_oriented_edges_have_twin_spec(model_cycles));
+                                        assert(from_face_cycles_no_isolated_vertices_spec(vertex_count as int, model_cycles));
+                                        assert(from_face_cycles_counts_index_face_starts_spec(
+                                            vertex_count as int,
+                                            model_cycles,
+                                            m@,
+                                        ));
+                                        assert(from_face_cycles_next_prev_face_coherent_spec(model_cycles, m@));
+                                        assert(from_face_cycles_vertex_assignment_coherent_spec(model_cycles, m@));
+                                        assert(from_face_cycles_twin_assignment_total_involution_spec(m@));
+                                        assert(from_face_cycles_twin_endpoint_correspondence_spec(m@));
+                                        assert(mesh_edge_exactly_two_half_edges_spec(m@));
+                                        assert(from_face_cycles_vertex_representatives_spec(m@));
+                                        assert(from_face_cycles_structural_core_spec(
+                                            vertex_count as int,
+                                            model_cycles,
+                                            m@,
+                                        ));
+                                    }
+                                    Result::Ok(m)
                                 }
-                                Result::Ok(m)
                             }
                         }
                     }
@@ -4648,6 +4720,113 @@ pub fn runtime_check_twin_assignment_total_involution(m: &Mesh) -> (out: bool)
             };
         }
         assert(from_face_cycles_twin_assignment_total_involution_spec(m@));
+    }
+    true
+}
+
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
+pub fn runtime_check_twin_endpoint_correspondence(m: &Mesh) -> (out: bool)
+    ensures
+        out ==> from_face_cycles_twin_endpoint_correspondence_spec(m@),
+{
+    let index_ok = runtime_check_index_bounds(m);
+    if !index_ok {
+        return false;
+    }
+
+    let hcnt = m.half_edges.len();
+    let mut h: usize = 0;
+    while h < hcnt
+        invariant
+            hcnt == m.half_edges.len(),
+            mesh_index_bounds_spec(m@),
+            0 <= h <= hcnt,
+            forall|hp: int|
+                #![trigger m@.half_edges[hp].twin]
+                0 <= hp < h as int ==> from_face_cycles_twin_endpoint_correspondence_at_spec(m@, hp),
+    {
+        let he = &m.half_edges[h];
+        let t = he.twin;
+        if t >= hcnt {
+            return false;
+        }
+        let n = he.next;
+        if n >= hcnt {
+            return false;
+        }
+        let tn = m.half_edges[t].next;
+        if tn >= hcnt {
+            return false;
+        }
+
+        let from_h = he.vertex;
+        let to_h = m.half_edges[n].vertex;
+        let from_t = m.half_edges[t].vertex;
+        let to_t = m.half_edges[tn].vertex;
+
+        if from_t != to_h {
+            return false;
+        }
+        if to_t != from_h {
+            return false;
+        }
+
+        proof {
+            assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+            assert(m@.half_edges[h as int].twin == t as int);
+            assert(m@.half_edges[h as int].next == n as int);
+            assert(m@.half_edges[h as int].vertex == from_h as int);
+            assert(m@.half_edges[n as int].vertex == to_h as int);
+            assert(m@.half_edges[t as int].next == tn as int);
+            assert(m@.half_edges[t as int].vertex == from_t as int);
+            assert(m@.half_edges[tn as int].vertex == to_t as int);
+
+            assert(mesh_half_edge_from_vertex_spec(m@, t as int) == from_t as int);
+            assert(mesh_half_edge_to_vertex_spec(m@, h as int) == to_h as int);
+            assert(mesh_half_edge_to_vertex_spec(m@, t as int) == to_t as int);
+            assert(mesh_half_edge_from_vertex_spec(m@, h as int) == from_h as int);
+            assert(from_t as int == to_h as int);
+            assert(to_t as int == from_h as int);
+            assert(from_face_cycles_twin_endpoint_correspondence_at_spec(m@, h as int));
+
+            assert(forall|hp: int|
+                #![trigger m@.half_edges[hp].twin]
+                0 <= hp < (h + 1) as int
+                    ==> from_face_cycles_twin_endpoint_correspondence_at_spec(m@, hp)) by {
+                assert forall|hp: int|
+                    #![trigger m@.half_edges[hp].twin]
+                    0 <= hp < (h + 1) as int
+                        implies from_face_cycles_twin_endpoint_correspondence_at_spec(m@, hp) by {
+                    if hp < h as int {
+                        assert(0 <= hp < h as int);
+                    } else {
+                        assert(hp == h as int);
+                        assert(from_face_cycles_twin_endpoint_correspondence_at_spec(m@, hp));
+                    }
+                };
+            };
+        }
+
+        h += 1;
+    }
+
+    proof {
+        assert(index_ok);
+        assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+        assert(forall|hp: int|
+            #![trigger m@.half_edges[hp].twin]
+            0 <= hp < mesh_half_edge_count_spec(m@)
+                ==> from_face_cycles_twin_endpoint_correspondence_at_spec(m@, hp)) by {
+            assert forall|hp: int|
+                #![trigger m@.half_edges[hp].twin]
+                0 <= hp < mesh_half_edge_count_spec(m@)
+                    implies from_face_cycles_twin_endpoint_correspondence_at_spec(m@, hp) by {
+                assert(mesh_half_edge_count_spec(m@) == h as int);
+                assert(0 <= hp < h as int);
+            };
+        };
+        assert(from_face_cycles_twin_endpoint_correspondence_spec(m@));
     }
     true
 }

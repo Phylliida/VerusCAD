@@ -345,6 +345,37 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`138 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`138 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`172 verified, 0 errors`).
+  - burndown update (2026-02-18, incidence-core twin-endpoint export):
+    - strengthened constructor-core incidence packaging in
+      `src/runtime_halfedge_mesh_refinement.rs` by adding:
+      - `from_face_cycles_twin_endpoint_correspondence_at_spec`,
+      - `from_face_cycles_twin_endpoint_correspondence_spec`,
+      - projection lemmas
+        `lemma_from_face_cycles_incidence_implies_twin_endpoint_correspondence`
+        and
+        `lemma_from_face_cycles_success_implies_twin_endpoint_correspondence`.
+    - added executable checker
+      `runtime_check_twin_endpoint_correspondence` with postcondition
+      `out ==> from_face_cycles_twin_endpoint_correspondence_spec(m@)`.
+    - strengthened `from_face_cycles_structural_core_spec` and
+      `from_face_cycles_constructive_next_prev_face` so `Ok(m)` now exports the
+      twin-endpoint correspondence clause as part of the constructor core.
+    - failed attempts:
+      none in this pass.
+    - remaining gap:
+      constructor-level linkage to full
+      `from_face_cycles_success_spec` / `from_face_cycles_failure_spec`
+      now primarily remains the undirected-edge equivalence packaging clause
+      from `from_face_cycles_incidence_model_spec`.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_twin_endpoint_correspondence`
+      passed (`2 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement from_face_cycles_constructive_next_prev_face`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`142 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`142 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`176 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
 - [x] Prove twin assignment is total for closed inputs and involutive.
   - burndown update (2026-02-18):
