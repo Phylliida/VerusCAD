@@ -2862,3 +2862,28 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`4 passed, 0 failed`);
       `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
       passed (`6 passed, 0 failed`).
+  - burndown update (2026-02-18, twin-witness lint suppression removal):
+    - selected task in this pass:
+      maintain Exit Condition quality by removing a remaining targeted lint
+      suppression in the all-oriented-edges-have-twin constructive checker.
+    - code hardening:
+      in `src/runtime_halfedge_mesh_refinement.rs`, removed
+      `#[allow(unused_variables, unused_assignments)]` from
+      `runtime_check_from_face_cycles_all_oriented_edges_have_twin` and added
+      an explicit runtime read of the twin witness locals
+      (`let _ = (twin_f, twin_i);`) at the post-search join point.
+      this preserves the existing proof/invariant structure while eliminating
+      the need for a local unused-variable/assignment override.
+    - failed attempts:
+      none in this pass.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_from_face_cycles_all_oriented_edges_have_twin`
+      passed (`5 verified, 0 errors` partial);
+      `./scripts/verify-vcad-topology-fast.sh`
+      passed (`191 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh`
+      passed (`226 verified, 0 errors`);
+      `cargo test -p vcad-topology`
+      passed (`4 passed, 0 failed`);
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`6 passed, 0 failed`).

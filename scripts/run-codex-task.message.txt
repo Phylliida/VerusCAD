@@ -1,1 +1,1 @@
-Removed the final runtime_halfedge_mesh_refinement external_body by adding a constructive face-cycle mesh builder and revalidating all vcad-topology verification and test scripts.
+Removed the twin-checker lint suppression by explicitly consuming the twin witness locals and revalidated vcad-topology verification plus tests.

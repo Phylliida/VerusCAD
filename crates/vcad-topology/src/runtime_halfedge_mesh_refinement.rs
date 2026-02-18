@@ -5198,7 +5198,6 @@ pub fn runtime_check_from_face_cycles_no_duplicate_oriented_edges(
 
 #[verifier::exec_allows_no_decreases_clause]
 #[allow(dead_code)]
-#[allow(unused_variables, unused_assignments)]
 pub fn runtime_check_from_face_cycles_all_oriented_edges_have_twin(
     face_cycles: &[Vec<usize>],
 ) -> (out: bool)
@@ -5427,6 +5426,7 @@ pub fn runtime_check_from_face_cycles_all_oriented_edges_have_twin(
                 }
             }
 
+            let _ = (twin_f, twin_i);
             if !found {
                 proof {
                     assert(g == face_cycles.len());
