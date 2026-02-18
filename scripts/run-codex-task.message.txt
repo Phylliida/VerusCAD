@@ -1,1 +1,1 @@
-Unified vcad-topology no-daemon verification fallback into the fast/full entrypoints, simplified the matrix runner to reuse them, and recorded a full passing matrix replay in the verification burndown.
+Replayed the vcad-topology Exit Condition matrix and logged the successful trust-surface and verification/test results in the burndown.
