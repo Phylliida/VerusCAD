@@ -673,6 +673,15 @@ pub open spec fn validity_gate_witness_spec(w: ValidityGateWitness) -> bool {
     w.api_ok == (w.structural_ok && w.euler_ok)
 }
 
+pub open spec fn validity_gate_model_link_spec(m: MeshModel, w: ValidityGateWitness) -> bool {
+    &&& (w.structural_ok ==> exists|sw: StructuralValidityGateWitness| {
+        &&& structural_validity_gate_witness_spec(sw)
+        &&& structural_validity_gate_model_link_spec(m, sw)
+        &&& sw.api_ok == w.structural_ok
+    })
+    &&& (w.euler_ok ==> mesh_euler_formula_closed_components_partition_witness_spec(m))
+}
+
 pub open spec fn mesh_counts_spec(
     m: MeshModel,
     vertex_count: int,
@@ -4360,26 +4369,55 @@ pub fn is_valid_constructive(
 ) -> (out: Option<ValidityGateWitness>)
     ensures
         match out {
-            Option::Some(w) => validity_gate_witness_spec(w),
+            Option::Some(w) => validity_gate_witness_spec(w) && validity_gate_model_link_spec(m@, w),
             Option::None => true,
         },
 {
     let api_ok = ex_mesh_is_valid(m);
-    let structural_witness = is_structurally_valid_constructive(m);
-    let structural_ok = match structural_witness {
-        Option::Some(w) => w.api_ok,
+    let structural_w = match is_structurally_valid_constructive(m) {
+        Option::Some(w) => w,
         Option::None => return Option::None,
     };
-    let euler_ok = ex_mesh_check_euler_formula_closed_components(m);
+    let euler_ok = match check_euler_formula_closed_components_constructive(m) {
+        Option::Some(ok) => {
+            proof {
+                assert(ok);
+                assert(mesh_euler_formula_closed_components_partition_witness_spec(m@));
+            }
+            ok
+        }
+        Option::None => return Option::None,
+    };
+    let structural_ok = structural_w.api_ok;
     if api_ok != (structural_ok && euler_ok) {
         return Option::None;
     }
 
-    Option::Some(ValidityGateWitness {
+    let w = ValidityGateWitness {
         api_ok,
         structural_ok,
         euler_ok,
-    })
+    };
+
+    proof {
+        assert(structural_validity_gate_witness_spec(structural_w));
+        assert(structural_validity_gate_model_link_spec(m@, structural_w));
+        assert(exists|sw: StructuralValidityGateWitness| {
+            &&& structural_validity_gate_witness_spec(sw)
+            &&& structural_validity_gate_model_link_spec(m@, sw)
+            &&& sw.api_ok == w.structural_ok
+        }) by {
+            let sw = structural_w;
+            assert(structural_validity_gate_witness_spec(sw));
+            assert(structural_validity_gate_model_link_spec(m@, sw));
+            assert(sw.api_ok == w.structural_ok);
+        };
+        assert(w.euler_ok ==> mesh_euler_formula_closed_components_partition_witness_spec(m@));
+        assert(validity_gate_witness_spec(w));
+        assert(validity_gate_model_link_spec(m@, w));
+    }
+
+    Option::Some(w)
 }
 
 #[allow(dead_code)]
@@ -4409,7 +4447,7 @@ pub fn tetrahedron_constructive_counts_and_is_valid() -> (out: Option<(Mesh, Val
     ensures
         match out {
             Option::Some((m, w)) => mesh_tetrahedron_counts_spec(m@) && validity_gate_witness_spec(w)
-                && w.api_ok,
+                && validity_gate_model_link_spec(m@, w) && w.api_ok,
             Option::None => true,
         },
 {
@@ -4425,6 +4463,7 @@ pub fn tetrahedron_constructive_counts_and_is_valid() -> (out: Option<(Mesh, Val
                         proof {
                             assert(mesh_tetrahedron_counts_spec(m@));
                             assert(validity_gate_witness_spec(w));
+                            assert(validity_gate_model_link_spec(m@, w));
                         }
                         Option::Some((m, w))
                     }
@@ -4463,7 +4502,7 @@ pub fn cube_constructive_counts_and_is_valid() -> (out: Option<(Mesh, ValidityGa
     ensures
         match out {
             Option::Some((m, w)) => mesh_cube_counts_spec(m@) && validity_gate_witness_spec(w)
-                && w.api_ok,
+                && validity_gate_model_link_spec(m@, w) && w.api_ok,
             Option::None => true,
         },
 {
@@ -4479,6 +4518,7 @@ pub fn cube_constructive_counts_and_is_valid() -> (out: Option<(Mesh, ValidityGa
                         proof {
                             assert(mesh_cube_counts_spec(m@));
                             assert(validity_gate_witness_spec(w));
+                            assert(validity_gate_model_link_spec(m@, w));
                         }
                         Option::Some((m, w))
                     }
@@ -4517,7 +4557,7 @@ pub fn triangular_prism_constructive_counts_and_is_valid() -> (out: Option<(Mesh
     ensures
         match out {
             Option::Some((m, w)) => mesh_triangular_prism_counts_spec(m@)
-                && validity_gate_witness_spec(w) && w.api_ok,
+                && validity_gate_witness_spec(w) && validity_gate_model_link_spec(m@, w) && w.api_ok,
             Option::None => true,
         },
 {
@@ -4533,6 +4573,7 @@ pub fn triangular_prism_constructive_counts_and_is_valid() -> (out: Option<(Mesh
                         proof {
                             assert(mesh_triangular_prism_counts_spec(m@));
                             assert(validity_gate_witness_spec(w));
+                            assert(validity_gate_model_link_spec(m@, w));
                         }
                         Option::Some((m, w))
                     }

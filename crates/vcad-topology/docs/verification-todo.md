@@ -939,6 +939,38 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
       passed (`73 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`107 verified, 0 errors`).
+  - burndown update (2026-02-18, model-link witness strengthening):
+    - strengthened `src/runtime_halfedge_mesh_refinement.rs` with a new
+      witness-level linkage predicate:
+      `validity_gate_model_link_spec`.
+    - strengthened `is_valid_constructive` so `Some(w)` now certifies both:
+      - `validity_gate_witness_spec(w)`, and
+      - `validity_gate_model_link_spec(m@, w)`.
+    - proof-path strengthening details:
+      - `w.structural_ok` is now backed by an explicit retained
+        `StructuralValidityGateWitness` existential carrying
+        `structural_validity_gate_witness_spec` +
+        `structural_validity_gate_model_link_spec`,
+      - `w.euler_ok` is now sourced from
+        `check_euler_formula_closed_components_constructive` (instead of direct
+        raw API call), so successful witnesses carry the existing checked
+        partition/Euler witness surface.
+    - propagated strengthened validity witness guarantees into constructor
+      wrappers:
+      - `tetrahedron_constructive_counts_and_is_valid`,
+      - `cube_constructive_counts_and_is_valid`,
+      - `triangular_prism_constructive_counts_and_is_valid`.
+      these now also export `validity_gate_model_link_spec(m@, w)` on `Some`.
+    - remaining gap:
+      this is still constructive witness linkage, not full total `iff`
+      linkage to `mesh_valid_spec` / `mesh_euler_closed_components_spec`.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement is_valid_constructive`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`76 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`76 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`110 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
 
 ## G. Verify Reference Mesh Constructors End-to-End
