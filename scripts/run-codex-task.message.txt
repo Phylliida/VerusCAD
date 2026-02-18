@@ -1,1 +1,1 @@
-Removed remaining kernel-checker unused-variable suppressions by explicitly consuming proof witness locals and revalidated full vcad-topology verification and tests.
+Cleaned vcad-topology proof-bridge dead-code warnings and revalidated full fast/full topology verification plus combined-feature tests.
