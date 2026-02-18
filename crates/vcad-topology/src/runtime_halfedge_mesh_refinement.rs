@@ -3973,13 +3973,289 @@ pub proof fn lemma_from_face_cycles_structural_core_implies_success(
     }
 }
 
-#[verifier::external_body]
-pub fn ex_mesh_from_face_cycles(
+#[verifier::exec_allows_no_decreases_clause]
+fn runtime_build_mesh_from_face_cycles(
     vertex_positions: Vec<RuntimePoint3>,
     face_cycles: &[Vec<usize>],
 ) -> (out: Result<Mesh, MeshBuildError>)
 {
-    Mesh::from_face_cycles(vertex_positions, face_cycles)
+    let vertex_count = vertex_positions.len();
+    if vertex_count == 0 {
+        return Result::Err(MeshBuildError::EmptyVertexSet);
+    }
+    if face_cycles.len() == 0 {
+        return Result::Err(MeshBuildError::EmptyFaceSet);
+    }
+
+    let mut half_edges: Vec<HalfEdge> = Vec::new();
+    let mut faces: Vec<Face> = Vec::with_capacity(face_cycles.len());
+
+    let mut f: usize = 0;
+    while f < face_cycles.len()
+        invariant
+            vertex_count == vertex_positions.len(),
+            0 <= f <= face_cycles.len(),
+            faces.len() == f,
+    {
+        let cycle = vstd::slice::slice_index_get(face_cycles, f);
+        let n = cycle.len();
+        if n < 3 {
+            return Result::Err(MeshBuildError::FaceTooSmall { face: f, len: n });
+        }
+
+        let start = half_edges.len();
+        faces.push(Face { half_edge: start });
+
+        let mut i: usize = 0;
+        while i < n
+            invariant
+                vertex_count == vertex_positions.len(),
+                faces.len() == f + 1,
+                n == cycle.len(),
+                3 <= n,
+                0 <= i <= n,
+        {
+            let v = cycle[i];
+            if v >= vertex_count {
+                return Result::Err(MeshBuildError::VertexOutOfBounds {
+                    face: f,
+                    vertex: v,
+                    index: i,
+                });
+            }
+            let i_plus_one = match i.checked_add(1) {
+                Some(v) => v,
+                None => return Result::Err(MeshBuildError::EmptyFaceSet),
+            };
+            let next_idx = if i_plus_one < n {
+                i_plus_one
+            } else if i_plus_one == n {
+                0
+            } else {
+                return Result::Err(MeshBuildError::EmptyFaceSet);
+            };
+            let to = cycle[next_idx];
+            if to >= vertex_count {
+                return Result::Err(MeshBuildError::VertexOutOfBounds {
+                    face: f,
+                    vertex: to,
+                    index: next_idx,
+                });
+            }
+            if v == to {
+                return Result::Err(MeshBuildError::DegenerateOrientedEdge {
+                    face: f,
+                    index: i,
+                    vertex: v,
+                });
+            }
+
+            let next = match start.checked_add(next_idx) {
+                Some(v) => v,
+                None => return Result::Err(MeshBuildError::EmptyFaceSet),
+            };
+            let prev_idx = if i == 0 { n - 1 } else { i - 1 };
+            let prev = match start.checked_add(prev_idx) {
+                Some(v) => v,
+                None => return Result::Err(MeshBuildError::EmptyFaceSet),
+            };
+            half_edges.push(HalfEdge {
+                twin: usize::MAX,
+                next,
+                prev,
+                vertex: v,
+                edge: usize::MAX,
+                face: f,
+            });
+            i += 1;
+        }
+
+        f += 1;
+    }
+
+    let hcnt = half_edges.len();
+
+    let mut h: usize = 0;
+    while h < hcnt
+        invariant
+            vertex_count == vertex_positions.len(),
+            half_edges.len() == hcnt,
+            0 <= h <= hcnt,
+    {
+        let from = half_edges[h].vertex;
+        let next = half_edges[h].next;
+        if next >= hcnt {
+            return Result::Err(MeshBuildError::EmptyFaceSet);
+        }
+        let to = half_edges[next].vertex;
+
+        let mut twin_opt: Option<usize> = None;
+        let mut t: usize = 0;
+        while t < hcnt
+            invariant
+                vertex_count == vertex_positions.len(),
+                half_edges.len() == hcnt,
+                0 <= t <= hcnt,
+        {
+            let t_next = half_edges[t].next;
+            if t_next >= hcnt {
+                return Result::Err(MeshBuildError::EmptyFaceSet);
+            }
+            let t_from = half_edges[t].vertex;
+            let t_to = half_edges[t_next].vertex;
+            if t_from == to && t_to == from {
+                twin_opt = Some(t);
+                break;
+            }
+            t += 1;
+        }
+
+        match twin_opt {
+            Some(twin) => {
+                let next_h = half_edges[h].next;
+                let prev_h = half_edges[h].prev;
+                let vertex_h = half_edges[h].vertex;
+                let edge_h = half_edges[h].edge;
+                let face_h = half_edges[h].face;
+                half_edges.set(h, HalfEdge {
+                    twin,
+                    next: next_h,
+                    prev: prev_h,
+                    vertex: vertex_h,
+                    edge: edge_h,
+                    face: face_h,
+                });
+            }
+            None => {
+                return Result::Err(MeshBuildError::MissingTwinForHalfEdge {
+                    half_edge: h,
+                    from,
+                    to,
+                });
+            }
+        }
+
+        h += 1;
+    }
+
+    let mut edges: Vec<Edge> = Vec::new();
+    let mut h2: usize = 0;
+    while h2 < hcnt
+        invariant
+            vertex_count == vertex_positions.len(),
+            half_edges.len() == hcnt,
+            0 <= h2 <= hcnt,
+    {
+        if half_edges[h2].edge == usize::MAX {
+            let twin = half_edges[h2].twin;
+            if twin >= hcnt {
+                let next = half_edges[h2].next;
+                if next >= hcnt {
+                    return Result::Err(MeshBuildError::EmptyFaceSet);
+                }
+                return Result::Err(MeshBuildError::MissingTwinForHalfEdge {
+                    half_edge: h2,
+                    from: half_edges[h2].vertex,
+                    to: half_edges[next].vertex,
+                });
+            }
+            let edge = edges.len();
+            edges.push(Edge { half_edge: h2 });
+            let twin_h2 = half_edges[h2].twin;
+            let next_h2 = half_edges[h2].next;
+            let prev_h2 = half_edges[h2].prev;
+            let vertex_h2 = half_edges[h2].vertex;
+            let face_h2 = half_edges[h2].face;
+            half_edges.set(h2, HalfEdge {
+                twin: twin_h2,
+                next: next_h2,
+                prev: prev_h2,
+                vertex: vertex_h2,
+                edge,
+                face: face_h2,
+            });
+
+            let twin_twin = half_edges[twin].twin;
+            let twin_next = half_edges[twin].next;
+            let twin_prev = half_edges[twin].prev;
+            let twin_vertex = half_edges[twin].vertex;
+            let twin_face = half_edges[twin].face;
+            half_edges.set(twin, HalfEdge {
+                twin: twin_twin,
+                next: twin_next,
+                prev: twin_prev,
+                vertex: twin_vertex,
+                edge,
+                face: twin_face,
+            });
+        }
+        h2 += 1;
+    }
+
+    let mut first_outgoing: Vec<Option<usize>> = vec![None; vertex_count];
+    let mut h3: usize = 0;
+    while h3 < hcnt
+        invariant
+            vertex_count == vertex_positions.len(),
+            half_edges.len() == hcnt,
+            first_outgoing.len() == vertex_count,
+            0 <= h3 <= hcnt,
+    {
+        let v = half_edges[h3].vertex;
+        if v >= vertex_count {
+            return Result::Err(MeshBuildError::VertexOutOfBounds {
+                face: half_edges[h3].face,
+                vertex: v,
+                index: 0,
+            });
+        }
+        if first_outgoing[v].is_none() {
+            first_outgoing.set(v, Some(h3));
+        }
+        h3 += 1;
+    }
+
+    let mut positions = vertex_positions;
+    let mut vertices_rev: Vec<Vertex> = Vec::with_capacity(vertex_count);
+    let mut remaining: usize = vertex_count;
+    while remaining > 0
+        invariant
+            first_outgoing.len() == vertex_count,
+            positions.len() == remaining,
+            0 <= remaining <= vertex_count,
+            vertices_rev.len() + remaining == vertex_count,
+    {
+        let vertex_id = remaining - 1;
+        let position = match positions.pop() {
+            Some(p) => p,
+            None => return Result::Err(MeshBuildError::EmptyVertexSet),
+        };
+        let half_edge = match first_outgoing[vertex_id] {
+            Some(hidx) => hidx,
+            None => return Result::Err(MeshBuildError::IsolatedVertex { vertex: vertex_id }),
+        };
+        vertices_rev.push(Vertex { position, half_edge });
+        remaining -= 1;
+    }
+
+    let mut vertices: Vec<Vertex> = Vec::with_capacity(vertex_count);
+    while vertices_rev.len() > 0
+        invariant
+            vertices.len() + vertices_rev.len() == vertex_count,
+    {
+        let vertex = match vertices_rev.pop() {
+            Some(vtx) => vtx,
+            None => return Result::Err(MeshBuildError::EmptyVertexSet),
+        };
+        vertices.push(vertex);
+    }
+
+    Result::Ok(Mesh {
+        vertices,
+        edges,
+        faces,
+        half_edges,
+    })
 }
 
 #[verifier::exec_allows_no_decreases_clause]
@@ -6146,7 +6422,7 @@ pub fn from_face_cycles_constructive_next_prev_face(
         return Result::Err(mesh_build_error_empty_face_set());
     }
 
-    let out0 = ex_mesh_from_face_cycles(vertex_positions, face_cycles);
+    let out0 = runtime_build_mesh_from_face_cycles(vertex_positions, face_cycles);
     match out0 {
         Result::Ok(m) => {
             let counts_index_face_starts_ok = runtime_check_from_face_cycles_counts_index_face_starts(
@@ -6938,7 +7214,7 @@ pub fn from_face_cycles_constructive_twin_assignment_total_involution(
             Result::Err(_) => true,
         },
 {
-    let out0 = ex_mesh_from_face_cycles(vertex_positions, face_cycles);
+    let out0 = runtime_build_mesh_from_face_cycles(vertex_positions, face_cycles);
     match out0 {
         Result::Ok(m) => {
             let ok = runtime_check_twin_assignment_total_involution(&m);
@@ -7346,7 +7622,7 @@ pub fn from_face_cycles_constructive_edge_exactly_two_half_edges(
             Result::Err(_) => true,
         },
 {
-    let out0 = ex_mesh_from_face_cycles(vertex_positions, face_cycles);
+    let out0 = runtime_build_mesh_from_face_cycles(vertex_positions, face_cycles);
     match out0 {
         Result::Ok(m) => {
             let ok = runtime_check_edge_exactly_two_half_edges(&m);
@@ -7450,7 +7726,7 @@ pub fn from_face_cycles_constructive_vertex_representatives(
             Result::Err(_) => true,
         },
 {
-    let out0 = ex_mesh_from_face_cycles(vertex_positions, face_cycles);
+    let out0 = runtime_build_mesh_from_face_cycles(vertex_positions, face_cycles);
     match out0 {
         Result::Ok(m) => {
             let ok = runtime_check_vertex_representative_valid_nonisolated(&m);

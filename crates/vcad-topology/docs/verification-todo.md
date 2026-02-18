@@ -2810,3 +2810,55 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`4 passed, 0 failed`);
       `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
       passed (`6 passed, 0 failed`).
+  - burndown update (2026-02-18, constructor bridge removal completion):
+    - selected task in this pass:
+      remove the final constructor `external_body` bridge so
+      `runtime_halfedge_mesh_refinement.rs` has no remaining trusted wrapper.
+    - code hardening:
+      in `src/runtime_halfedge_mesh_refinement.rs`, removed
+      `ex_mesh_from_face_cycles` and added a fully constructive in-module
+      builder:
+      `runtime_build_mesh_from_face_cycles`.
+      rewired constructor-dependent wrappers to call the constructive builder:
+      - `from_face_cycles_constructive_next_prev_face`,
+      - `from_face_cycles_constructive_twin_assignment_total_involution`,
+      - `from_face_cycles_constructive_edge_exactly_two_half_edges`,
+      - `from_face_cycles_constructive_vertex_representatives`.
+      implementation shape:
+      - face/half-edge construction from face cycles with explicit checked
+        arithmetic for `next/prev`,
+      - twin assignment by bounded scan over built half-edges,
+      - edge assignment by twin-pair representative,
+      - vertex representative assignment via first-outgoing scan plus
+        pop/reverse vertex materialization (avoids external clone calls).
+    - failed attempts (rolled back/stabilized in-pass):
+      - direct replacement with `Mesh::from_face_cycles(...)` in verified code;
+        Verus rejects calls to functions declared outside `verus!`.
+      - first constructive builder draft used mutable index assignment
+        (`half_edges[h].field = ...`) and `.clone()` on external runtime types;
+        Verus rejected both shapes. stabilized by using `Vec::set(...)` with
+        explicit field reconstruction and ownership-preserving `pop()` flow.
+    - trusted-boundary/interpreted-spec scans:
+      - `rg -n "\\[verifier::external_body\\]" crates/vcad-topology/src/runtime_halfedge_mesh_refinement.rs`
+        returned no matches (down from one wrapper in the previous pass).
+      - `rg -n "\\[verifier::external_body\\]" crates/vcad-topology/src`
+        returned no matches.
+      - `rg -n "assume_specification|external_fn_specification|\\buninterpreted\\b|admit\\(|assume\\("`
+        over `runtime_halfedge_mesh_refinement.rs`,
+        `verified_checker_kernels.rs`, and `halfedge_mesh.rs`
+        returned no matches.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_build_mesh_from_face_cycles`
+      passed (`9 verified, 0 errors` partial);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement from_face_cycles_constructive_next_prev_face`
+      passed (`1 verified, 0 errors` partial);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`191 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh`
+      passed (`191 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh`
+      passed (`226 verified, 0 errors`);
+      `cargo test -p vcad-topology`
+      passed (`4 passed, 0 failed`);
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`6 passed, 0 failed`).
