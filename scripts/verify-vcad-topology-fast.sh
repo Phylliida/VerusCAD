@@ -6,6 +6,8 @@ VERUS_ROOT="${VERUS_ROOT:-$ROOT_DIR/../verus}"
 VERUS_SOURCE="$VERUS_ROOT/source"
 TOOLCHAIN="${VERUS_TOOLCHAIN:-1.93.0-x86_64-unknown-linux-gnu}"
 
+"$ROOT_DIR/scripts/check-vcad-topology-trust-surface.sh"
+
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   cat <<'EOF'
 usage: ./scripts/verify-vcad-topology-fast.sh [module] [function_pattern]

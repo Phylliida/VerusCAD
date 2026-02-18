@@ -4757,3 +4757,43 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`5 passed, 0 failed`);
       `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
       passed (`6 passed, 0 failed`).
+  - burndown update (2026-02-18, exit-condition trust-surface guard integration + matrix replay):
+    - selected task in this pass:
+      harden Exit Condition maintenance by adding an automated trust-surface
+      preflight script to topology verification entrypoints, then replay the
+      full `vcad-topology` verification/test matrix.
+    - run timestamp:
+      `2026-02-18T08:16:07-08:00`.
+    - code hardening:
+      - added `scripts/check-vcad-topology-trust-surface.sh` to fail fast on
+        trust-surface regressions in `crates/vcad-topology/src`:
+        `assume_specification`, `external_fn_specification`, `uninterpreted`,
+        `admit(`, `assume(`, and `#[verifier::external_body]`.
+      - wired the new guard into:
+        `scripts/verify-vcad-topology-fast.sh` and
+        `scripts/verify-vcad-topology.sh`.
+      - updated `scripts/README.md` to document the new guard and its
+        integration into topology verification scripts.
+    - trust-surface scans:
+      - `./scripts/check-vcad-topology-trust-surface.sh`
+        passed; no forbidden trust markers found in
+        `crates/vcad-topology/src`, and
+        `runtime_halfedge_mesh_refinement.rs` reported 6 expected
+        `#[verifier::external_type_specification]` shims.
+    - warning-scope note:
+      all `cargo test -p vcad-topology` invocations in this pass emitted
+      warnings only from dependency crates (`vstd`, `vcad-math`,
+      `vcad-geometry`), with no warnings from `vcad-topology`.
+    - failed attempts:
+      none in this pass.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh`
+      passed (`192 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh`
+      passed (`227 verified, 0 errors`);
+      `cargo test -p vcad-topology`
+      passed (`4 passed, 0 failed`);
+      `cargo test -p vcad-topology --features geometry-checks`
+      passed (`5 passed, 0 failed`);
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`6 passed, 0 failed`).
