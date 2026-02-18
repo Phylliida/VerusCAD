@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# This script always reads the Zulip message from MESSAGE_FILE.
+# To change the message, edit scripts/run-codex-task.message.txt before running.
+# Positional arguments are intentionally not supported.
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOOPER_URL="${LOOPER_URL:-http://127.0.0.1:3456/run}"
 LOOPER_API_TOKEN="${LOOPER_API_TOKEN:-}"
-DEFAULT_MESSAGE='Codex task triggered from run-codex-task.sh'
+MESSAGE_FILE="$ROOT_DIR/scripts/run-codex-task.message.txt"
 
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   cat <<'EOF'
-usage: ./scripts/run-codex-task.sh [zulip_message]
+usage: ./scripts/run-codex-task.sh
 
 POSTs to the looper server (/run) to:
 1) send a Zulip DM
@@ -16,12 +20,13 @@ POSTs to the looper server (/run) to:
 3) open a fresh Codex window/panel
 4) send a prompt to the Codex composer (defined by looper/server.py)
 
+message source:
+  scripts/run-codex-task.message.txt
+  edit this file to change the Zulip DM text
+
 environment:
   LOOPER_URL        default: http://127.0.0.1:3456/run
   LOOPER_API_TOKEN  optional bearer token for looper auth
-
-arguments:
-  zulip_message     optional DM text; default is an auto status line
 
 optional passthrough fields:
   VSCODE_PASSWORD_STORE
@@ -33,13 +38,23 @@ EOF
   exit 0
 fi
 
-if [[ "$#" -gt 1 ]]; then
-  echo "error: expected zero or one argument: [zulip_message]"
+if [[ "$#" -gt 0 ]]; then
+  echo "error: expected zero arguments"
   exit 1
 fi
 
 if ! command -v curl >/dev/null 2>&1; then
   echo "error: curl is not installed or not in PATH"
+  exit 1
+fi
+
+if [[ ! -f "$MESSAGE_FILE" ]]; then
+  echo "error: message file not found: $MESSAGE_FILE"
+  exit 1
+fi
+
+if [[ ! -r "$MESSAGE_FILE" ]]; then
+  echo "error: message file is not readable: $MESSAGE_FILE"
   exit 1
 fi
 
@@ -87,7 +102,13 @@ append_json_field() {
   JSON_FIELD_COUNT=$((JSON_FIELD_COUNT + 1))
 }
 
-MESSAGE="${1:-$DEFAULT_MESSAGE}"
+# Message text is sourced from a stable file path, not CLI input.
+MESSAGE="$(<"$MESSAGE_FILE")"
+
+if [[ -z "$MESSAGE" ]]; then
+  echo "error: message file is empty: $MESSAGE_FILE"
+  exit 1
+fi
 
 JSON_PAYLOAD="{"
 JSON_FIELD_COUNT=0

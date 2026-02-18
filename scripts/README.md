@@ -23,11 +23,12 @@ Helper scripts for local Verus workflows.
 8. `verify-vad-topology.sh`: compatibility alias that forwards to `verify-vcad-topology.sh`.
 9. `run-codex-task.sh`: lightweight client that POSTs to the looper service (`http://127.0.0.1:3456/run` by default).
    - sends a `zulip_message` to looper; looper handles Zulip DM + VS Code restart/new Codex panel
+   - message source file: `scripts/run-codex-task.message.txt`
    - default: `./scripts/run-codex-task.sh`
-   - custom message (positional arg): `./scripts/run-codex-task.sh "starting next Codex task"`
+   - update message text: edit `scripts/run-codex-task.message.txt` before running
    - override endpoint: `LOOPER_URL=http://host:3456/run ./scripts/run-codex-task.sh`
    - optional auth: `LOOPER_API_TOKEN=... ./scripts/run-codex-task.sh`
-   - optional VS Code passthrough env: `VSCODE_PASSWORD_STORE`, `VSCODE_STARTUP_DELAY_SECONDS`, `VSCODE_SIDEBAR_DELAY_SECONDS`, `VSCODE_NEW_TASK_DELAY_SECONDS`
+   - optional VS Code passthrough env: `VSCODE_PASSWORD_STORE`, `VSCODE_STARTUP_DELAY_SECONDS`, `VSCODE_SIDEBAR_DELAY_SECONDS`, `VSCODE_NEW_TASK_DELAY_SECONDS`, `PROMPT_SEND_DELAY_SECONDS`
 
 These scripts assume this repo layout:
 1. `VerusCAD` at `../VerusCAD` (current repo),
