@@ -1,1 +1,1 @@
-Added a constructive vertex-manifold kernel-bridge model-link for structural validity in vcad-topology and documented the burndown update with passing fast and full verification.
+Exported the no-duplicate-oriented-edge input clause through from_face_cycles_constructive_next_prev_face in vcad-topology with a new verified runtime checker and updated burndown records.

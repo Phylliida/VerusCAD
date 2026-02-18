@@ -208,6 +208,43 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`76 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`76 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`110 verified, 0 errors`).
+  - burndown update (2026-02-18, no-duplicate-oriented-edge input export):
+    - completed no-duplicate-oriented-edge input export in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      - added reusable prefix/edge helpers:
+        `input_face_local_index_before_spec`,
+        `from_face_cycles_oriented_edge_match_spec`,
+        `from_face_cycles_oriented_edge_not_in_prefix_spec`,
+        `from_face_cycles_no_duplicate_oriented_edges_prefix_spec`,
+        `lemma_from_face_cycles_no_duplicate_prefix_complete`,
+        `lemma_face_cycles_exec_to_model_oriented_edge_exec`,
+      - added executable checker
+        `runtime_check_from_face_cycles_no_duplicate_oriented_edges` with
+        postcondition
+        `out ==> from_face_cycles_no_duplicate_oriented_edges_spec(...)`,
+      - strengthened `from_face_cycles_structural_core_spec` to include
+        `from_face_cycles_no_duplicate_oriented_edges_spec(...)`,
+      - threaded the new checker into
+        `from_face_cycles_constructive_next_prev_face` as an input gate and
+        exported `Ok(m)` guarantee.
+    - proof-shape note:
+      a stable approach was to scan only previously-seen oriented edges for
+      each current edge, then lift that local non-dup fact into a global
+      processed-prefix uniqueness invariant.
+    - remaining gap:
+      constructor-level linkage to full
+      `from_face_cycles_success_spec` / `from_face_cycles_failure_spec`
+      still needs all-oriented-edges-have-twin input export and full
+      incidence-model packaging from raw constructor success.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_from_face_cycles_no_duplicate_oriented_edges`
+      passed (`6 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement from_face_cycles_constructive_next_prev_face`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`109 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`109 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`143 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
 - [x] Prove twin assignment is total for closed inputs and involutive.
   - burndown update (2026-02-18):
