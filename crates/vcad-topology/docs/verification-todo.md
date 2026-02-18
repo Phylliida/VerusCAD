@@ -606,6 +606,34 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`36 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`36 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`70 verified, 0 errors`).
+  - burndown update (2026-02-18, latest neighbor-closure increment):
+    - strengthened exported component semantics in
+      `src/runtime_halfedge_mesh_refinement.rs` with:
+      - `mesh_half_edge_component_neighbor_closed_at_spec`,
+      - `mesh_half_edge_components_neighbor_closed_spec`,
+      - `mesh_half_edge_components_partition_neighbor_closed_spec`.
+    - added constructive checker
+      `runtime_check_half_edge_components_neighbor_closed` and required it in
+      `half_edge_components_constructive`, so `Some(components)` now certifies
+      both partition/coverage and per-component closure under
+      `twin`/`next`/`prev`.
+    - failed attempt (kept documented):
+      first proof shape for the new checker exceeded verifier resources
+      (`while loop: Resource limit (rlimit) exceeded`) at the outer component
+      loop.
+    - stabilization kept in-tree:
+      added localized `#[verifier::rlimit(300)]` to
+      `runtime_check_half_edge_components_neighbor_closed`; no trusted
+      assumptions were introduced.
+    - remaining gap:
+      full BFS soundness/completeness is still open at the connectivity-witness
+      level (component-wise reachability/minimality against
+      `mesh_half_edge_connected_spec`), but closure semantics are now exported.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`40 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`40 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`74 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 - [ ] Verify `component_count` equals number of connected components.
@@ -632,6 +660,16 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`36 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`36 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`70 verified, 0 errors`).
+  - burndown update (2026-02-18, aligned with neighbor-closure increment):
+    - strengthened the witness contract used by
+      `mesh_component_count_partition_witness_spec` /
+      `component_count_constructive`: witness components must now satisfy
+      `mesh_half_edge_components_partition_neighbor_closed_spec` (partition +
+      global coverage + per-component neighbor closure).
+    - remaining gap:
+      count is still not linked to the full connected-components spec
+      (`mesh_component_count_spec`) until the pending reachability/minimality
+      soundness proof is exported.
   - file: `src/halfedge_mesh.rs`
 - [ ] Verify `euler_characteristics_per_component` computes `V - E + F` per BFS component.
   - file: `src/halfedge_mesh.rs`
