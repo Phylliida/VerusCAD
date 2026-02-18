@@ -1,1 +1,1 @@
-Added disconnected-component and empty-mesh Euler regression coverage for vcad-topology, updated the burndown log, and reran the full topology verification matrix successfully.
+Added a three-half-edge edge-cardinality regression test in vcad-topology, documented the pass in the burndown, and reran the full topology verification matrix successfully.

@@ -891,6 +891,48 @@ mod tests {
         );
     }
 
+    #[test]
+    fn edge_with_three_incident_half_edges_fails_edge_cardinality_check() {
+        let mesh = Mesh {
+            vertices: vec![super::Vertex {
+                position: RuntimePoint3::from_ints(0, 0, 0),
+                half_edge: 0,
+            }],
+            edges: vec![super::Edge { half_edge: 0 }],
+            faces: vec![super::Face { half_edge: 0 }],
+            half_edges: vec![
+                super::HalfEdge {
+                    vertex: 0,
+                    twin: 0,
+                    next: 0,
+                    prev: 0,
+                    edge: 0,
+                    face: 0,
+                },
+                super::HalfEdge {
+                    vertex: 0,
+                    twin: 1,
+                    next: 1,
+                    prev: 1,
+                    edge: 0,
+                    face: 0,
+                },
+                super::HalfEdge {
+                    vertex: 0,
+                    twin: 2,
+                    next: 2,
+                    prev: 2,
+                    edge: 0,
+                    face: 0,
+                },
+            ],
+        };
+
+        assert!(!mesh.check_edge_has_exactly_two_half_edges());
+        #[cfg(feature = "verus-proofs")]
+        assert!(!mesh.check_edge_has_exactly_two_half_edges_via_kernel());
+    }
+
     #[cfg(feature = "verus-proofs")]
     #[test]
     fn bridge_core_checks_agree_on_reference_meshes() {

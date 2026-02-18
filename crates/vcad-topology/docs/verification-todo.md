@@ -5336,3 +5336,40 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
         (`5 passed, 0 failed`),
       - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
         passed (`6 passed, 0 failed`).
+  - burndown update (2026-02-18, edge-cardinality regression hardening + matrix replay):
+    - selected task in this pass:
+      harden the completed `check_edge_has_exactly_two_half_edges` boundary
+      with an explicit negative runtime regression, then replay the full
+      `vcad-topology` verification/test matrix.
+    - run timestamp:
+      `2026-02-18T08:59:28-08:00`.
+    - code hardening:
+      in `src/halfedge_mesh.rs`, added
+      `edge_with_three_incident_half_edges_fails_edge_cardinality_check`.
+      the test builds a minimal mesh where one edge has three incident
+      half-edges and asserts:
+      - `check_edge_has_exactly_two_half_edges()` is `false`,
+      - `check_edge_has_exactly_two_half_edges_via_kernel()` is also `false`
+        in `verus-proofs` builds.
+    - failed attempts:
+      first compile failed due a missing `Vertex.position` initializer and an
+      unconditional call to the kernel-bridge helper in non-`verus-proofs`
+      builds. fixed by adding `RuntimePoint3::from_ints(0, 0, 0)` and gating
+      the kernel assertion with `#[cfg(feature = "verus-proofs")]`.
+    - warning-scope note:
+      all `cargo test -p vcad-topology` invocations in this pass emitted
+      warnings only from dependency crates (`vstd`, `vcad-math`,
+      `vcad-geometry`), with no warnings from `vcad-topology`.
+    - verification checks:
+      `cargo test -p vcad-topology edge_with_three_incident_half_edges_fails_edge_cardinality_check -- --nocapture`
+      passed (`1 passed, 0 failed`);
+      `./scripts/verify-vcad-topology-matrix.sh`
+      passed:
+      - trust-surface guard passed,
+      - fast verification passed (`192 verified, 0 errors` partial),
+      - full verification passed (`227 verified, 0 errors`),
+      - `cargo test -p vcad-topology` passed (`7 passed, 0 failed`),
+      - `cargo test -p vcad-topology --features geometry-checks` passed
+        (`8 passed, 0 failed`),
+      - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+        passed (`9 passed, 0 failed`).
