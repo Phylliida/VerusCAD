@@ -1,1 +1,1 @@
-Completed an exit-condition burndown rerun for vcad-topology with clean trust-surface scans and fully green verification and test runs.
+Refreshed the vcad-topology exit-condition burndown with clean trust-surface scans plus green fast/full verification and baseline, geometry-checks, and combined-feature test runs.
