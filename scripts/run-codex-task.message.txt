@@ -1,1 +1,1 @@
-Logged a fresh vcad-topology exit-condition snapshot with clean trust-surface scans and a fully passing verifier and cargo test matrix.
+Replayed the vcad-topology exit-condition burndown with clean trust-surface scans and a fully passing verification and test matrix.
