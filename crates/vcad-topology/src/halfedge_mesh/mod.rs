@@ -51,6 +51,45 @@ pub enum MeshBuildError {
     IsolatedVertex { vertex: usize },
 }
 
+#[cfg(feature = "geometry-checks")]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum GeometricTopologicalConsistencyFailure {
+    Phase4Validity,
+    ZeroLengthGeometricEdge {
+        half_edge: usize,
+        from_vertex: usize,
+        to_vertex: usize,
+    },
+    FaceCornerCollinear {
+        face: usize,
+        half_edge: usize,
+    },
+    FaceNonCoplanar {
+        face: usize,
+        half_edge: usize,
+    },
+    FaceNonConvex {
+        face: usize,
+        half_edge: usize,
+    },
+    FacePlaneInconsistent {
+        face: usize,
+        half_edge: usize,
+    },
+    SharedEdgeOrientationInconsistent {
+        half_edge: usize,
+        twin_half_edge: usize,
+    },
+    ForbiddenFaceFaceIntersection {
+        face_a: usize,
+        face_b: usize,
+    },
+    InwardOrDegenerateComponent {
+        start_half_edge: usize,
+    },
+    InternalInconsistency,
+}
+
 mod components;
 mod construction;
 mod validation;

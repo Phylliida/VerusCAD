@@ -125,8 +125,8 @@ Current explicit policy (runtime behavior locked by tests):
   - rejected earlier for exact face/edge degeneracy by non-collinearity and zero-length edge checks.
 
 ## P5.11 Diagnostics and Scalability Guardrails
-- [ ] Add diagnostic checker variants that return a first failing witness (face id / edge id / face-pair + reason), not only `bool`.
-- [ ] Prove diagnostic and boolean checker equivalence (diagnostic success iff boolean passes).
+- [x] Add diagnostic checker variants that return a first failing witness (face id / edge id / face-pair + reason), not only `bool`.
+- [x] Prove diagnostic and boolean checker equivalence (diagnostic success iff boolean passes).
 - [ ] Document checker complexity and asymptotic bounds (especially face-pair intersection path).
 - [ ] Add broad-phase culling for face-pair checks (for example plane-side/AABB prefilters) with soundness proof (no false negatives).
 - [ ] Add stress fixtures (higher face counts) to lock checker behavior and runtime envelope.
@@ -151,6 +151,23 @@ Current explicit policy (runtime behavior locked by tests):
   - document which Euler-operator preconditions must preserve geometric invariants versus recheck them.
 
 ## Burndown Log
+- 2026-02-18: Completed a P5.11 diagnostics pass in `src/halfedge_mesh/validation.rs` and `src/halfedge_mesh/mod.rs`:
+  - added `GeometricTopologicalConsistencyFailure` with first-failure witness payloads (`half_edge`, `face`, `face_a/face_b`, and component-start witnesses);
+  - added `Mesh::check_geometric_topological_consistency_diagnostic() -> Result<(), GeometricTopologicalConsistencyFailure>`;
+  - added first-failure witness finders for each Phase 5 gate stage (zero-length edge, corner collinearity, coplanarity, convexity, plane consistency, shared-edge orientation, forbidden face-pair intersection, outward signed-volume);
+  - changed `Mesh::check_geometric_topological_consistency()` to delegate to the diagnostic API (`is_ok()`), making boolean/diagnostic equivalence hold by construction.
+- 2026-02-18: Extended `src/halfedge_mesh/tests.rs` for P5.11 coverage:
+  - added `geometric_consistency_diagnostic_agrees_with_boolean_gate`;
+  - added `geometric_consistency_diagnostic_returns_first_failure_witness`, locking witness-grade failure categories (`Phase4Validity`, `ZeroLengthGeometricEdge`, `FaceNonConvex`, `ForbiddenFaceFaceIntersection`).
+- 2026-02-18: Failed attempt in this P5.11 pass:
+  - first revision imported `GeometricTopologicalConsistencyFailure` unconditionally in `validation.rs`, which broke non-`geometry-checks` builds (`cargo test -p vcad-topology`); fixed by feature-gating the import.
+- 2026-02-18: Revalidated after the P5.11 diagnostics additions:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (215 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (250 verified, 0 errors)
 - 2026-02-18: Completed the P5.10 degeneracy-policy and contract-hardening pass:
   - in `src/halfedge_mesh/validation.rs`, documented explicit checker-contract policy in runtime APIs:
     - `Mesh::check_no_forbidden_face_face_intersections()` now states adjacency exemption is index-based (shared vertex index), and geometric-only position coincidence across distinct vertex indices is not exempt;

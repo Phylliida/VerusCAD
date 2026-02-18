@@ -27,6 +27,8 @@ use crate::verified_checker_kernels::{
 };
 
 use super::Mesh;
+#[cfg(feature = "geometry-checks")]
+use super::GeometricTopologicalConsistencyFailure;
 
 #[cfg(feature = "geometry-checks")]
 #[derive(Clone, Copy)]
@@ -815,16 +817,354 @@ impl Mesh {
     }
 
     #[cfg(feature = "geometry-checks")]
+    fn first_zero_length_geometric_edge_failure(
+        &self,
+    ) -> Option<GeometricTopologicalConsistencyFailure> {
+        for (half_edge, he) in self.half_edges.iter().enumerate() {
+            let from_vertex = he.vertex;
+            let to_vertex = self.half_edges[he.next].vertex;
+            let a = &self.vertices[from_vertex].position;
+            let b = &self.vertices[to_vertex].position;
+            if a == b {
+                return Some(GeometricTopologicalConsistencyFailure::ZeroLengthGeometricEdge {
+                    half_edge,
+                    from_vertex,
+                    to_vertex,
+                });
+            }
+        }
+        None
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn first_face_corner_collinear_failure(
+        &self,
+    ) -> Option<GeometricTopologicalConsistencyFailure> {
+        let hcnt = self.half_edges.len();
+        for (face_id, face) in self.faces.iter().enumerate() {
+            let start = face.half_edge;
+            let mut h = start;
+            let mut steps = 0usize;
+
+            loop {
+                let he = &self.half_edges[h];
+                let prev = &self.half_edges[he.prev];
+                let next = &self.half_edges[he.next];
+
+                let a = &self.vertices[prev.vertex].position;
+                let b = &self.vertices[he.vertex].position;
+                let c = &self.vertices[next.vertex].position;
+                if collinear3d(a, b, c) {
+                    return Some(GeometricTopologicalConsistencyFailure::FaceCornerCollinear {
+                        face: face_id,
+                        half_edge: h,
+                    });
+                }
+
+                h = he.next;
+                steps += 1;
+                if h == start {
+                    break;
+                }
+                if steps > hcnt {
+                    return Some(GeometricTopologicalConsistencyFailure::InternalInconsistency);
+                }
+            }
+        }
+        None
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn first_face_non_coplanar_failure(&self) -> Option<GeometricTopologicalConsistencyFailure> {
+        let hcnt = self.half_edges.len();
+        for (face_id, face) in self.faces.iter().enumerate() {
+            let h0 = face.half_edge;
+            let h1 = self.half_edges[h0].next;
+            let h2 = self.half_edges[h1].next;
+
+            let a = &self.vertices[self.half_edges[h0].vertex].position;
+            let b = &self.vertices[self.half_edges[h1].vertex].position;
+            let c = &self.vertices[self.half_edges[h2].vertex].position;
+
+            let mut h = self.half_edges[h2].next;
+            let mut steps = 0usize;
+            while h != h0 {
+                let d = &self.vertices[self.half_edges[h].vertex].position;
+                if !coplanar(a, b, c, d) {
+                    return Some(GeometricTopologicalConsistencyFailure::FaceNonCoplanar {
+                        face: face_id,
+                        half_edge: h,
+                    });
+                }
+
+                h = self.half_edges[h].next;
+                steps += 1;
+                if steps > hcnt {
+                    return Some(GeometricTopologicalConsistencyFailure::InternalInconsistency);
+                }
+            }
+        }
+        None
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn first_face_non_convex_failure(&self) -> Option<GeometricTopologicalConsistencyFailure> {
+        let hcnt = self.half_edges.len();
+        for (face_id, face) in self.faces.iter().enumerate() {
+            let h0 = face.half_edge;
+            let h1 = self.half_edges[h0].next;
+            let h2 = self.half_edges[h1].next;
+
+            let p0 = &self.vertices[self.half_edges[h0].vertex].position;
+            let p1 = &self.vertices[self.half_edges[h1].vertex].position;
+            let p2 = &self.vertices[self.half_edges[h2].vertex].position;
+
+            let e01 = p1.sub(p0);
+            let e12 = p2.sub(p1);
+            let reference_normal = e01.cross(&e12);
+            let witness = p0.add_vec(&reference_normal);
+
+            let mut expected_turn_sign = 0i8;
+            let mut h = h0;
+            let mut steps = 0usize;
+            loop {
+                let he = &self.half_edges[h];
+                let prev = &self.half_edges[he.prev];
+                let next = &self.half_edges[he.next];
+
+                let a = &self.vertices[prev.vertex].position;
+                let b = &self.vertices[he.vertex].position;
+                let c = &self.vertices[next.vertex].position;
+                let turn_sign = orient3d_sign(a, b, c, &witness);
+                if turn_sign == 0 {
+                    return Some(GeometricTopologicalConsistencyFailure::FaceNonConvex {
+                        face: face_id,
+                        half_edge: h,
+                    });
+                }
+                if expected_turn_sign == 0 {
+                    expected_turn_sign = turn_sign;
+                } else if turn_sign != expected_turn_sign {
+                    return Some(GeometricTopologicalConsistencyFailure::FaceNonConvex {
+                        face: face_id,
+                        half_edge: h,
+                    });
+                }
+
+                h = he.next;
+                steps += 1;
+                if h == h0 {
+                    break;
+                }
+                if steps > hcnt {
+                    return Some(GeometricTopologicalConsistencyFailure::InternalInconsistency);
+                }
+            }
+        }
+        None
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn first_face_plane_inconsistent_failure(
+        &self,
+    ) -> Option<GeometricTopologicalConsistencyFailure> {
+        let hcnt = self.half_edges.len();
+        for face_id in 0..self.faces.len() {
+            let (normal, offset) = match self.compute_face_plane(face_id) {
+                Some(plane) => plane,
+                None => {
+                    return Some(GeometricTopologicalConsistencyFailure::FacePlaneInconsistent {
+                        face: face_id,
+                        half_edge: self.faces[face_id].half_edge,
+                    })
+                }
+            };
+
+            let start = self.faces[face_id].half_edge;
+            let mut h = start;
+            let mut steps = 0usize;
+            loop {
+                let p = &self.vertices[self.half_edges[h].vertex].position;
+                let side = Self::point_plane_value_relative_to_origin(&normal, &offset, p);
+                if side.signum_i8() != 0 {
+                    return Some(GeometricTopologicalConsistencyFailure::FacePlaneInconsistent {
+                        face: face_id,
+                        half_edge: h,
+                    });
+                }
+
+                h = self.half_edges[h].next;
+                steps += 1;
+                if h == start {
+                    break;
+                }
+                if steps > hcnt {
+                    return Some(GeometricTopologicalConsistencyFailure::InternalInconsistency);
+                }
+            }
+        }
+        None
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn first_shared_edge_orientation_inconsistent_failure(
+        &self,
+    ) -> Option<GeometricTopologicalConsistencyFailure> {
+        for (half_edge, he) in self.half_edges.iter().enumerate() {
+            let twin_half_edge = he.twin;
+            let twin = &self.half_edges[twin_half_edge];
+            if he.face == twin.face {
+                return Some(
+                    GeometricTopologicalConsistencyFailure::SharedEdgeOrientationInconsistent {
+                        half_edge,
+                        twin_half_edge,
+                    },
+                );
+            }
+
+            let he_start = he.vertex;
+            let he_end = self.half_edges[he.next].vertex;
+            let twin_start = twin.vertex;
+            let twin_end = self.half_edges[twin.next].vertex;
+            if he_start != twin_end || he_end != twin_start {
+                return Some(
+                    GeometricTopologicalConsistencyFailure::SharedEdgeOrientationInconsistent {
+                        half_edge,
+                        twin_half_edge,
+                    },
+                );
+            }
+        }
+        None
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn first_forbidden_face_face_intersection_failure(
+        &self,
+    ) -> Option<GeometricTopologicalConsistencyFailure> {
+        let mut face_vertices = Vec::with_capacity(self.faces.len());
+        let mut face_normals = Vec::with_capacity(self.faces.len());
+        for face_id in 0..self.faces.len() {
+            let vertices = match self.ordered_face_vertex_cycle(face_id) {
+                Some(vs) => vs,
+                None => return Some(GeometricTopologicalConsistencyFailure::InternalInconsistency),
+            };
+            let (normal, _) = match self.compute_face_plane(face_id) {
+                Some(plane) => plane,
+                None => return Some(GeometricTopologicalConsistencyFailure::InternalInconsistency),
+            };
+            face_vertices.push(vertices);
+            face_normals.push(normal);
+        }
+
+        for fa in 0..self.faces.len() {
+            for fb in (fa + 1)..self.faces.len() {
+                if Self::faces_share_vertex(&face_vertices[fa], &face_vertices[fb]) {
+                    continue;
+                }
+                if self.face_pair_has_forbidden_intersection(
+                    &face_vertices[fa],
+                    &face_normals[fa],
+                    &face_vertices[fb],
+                    &face_normals[fb],
+                ) {
+                    return Some(
+                        GeometricTopologicalConsistencyFailure::ForbiddenFaceFaceIntersection {
+                            face_a: fa,
+                            face_b: fb,
+                        },
+                    );
+                }
+            }
+        }
+
+        None
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn first_inward_or_degenerate_component_failure(
+        &self,
+    ) -> Option<GeometricTopologicalConsistencyFailure> {
+        let mut visited = vec![false; self.half_edges.len()];
+        for start in 0..self.half_edges.len() {
+            if visited[start] {
+                continue;
+            }
+
+            let mut queue = std::collections::VecDeque::new();
+            let mut seen_faces = std::collections::HashSet::new();
+            let mut signed_volume6 = RuntimeScalar::from_int(0);
+
+            queue.push_back(start);
+            visited[start] = true;
+
+            while let Some(h) = queue.pop_front() {
+                let he = &self.half_edges[h];
+                if seen_faces.insert(he.face) {
+                    let face_volume6 = self.face_signed_volume_six_relative_to_origin(he.face);
+                    signed_volume6 = signed_volume6.add(&face_volume6);
+                }
+
+                for n in [he.twin, he.next, he.prev] {
+                    if !visited[n] {
+                        visited[n] = true;
+                        queue.push_back(n);
+                    }
+                }
+            }
+
+            if signed_volume6.signum_i8() >= 0 {
+                return Some(GeometricTopologicalConsistencyFailure::InwardOrDegenerateComponent {
+                    start_half_edge: start,
+                });
+            }
+        }
+
+        None
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    pub fn check_geometric_topological_consistency_diagnostic(
+        &self,
+    ) -> Result<(), GeometricTopologicalConsistencyFailure> {
+        if !self.is_valid() {
+            return Err(GeometricTopologicalConsistencyFailure::Phase4Validity);
+        }
+        if !self.check_index_bounds() || !self.check_face_cycles() {
+            return Err(GeometricTopologicalConsistencyFailure::InternalInconsistency);
+        }
+
+        if let Some(failure) = self.first_zero_length_geometric_edge_failure() {
+            return Err(failure);
+        }
+        if let Some(failure) = self.first_face_corner_collinear_failure() {
+            return Err(failure);
+        }
+        if let Some(failure) = self.first_face_non_coplanar_failure() {
+            return Err(failure);
+        }
+        if let Some(failure) = self.first_face_non_convex_failure() {
+            return Err(failure);
+        }
+        if let Some(failure) = self.first_face_plane_inconsistent_failure() {
+            return Err(failure);
+        }
+        if let Some(failure) = self.first_shared_edge_orientation_inconsistent_failure() {
+            return Err(failure);
+        }
+        if let Some(failure) = self.first_forbidden_face_face_intersection_failure() {
+            return Err(failure);
+        }
+        if let Some(failure) = self.first_inward_or_degenerate_component_failure() {
+            return Err(failure);
+        }
+
+        Ok(())
+    }
+
+    #[cfg(feature = "geometry-checks")]
     pub fn check_geometric_topological_consistency(&self) -> bool {
-        self.is_valid()
-            && self.check_no_zero_length_geometric_edges()
-            && self.check_face_corner_non_collinearity()
-            && self.check_face_coplanarity()
-            && self.check_face_convexity()
-            && self.check_face_plane_consistency()
-            && self.check_shared_edge_local_orientation_consistency()
-            && self.check_no_forbidden_face_face_intersections()
-            && self.check_outward_face_normals()
+        self.check_geometric_topological_consistency_diagnostic().is_ok()
     }
 
     #[cfg(feature = "geometry-checks")]

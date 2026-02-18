@@ -1,4 +1,6 @@
 use super::{Mesh, MeshBuildError};
+#[cfg(feature = "geometry-checks")]
+use super::GeometricTopologicalConsistencyFailure;
 use vcad_math::runtime_point3::RuntimePoint3;
 #[cfg(feature = "geometry-checks")]
 use vcad_math::runtime_scalar::RuntimeScalar;
@@ -252,6 +254,134 @@ use vcad_math::runtime_vec3::RuntimeVec3;
         assert!(!mesh.check_outward_face_normals());
         assert!(!mesh.check_geometric_topological_consistency());
         assert!(!mesh.is_valid_with_geometry());
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn geometric_consistency_diagnostic_agrees_with_boolean_gate() {
+        let passing_meshes = [Mesh::tetrahedron(), Mesh::cube(), Mesh::triangular_prism()];
+        for mesh in &passing_meshes {
+            assert!(mesh.check_geometric_topological_consistency());
+            assert_eq!(
+                mesh.check_geometric_topological_consistency(),
+                mesh.check_geometric_topological_consistency_diagnostic().is_ok()
+            );
+        }
+
+        let zero_length_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+        ];
+        let zero_length_faces = vec![vec![0, 1, 2], vec![0, 2, 1]];
+        let zero_length_mesh = Mesh::from_face_cycles(zero_length_vertices, &zero_length_faces)
+            .expect("zero-length-edge fixture should build");
+        assert!(!zero_length_mesh.check_geometric_topological_consistency());
+        assert_eq!(
+            zero_length_mesh.check_geometric_topological_consistency(),
+            zero_length_mesh
+                .check_geometric_topological_consistency_diagnostic()
+                .is_ok()
+        );
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn geometric_consistency_diagnostic_returns_first_failure_witness() {
+        let invalid_mesh = Mesh {
+            vertices: vec![super::Vertex {
+                position: RuntimePoint3::from_ints(0, 0, 0),
+                half_edge: 0,
+            }],
+            edges: vec![super::Edge { half_edge: 0 }],
+            faces: vec![super::Face { half_edge: 0 }],
+            half_edges: vec![
+                super::HalfEdge {
+                    vertex: 0,
+                    twin: 1,
+                    next: 0,
+                    prev: 0,
+                    edge: 0,
+                    face: 0,
+                },
+                super::HalfEdge {
+                    vertex: 0,
+                    twin: 1,
+                    next: 1,
+                    prev: 1,
+                    edge: 0,
+                    face: 0,
+                },
+            ],
+        };
+        assert_eq!(
+            invalid_mesh.check_geometric_topological_consistency_diagnostic(),
+            Err(GeometricTopologicalConsistencyFailure::Phase4Validity)
+        );
+
+        let zero_length_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+        ];
+        let zero_length_faces = vec![vec![0, 1, 2], vec![0, 2, 1]];
+        let zero_length_mesh = Mesh::from_face_cycles(zero_length_vertices, &zero_length_faces)
+            .expect("zero-length-edge fixture should build");
+        let zero_length_failure = zero_length_mesh
+            .check_geometric_topological_consistency_diagnostic()
+            .expect_err("zero-length fixture should fail");
+        assert!(matches!(
+            zero_length_failure,
+            GeometricTopologicalConsistencyFailure::ZeroLengthGeometricEdge { .. }
+        ));
+
+        let concave_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(2, 0, 0),
+            RuntimePoint3::from_ints(2, 2, 0),
+            RuntimePoint3::from_ints(1, 1, 0),
+            RuntimePoint3::from_ints(0, 2, 0),
+        ];
+        let concave_faces = vec![vec![0, 1, 2, 3, 4], vec![0, 4, 3, 2, 1]];
+        let concave_mesh = Mesh::from_face_cycles(concave_vertices, &concave_faces)
+            .expect("concave fixture should build");
+        let concave_failure = concave_mesh
+            .check_geometric_topological_consistency_diagnostic()
+            .expect_err("concave fixture should fail");
+        assert!(matches!(
+            concave_failure,
+            GeometricTopologicalConsistencyFailure::FaceNonConvex { .. }
+        ));
+
+        let intersecting_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(4, 0, 0),
+            RuntimePoint3::from_ints(0, 4, 0),
+            RuntimePoint3::from_ints(0, 0, 4),
+            RuntimePoint3::from_ints(1, 1, 1),
+            RuntimePoint3::from_ints(5, 1, 1),
+            RuntimePoint3::from_ints(1, 5, 1),
+            RuntimePoint3::from_ints(1, 1, 5),
+        ];
+        let intersecting_faces = vec![
+            vec![0, 1, 2],
+            vec![0, 3, 1],
+            vec![1, 3, 2],
+            vec![2, 3, 0],
+            vec![4, 5, 6],
+            vec![4, 7, 5],
+            vec![5, 7, 6],
+            vec![6, 7, 4],
+        ];
+        let intersecting_mesh = Mesh::from_face_cycles(intersecting_vertices, &intersecting_faces)
+            .expect("intersecting fixture should build");
+        let intersecting_failure = intersecting_mesh
+            .check_geometric_topological_consistency_diagnostic()
+            .expect_err("intersecting fixture should fail");
+        assert!(matches!(
+            intersecting_failure,
+            GeometricTopologicalConsistencyFailure::ForbiddenFaceFaceIntersection { .. }
+        ));
     }
 
     #[cfg(feature = "geometry-checks")]
