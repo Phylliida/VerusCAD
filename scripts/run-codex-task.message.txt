@@ -1,1 +1,1 @@
-Replayed vcad-topology trust-surface scans and the full verification/test matrix directly, and all checks passed with no trust-surface regressions.
+Replayed the vcad-topology Exit Condition trust-surface scans and full verification matrix, then logged the current-pass results in verification-todo.md.
