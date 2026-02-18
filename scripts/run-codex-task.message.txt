@@ -1,1 +1,1 @@
-Consolidated vcad-topology reference constructor bridges into one external-body selector path and documented the verified burndown update.
+Hardened the shared vcad-topology reference constructor bridge with an enum selector and recorded green verification/test burndown results.

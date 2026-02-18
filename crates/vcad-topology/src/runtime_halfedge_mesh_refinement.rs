@@ -7758,14 +7758,20 @@ pub fn ex_mesh_euler_characteristics_per_component(m: &Mesh) -> (out: Vec<isize>
     m.euler_characteristics_per_component_for_verification()
 }
 
+#[derive(Structural, Copy, Clone, PartialEq, Eq)]
+pub enum ReferenceMeshKind {
+    Tetrahedron,
+    Cube,
+    TriangularPrism,
+}
+
 #[verifier::external_body]
-pub fn ex_mesh_reference_constructor(kind: usize) -> (out: Mesh)
+pub fn ex_mesh_reference_constructor(kind: ReferenceMeshKind) -> (out: Mesh)
 {
     match kind {
-        0 => Mesh::tetrahedron(),
-        1 => Mesh::cube(),
-        2 => Mesh::triangular_prism(),
-        _ => std::process::abort(),
+        ReferenceMeshKind::Tetrahedron => Mesh::tetrahedron(),
+        ReferenceMeshKind::Cube => Mesh::cube(),
+        ReferenceMeshKind::TriangularPrism => Mesh::triangular_prism(),
     }
 }
 
@@ -10943,7 +10949,7 @@ pub fn tetrahedron_constructive_counts() -> (out: Option<Mesh>)
             Option::None => true,
         },
 {
-    let m = ex_mesh_reference_constructor(0);
+    let m = ex_mesh_reference_constructor(ReferenceMeshKind::Tetrahedron);
     let counts_ok = runtime_check_mesh_counts(&m, 4, 6, 4, 12);
     if !counts_ok {
         return Option::None;
@@ -11000,7 +11006,7 @@ pub fn cube_constructive_counts() -> (out: Option<Mesh>)
             Option::None => true,
         },
 {
-    let m = ex_mesh_reference_constructor(1);
+    let m = ex_mesh_reference_constructor(ReferenceMeshKind::Cube);
     let counts_ok = runtime_check_mesh_counts(&m, 8, 12, 6, 24);
     if !counts_ok {
         return Option::None;
@@ -11057,7 +11063,7 @@ pub fn triangular_prism_constructive_counts() -> (out: Option<Mesh>)
             Option::None => true,
         },
 {
-    let m = ex_mesh_reference_constructor(2);
+    let m = ex_mesh_reference_constructor(ReferenceMeshKind::TriangularPrism);
     let counts_ok = runtime_check_mesh_counts(&m, 6, 9, 5, 18);
     if !counts_ok {
         return Option::None;
