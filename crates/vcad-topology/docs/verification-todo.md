@@ -341,6 +341,32 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`4 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels`
       passed (`34 verified, 0 errors`).
+  - burndown update (2026-02-18, retry after latest):
+    - attempted another postcondition-strengthening pass in `src/verified_checker_kernels.rs`
+      targeting explicit global-coverage linkage from `kernel_check_face_cycles`.
+    - attempted proof shape A (rolled back):
+      direct exit packaging to
+      `out ==> kernel_face_representative_cycles_cover_all_half_edges_total_spec(m)` using the
+      already-threaded `global_seen` + `face_cycle_lens` invariants and explicit
+      `forall hp. exists face/step` witness extraction at function end.
+    - attempted proof shape B (rolled back):
+      introduced a simpler intermediate global-coverage spec carrying an explicit witness triple
+      (`exists f, k, i`) tied to `kernel_face_representative_cycle_witness_spec`, then tried to
+      strengthen `kernel_check_face_cycles` to that total spec first.
+    - both proof shapes were rolled back: final quantified witness packaging remained
+      trigger-sensitive/brittle (especially in the last `forall hp` lift), and keeping partial
+      changes regressed verifier stability.
+    - stable state retained:
+      `kernel_check_face_cycles` remains at
+      `out ==> kernel_face_representative_cycles_total_spec(m)`; explicit no-overlap/global-coverage
+      linkage is still pending under this TODO item.
+    - post-rollback verification checks:
+      `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels kernel_check_face_cycles`
+      passed (`4 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels`
+      passed (`34 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`27 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`61 verified, 0 errors`).
   - file: `src/verified_checker_kernels.rs`
 - [x] Verify `check_no_degenerate_edges`.
   - in `verus-proofs` builds, this is delegated to verified kernel checker.

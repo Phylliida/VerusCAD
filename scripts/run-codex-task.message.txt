@@ -1,1 +1,1 @@
-Documented a rolled-back attempt to strengthen kernel_check_face_cycles to global-coverage spec linkage and confirmed vcad-topology verification remains green.
+Documented and rolled back two trigger-brittle global-coverage strengthening attempts for kernel_check_face_cycles while keeping vcad-topology verification green.
