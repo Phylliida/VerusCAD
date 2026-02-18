@@ -2968,3 +2968,29 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`4 passed, 0 failed`);
       `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
       passed (`6 passed, 0 failed`).
+  - burndown update (2026-02-18, exit-condition maintenance rerun):
+    - selected task in this pass:
+      revalidate the Exit Condition on the current tree and confirm trust
+      boundaries remain eliminated in `vcad-topology`.
+    - trust-surface scans:
+      - `rg -n "assume_specification|external_fn_specification|\\buninterpreted\\b|admit\\(|assume\\("`
+        over
+        `runtime_halfedge_mesh_refinement.rs`,
+        `verified_checker_kernels.rs`, and `halfedge_mesh.rs`
+        returned no matches.
+      - `rg -n "\\[verifier::external_body\\]" crates/vcad-topology/src`
+        returned no matches.
+      - `rg -n "\\[verifier::external_type_specification\\]" crates/vcad-topology/src/runtime_halfedge_mesh_refinement.rs`
+        returned 6 expected proof-facing type shims (`ExMesh`,
+        `ExMeshBuildError`, `ExHalfEdge`, `ExVertex`, `ExEdge`, `ExFace`).
+    - failed attempts:
+      none in this pass.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh`
+      passed (`191 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh`
+      passed (`226 verified, 0 errors`);
+      `cargo test -p vcad-topology`
+      passed (`4 passed, 0 failed`);
+      `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+      passed (`6 passed, 0 failed`).
