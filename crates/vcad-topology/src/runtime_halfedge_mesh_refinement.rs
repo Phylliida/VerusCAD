@@ -2540,6 +2540,14 @@ pub open spec fn from_face_cycles_basic_input_spec(vertex_count: int, face_cycle
         }
 }
 
+pub open spec fn from_face_cycles_no_self_loop_edges_spec(face_cycles: Seq<Seq<int>>) -> bool {
+    forall|f: int, i: int|
+        #![trigger input_face_from_vertex_spec(face_cycles, f, i), input_face_to_vertex_spec(face_cycles, f, i)]
+        input_face_local_index_valid_spec(face_cycles, f, i)
+            ==> input_face_from_vertex_spec(face_cycles, f, i)
+                != input_face_to_vertex_spec(face_cycles, f, i)
+}
+
 pub open spec fn from_face_cycles_no_duplicate_oriented_edges_spec(face_cycles: Seq<Seq<int>>) -> bool {
     forall|f1: int, i1: int, f2: int, i2: int|
         #![trigger input_face_from_vertex_spec(face_cycles, f1, i1), input_face_to_vertex_spec(face_cycles, f1, i1), input_face_from_vertex_spec(face_cycles, f2, i2), input_face_to_vertex_spec(face_cycles, f2, i2)]
@@ -2784,6 +2792,7 @@ pub proof fn lemma_from_face_cycles_prefix_contains_vertex_implies_contains(
 
 pub open spec fn from_face_cycles_failure_spec(vertex_count: int, face_cycles: Seq<Seq<int>>) -> bool {
     !from_face_cycles_basic_input_spec(vertex_count, face_cycles)
+        || !from_face_cycles_no_self_loop_edges_spec(face_cycles)
         || !from_face_cycles_no_duplicate_oriented_edges_spec(face_cycles)
         || !from_face_cycles_all_oriented_edges_have_twin_spec(face_cycles)
         || !from_face_cycles_no_isolated_vertices_spec(vertex_count, face_cycles)
@@ -3100,6 +3109,7 @@ pub open spec fn from_face_cycles_structural_core_spec(
     m: MeshModel,
 ) -> bool {
     &&& from_face_cycles_basic_input_spec(vertex_count, face_cycles)
+    &&& from_face_cycles_no_self_loop_edges_spec(face_cycles)
     &&& from_face_cycles_no_duplicate_oriented_edges_spec(face_cycles)
     &&& from_face_cycles_all_oriented_edges_have_twin_spec(face_cycles)
     &&& from_face_cycles_no_isolated_vertices_spec(vertex_count, face_cycles)
@@ -3119,6 +3129,7 @@ pub open spec fn from_face_cycles_success_spec(
     m: MeshModel,
 ) -> bool {
     &&& from_face_cycles_basic_input_spec(vertex_count, face_cycles)
+    &&& from_face_cycles_no_self_loop_edges_spec(face_cycles)
     &&& from_face_cycles_no_duplicate_oriented_edges_spec(face_cycles)
     &&& from_face_cycles_all_oriented_edges_have_twin_spec(face_cycles)
     &&& from_face_cycles_no_isolated_vertices_spec(vertex_count, face_cycles)
@@ -3443,6 +3454,7 @@ pub proof fn lemma_from_face_cycles_structural_core_implies_success(
 {
     if from_face_cycles_structural_core_spec(vertex_count, face_cycles, m) {
         assert(from_face_cycles_basic_input_spec(vertex_count, face_cycles));
+        assert(from_face_cycles_no_self_loop_edges_spec(face_cycles));
         assert(from_face_cycles_no_duplicate_oriented_edges_spec(face_cycles));
         assert(from_face_cycles_all_oriented_edges_have_twin_spec(face_cycles));
         assert(from_face_cycles_no_isolated_vertices_spec(vertex_count, face_cycles));
@@ -3697,6 +3709,166 @@ pub fn runtime_check_from_face_cycles_basic_input(
             };
         };
         assert(from_face_cycles_basic_input_spec(vertex_count as int, model_cycles));
+    }
+    true
+}
+
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
+pub fn runtime_check_from_face_cycles_no_self_loop_edges(
+    face_cycles: &[Vec<usize>],
+) -> (out: bool)
+    ensures
+        out ==> from_face_cycles_no_self_loop_edges_spec(
+            face_cycles_exec_to_model_spec(face_cycles@),
+        ),
+        !out ==> !from_face_cycles_no_self_loop_edges_spec(
+            face_cycles_exec_to_model_spec(face_cycles@),
+        ),
+{
+    let ghost model_cycles = face_cycles_exec_to_model_spec(face_cycles@);
+    proof {
+        assert(model_cycles.len() == face_cycles.len() as int);
+    }
+
+    let mut f: usize = 0;
+    while f < face_cycles.len()
+        invariant
+            0 <= f <= face_cycles.len(),
+            model_cycles == face_cycles_exec_to_model_spec(face_cycles@),
+            model_cycles.len() == face_cycles.len() as int,
+            forall|fp: int, ip: int|
+                #![trigger input_face_from_vertex_spec(model_cycles, fp, ip), input_face_to_vertex_spec(model_cycles, fp, ip)]
+                0 <= fp < f as int
+                    && input_face_local_index_valid_spec(model_cycles, fp, ip)
+                    ==> input_face_from_vertex_spec(model_cycles, fp, ip)
+                        != input_face_to_vertex_spec(model_cycles, fp, ip),
+    {
+        let face = vstd::slice::slice_index_get(face_cycles, f);
+        let n = face.len();
+        proof {
+            assert(*face == face_cycles@.index(f as int));
+            lemma_face_cycles_exec_to_model_face_len_exec(face_cycles, f, face, n);
+            assert(model_cycles[f as int].len() == n as int);
+        }
+
+        let mut i: usize = 0;
+        while i < n
+            invariant
+                0 <= f < face_cycles.len(),
+                0 <= i <= n,
+                n == face.len(),
+                *face == face_cycles@.index(f as int),
+                model_cycles == face_cycles_exec_to_model_spec(face_cycles@),
+                model_cycles.len() == face_cycles.len() as int,
+                model_cycles[f as int].len() == n as int,
+                forall|fp: int, ip: int|
+                    #![trigger input_face_from_vertex_spec(model_cycles, fp, ip), input_face_to_vertex_spec(model_cycles, fp, ip)]
+                    0 <= fp < f as int
+                        && input_face_local_index_valid_spec(model_cycles, fp, ip)
+                        ==> input_face_from_vertex_spec(model_cycles, fp, ip)
+                            != input_face_to_vertex_spec(model_cycles, fp, ip),
+                forall|ip: int|
+                    #![trigger input_face_from_vertex_spec(model_cycles, f as int, ip), input_face_to_vertex_spec(model_cycles, f as int, ip)]
+                    0 <= ip < i as int
+                        ==> input_face_from_vertex_spec(model_cycles, f as int, ip)
+                            != input_face_to_vertex_spec(model_cycles, f as int, ip),
+        {
+            let next_i = if i + 1 < n { i + 1 } else { 0 };
+            let from = face[i];
+            let to = face[next_i];
+            proof {
+                lemma_face_cycles_exec_to_model_oriented_edge_exec(face_cycles, f, face, i, next_i);
+                assert(input_face_from_vertex_spec(model_cycles, f as int, i as int) == from as int);
+                assert(input_face_to_vertex_spec(model_cycles, f as int, i as int) == to as int);
+            }
+
+            if from == to {
+                proof {
+                    assert(!from_face_cycles_no_self_loop_edges_spec(model_cycles)) by {
+                        if from_face_cycles_no_self_loop_edges_spec(model_cycles) {
+                            assert(input_face_local_index_valid_spec(model_cycles, f as int, i as int));
+                            assert(input_face_from_vertex_spec(model_cycles, f as int, i as int)
+                                != input_face_to_vertex_spec(model_cycles, f as int, i as int));
+                            assert(from as int == to as int);
+                            assert(false);
+                        }
+                    };
+                }
+                return false;
+            }
+
+            proof {
+                assert(from as int != to as int);
+                assert(forall|ip: int|
+                    #![trigger input_face_from_vertex_spec(model_cycles, f as int, ip), input_face_to_vertex_spec(model_cycles, f as int, ip)]
+                    0 <= ip < (i + 1) as int
+                        ==> input_face_from_vertex_spec(model_cycles, f as int, ip)
+                            != input_face_to_vertex_spec(model_cycles, f as int, ip)) by {
+                    assert forall|ip: int|
+                        #![trigger input_face_from_vertex_spec(model_cycles, f as int, ip), input_face_to_vertex_spec(model_cycles, f as int, ip)]
+                        0 <= ip < (i + 1) as int
+                            implies input_face_from_vertex_spec(model_cycles, f as int, ip)
+                                != input_face_to_vertex_spec(model_cycles, f as int, ip) by {
+                        if ip < i as int {
+                            assert(0 <= ip < i as int);
+                        } else {
+                            assert(ip == i as int);
+                            assert(input_face_from_vertex_spec(model_cycles, f as int, ip) == from as int);
+                            assert(input_face_to_vertex_spec(model_cycles, f as int, ip) == to as int);
+                        }
+                    };
+                }
+            }
+
+            i += 1;
+        }
+
+        proof {
+            assert(i == n);
+            assert(forall|fp: int, ip: int|
+                #![trigger input_face_from_vertex_spec(model_cycles, fp, ip), input_face_to_vertex_spec(model_cycles, fp, ip)]
+                0 <= fp < (f + 1) as int
+                    && input_face_local_index_valid_spec(model_cycles, fp, ip)
+                    ==> input_face_from_vertex_spec(model_cycles, fp, ip)
+                        != input_face_to_vertex_spec(model_cycles, fp, ip)) by {
+                assert forall|fp: int, ip: int|
+                    #![trigger input_face_from_vertex_spec(model_cycles, fp, ip), input_face_to_vertex_spec(model_cycles, fp, ip)]
+                    0 <= fp < (f + 1) as int
+                        && input_face_local_index_valid_spec(model_cycles, fp, ip)
+                        implies input_face_from_vertex_spec(model_cycles, fp, ip)
+                            != input_face_to_vertex_spec(model_cycles, fp, ip) by {
+                    if fp < f as int {
+                    } else {
+                        assert(fp == f as int);
+                        assert(model_cycles[f as int].len() == n as int);
+                        assert(0 <= ip < n as int);
+                        assert(0 <= ip < i as int);
+                        assert(forall|jp: int|
+                            #![trigger input_face_from_vertex_spec(model_cycles, f as int, jp), input_face_to_vertex_spec(model_cycles, f as int, jp)]
+                            0 <= jp < i as int
+                                ==> input_face_from_vertex_spec(model_cycles, f as int, jp)
+                                    != input_face_to_vertex_spec(model_cycles, f as int, jp));
+                    }
+                };
+            };
+        }
+
+        f += 1;
+    }
+
+    proof {
+        assert(f == face_cycles.len());
+        assert(from_face_cycles_no_self_loop_edges_spec(model_cycles)) by {
+            assert forall|fp: int, ip: int|
+                #![trigger input_face_from_vertex_spec(model_cycles, fp, ip), input_face_to_vertex_spec(model_cycles, fp, ip)]
+                input_face_local_index_valid_spec(model_cycles, fp, ip)
+                    implies input_face_from_vertex_spec(model_cycles, fp, ip)
+                        != input_face_to_vertex_spec(model_cycles, fp, ip) by {
+                assert(0 <= fp < face_cycles.len() as int);
+                assert(0 <= fp < f as int);
+            };
+        };
     }
     true
 }
@@ -5112,6 +5284,14 @@ pub fn from_face_cycles_constructive_next_prev_face(
         }
         return Result::Err(mesh_build_error_empty_face_set());
     }
+    let no_self_loop_ok = runtime_check_from_face_cycles_no_self_loop_edges(face_cycles);
+    if !no_self_loop_ok {
+        proof {
+            assert(!from_face_cycles_no_self_loop_edges_spec(model_cycles));
+            assert(from_face_cycles_failure_spec(vertex_count as int, model_cycles));
+        }
+        return Result::Err(mesh_build_error_empty_face_set());
+    }
     let no_duplicate_ok = runtime_check_from_face_cycles_no_duplicate_oriented_edges(face_cycles);
     if !no_duplicate_ok {
         ex_from_face_cycles_constructive_abort();
@@ -5164,12 +5344,14 @@ pub fn from_face_cycles_constructive_next_prev_face(
                                     } else {
                                         proof {
                                             assert(input_ok);
+                                            assert(no_self_loop_ok);
                                             assert(no_duplicate_ok);
                                             assert(all_twin_ok);
                                             assert(no_isolated_ok);
                                             assert(counts_index_face_starts_ok);
                                             assert(undirected_edge_ok);
                                             assert(from_face_cycles_basic_input_spec(vertex_count as int, model_cycles));
+                                            assert(from_face_cycles_no_self_loop_edges_spec(model_cycles));
                                             assert(from_face_cycles_no_duplicate_oriented_edges_spec(model_cycles));
                                             assert(from_face_cycles_all_oriented_edges_have_twin_spec(model_cycles));
                                             assert(from_face_cycles_no_isolated_vertices_spec(vertex_count as int, model_cycles));

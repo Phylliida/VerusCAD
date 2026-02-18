@@ -56,6 +56,7 @@ pub enum MeshBuildError {
     EmptyFaceSet,
     FaceTooSmall { face: usize, len: usize },
     VertexOutOfBounds { face: usize, vertex: usize, index: usize },
+    DegenerateOrientedEdge { face: usize, index: usize, vertex: usize },
     DuplicateOrientedEdge { from: usize, to: usize },
     MissingTwinForHalfEdge { half_edge: usize, from: usize, to: usize },
     IsolatedVertex { vertex: usize },
@@ -121,6 +122,13 @@ impl Mesh {
 
                 let from = cycle[i];
                 let to = cycle[(i + 1) % n];
+                if from == to {
+                    return Err(MeshBuildError::DegenerateOrientedEdge {
+                        face: face_id,
+                        index: i,
+                        vertex: from,
+                    });
+                }
                 if oriented_to_half_edge.insert((from, to), h).is_some() {
                     return Err(MeshBuildError::DuplicateOrientedEdge { from, to });
                 }
@@ -705,7 +713,7 @@ impl Mesh {
 
 #[cfg(test)]
 mod tests {
-    use super::Mesh;
+    use super::{Mesh, MeshBuildError};
     use vcad_math::runtime_point3::RuntimePoint3;
 
     #[test]
@@ -754,12 +762,15 @@ mod tests {
             RuntimePoint3::from_ints(1, 0, 0),
         ];
         let faces = vec![vec![0, 0, 1]];
-        let mesh = Mesh::from_face_cycles(vertices, &faces)
-            .expect("self-loop face cycle currently passes constructor checks");
-
-        assert!(!mesh.check_no_degenerate_edges());
-        assert!(!mesh.check_edge_has_exactly_two_half_edges());
-        assert!(!mesh.is_structurally_valid());
+        let out = Mesh::from_face_cycles(vertices, &faces);
+        assert_eq!(
+            out,
+            Err(MeshBuildError::DegenerateOrientedEdge {
+                face: 0,
+                index: 0,
+                vertex: 0,
+            })
+        );
     }
 
     #[cfg(feature = "verus-proofs")]

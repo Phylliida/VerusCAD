@@ -562,6 +562,49 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`1 passed, 0 failed`);
       `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
       passed (`150 verified, 0 errors`).
+  - burndown update (2026-02-18, self-loop rejection + no-self-loop constructive gate):
+    - removed the documented counterexample class at runtime by strengthening
+      `Mesh::from_face_cycles` in `src/halfedge_mesh.rs`:
+      - constructor now rejects degenerate oriented edges (`from == to`) with
+        `MeshBuildError::DegenerateOrientedEdge { face, index, vertex }`.
+    - strengthened constructor-input refinement surface in
+      `src/runtime_halfedge_mesh_refinement.rs`:
+      - added input predicate
+        `from_face_cycles_no_self_loop_edges_spec(face_cycles)`,
+      - added executable checker
+        `runtime_check_from_face_cycles_no_self_loop_edges` with two-way
+        guarantee (`out` and `!out`),
+      - threaded this checker into
+        `from_face_cycles_constructive_next_prev_face` as an explicit
+        pre-constructor `Err(...)` gate (not abort-only).
+    - strengthened constructor specs to track the new input clause:
+      - `from_face_cycles_structural_core_spec` now includes
+        `from_face_cycles_no_self_loop_edges_spec(...)`,
+      - `from_face_cycles_success_spec` now includes
+        `from_face_cycles_no_self_loop_edges_spec(...)`,
+      - `from_face_cycles_failure_spec` now includes its negation branch.
+    - updated regression behavior in `src/halfedge_mesh.rs`:
+      `self_loop_face_cycle_can_build_but_is_not_structurally_valid` now
+      asserts constructor rejection with `DegenerateOrientedEdge` (same test id
+      retained to preserve burndown history continuity).
+    - remaining gap:
+      explicit proof packaging of
+      `from_face_cycles_success_spec(...) ==> mesh_edge_exactly_two_half_edges_spec(...)`
+      is still open as a standalone lemma; this pass closes the known runtime
+      counterexample and exports the missing input clause constructively.
+    - verification checks:
+      `cargo test -p vcad-topology self_loop_face_cycle_can_build_but_is_not_structurally_valid -- --nocapture`
+      passed (`1 passed, 0 failed`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement runtime_check_from_face_cycles_no_self_loop_edges`
+      passed (`3 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement from_face_cycles_constructive_next_prev_face`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`162 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh`
+      passed (`162 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh`
+      passed (`197 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 - [x] Prove vertex representative (`vertex.half_edge`) is valid and non-isolated.
