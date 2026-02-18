@@ -281,19 +281,22 @@ pub open spec fn kernel_face_representative_cycles_total_spec(m: &KernelMesh) ->
 }
 
 pub open spec fn kernel_face_representative_cycles_cover_all_half_edges_spec(m: &KernelMesh) -> bool {
-    exists|face_cycle_lens: Seq<usize>| {
+    exists|face_cycle_lens: Seq<usize>, covered: Seq<bool>| {
         &&& face_cycle_lens.len() == kernel_face_count_spec(m)
+        &&& covered.len() == kernel_half_edge_count_spec(m)
         &&& forall|f: int|
             #![trigger face_cycle_lens[f]]
             0 <= f < kernel_face_count_spec(m)
                 ==> kernel_face_representative_cycle_witness_spec(m, f, face_cycle_lens[f] as int)
         &&& forall|h: int|
             #![trigger h + 0]
-            0 <= h < kernel_half_edge_count_spec(m) ==> exists|f: int, i: int| {
-                &&& 0 <= f < kernel_face_count_spec(m)
-                &&& 0 <= i < face_cycle_lens[f] as int
-                &&& #[trigger] kernel_next_iter_spec(m, m.face_half_edges@[f] as int, i as nat) == h
-            }
+            0 <= h < kernel_half_edge_count_spec(m) && #[trigger] covered[h]
+                ==> exists|f: int, i: int| {
+                    &&& 0 <= f < kernel_face_count_spec(m)
+                    &&& 0 <= i < face_cycle_lens[f] as int
+                    &&& #[trigger] kernel_next_iter_spec(m, m.face_half_edges@[f] as int, i as nat) == h
+                }
+        &&& forall|h: int| 0 <= h < kernel_half_edge_count_spec(m) ==> #[trigger] covered[h]
     }
 }
 
@@ -736,7 +739,7 @@ pub fn kernel_check_no_degenerate_edges(m: &KernelMesh) -> (out: bool)
 #[allow(unused_variables, unused_assignments)]
 pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
     ensures
-        out ==> kernel_face_representative_cycles_total_spec(m),
+        out ==> kernel_face_representative_cycles_cover_all_half_edges_total_spec(m),
 {
     let bounds_ok = kernel_check_index_bounds(m);
     if !bounds_ok {
@@ -1187,6 +1190,178 @@ pub fn kernel_check_face_cycles(m: &KernelMesh) -> (out: bool)
             };
         }
         assert(kernel_face_representative_cycles_total_spec(m));
+        assert(kernel_face_representative_cycles_cover_all_half_edges_spec(m)) by {
+            let cycle_lens = face_cycle_lens@;
+            let covered = global_seen@;
+            assert(cycle_lens.len() == kernel_face_count_spec(m)) by {
+                assert(cycle_lens.len() == f as int);
+                assert(kernel_face_count_spec(m) == fcnt as int);
+                assert(f == fcnt);
+            }
+            assert(covered.len() == kernel_half_edge_count_spec(m)) by {
+                assert(covered.len() == hcnt as int);
+                assert(kernel_half_edge_count_spec(m) == hcnt as int);
+            }
+            assert(forall|fp: int|
+                #![trigger cycle_lens[fp]]
+                0 <= fp < kernel_face_count_spec(m)
+                    ==> kernel_face_representative_cycle_witness_spec(
+                        m,
+                        fp,
+                        cycle_lens[fp] as int,
+                    )) by {
+                assert forall|fp: int|
+                    #![trigger cycle_lens[fp]]
+                    0 <= fp < kernel_face_count_spec(m)
+                        implies kernel_face_representative_cycle_witness_spec(
+                            m,
+                            fp,
+                            cycle_lens[fp] as int,
+                        ) by {
+                    assert(kernel_face_count_spec(m) == fcnt as int);
+                    assert(fp < fcnt as int);
+                    assert(fp < f as int);
+                    assert(cycle_lens[fp] == face_cycle_lens@[fp]);
+                    assert(kernel_face_representative_cycle_witness_spec(
+                        m,
+                        fp,
+                        face_cycle_lens@[fp] as int,
+                    ));
+                    assert(kernel_face_representative_cycle_witness_spec(
+                        m,
+                        fp,
+                        cycle_lens[fp] as int,
+                    ));
+                };
+            }
+            assert(forall|hp: int|
+                #![trigger hp + 0]
+                0 <= hp < kernel_half_edge_count_spec(m) && #[trigger] covered[hp]
+                    ==> exists|fp: int, ip: int| {
+                        &&& 0 <= fp < kernel_face_count_spec(m)
+                        &&& 0 <= ip < cycle_lens[fp] as int
+                        &&& #[trigger] kernel_next_iter_spec(
+                            m,
+                            m.face_half_edges@[fp] as int,
+                            ip as nat,
+                        ) == hp
+                }) by {
+                assert forall|hp: int|
+                    #![trigger hp + 0]
+                    0 <= hp < kernel_half_edge_count_spec(m) && #[trigger] covered[hp]
+                        implies exists|fp: int, ip: int| {
+                            &&& 0 <= fp < kernel_face_count_spec(m)
+                            &&& 0 <= ip < cycle_lens[fp] as int
+                            &&& #[trigger] kernel_next_iter_spec(
+                                m,
+                                m.face_half_edges@[fp] as int,
+                                ip as nat,
+                            ) == hp
+                        } by {
+                    assert(kernel_half_edge_count_spec(m) == hcnt as int);
+                    assert(0 <= hp < hcnt as int);
+                    assert(covered[hp] == global_seen@[hp]);
+                    assert(global_seen@[hp]);
+                    assert(exists|fp: int, ip: int| {
+                        &&& 0 <= fp < f as int
+                        &&& 0 <= ip < face_cycle_lens@[fp] as int
+                        &&& #[trigger] kernel_next_iter_spec(
+                            m,
+                            m.face_half_edges@[fp] as int,
+                            ip as nat,
+                        ) == hp
+                    }) by {
+                        assert(forall|hp2: int|
+                            0 <= hp2 < hcnt as int && #[trigger] global_seen@[hp2]
+                                ==> exists|fp: int, ip: int| {
+                                    &&& 0 <= fp < f as int
+                                    &&& 0 <= ip < face_cycle_lens@[fp] as int
+                                    &&& #[trigger] kernel_next_iter_spec(
+                                        m,
+                                        m.face_half_edges@[fp] as int,
+                                        ip as nat,
+                                    ) == hp2
+                                });
+                        assert(0 <= hp < hcnt as int && global_seen@[hp]);
+                    };
+                    let (fp, ip) = choose|fp: int, ip: int| {
+                        &&& 0 <= fp < f as int
+                        &&& 0 <= ip < face_cycle_lens@[fp] as int
+                        &&& #[trigger] kernel_next_iter_spec(
+                            m,
+                            m.face_half_edges@[fp] as int,
+                            ip as nat,
+                        ) == hp
+                    };
+                    assert(f == fcnt);
+                    assert(kernel_face_count_spec(m) == fcnt as int);
+                    assert(0 <= fp < kernel_face_count_spec(m));
+                    assert(cycle_lens[fp] == face_cycle_lens@[fp]);
+                    assert(0 <= ip < cycle_lens[fp] as int);
+                    assert(kernel_next_iter_spec(m, m.face_half_edges@[fp] as int, ip as nat) == hp);
+                };
+            }
+            assert(forall|h: int| 0 <= h < kernel_half_edge_count_spec(m) ==> #[trigger] covered[h]) by {
+                assert forall|h: int| 0 <= h < kernel_half_edge_count_spec(m) implies #[trigger] covered[h] by {
+                    assert(kernel_half_edge_count_spec(m) == hcnt as int);
+                    assert(0 <= h < hcnt as int);
+                    assert(covered[h] == global_seen@[h]);
+                    assert(global_seen@[h]);
+                };
+            }
+            assert(exists|cycle_lens: Seq<usize>, covered: Seq<bool>| {
+                &&& cycle_lens.len() == kernel_face_count_spec(m)
+                &&& covered.len() == kernel_half_edge_count_spec(m)
+                &&& forall|fp: int|
+                    #![trigger cycle_lens[fp]]
+                    0 <= fp < kernel_face_count_spec(m)
+                        ==> kernel_face_representative_cycle_witness_spec(
+                            m,
+                            fp,
+                            cycle_lens[fp] as int,
+                        )
+                &&& forall|h: int|
+                    #![trigger h + 0]
+                    0 <= h < kernel_half_edge_count_spec(m) && #[trigger] covered[h]
+                        ==> exists|fp: int, ip: int| {
+                        &&& 0 <= fp < kernel_face_count_spec(m)
+                        &&& 0 <= ip < cycle_lens[fp] as int
+                        &&& #[trigger] kernel_next_iter_spec(
+                            m,
+                            m.face_half_edges@[fp] as int,
+                            ip as nat,
+                        ) == h
+                    }
+                &&& forall|h: int| 0 <= h < kernel_half_edge_count_spec(m) ==> #[trigger] covered[h]
+            }) by {
+                let cycle_lens = face_cycle_lens@;
+                let covered = global_seen@;
+                assert(cycle_lens.len() == kernel_face_count_spec(m));
+                assert(covered.len() == kernel_half_edge_count_spec(m));
+                assert(forall|fp: int|
+                    #![trigger cycle_lens[fp]]
+                    0 <= fp < kernel_face_count_spec(m)
+                        ==> kernel_face_representative_cycle_witness_spec(
+                            m,
+                            fp,
+                            cycle_lens[fp] as int,
+                        ));
+                assert(forall|h: int|
+                    #![trigger h + 0]
+                    0 <= h < kernel_half_edge_count_spec(m) && #[trigger] covered[h]
+                        ==> exists|fp: int, ip: int| {
+                            &&& 0 <= fp < kernel_face_count_spec(m)
+                            &&& 0 <= ip < cycle_lens[fp] as int
+                            &&& #[trigger] kernel_next_iter_spec(
+                                m,
+                                m.face_half_edges@[fp] as int,
+                                ip as nat,
+                            ) == h
+                        });
+                assert(forall|h: int| 0 <= h < kernel_half_edge_count_spec(m) ==> #[trigger] covered[h]);
+            };
+        }
+        assert(kernel_face_representative_cycles_cover_all_half_edges_total_spec(m));
     }
     true
 }

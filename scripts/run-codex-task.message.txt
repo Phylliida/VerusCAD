@@ -1,1 +1,1 @@
-Documented and rolled back two trigger-brittle global-coverage strengthening attempts for kernel_check_face_cycles while keeping vcad-topology verification green.
+Strengthened kernel_check_face_cycles to prove explicit global half-edge coverage and documented the remaining no-overlap proof gap.

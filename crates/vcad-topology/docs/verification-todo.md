@@ -162,9 +162,10 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
 - [x] Add bridge kernel executable `kernel_check_face_cycles` and delegate runtime checker in `verus-proofs` builds.
   - file: `src/verified_checker_kernels.rs`
   - note: current proved contract is
-    `out ==> kernel_face_representative_cycles_total_spec(m)`, which now includes
-    representative-anchored closure/min-length plus per-step face-membership witnesses.
-    explicit no-overlap/global-coverage spec linkage is still pending.
+    `out ==> kernel_face_representative_cycles_cover_all_half_edges_total_spec(m)`, which now includes
+    representative-anchored closure/min-length plus per-step face-membership witnesses and explicit
+    global-coverage linkage for all half-edges.
+    explicit no-overlap uniqueness linkage is still pending.
 - [x] Add bridge kernel executable `kernel_check_vertex_manifold_single_cycle` and delegate runtime checker in `verus-proofs` builds.
   - file: `src/verified_checker_kernels.rs`
   - note: current proved contract is bounds-soundness (`out ==> kernel_index_bounds_spec`); full vertex-manifold semantic contract is pending.
@@ -361,6 +362,33 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       `out ==> kernel_face_representative_cycles_total_spec(m)`; explicit no-overlap/global-coverage
       linkage is still pending under this TODO item.
     - post-rollback verification checks:
+      `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels kernel_check_face_cycles`
+      passed (`4 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels`
+      passed (`34 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`27 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`61 verified, 0 errors`).
+  - burndown update (2026-02-18, latest completion):
+    - attempted direct exit packaging again as a single
+      `forall h. exists face/step witness` lift from `global_seen` + `face_cycle_lens`.
+      this proof shape was rejected (assertion failures in quantified witness extraction), so it was
+      rolled back instead of keeping brittle intermediate proof state.
+    - landed a stable contract completion for coverage in `src/verified_checker_kernels.rs`:
+      strengthened `kernel_check_face_cycles` from
+      `out ==> kernel_face_representative_cycles_total_spec(m)` to
+      `out ==> kernel_face_representative_cycles_cover_all_half_edges_total_spec(m)`.
+    - proof-shape stabilization:
+      refactored
+      `kernel_face_representative_cycles_cover_all_half_edges_spec` to use explicit existential
+      witness sequences `(face_cycle_lens, covered)` and prove:
+      - representative-cycle witnesses per face,
+      - `covered[h] ==> exists face/step witness`,
+      - `forall h < half_edge_count. covered[h]`.
+      this mirrors the stable witness-sequence packaging pattern already used elsewhere and avoids
+      brittle direct `forall ... exists ...` exit lifting.
+    - remaining gap after this completion:
+      explicit spec-level no-overlap uniqueness is still pending under this TODO item.
+    - verification checks:
       `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels kernel_check_face_cycles`
       passed (`4 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels`
