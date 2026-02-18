@@ -1,1 +1,1 @@
-Strengthened runtime_check_index_bounds to prove full executable/spec equivalence and documented the verified burndown update in verification-todo.md.
+Revalidated vcad-topology exit conditions with a full trust-surface scan and verification/test matrix refresh, and documented the results in verification-todo.md.
