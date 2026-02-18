@@ -5373,3 +5373,46 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
         (`8 passed, 0 failed`),
       - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
         passed (`9 passed, 0 failed`).
+  - burndown update (2026-02-18, face/vertex negative-regression hardening + matrix replay):
+    - selected task in this pass:
+      harden completed Section D checker boundaries (`check_face_cycles` and
+      `check_vertex_manifold_single_cycle`) with explicit negative runtime
+      regressions, then replay the full `vcad-topology` verification/test
+      matrix.
+    - run timestamp:
+      `2026-02-18T09:02:30-08:00`.
+    - code hardening:
+      in `src/halfedge_mesh.rs`, added:
+      - `overlapping_face_representatives_fail_face_cycle_check`:
+        builds a minimal mesh with two faces sharing the same representative
+        half-edge and asserts:
+        - `check_face_cycles()` is `false`,
+        - `check_face_cycles_via_kernel()` is also `false` in
+          `verus-proofs` builds.
+      - `split_vertex_ring_fails_vertex_manifold_single_cycle_check`:
+        builds a minimal mesh where one vertex has two disconnected outgoing
+        half-edges and asserts:
+        - `check_vertex_manifold_single_cycle()` is `false`,
+        - `check_vertex_manifold_single_cycle_via_kernel()` is also `false`
+          in `verus-proofs` builds.
+    - failed attempts:
+      none in this pass.
+    - warning-scope note:
+      all `cargo test -p vcad-topology` invocations in this pass emitted
+      warnings only from dependency crates (`vstd`, `vcad-math`,
+      `vcad-geometry`), with no warnings from `vcad-topology`.
+    - verification checks:
+      `cargo test -p vcad-topology overlapping_face_representatives_fail_face_cycle_check -- --nocapture`
+      passed (`1 passed, 0 failed`);
+      `cargo test -p vcad-topology split_vertex_ring_fails_vertex_manifold_single_cycle_check -- --nocapture`
+      passed (`1 passed, 0 failed`);
+      `./scripts/verify-vcad-topology-matrix.sh`
+      passed:
+      - trust-surface guard passed,
+      - fast verification passed (`192 verified, 0 errors` partial),
+      - full verification passed (`227 verified, 0 errors`),
+      - `cargo test -p vcad-topology` passed (`9 passed, 0 failed`),
+      - `cargo test -p vcad-topology --features geometry-checks` passed
+        (`10 passed, 0 failed`),
+      - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+        passed (`11 passed, 0 failed`).

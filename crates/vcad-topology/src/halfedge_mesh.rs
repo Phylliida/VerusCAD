@@ -933,6 +933,96 @@ mod tests {
         assert!(!mesh.check_edge_has_exactly_two_half_edges_via_kernel());
     }
 
+    #[test]
+    fn overlapping_face_representatives_fail_face_cycle_check() {
+        let mesh = Mesh {
+            vertices: vec![
+                super::Vertex {
+                    position: RuntimePoint3::from_ints(0, 0, 0),
+                    half_edge: 0,
+                },
+                super::Vertex {
+                    position: RuntimePoint3::from_ints(1, 0, 0),
+                    half_edge: 1,
+                },
+                super::Vertex {
+                    position: RuntimePoint3::from_ints(0, 1, 0),
+                    half_edge: 2,
+                },
+            ],
+            edges: vec![
+                super::Edge { half_edge: 0 },
+                super::Edge { half_edge: 1 },
+                super::Edge { half_edge: 2 },
+            ],
+            faces: vec![super::Face { half_edge: 0 }, super::Face { half_edge: 0 }],
+            half_edges: vec![
+                super::HalfEdge {
+                    vertex: 0,
+                    twin: 0,
+                    next: 1,
+                    prev: 2,
+                    edge: 0,
+                    face: 0,
+                },
+                super::HalfEdge {
+                    vertex: 1,
+                    twin: 1,
+                    next: 2,
+                    prev: 0,
+                    edge: 1,
+                    face: 0,
+                },
+                super::HalfEdge {
+                    vertex: 2,
+                    twin: 2,
+                    next: 0,
+                    prev: 1,
+                    edge: 2,
+                    face: 0,
+                },
+            ],
+        };
+
+        assert!(!mesh.check_face_cycles());
+        #[cfg(feature = "verus-proofs")]
+        assert!(!mesh.check_face_cycles_via_kernel());
+    }
+
+    #[test]
+    fn split_vertex_ring_fails_vertex_manifold_single_cycle_check() {
+        let mesh = Mesh {
+            vertices: vec![super::Vertex {
+                position: RuntimePoint3::from_ints(0, 0, 0),
+                half_edge: 0,
+            }],
+            edges: vec![super::Edge { half_edge: 0 }, super::Edge { half_edge: 1 }],
+            faces: vec![super::Face { half_edge: 0 }],
+            half_edges: vec![
+                super::HalfEdge {
+                    vertex: 0,
+                    twin: 0,
+                    next: 0,
+                    prev: 0,
+                    edge: 0,
+                    face: 0,
+                },
+                super::HalfEdge {
+                    vertex: 0,
+                    twin: 1,
+                    next: 1,
+                    prev: 1,
+                    edge: 1,
+                    face: 0,
+                },
+            ],
+        };
+
+        assert!(!mesh.check_vertex_manifold_single_cycle());
+        #[cfg(feature = "verus-proofs")]
+        assert!(!mesh.check_vertex_manifold_single_cycle_via_kernel());
+    }
+
     #[cfg(feature = "verus-proofs")]
     #[test]
     fn bridge_core_checks_agree_on_reference_meshes() {
