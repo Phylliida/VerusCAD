@@ -1731,6 +1731,7 @@ pub open spec fn mesh_euler_characteristics_partition_witness_spec(
     exists|components: Seq<Vec<usize>>| {
         &&& mesh_half_edge_components_partition_neighbor_closed_spec(m, components)
         &&& mesh_euler_characteristics_per_component_spec(m, components, chis)
+        &&& chis.len() as int == mesh_component_count_spec(m)
     }
 }
 
@@ -1738,6 +1739,7 @@ pub open spec fn mesh_euler_formula_closed_components_partition_witness_spec(m: 
     exists|components: Seq<Vec<usize>>, chis: Seq<isize>| {
         &&& mesh_half_edge_components_partition_neighbor_closed_spec(m, components)
         &&& mesh_euler_characteristics_per_component_spec(m, components, chis)
+        &&& chis.len() as int == mesh_component_count_spec(m)
         &&& chis.len() > 0
         &&& forall|c: int|
             #![trigger chis[c]]
@@ -8367,6 +8369,10 @@ pub fn euler_characteristics_per_component_constructive(
         assert(mesh_half_edge_components_representative_complete_spec(m@, components@));
         assert(mesh_half_edge_components_partition_neighbor_closed_spec(m@, components@));
         assert(mesh_euler_characteristics_per_component_spec(m@, components@, chis@));
+        lemma_component_partition_count_matches_model_component_count(m@, components@);
+        assert(components@.len() as int == mesh_component_count_spec(m@));
+        assert(chis@.len() as int == components@.len() as int);
+        assert(chis@.len() as int == mesh_component_count_spec(m@));
         assert(mesh_euler_characteristics_partition_witness_spec(m@, chis@));
     }
 
@@ -8481,6 +8487,10 @@ pub fn check_euler_formula_closed_components_constructive(
         assert(mesh_half_edge_components_representative_complete_spec(m@, components@));
         assert(mesh_half_edge_components_partition_neighbor_closed_spec(m@, components@));
         assert(mesh_euler_characteristics_per_component_spec(m@, components@, chis@));
+        lemma_component_partition_count_matches_model_component_count(m@, components@);
+        assert(components@.len() as int == mesh_component_count_spec(m@));
+        assert(chis@.len() as int == components@.len() as int);
+        assert(chis@.len() as int == mesh_component_count_spec(m@));
         assert(chis@.len() > 0);
         assert(mesh_euler_formula_closed_components_partition_witness_spec(m@));
     }

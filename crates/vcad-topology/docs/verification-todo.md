@@ -1138,6 +1138,28 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`55 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`55 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`89 verified, 0 errors`).
+  - burndown update (2026-02-18, model-count alignment increment):
+    - strengthened `mesh_euler_characteristics_partition_witness_spec` in
+      `src/runtime_halfedge_mesh_refinement.rs` so successful Euler witness
+      export now includes explicit model cardinality alignment:
+      `chis.len() == mesh_component_count_spec(m)`.
+    - strengthened `euler_characteristics_per_component_constructive` proof
+      packaging to discharge the new clause via
+      `lemma_component_partition_count_matches_model_component_count`.
+    - outcome:
+      constructive Euler-per-component witnesses now carry both:
+      - per-component `V - E + F` characterization, and
+      - Euler-vector length agreement with model component count.
+    - remaining gap:
+      direct total linkage of
+      `Mesh::euler_characteristics_per_component` itself remains open.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement euler_characteristics_per_component_constructive`
+      passed (`1 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`138 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`138 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`172 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 - [ ] Verify `check_euler_formula_closed_components` iff all closed components have characteristic `2`.
@@ -1168,6 +1190,29 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`69 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`69 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`103 verified, 0 errors`).
+  - burndown update (2026-02-18, witness model-count alignment increment):
+    - strengthened
+      `mesh_euler_formula_closed_components_partition_witness_spec` in
+      `src/runtime_halfedge_mesh_refinement.rs` so successful Euler-formula
+      witness export now includes:
+      `chis.len() == mesh_component_count_spec(m)`.
+    - strengthened
+      `check_euler_formula_closed_components_constructive` proof packaging to
+      discharge the new cardinality clause via
+      `lemma_component_partition_count_matches_model_component_count`.
+    - outcome:
+      `Some(true)` witnesses now certify
+      all-`2` component Euler values, non-empty component list, and explicit
+      Euler-vector/model-component-count agreement.
+    - remaining gap:
+      full `iff` linkage to `mesh_euler_closed_components_spec` is still open.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement check_euler_formula_closed_components_constructive`
+      passed (`2 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`
+      passed (`138 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh` passed (`138 verified, 0 errors`);
+      `./scripts/verify-vcad-topology.sh` passed (`172 verified, 0 errors`).
   - file: `src/halfedge_mesh.rs`
   - refinement file: `src/runtime_halfedge_mesh_refinement.rs`
 
