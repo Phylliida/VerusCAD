@@ -319,6 +319,28 @@ Goal: eliminate trusted gaps until all topology behavior is justified by explici
       passed (`34 verified, 0 errors`);
       `./scripts/verify-vcad-topology-fast.sh` passed (`27 verified, 0 errors`);
       `./scripts/verify-vcad-topology.sh` passed (`61 verified, 0 errors`).
+  - burndown update (2026-02-18, latest retry):
+    - retried the final contract lift for `kernel_check_face_cycles` to
+      `out ==> kernel_face_representative_cycles_cover_all_half_edges_total_spec(m)` in
+      `src/verified_checker_kernels.rs`.
+    - attempted proof shape:
+      strengthened the final all-half-edge scan with a direct processed-prefix coverage invariant
+      (`forall j < h. exists face/step witness`) and then tried two-stage exit packaging
+      (first old-shape coverage over `face_cycle_lens`, then rewrite to the
+      `kernel_face_count_spec`/`cycle_lens` contract form).
+    - this attempt was rolled back: loop-invariant preservation and final existential packaging
+      remained trigger-sensitive (notably around `hp + 0` / `j + 0`-style instantiation and
+      witness carry across the loop step), and keeping the partial proof state regressed
+      verifier stability.
+    - stable state retained:
+      `kernel_check_face_cycles` still proves
+      `out ==> kernel_face_representative_cycles_total_spec(m)`; explicit no-overlap/global-coverage
+      linkage remains pending under this TODO item.
+    - verification checks:
+      `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels kernel_check_face_cycles`
+      passed (`4 verified, 0 errors`);
+      `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels`
+      passed (`34 verified, 0 errors`).
   - file: `src/verified_checker_kernels.rs`
 - [x] Verify `check_no_degenerate_edges`.
   - in `verus-proofs` builds, this is delegated to verified kernel checker.

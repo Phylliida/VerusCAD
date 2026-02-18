@@ -1,1 +1,1 @@
-Advanced vcad-topology face-cycle verification groundwork with global-coverage witness scaffolding, documented the rolled-back contract-lift attempt, and kept all topology verification scripts green.
+Documented a rolled-back attempt to strengthen kernel_check_face_cycles to global-coverage spec linkage and confirmed vcad-topology verification remains green.
