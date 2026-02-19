@@ -1,1 +1,1 @@
-Added randomized differential coplanarity-oracle stress coverage and documented the P5.1 proof blocker in vcad-topology, revalidated tests plus Verus verification, and 10 Phase 5 checklist tasks remain.
+Codified and stress-tested the P5.7 aggregate-spec/runtime gap with a new verified phase4+shared-edge bridge and randomized noncoplanar harness, updated the burndown log, revalidated all vcad-topology tests and Verus checks, and 10 Phase 5 checklist tasks remain.

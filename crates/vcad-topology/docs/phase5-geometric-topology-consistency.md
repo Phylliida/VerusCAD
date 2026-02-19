@@ -195,6 +195,28 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) by codifying the current model/runtime mismatch boundary in `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs` and `src/halfedge_mesh/tests.rs`:
+  - added verified bridge helper
+    `runtime_check_phase4_valid_and_shared_edge_local_orientation_imply_geometric_topological_consistency_spec`;
+  - helper proves at runtime that `(Phase 4 validity && shared-edge local orientation consistency)` implies the current model-level
+    `mesh_geometric_topological_consistency_spec`;
+  - extended
+    `noncoplanar_fixture_keeps_phase4_and_shared_edge_orientation_but_fails_aggregate_gate`
+    to assert the new bridge passes on the noncoplanar fixture while
+    `check_geometric_topological_consistency()` and the existing aggregate sound bridge both fail.
+  - factored reusable noncoplanar-gap helpers in test space:
+    - `build_noncoplanar_single_quad_double_face_mesh_with_lift`;
+    - `assert_phase4_shared_edge_spec_characterization_gap`.
+  - added `differential_randomized_noncoplanar_phase4_shared_edge_spec_gap_harness` (40 deterministic seeded cases), including rigid rotation+translation variants, to lock this gap signature over a broader fixture set.
+  - outcome: locked the exact remaining P5.7 blocker in executable/verified form (current model spec characterization is weaker than the runtime aggregate checker), reducing repeat proof attempts against the wrong equivalence target while the formal P5.7 equivalence obligation remains open.
+- 2026-02-19: Failed attempts in this P5.7 boundary-codification pass: none.
+- 2026-02-19: Revalidated after the P5.7 boundary-codification increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (58 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (66 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (286 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (323 verified, 0 errors)
 - 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec`) with a differential
   stress-oracle increment in `src/halfedge_mesh/tests.rs`:
   - factored the exhaustive coplanarity oracle parity assertion into

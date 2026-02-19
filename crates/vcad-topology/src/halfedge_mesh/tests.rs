@@ -11,6 +11,7 @@ use crate::runtime_halfedge_mesh_refinement::{
     runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_phase5_runtime_bundle_sound_bridge,
     runtime_check_face_coplanarity_seed0_fixed_witness_sound_bridge,
     runtime_check_geometric_topological_consistency_sound_bridge,
+    runtime_check_phase4_valid_and_shared_edge_local_orientation_imply_geometric_topological_consistency_spec,
 };
 #[cfg(feature = "geometry-checks")]
 use super::GeometricTopologicalConsistencyFailure;
@@ -212,6 +213,67 @@ fn assert_constructive_phase5_gate_parity(mesh: &Mesh, label: &str) {
     assert_eq!(
         with_geometry_constructive.geometric_topological_consistency_ok, geometric_runtime,
         "constructive valid-with-geometry geometric witness mismatch for {label}"
+    );
+}
+
+#[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+fn build_noncoplanar_single_quad_double_face_mesh_with_lift(lift_z: i64) -> Mesh {
+    let noncoplanar_vertices = vec![
+        RuntimePoint3::from_ints(0, 0, 0),
+        RuntimePoint3::from_ints(1, 0, 0),
+        RuntimePoint3::from_ints(1, 1, lift_z),
+        RuntimePoint3::from_ints(0, 1, 0),
+    ];
+    let noncoplanar_faces = vec![vec![0, 1, 2, 3], vec![0, 3, 2, 1]];
+    Mesh::from_face_cycles(noncoplanar_vertices, &noncoplanar_faces)
+        .expect("noncoplanar quad fixture should build")
+}
+
+#[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+fn assert_phase4_shared_edge_spec_characterization_gap(mesh: &Mesh, label: &str) {
+    assert!(mesh.is_valid(), "{label}: fixture should satisfy Phase 4 validity");
+    assert!(
+        mesh.check_shared_edge_local_orientation_consistency(),
+        "{label}: fixture should satisfy shared-edge local orientation consistency"
+    );
+    assert!(
+        !mesh.check_face_coplanarity(),
+        "{label}: fixture should fail face coplanarity"
+    );
+    assert!(
+        runtime_check_phase4_valid_and_shared_edge_local_orientation_imply_geometric_topological_consistency_spec(mesh),
+        "{label}: aggregate model spec still characterizes phase4 + shared-edge-local-orientation"
+    );
+    assert!(
+        !mesh.check_geometric_topological_consistency(),
+        "{label}: runtime aggregate checker should reject non-coplanar fixture"
+    );
+    assert!(
+        !runtime_check_face_coplanarity_seed0_fixed_witness_sound_bridge(mesh),
+        "{label}: coplanarity sound bridge should reject non-coplanar fixture"
+    );
+    assert!(
+        !runtime_check_geometric_topological_consistency_sound_bridge(mesh),
+        "{label}: aggregate sound bridge should reject non-coplanar fixture"
+    );
+
+    let constructive = check_geometric_topological_consistency_constructive(mesh)
+        .expect("constructive geometric gate should produce a witness");
+    assert!(
+        constructive.phase4_valid_ok,
+        "{label}: constructive witness should retain phase4 validity"
+    );
+    assert!(
+        constructive.shared_edge_local_orientation_ok,
+        "{label}: constructive witness should retain shared-edge local orientation consistency"
+    );
+    assert!(
+        !constructive.face_coplanarity_ok,
+        "{label}: constructive witness should reject non-coplanar faces"
+    );
+    assert!(
+        !constructive.api_ok,
+        "{label}: constructive aggregate witness should remain false"
     );
 }
 
@@ -2815,28 +2877,45 @@ fn diagnostic_witness_is_real_counterexample(
     #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
     #[test]
     fn noncoplanar_fixture_keeps_phase4_and_shared_edge_orientation_but_fails_aggregate_gate() {
-        let noncoplanar_vertices = vec![
-            RuntimePoint3::from_ints(0, 0, 0),
-            RuntimePoint3::from_ints(1, 0, 0),
-            RuntimePoint3::from_ints(1, 1, 1),
-            RuntimePoint3::from_ints(0, 1, 0),
-        ];
-        let noncoplanar_faces = vec![vec![0, 1, 2, 3], vec![0, 3, 2, 1]];
-        let mesh = Mesh::from_face_cycles(noncoplanar_vertices, &noncoplanar_faces)
-            .expect("noncoplanar quad fixture should build");
+        let mesh = build_noncoplanar_single_quad_double_face_mesh_with_lift(1);
+        assert_phase4_shared_edge_spec_characterization_gap(
+            &mesh,
+            "noncoplanar_quad_lift1",
+        );
+    }
 
-        assert!(mesh.is_valid(), "fixture should satisfy Phase 4 validity");
-        assert!(
-            mesh.check_shared_edge_local_orientation_consistency(),
-            "fixture should satisfy shared-edge local orientation consistency"
-        );
-        assert!(
-            !mesh.check_face_coplanarity(),
-            "fixture should fail coplanarity and therefore aggregate Phase 5"
-        );
-        assert!(!mesh.check_geometric_topological_consistency());
-        assert!(!runtime_check_face_coplanarity_seed0_fixed_witness_sound_bridge(&mesh));
-        assert!(!runtime_check_geometric_topological_consistency_sound_bridge(&mesh));
+    #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+    #[test]
+    fn differential_randomized_noncoplanar_phase4_shared_edge_spec_gap_harness() {
+        const CASES: usize = 40;
+        let mut rng = DeterministicRng::new(0x9A73_2CD1_4E80_B5F2);
+
+        for case_id in 0..CASES {
+            let lift_z = rng.next_i64_inclusive(1, 9);
+            let base_mesh = build_noncoplanar_single_quad_double_face_mesh_with_lift(lift_z);
+            assert_phase4_shared_edge_spec_characterization_gap(
+                &base_mesh,
+                &format!("noncoplanar_lift_case_{case_id}_z{lift_z}"),
+            );
+
+            let quarter_turns = rng.next_u64() % 4;
+            let tx = rng.next_i64_inclusive(-30, 30);
+            let ty = rng.next_i64_inclusive(-30, 30);
+            let tz = rng.next_i64_inclusive(-30, 30);
+            let rigid_mesh = transform_mesh_positions(&base_mesh, |point| {
+                rigid_rotate_z_quarter_turns_then_translate(
+                    point,
+                    quarter_turns,
+                    tx,
+                    ty,
+                    tz,
+                )
+            });
+            assert_phase4_shared_edge_spec_characterization_gap(
+                &rigid_mesh,
+                &format!("noncoplanar_lift_case_{case_id}_rigid"),
+            );
+        }
     }
 
     #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
