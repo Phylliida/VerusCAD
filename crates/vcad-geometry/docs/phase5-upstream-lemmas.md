@@ -85,6 +85,16 @@ Blocks: `P5.4` global outwardness.
 Blocks: `P5.5` intersection checker soundness (broad phase).
 
 - [ ] Prove: if two AABBs are separated on at least one axis, then the contained convex sets are disjoint.
+  - Partial (2026-02-19, AABB separation pass): added
+    `point_in_aabb3_spec`, `aabb_separated_on_some_axis_spec`,
+    `lemma_aabb_separation_implies_no_common_point`, and
+    `lemma_aabb_separation_implies_disjoint_aabbs` in
+    `crates/vcad-geometry/src/phase5_upstream_lemmas.rs`.
+  - Status: core geometric contradiction is now upstreamed (`separated AABBs`
+    have no common point). Remaining packaging gap is an explicit
+    containment-to-disjointness wrapper used directly by the broad-phase API.
+  - Verification attempt note (2026-02-19, AABB separation pass):
+    `cargo test -p vcad-geometry` passes in this environment.
 - [ ] Prove: if all vertices of face `A` are strictly on one side of face `B` plane, then `A` and `B` do not intersect.
 - [ ] Proof sketch for plane separation:
   - If all polygon vertices evaluate strictly positive under a plane equation, every convex combination is strictly positive.

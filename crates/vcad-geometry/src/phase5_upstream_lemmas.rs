@@ -53,6 +53,139 @@ pub open spec fn det3_spec(u: Vec3, v: Vec3, w: Vec3) -> Scalar {
     u.dot_spec(v.cross_spec(w))
 }
 
+pub open spec fn point_in_aabb3_spec(p: Point3, min: Point3, max: Point3) -> bool {
+    &&& min.x.le_spec(p.x)
+    &&& p.x.le_spec(max.x)
+    &&& min.y.le_spec(p.y)
+    &&& p.y.le_spec(max.y)
+    &&& min.z.le_spec(p.z)
+    &&& p.z.le_spec(max.z)
+}
+
+pub open spec fn aabb_separated_on_some_axis_spec(
+    min_a: Point3,
+    max_a: Point3,
+    min_b: Point3,
+    max_b: Point3,
+) -> bool {
+    max_a.x.lt_spec(min_b.x)
+        || max_b.x.lt_spec(min_a.x)
+        || max_a.y.lt_spec(min_b.y)
+        || max_b.y.lt_spec(min_a.y)
+        || max_a.z.lt_spec(min_b.z)
+        || max_b.z.lt_spec(min_a.z)
+}
+
+proof fn lemma_scalar_le_transitive(a: Scalar, b: Scalar, c: Scalar)
+    requires
+        a.le_spec(b),
+        b.le_spec(c),
+    ensures
+        a.le_spec(c),
+{
+    assert(a.le_spec(b) == (a.num * b.denom() <= b.num * a.denom()));
+    assert(b.le_spec(c) == (b.num * c.denom() <= c.num * b.denom()));
+    assert(a.le_spec(c) == (a.num * c.denom() <= c.num * a.denom()));
+
+    assert(b.denom_nat() > 0);
+    assert((b.denom_nat() as int) > 0) by (nonlinear_arith);
+    assert(b.denom() == b.denom_nat() as int);
+    assert(b.denom() > 0);
+
+    assert(
+        (a.num * b.denom() <= b.num * a.denom())
+            && (b.num * c.denom() <= c.num * b.denom())
+            && (b.denom() > 0)
+            ==> (a.num * c.denom() <= c.num * a.denom()),
+    ) by (nonlinear_arith);
+    assert(a.num * c.denom() <= c.num * a.denom());
+    assert(a.le_spec(c));
+}
+
+proof fn lemma_scalar_lt_incompatible_with_reverse_le(a: Scalar, b: Scalar)
+    requires
+        a.lt_spec(b),
+        b.le_spec(a),
+    ensures
+        false,
+{
+    assert(a.lt_spec(b) == (a.num * b.denom() < b.num * a.denom()));
+    assert(b.le_spec(a) == (b.num * a.denom() <= a.num * b.denom()));
+    assert(false) by (nonlinear_arith);
+}
+
+pub proof fn lemma_aabb_separation_implies_no_common_point(
+    p: Point3,
+    min_a: Point3,
+    max_a: Point3,
+    min_b: Point3,
+    max_b: Point3,
+)
+    requires
+        aabb_separated_on_some_axis_spec(min_a, max_a, min_b, max_b),
+        point_in_aabb3_spec(p, min_a, max_a),
+        point_in_aabb3_spec(p, min_b, max_b),
+    ensures
+        false,
+{
+    if max_a.x.lt_spec(min_b.x) {
+        lemma_scalar_le_transitive(min_b.x, p.x, max_a.x);
+        assert(min_b.x.le_spec(max_a.x));
+        lemma_scalar_lt_incompatible_with_reverse_le(max_a.x, min_b.x);
+    } else if max_b.x.lt_spec(min_a.x) {
+        lemma_scalar_le_transitive(min_a.x, p.x, max_b.x);
+        assert(min_a.x.le_spec(max_b.x));
+        lemma_scalar_lt_incompatible_with_reverse_le(max_b.x, min_a.x);
+    } else if max_a.y.lt_spec(min_b.y) {
+        lemma_scalar_le_transitive(min_b.y, p.y, max_a.y);
+        assert(min_b.y.le_spec(max_a.y));
+        lemma_scalar_lt_incompatible_with_reverse_le(max_a.y, min_b.y);
+    } else if max_b.y.lt_spec(min_a.y) {
+        lemma_scalar_le_transitive(min_a.y, p.y, max_b.y);
+        assert(min_a.y.le_spec(max_b.y));
+        lemma_scalar_lt_incompatible_with_reverse_le(max_b.y, min_a.y);
+    } else if max_a.z.lt_spec(min_b.z) {
+        lemma_scalar_le_transitive(min_b.z, p.z, max_a.z);
+        assert(min_b.z.le_spec(max_a.z));
+        lemma_scalar_lt_incompatible_with_reverse_le(max_a.z, min_b.z);
+    } else if max_b.z.lt_spec(min_a.z) {
+        lemma_scalar_le_transitive(min_a.z, p.z, max_b.z);
+        assert(min_a.z.le_spec(max_b.z));
+        lemma_scalar_lt_incompatible_with_reverse_le(max_b.z, min_a.z);
+    } else {
+        assert(!max_a.x.lt_spec(min_b.x));
+        assert(!max_b.x.lt_spec(min_a.x));
+        assert(!max_a.y.lt_spec(min_b.y));
+        assert(!max_b.y.lt_spec(min_a.y));
+        assert(!max_a.z.lt_spec(min_b.z));
+        assert(!max_b.z.lt_spec(min_a.z));
+        assert(!aabb_separated_on_some_axis_spec(min_a, max_a, min_b, max_b));
+        assert(false);
+    }
+}
+
+pub proof fn lemma_aabb_separation_implies_disjoint_aabbs(
+    min_a: Point3,
+    max_a: Point3,
+    min_b: Point3,
+    max_b: Point3,
+)
+    requires
+        aabb_separated_on_some_axis_spec(min_a, max_a, min_b, max_b),
+    ensures
+        forall|p: Point3|
+            !(point_in_aabb3_spec(p, min_a, max_a) && point_in_aabb3_spec(p, min_b, max_b)),
+{
+    assert forall|p: Point3|
+        !(point_in_aabb3_spec(p, min_a, max_a) && point_in_aabb3_spec(p, min_b, max_b))
+    by {
+        if point_in_aabb3_spec(p, min_a, max_a) && point_in_aabb3_spec(p, min_b, max_b) {
+            lemma_aabb_separation_implies_no_common_point(p, min_a, max_a, min_b, max_b);
+            assert(false);
+        }
+    }
+}
+
 pub proof fn lemma_witness_along_normal_implies_witness_offset(
     p0: Point3,
     p1: Point3,
