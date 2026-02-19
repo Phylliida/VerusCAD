@@ -195,6 +195,38 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) with orient3d permutation/repeated-point coplanarity proof-plumbing in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
+  - added reusable helper lemmas:
+    - `lemma_mesh_scalar_signum_zero_iff_neg_signum_zero`;
+    - `lemma_mesh_orient3d_coplanar_invariant_under_swap_ab`;
+    - `lemma_mesh_orient3d_coplanar_invariant_under_swap_ac`;
+    - `lemma_mesh_orient3d_coplanar_invariant_under_swap_ad`;
+    - `lemma_mesh_orient3d_coplanar_invariant_under_swap_bc`;
+    - `lemma_mesh_orient3d_coplanar_invariant_under_swap_bd`;
+    - `lemma_mesh_orient3d_coplanar_invariant_under_swap_cd`;
+    - `lemma_mesh_orient3d_any_repeated_implies_coplanar`.
+  - integrated the new repeated-point helper into
+    `lemma_mesh_face_seed0_fixed_witness_implies_coplanar_witness_for_triangle_face`
+    so the degenerate/duplicate-index branch now routes through the generalized
+    four-argument repeated-point coplanarity characterization (instead of only
+    the first-three-repeated helper).
+  - outcome: the P5.1 proof surface now has explicit reusable orient3d
+    coplanarity invariance under all argument swaps and a single generalized
+    repeated-point coplanarity lemma, reducing permutation/repetition plumbing
+    in the remaining non-triangle (`k > 3`) checker/spec equivalence work.
+- 2026-02-19: Failed attempt in this P5.1 permutation/repeated-point plumbing pass:
+  - after expanding the triangle proof branch condition to include repeated-index
+    cases involving `d`, Verus stopped discharging a quantified
+    `assert(forall|dp| ... is_coplanar(..., dp))` in the triangle theorem body;
+  - resolved by replacing that broad quantifier assertion with a direct
+    instantiation on the required `d` witness (`assert(is_coplanar(..., pd)) by { assert(0 <= d < 3); }`).
+- 2026-02-19: Revalidated after the P5.1 permutation/repeated-point plumbing increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (60 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (74 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (302 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (339 verified, 0 errors)
 - 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) with a triangle-face full-coplanarity bridge increment in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
   - added helper lemmas:
     - `lemma_mesh_indices_in_0_1_2`;
