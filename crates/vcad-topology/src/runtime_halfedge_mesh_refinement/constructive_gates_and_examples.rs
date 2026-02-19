@@ -3325,6 +3325,18 @@ pub fn runtime_check_geometric_topological_consistency_component_runtime_consequ
     ensures
         out ==> runtime_check_geometric_topological_consistency_sound_bridge(m),
         out ==> mesh_geometric_topological_consistency_spec(m@),
+        out ==> (
+            m.check_geometric_topological_consistency()
+                && m.is_valid()
+                && m.check_no_zero_length_geometric_edges()
+                && m.check_face_corner_non_collinearity()
+                && m.check_face_coplanarity()
+                && m.check_face_convexity()
+                && m.check_face_plane_consistency()
+                && m.check_shared_edge_local_orientation_consistency()
+                && m.check_no_forbidden_face_face_intersections()
+                && m.check_outward_face_normals()
+        ),
         out ==> m.check_geometric_topological_consistency(),
         out ==> m.is_valid(),
         out ==> m.check_no_zero_length_geometric_edges(),
@@ -3399,6 +3411,33 @@ pub fn runtime_check_geometric_topological_consistency_component_runtime_consequ
             constructive_w,
         );
         assert(mesh_geometric_topological_consistency_spec(m@));
+        assert(runtime_geometric_ok == m.check_geometric_topological_consistency());
+        assert(phase4_ok == m.is_valid());
+        assert(no_zero_ok == m.check_no_zero_length_geometric_edges());
+        assert(face_corner_non_collinearity_ok == m.check_face_corner_non_collinearity());
+        assert(face_coplanarity_ok == m.check_face_coplanarity());
+        assert(face_convexity_ok == m.check_face_convexity());
+        assert(face_plane_consistency_ok == m.check_face_plane_consistency());
+        assert(
+            shared_edge_local_orientation_ok == m.check_shared_edge_local_orientation_consistency()
+        );
+        assert(
+            no_forbidden_face_face_intersections_ok
+                == m.check_no_forbidden_face_face_intersections()
+        );
+        assert(outward_face_normals_ok == m.check_outward_face_normals());
+        assert(
+            runtime_geometric_ok
+                && phase4_ok
+                && no_zero_ok
+                && face_corner_non_collinearity_ok
+                && face_coplanarity_ok
+                && face_convexity_ok
+                && face_plane_consistency_ok
+                && shared_edge_local_orientation_ok
+                && no_forbidden_face_face_intersections_ok
+                && outward_face_normals_ok
+        );
     }
 
     true

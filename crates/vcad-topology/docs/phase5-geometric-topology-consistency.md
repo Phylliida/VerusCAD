@@ -195,6 +195,25 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with aggregate component-runtime conjunction contract strengthening in:
+  - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
+  - `src/halfedge_mesh/tests.rs`.
+  - strengthened aggregate component-runtime-consequence bridge contract:
+    - `runtime_check_geometric_topological_consistency_component_runtime_consequences_sound_bridge` now additionally proves:
+      - `out ==> (m.check_geometric_topological_consistency() && m.is_valid() && m.check_no_zero_length_geometric_edges() && m.check_face_corner_non_collinearity() && m.check_face_coplanarity() && m.check_face_convexity() && m.check_face_plane_consistency() && m.check_shared_edge_local_orientation_consistency() && m.check_no_forbidden_face_face_intersections() && m.check_outward_face_normals())`.
+  - strengthened parity lock coverage:
+    - `assert_geometric_consistency_component_runtime_consequences_sound_bridge_parity` now explicitly checks the full runtime component conjunction and aggregate/conjunction parity when the bridge succeeds.
+  - outcome:
+    - aggregate component-runtime consequence export now includes a single conjunction-level runtime contract (not only per-component implications), tightening P5.7 aggregate-equivalence closure plumbing while checklist status remains unchanged.
+- 2026-02-19: Failed attempts in this P5.7 aggregate component-runtime conjunction contract pass: none.
+- 2026-02-19: Revalidated after this P5.7 aggregate component-runtime conjunction contract strengthening:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" geometric_consistency_component_runtime_consequences_sound_bridge_matches_runtime_checker` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (96 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (383 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (420 verified, 0 errors)
 - 2026-02-19: Worked P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with a component-runtime-consequence bridge increment in:
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
   - `src/halfedge_mesh/tests.rs`.

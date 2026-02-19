@@ -373,6 +373,24 @@ fn assert_geometric_consistency_component_runtime_consequences_sound_bridge_pari
         "aggregate component-runtime-consequences sound bridge parity failed for {label}"
     );
     if component_runtime_consequences_sound_bridge_ok {
+        let runtime_component_conjunction = mesh.check_geometric_topological_consistency()
+            && mesh.is_valid()
+            && mesh.check_no_zero_length_geometric_edges()
+            && mesh.check_face_corner_non_collinearity()
+            && mesh.check_face_coplanarity()
+            && mesh.check_face_convexity()
+            && mesh.check_face_plane_consistency()
+            && mesh.check_shared_edge_local_orientation_consistency()
+            && mesh.check_no_forbidden_face_face_intersections()
+            && mesh.check_outward_face_normals();
+        assert!(
+            runtime_component_conjunction,
+            "aggregate component-runtime-consequences sound bridge should imply full runtime component conjunction for {label}"
+        );
+        assert_eq!(
+            runtime_geometric_ok, runtime_component_conjunction,
+            "aggregate component-runtime-consequences sound bridge should preserve runtime aggregate/component conjunction parity for {label}"
+        );
         assert!(
             mesh.is_valid(),
             "aggregate component-runtime-consequences sound bridge should imply phase4 validity for {label}"
