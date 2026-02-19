@@ -121,16 +121,29 @@ Blocks: `P5.5` intersection checker soundness (broad phase).
     `lemma_nonnegative_weights_summing_to_one_implies_some_positive`, and
     `lemma_binary_convex_combination_of_positive_values_is_positive` in
     `crates/vcad-geometry/src/phase5_upstream_lemmas.rs`.
-  - Remaining gap: current proof surface covers binary convex combinations
-    (`w0*x0 + w1*x1` with nonnegative weights summing to `1`); still need an
-    n-ary/general convex-combination wrapper for full face-plane separation
-    composition.
+  - Partial (2026-02-19, ternary convex-combo pass): extended
+    `crates/vcad-geometry/src/phase5_upstream_lemmas.rs` with scalar positivity
+    helpers and
+    `lemma_ternary_convex_combination_of_positive_values_is_positive`
+    (`w0*x0 + w1*x1 + w2*x2` with nonnegative weights summing to `1`).
+  - Remaining gap: proof surface now covers binary and ternary convex
+    combinations; still need an n-ary/general convex-combination wrapper for
+    full face-plane separation composition.
   - Verification attempt note (2026-02-19, convex-combo positivity pass):
     `cargo test -p vcad-geometry` passes in this environment.
   - Verification attempt note (2026-02-19, convex-combo positivity pass):
     `cargo test -p vcad-geometry --features verus-proofs` passes in this
     environment (without `verus_keep_ghost`).
   - Verification attempt note (2026-02-19, convex-combo positivity pass):
+    `RUSTFLAGS='--cfg verus_keep_ghost' cargo test -p vcad-geometry --features verus-proofs`
+    fails on stable in this environment because Verus macro crates require
+    nightly-only `#![feature(proc_macro_...)]`.
+  - Verification attempt note (2026-02-19, ternary convex-combo pass):
+    `cargo test -p vcad-geometry` passes in this environment.
+  - Verification attempt note (2026-02-19, ternary convex-combo pass):
+    `cargo test -p vcad-geometry --features verus-proofs` passes in this
+    environment (without `verus_keep_ghost`).
+  - Verification attempt note (2026-02-19, ternary convex-combo pass):
     `RUSTFLAGS='--cfg verus_keep_ghost' cargo test -p vcad-geometry --features verus-proofs`
     fails on stable in this environment because Verus macro crates require
     nightly-only `#![feature(proc_macro_...)]`.
