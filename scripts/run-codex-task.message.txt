@@ -1,1 +1,1 @@
-Added a vcad-topology P5.1 triangle/quad coplanarity sound+complete bridge that exports oriented-seed0 vs full-coplanarity equivalence consequences and locked it with new parity regression coverage, and 8 Phase 5 checklist tasks remain.
+Added a vcad-topology P5.1 triangle/quad runtime-vs-full-coplanarity parity bridge with new parity regression coverage, and 8 Phase 5 checklist tasks remain.

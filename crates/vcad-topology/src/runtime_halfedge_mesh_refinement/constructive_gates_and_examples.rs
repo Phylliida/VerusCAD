@@ -1737,6 +1737,57 @@ pub fn runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_orien
 
 #[cfg(feature = "geometry-checks")]
 #[allow(dead_code)]
+pub fn runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_runtime_full_spec_parity_bridge(
+    m: &Mesh,
+) -> (out: bool)
+    requires
+        mesh_valid_spec(m@),
+        mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m),
+        mesh_runtime_all_faces_triangle_or_quad_cycles_spec(m),
+    ensures
+        out == (m.check_face_coplanarity() == mesh_runtime_all_faces_coplanar_spec(m)),
+{
+    let _runtime_coplanarity_ok =
+        runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_sound_complete_bridge(
+            m,
+        );
+
+    proof {
+        assert(_runtime_coplanarity_ok == m.check_face_coplanarity());
+        assert(_runtime_coplanarity_ok ==> mesh_runtime_all_faces_coplanar_spec(m));
+
+        assert(mesh_runtime_all_faces_coplanar_spec(m) ==> m.check_face_coplanarity()) by {
+            if mesh_runtime_all_faces_coplanar_spec(m) {
+                let complete_ok =
+                    runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_full_coplanarity_sound_complete_bridge(
+                        m,
+                    );
+                assert(complete_ok == m.check_face_coplanarity());
+                assert(complete_ok);
+                assert(m.check_face_coplanarity());
+            }
+        };
+
+        assert(m.check_face_coplanarity() ==> mesh_runtime_all_faces_coplanar_spec(m)) by {
+            if m.check_face_coplanarity() {
+                assert(_runtime_coplanarity_ok == m.check_face_coplanarity());
+                assert(_runtime_coplanarity_ok);
+                assert(mesh_runtime_all_faces_coplanar_spec(m));
+            }
+        };
+
+        assert(m.check_face_coplanarity() == mesh_runtime_all_faces_coplanar_spec(m));
+        assert(
+            _runtime_coplanarity_ok
+                == (m.check_face_coplanarity() == mesh_runtime_all_faces_coplanar_spec(m))
+        );
+    }
+
+    true
+}
+
+#[cfg(feature = "geometry-checks")]
+#[allow(dead_code)]
 pub fn runtime_check_face_convexity_triangle_projected_turn_sound_bridge(
     m: &Mesh,
 ) -> (out: bool)
