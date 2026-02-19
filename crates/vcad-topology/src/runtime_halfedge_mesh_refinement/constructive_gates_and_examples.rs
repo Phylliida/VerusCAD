@@ -1621,6 +1621,32 @@ pub fn runtime_check_face_coplanarity_seed0_fixed_witness_complete_under_precond
 }
 
 #[cfg(feature = "geometry-checks")]
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
+pub fn runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_full_coplanarity_preconditions(
+    m: &Mesh,
+) -> (out: bool)
+    requires
+        mesh_index_bounds_spec(m@),
+        mesh_face_next_cycles_spec(m@),
+        mesh_runtime_geometry_bridge_spec(m),
+        mesh_runtime_all_faces_coplanar_spec(m),
+        mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m),
+    ensures
+        out,
+        mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m),
+        mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m),
+        mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m),
+        mesh_runtime_all_faces_oriented_seed0_planes_spec(m),
+{
+    proof {
+        lemma_mesh_runtime_all_faces_coplanar_spec_implies_all_faces_seed0_fixed_witness(m);
+        assert(mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m));
+    }
+    runtime_check_face_coplanarity_seed0_fixed_witness_complete_under_preconditions(m)
+}
+
+#[cfg(feature = "geometry-checks")]
 #[allow(dead_code)]
 pub fn check_geometric_topological_consistency_constructive(
     m: &Mesh,

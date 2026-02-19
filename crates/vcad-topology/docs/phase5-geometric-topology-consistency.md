@@ -195,6 +195,25 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.1 runtime-checker-correctness completeness-lift increment in
+  `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`:
+  - added a new proof-side helper:
+    - `runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_full_coplanarity_preconditions`;
+  - the helper lifts full runtime coplanarity preconditions directly into the existing seed-0
+    completeness bridge by proving:
+    - `mesh_runtime_all_faces_coplanar_spec(m) ==> mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m)`
+      via `lemma_mesh_runtime_all_faces_coplanar_spec_implies_all_faces_seed0_fixed_witness`;
+  - after that normalization step, it reuses
+    `runtime_check_face_coplanarity_seed0_fixed_witness_complete_under_preconditions` unchanged.
+  - outcome: P5.1 completeness-direction plumbing now has an explicit entrypoint from the
+    roadmap-level full coplanarity runtime spec (plus documented non-collinearity/index/cycle
+    preconditions), reducing proof friction toward full checker/spec equivalence.
+- 2026-02-19: Failed attempts in this P5.1 completeness-lift pass: none.
+- 2026-02-19: Revalidated after the P5.1 completeness-lift additions:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (286 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (323 verified, 0 errors)
 - 2026-02-19: Completed a P5.1 runtime-checker-correctness completeness-direction increment in
   `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`:
   - added a new proof-side runtime helper:
