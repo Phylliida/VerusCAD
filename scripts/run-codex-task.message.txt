@@ -1,1 +1,1 @@
-Removed the remaining exact-two-vertex symmetry precondition from the P5.5 runtime forbidden-policy/classifier symmetry bridges by proving exact-two-vertex symmetry directly, and 8 Phase 5 tasks remain.
+Added P5.5 inverse forbidden-policy decomposition lemmas plus non-forbidden-to-allowed-contact regression locks in vcad-topology; 8 Phase 5 tasks remain.

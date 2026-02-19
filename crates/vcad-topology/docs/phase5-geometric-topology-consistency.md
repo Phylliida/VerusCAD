@@ -195,6 +195,33 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with an inverse-branch forbidden-policy decomposition increment in:
+  - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`;
+  - `src/halfedge_mesh/tests.rs`.
+  - added new inverse corollaries on top of the existing runtime pair-policy decomposition:
+    - `lemma_mesh_not_runtime_forbidden_policy_implies_allowed_contact_relation`;
+    - `lemma_mesh_not_runtime_forbidden_policy_implies_allowed_contact_runtime_branch_classifier`;
+    - `lemma_mesh_disjoint_boundary_and_not_runtime_forbidden_policy_imply_no_intersection`.
+  - added runtime regression coverage for the inverse branch (`non-forbidden => allowed-contact topology`) in:
+    - helper `assert_non_forbidden_pairs_are_allowed_contact_topology`;
+    - integrated into:
+      - `shared_edge_contacts_are_not_misclassified_as_forbidden_intersections`;
+      - `shared_vertex_only_contacts_are_not_misclassified_as_forbidden_intersections`;
+      - `disjoint_boundary_pair_policy_branch_matches_expected_forbidden_classification`.
+  - outcome:
+    - P5.5 now has direct reusable proof hooks for reasoning backward from `!mesh_face_pair_runtime_forbidden_intersection_policy_spec(...)` into allowed-contact and disjoint/no-intersection facts, reducing contradiction boilerplate in remaining soundness/completeness work;
+    - runtime regressions now explicitly lock the corresponding inverse classification implication on deterministic fixtures.
+- 2026-02-19: Failed attempts in this P5.5 inverse-branch forbidden-policy pass: none.
+- 2026-02-19: Revalidated after the P5.5 inverse-branch forbidden-policy increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (86 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks shared_edge_contacts_are_not_misclassified_as_forbidden_intersections` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks shared_vertex_only_contacts_are_not_misclassified_as_forbidden_intersections` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks disjoint_boundary_pair_policy_branch_matches_expected_forbidden_classification` (1 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (357 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (394 verified, 0 errors)
 - 2026-02-19: Worked P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with a geometry-aware aggregate-spec strengthening increment in:
   - `src/runtime_halfedge_mesh_refinement/components_and_validity_specs.rs`.
   - added geometry-linked aggregate gate specs:

@@ -1168,6 +1168,41 @@ fn assert_non_allowed_contact_topology_pairs_are_forbidden(mesh: &Mesh, label: &
 }
 
 #[cfg(feature = "geometry-checks")]
+fn assert_non_forbidden_pairs_are_allowed_contact_topology(mesh: &Mesh, label: &str) {
+    let mut saw_non_forbidden_pair = false;
+    for face_a in 0..mesh.faces.len() {
+        for face_b in (face_a + 1)..mesh.faces.len() {
+            let topology_allowed = mesh
+                .face_pair_has_allowed_contact_topology_for_testing(face_a, face_b)
+                .expect("pair classifier should produce an output for valid face ids");
+            let forbidden_no_cull = mesh
+                .face_pair_has_forbidden_intersection_for_testing(face_a, face_b, false)
+                .expect("pair forbidden-intersection hook should produce an output for valid face ids");
+            let forbidden_with_cull = mesh
+                .face_pair_has_forbidden_intersection_for_testing(face_a, face_b, true)
+                .expect("pair forbidden-intersection hook should produce an output for valid face ids");
+            assert_eq!(
+                forbidden_no_cull, forbidden_with_cull,
+                "broad-phase culling changed pair classification for non-forbidden implication check on pair ({face_a}, {face_b}) in {label}"
+            );
+
+            if !forbidden_no_cull {
+                saw_non_forbidden_pair = true;
+                assert!(
+                    topology_allowed,
+                    "non-forbidden pair ({face_a}, {face_b}) should satisfy allowed-contact topology in {label}"
+                );
+            }
+        }
+    }
+
+    assert!(
+        saw_non_forbidden_pair,
+        "fixture {label} should include at least one non-forbidden face pair"
+    );
+}
+
+#[cfg(feature = "geometry-checks")]
 fn assert_disjoint_boundary_pairs_match_forbidden_classification(
     mesh: &Mesh,
     label: &str,
@@ -3410,6 +3445,7 @@ fn diagnostic_witness_is_real_counterexample(
             assert!(mesh.is_valid(), "fixture must satisfy Phase 4 validity");
             assert_allowed_contact_topology_classifier_matches_edge_index_oracle(&mesh);
             assert!(mesh.check_no_forbidden_face_face_intersections());
+            assert_non_forbidden_pairs_are_allowed_contact_topology(&mesh, label);
             assert_shared_edge_contacts_not_misclassified_as_forbidden_intersections(&mesh, label);
         }
     }
@@ -3436,6 +3472,7 @@ fn diagnostic_witness_is_real_counterexample(
             assert!(mesh.is_valid(), "fixture must satisfy Phase 4 validity");
             assert_allowed_contact_topology_classifier_matches_edge_index_oracle(&mesh);
             assert!(mesh.check_no_forbidden_face_face_intersections());
+            assert_non_forbidden_pairs_are_allowed_contact_topology(&mesh, label);
             assert_shared_vertex_only_contacts_not_misclassified_as_forbidden_intersections(
                 &mesh,
                 label,
@@ -3494,6 +3531,10 @@ fn diagnostic_witness_is_real_counterexample(
             disjoint_components.check_no_forbidden_face_face_intersections(),
             "disjoint components fixture should pass the forbidden face-face checker"
         );
+        assert_non_forbidden_pairs_are_allowed_contact_topology(
+            &disjoint_components,
+            "disjoint_components",
+        );
         assert_disjoint_boundary_pairs_match_forbidden_classification(
             &disjoint_components,
             "disjoint_components",
@@ -3509,6 +3550,10 @@ fn diagnostic_witness_is_real_counterexample(
         assert!(
             !overlapping_components.check_no_forbidden_face_face_intersections(),
             "overlapping components fixture should fail the forbidden face-face checker"
+        );
+        assert_non_forbidden_pairs_are_allowed_contact_topology(
+            &overlapping_components,
+            "overlapping_components",
         );
         assert_disjoint_boundary_pairs_match_forbidden_classification(
             &overlapping_components,
