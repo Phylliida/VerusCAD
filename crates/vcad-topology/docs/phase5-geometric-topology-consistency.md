@@ -195,6 +195,26 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.3 runtime-checker-correctness proof-plumbing increment in
+  `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
+  - added a fixed-seed legal-projection bridge lemma for projected-turn convexity witnesses:
+    - `lemma_mesh_face_projected_turn_sign_witness_and_coplanar_fixed_seed_witness_use_legal_projection_inputs`;
+  - refactored the existing full-coplanarity legal-projection lemma to normalize through the new
+    fixed-seed bridge path:
+    - `lemma_mesh_face_projected_turn_sign_witness_uses_legal_projection_inputs` now derives
+      `mesh_face_coplanar_fixed_seed_witness_spec(..)` via
+      `lemma_mesh_face_coplanar_witness_implies_fixed_seed_witness` and delegates;
+  - outcome: convexity proof obligations that consume runtime-style fixed-seed coplanarity
+    witnesses can now discharge legal-projection side conditions directly, reducing friction toward
+    the remaining P5.3 checker soundness/completeness proof.
+- 2026-02-19: Failed attempts in this P5.3 fixed-seed legal-projection pass: none.
+- 2026-02-19: Revalidated after the P5.3 fixed-seed legal-projection additions:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (283 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (320 verified, 0 errors)
 - 2026-02-19: Completed a P5.5 shared-boundary non-misclassification randomized-harness
   increment in `src/halfedge_mesh/tests.rs`:
   - added a seeded randomized regression harness that stress-checks allowed shared-boundary

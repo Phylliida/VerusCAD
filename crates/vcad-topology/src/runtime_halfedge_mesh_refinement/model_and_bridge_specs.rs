@@ -1022,7 +1022,7 @@ pub open spec fn mesh_face_projected_turn_legal_projection_inputs_witness_spec(
 }
 
 #[cfg(verus_keep_ghost)]
-pub proof fn lemma_mesh_face_projected_turn_sign_witness_uses_legal_projection_inputs(
+pub proof fn lemma_mesh_face_projected_turn_sign_witness_and_coplanar_fixed_seed_witness_use_legal_projection_inputs(
     m: MeshModel,
     vertex_positions: Seq<vcad_math::point3::Point3>,
     f: int,
@@ -1039,7 +1039,7 @@ pub proof fn lemma_mesh_face_projected_turn_sign_witness_uses_legal_projection_i
             seed_i,
             expected_sign,
         ),
-        mesh_face_coplanar_witness_spec(m, vertex_positions, f, k),
+        mesh_face_coplanar_fixed_seed_witness_spec(m, vertex_positions, f, k, seed_i),
     ensures
         mesh_face_projected_turn_legal_projection_inputs_witness_spec(
             m,
@@ -1051,8 +1051,14 @@ pub proof fn lemma_mesh_face_projected_turn_sign_witness_uses_legal_projection_i
 {
     let normal = mesh_face_seed_plane_normal_spec(m, vertex_positions, f, seed_i);
     let offset = mesh_face_seed_plane_offset_relative_to_origin_spec(m, vertex_positions, f, seed_i);
-    assert(3 <= k);
-    lemma_mesh_face_coplanar_witness_seed_plane_contains_vertices(m, vertex_positions, f, k, seed_i);
+
+    lemma_mesh_face_coplanar_fixed_seed_witness_implies_seed_plane_contains_vertices(
+        m,
+        vertex_positions,
+        f,
+        k,
+        seed_i,
+    );
     assert(mesh_face_plane_contains_vertex_witness_spec(
         m,
         vertex_positions,
@@ -1122,6 +1128,51 @@ pub proof fn lemma_mesh_face_projected_turn_sign_witness_uses_legal_projection_i
         k,
         seed_i,
     ));
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_face_projected_turn_sign_witness_uses_legal_projection_inputs(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+    k: int,
+    seed_i: int,
+    expected_sign: int,
+)
+    requires
+        mesh_face_projected_turn_sign_consistency_witness_spec(
+            m,
+            vertex_positions,
+            f,
+            k,
+            seed_i,
+            expected_sign,
+        ),
+        mesh_face_coplanar_witness_spec(m, vertex_positions, f, k),
+    ensures
+        mesh_face_projected_turn_legal_projection_inputs_witness_spec(
+            m,
+            vertex_positions,
+            f,
+            k,
+            seed_i,
+        ),
+{
+    lemma_mesh_face_coplanar_witness_implies_fixed_seed_witness(
+        m,
+        vertex_positions,
+        f,
+        k,
+        seed_i,
+    );
+    lemma_mesh_face_projected_turn_sign_witness_and_coplanar_fixed_seed_witness_use_legal_projection_inputs(
+        m,
+        vertex_positions,
+        f,
+        k,
+        seed_i,
+        expected_sign,
+    );
 }
 
 #[cfg(verus_keep_ghost)]
