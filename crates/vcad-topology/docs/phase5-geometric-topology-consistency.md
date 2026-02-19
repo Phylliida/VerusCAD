@@ -195,6 +195,28 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.4 outward signed-volume traversal dedup + checker/diagnostic parity cleanup in
+  `src/halfedge_mesh/validation.rs`:
+  - added shared helper `first_component_with_non_negative_signed_volume_relative_to_reference()`
+    and routed both paths through it:
+    - `check_outward_face_normals_relative_to_reference_impl`;
+    - `first_inward_or_degenerate_component_failure`.
+  - replaced per-component `HashSet` face dedup with a dense face-tag array (`Vec<usize>` +
+    component epoch), removing repeated hash allocations while preserving exact component-volume
+    semantics.
+  - removed redundant `face_signed_volume_six_relative_to_origin()` after moving all origin
+    call-sites onto the shared reference-parameterized traversal.
+  - outcome: the outward-orientation boolean checker and diagnostic first-failure witness now share
+    one signed-volume component traversal implementation, reducing drift risk while the remaining
+    unchecked P5.4 proof obligations stay open.
+- 2026-02-19: Failed attempts in this P5.4 outward traversal dedup pass: none.
+- 2026-02-19: Revalidated after the P5.4 outward traversal dedup cleanup:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (286 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (323 verified, 0 errors)
 - 2026-02-19: Completed a P5.11 scalability constant-factor cleanup in
   `src/halfedge_mesh/validation.rs`:
   - removed redundant `check_no_zero_length_geometric_edges()` and

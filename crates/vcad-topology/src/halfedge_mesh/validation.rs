@@ -413,9 +413,54 @@ impl Mesh {
     }
 
     #[cfg(feature = "geometry-checks")]
-    fn face_signed_volume_six_relative_to_origin(&self, face_id: usize) -> RuntimeScalar {
-        let origin = RuntimePoint3::from_ints(0, 0, 0);
-        self.face_signed_volume_six_relative_to_reference(face_id, &origin)
+    fn first_component_with_non_negative_signed_volume_relative_to_reference(
+        &self,
+        reference: &RuntimePoint3,
+    ) -> Option<usize> {
+        let mut visited = vec![false; self.half_edges.len()];
+        let mut face_component_tag = vec![0usize; self.faces.len()];
+        let mut current_component_tag = 1usize;
+
+        for start in 0..self.half_edges.len() {
+            if visited[start] {
+                continue;
+            }
+
+            let mut queue = std::collections::VecDeque::new();
+            let mut signed_volume6 = RuntimeScalar::from_int(0);
+
+            queue.push_back(start);
+            visited[start] = true;
+
+            while let Some(h) = queue.pop_front() {
+                let he = &self.half_edges[h];
+                if face_component_tag[he.face] != current_component_tag {
+                    face_component_tag[he.face] = current_component_tag;
+                    let face_volume6 =
+                        self.face_signed_volume_six_relative_to_reference(he.face, reference);
+                    signed_volume6 = signed_volume6.add(&face_volume6);
+                }
+
+                for n in [he.twin, he.next, he.prev] {
+                    if !visited[n] {
+                        visited[n] = true;
+                        queue.push_back(n);
+                    }
+                }
+            }
+
+            if signed_volume6.signum_i8() >= 0 {
+                return Some(start);
+            }
+
+            current_component_tag = current_component_tag.wrapping_add(1);
+            if current_component_tag == 0 {
+                face_component_tag.fill(0);
+                current_component_tag = 1;
+            }
+        }
+
+        None
     }
 
     #[cfg(feature = "geometry-checks")]
@@ -433,42 +478,8 @@ impl Mesh {
             return false;
         }
 
-        let mut visited = vec![false; self.half_edges.len()];
-        for start in 0..self.half_edges.len() {
-            if visited[start] {
-                continue;
-            }
-
-            let mut queue = std::collections::VecDeque::new();
-            let mut seen_faces = std::collections::HashSet::new();
-            let mut signed_volume6 = RuntimeScalar::from_int(0);
-
-            queue.push_back(start);
-            visited[start] = true;
-
-            while let Some(h) = queue.pop_front() {
-                let he = &self.half_edges[h];
-
-                if seen_faces.insert(he.face) {
-                    let face_volume6 =
-                        self.face_signed_volume_six_relative_to_reference(he.face, reference);
-                    signed_volume6 = signed_volume6.add(&face_volume6);
-                }
-
-                for n in [he.twin, he.next, he.prev] {
-                    if !visited[n] {
-                        visited[n] = true;
-                        queue.push_back(n);
-                    }
-                }
-            }
-
-            if signed_volume6.signum_i8() >= 0 {
-                return false;
-            }
-        }
-
-        true
+        self.first_component_with_non_negative_signed_volume_relative_to_reference(reference)
+            .is_none()
     }
 
     #[cfg(feature = "geometry-checks")]
@@ -1440,42 +1451,14 @@ impl Mesh {
     fn first_inward_or_degenerate_component_failure(
         &self,
     ) -> Option<GeometricTopologicalConsistencyFailure> {
-        let mut visited = vec![false; self.half_edges.len()];
-        for start in 0..self.half_edges.len() {
-            if visited[start] {
-                continue;
-            }
-
-            let mut queue = std::collections::VecDeque::new();
-            let mut seen_faces = std::collections::HashSet::new();
-            let mut signed_volume6 = RuntimeScalar::from_int(0);
-
-            queue.push_back(start);
-            visited[start] = true;
-
-            while let Some(h) = queue.pop_front() {
-                let he = &self.half_edges[h];
-                if seen_faces.insert(he.face) {
-                    let face_volume6 = self.face_signed_volume_six_relative_to_origin(he.face);
-                    signed_volume6 = signed_volume6.add(&face_volume6);
+        let origin = RuntimePoint3::from_ints(0, 0, 0);
+        self.first_component_with_non_negative_signed_volume_relative_to_reference(&origin).map(
+            |start_half_edge| {
+                GeometricTopologicalConsistencyFailure::InwardOrDegenerateComponent {
+                    start_half_edge,
                 }
-
-                for n in [he.twin, he.next, he.prev] {
-                    if !visited[n] {
-                        visited[n] = true;
-                        queue.push_back(n);
-                    }
-                }
-            }
-
-            if signed_volume6.signum_i8() >= 0 {
-                return Some(GeometricTopologicalConsistencyFailure::InwardOrDegenerateComponent {
-                    start_half_edge: start,
-                });
-            }
-        }
-
-        None
+            },
+        )
     }
 
     #[cfg(feature = "geometry-checks")]

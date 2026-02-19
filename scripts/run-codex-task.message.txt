@@ -1,1 +1,1 @@
-Removed redundant zero-length/coplanarity pregates from convexity-gated forbidden-intersection paths in vcad-topology, revalidated with the full test/verification matrix, and 10 Phase 5 checklist tasks remain.
+Deduplicated outward signed-volume component traversal between checker and diagnostic paths in vcad-topology, revalidated the full test/verification matrix, and 10 Phase 5 checklist tasks remain.
