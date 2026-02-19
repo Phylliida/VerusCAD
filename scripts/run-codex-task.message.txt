@@ -1,1 +1,1 @@
-Strengthened the P5.7 aggregate runtime bridge with an explicit geometry-aware plus non-zero-edge spec consequence, added parity assertions, revalidated full vcad-topology tests/proofs, and 8 burndown tasks remain.
+Added triangle projected-turn convexity Phase5-bundle completeness/sound bridges with parity coverage, revalidated full vcad-topology tests/proofs, and 8 burndown tasks remain.
