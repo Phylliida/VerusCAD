@@ -4574,6 +4574,23 @@ pub proof fn lemma_mesh_runtime_all_faces_coplanar_seed0_fixed_witness_and_trian
 }
 
 #[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_runtime_all_faces_oriented_seed0_planes_and_triangle_cycles_imply_all_faces_coplanar(
+    m: &Mesh,
+)
+    requires
+        mesh_runtime_all_faces_oriented_seed0_planes_spec(m),
+        mesh_runtime_all_faces_triangle_cycles_spec(m),
+    ensures
+        mesh_runtime_all_faces_coplanar_spec(m),
+{
+    lemma_mesh_runtime_all_faces_oriented_seed0_planes_imply_all_faces_seed0_fixed_witness(m);
+    assert(mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m));
+    lemma_mesh_runtime_all_faces_coplanar_seed0_fixed_witness_and_triangle_cycles_imply_all_faces_coplanar(
+        m,
+    );
+}
+
+#[cfg(verus_keep_ghost)]
 pub proof fn lemma_mesh_runtime_all_faces_coplanar_spec_and_face_next_cycles_witness_imply_all_faces_seed0_fixed_witness_at_cycle_lens(
     m: &Mesh,
     face_cycle_lens: Seq<usize>,

@@ -195,6 +195,30 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) with an oriented-seed-plane + triangle-cycle completeness bridge increment in:
+  - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`;
+  - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
+  - `src/halfedge_mesh/tests.rs`.
+  - added composed runtime lemma:
+    - `lemma_mesh_runtime_all_faces_oriented_seed0_planes_and_triangle_cycles_imply_all_faces_coplanar`.
+  - added constructive wrapper:
+    - `runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_and_triangle_face_preconditions`, proving full `mesh_runtime_all_faces_coplanar_spec` completeness from:
+      - Phase 4 validity;
+      - all-face oriented seed0 planes; and
+      - all-face triangle-cycle preconditions.
+  - added regression parity coverage:
+    - helper `assert_face_coplanarity_seed0_oriented_plane_triangle_completeness_bridge_parity`;
+    - test `face_coplanarity_seed0_oriented_plane_triangle_completeness_bridge_matches_geometric_sound_bridge` (triangle-only passing/failing fixtures: tetrahedron, overlapping tetrahedra, reflected tetrahedron).
+  - outcome: the P5.1 completeness surface now has a direct runtime bridge from oriented-seed-plane preconditions to full coplanarity on triangle-only meshes; the non-triangle (`k > 3`) checker/spec completeness gap remains open.
+- 2026-02-19: Failed attempts in this P5.1 oriented+triangle bridge pass: none.
+- 2026-02-19: Revalidated after the P5.1 oriented+triangle completeness increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (60 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (75 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" face_coplanarity_seed0_oriented_plane_triangle_completeness_bridge_matches_geometric_sound_bridge` (1 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (308 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (345 verified, 0 errors)
 - 2026-02-19: Worked P5.5 (`Proof: shared-edge and shared-vertex contacts are never misclassified as forbidden intersections`) in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
   - added explicit corollary lemmas that discharge the two concrete allowed-contact cases against the forbidden non-adjacent relation:
     - `lemma_mesh_faces_shared_vertex_only_not_non_adjacent_forbidden_relation`;

@@ -8,6 +8,7 @@ use crate::runtime_halfedge_mesh_refinement::{
     check_geometric_topological_consistency_constructive,
     is_valid_with_geometry_constructive,
     runtime_check_face_coplanarity_seed0_fixed_witness_bridge,
+    runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_and_triangle_face_preconditions,
     runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_preconditions,
     runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_phase5_runtime_bundle_sound_bridge,
     runtime_check_face_coplanarity_seed0_fixed_witness_sound_bridge,
@@ -150,6 +151,29 @@ fn assert_face_coplanarity_seed0_oriented_plane_completeness_bridge_parity(
     assert_eq!(
         oriented_plane_complete_ok, geometric_sound_bridge_ok,
         "seed0 coplanarity oriented-plane completeness parity failed for {label}"
+    );
+}
+
+#[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+fn assert_face_coplanarity_seed0_oriented_plane_triangle_completeness_bridge_parity(
+    mesh: &Mesh,
+    label: &str,
+) {
+    assert!(
+        mesh_all_faces_are_triangles(mesh),
+        "triangle-only oriented-plane completeness parity requires triangle faces in {label}"
+    );
+    let geometric_sound_bridge_ok = runtime_check_geometric_topological_consistency_sound_bridge(mesh);
+    let oriented_plane_triangle_complete_ok = if geometric_sound_bridge_ok {
+        runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_and_triangle_face_preconditions(
+            mesh,
+        )
+    } else {
+        false
+    };
+    assert_eq!(
+        oriented_plane_triangle_complete_ok, geometric_sound_bridge_ok,
+        "seed0 coplanarity oriented-plane triangle completeness parity failed for {label}"
     );
 }
 
@@ -506,6 +530,19 @@ fn ordered_face_vertex_cycle_indices(mesh: &Mesh, face_id: usize) -> Option<Vec<
         return None;
     }
     Some(out)
+}
+
+#[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+fn mesh_all_faces_are_triangles(mesh: &Mesh) -> bool {
+    for face_id in 0..mesh.faces.len() {
+        let Some(cycle) = ordered_face_vertex_cycle_indices(mesh, face_id) else {
+            return false;
+        };
+        if cycle.len() != 3 {
+            return false;
+        }
+    }
+    true
 }
 
 #[cfg(feature = "geometry-checks")]
@@ -4213,6 +4250,32 @@ fn diagnostic_witness_is_real_counterexample(
 
         for (label, mesh) in fixtures {
             assert_face_coplanarity_seed0_oriented_plane_completeness_bridge_parity(&mesh, label);
+        }
+    }
+
+    #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+    #[test]
+    fn face_coplanarity_seed0_oriented_plane_triangle_completeness_bridge_matches_geometric_sound_bridge(
+    ) {
+        let reflected_tetrahedron = transform_mesh_positions(&Mesh::tetrahedron(), |point| {
+            let mirrored = reflect_point3_across_yz_plane(point);
+            translate_point3(&mirrored, 5, -2, 7)
+        });
+
+        let fixtures = vec![
+            ("tetrahedron", Mesh::tetrahedron()),
+            (
+                "overlapping_disconnected_tetrahedra",
+                build_overlapping_tetrahedra_mesh(),
+            ),
+            ("reflected_tetrahedron", reflected_tetrahedron),
+        ];
+
+        for (label, mesh) in fixtures {
+            assert!(mesh_all_faces_are_triangles(&mesh));
+            assert_face_coplanarity_seed0_oriented_plane_triangle_completeness_bridge_parity(
+                &mesh, label,
+            );
         }
     }
 
