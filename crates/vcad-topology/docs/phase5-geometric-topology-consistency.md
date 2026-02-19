@@ -195,6 +195,33 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)`) with a runtime-policy decomposition + non-allowed-topology lock increment in:
+  - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`;
+  - `src/halfedge_mesh/tests.rs`.
+  - added a reusable runtime face-pair forbidden-policy spec surface:
+    - `mesh_face_pair_runtime_forbidden_intersection_policy_spec`;
+    - decomposition lemmas:
+      - `lemma_mesh_face_pair_runtime_forbidden_policy_iff_not_allowed_or_disjoint_boundary_and_intersection`;
+      - `lemma_mesh_not_allowed_contact_runtime_branch_classifier_implies_runtime_forbidden_policy`;
+      - `lemma_mesh_faces_shared_boundary_runtime_branch_classifier_not_runtime_forbidden_policy`;
+      - `lemma_mesh_disjoint_boundary_and_runtime_allowed_contact_imply_runtime_forbidden_policy_iff_intersection`.
+  - added runtime regression coverage for the topological early-reject branch:
+    - helper `assert_non_allowed_contact_topology_pairs_are_forbidden`;
+    - test `non_allowed_contact_topology_pairs_are_classified_as_forbidden` (coincident double-face fixture + rigid/reflection/relabel variants), asserting pair-level forbidden classification is stable with and without broad-phase culling and that aggregate forbidden-face checking rejects those meshes.
+  - outcome:
+    - the P5.5 soundness surface now has a named spec decomposition that explicitly captures the runtime pair-policy split between topological rejection and non-adjacent geometric-intersection rejection;
+    - runtime regressions now lock the non-allowed shared-boundary branch directly at pair level (not only through aggregate rejection).
+- 2026-02-19: Failed attempt in this P5.5 runtime-policy decomposition pass:
+  - first prover run regressed in existing quad-coplanarity plumbing (`lemma_mesh_face_seed0_fixed_witness_and_quad_cycle_imply_face_coplanar_spec`, assertion on `is_coplanar(p0,p1,p2,p3)`), causing `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` to fail with one proof error;
+  - resolved by restoring a direct `by`-block fixed-witness instantiation at concrete index `d = 3` for that assertion, which stabilized trigger instantiation.
+- 2026-02-19: Revalidated after the P5.5 runtime-policy decomposition + non-allowed-topology lock increment:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" non_allowed_contact_topology_pairs_are_classified_as_forbidden` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (62 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (83 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (331 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (368 verified, 0 errors)
 - 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)`) with a forbidden-relation decomposition + shared-boundary exclusion refactor increment in:
   - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`.
   - added reusable forbidden-relation decomposition lemmas:

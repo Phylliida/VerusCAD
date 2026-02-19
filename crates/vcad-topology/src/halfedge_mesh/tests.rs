@@ -954,6 +954,43 @@ fn assert_shared_vertex_only_contacts_not_misclassified_as_forbidden_intersectio
 }
 
 #[cfg(feature = "geometry-checks")]
+fn assert_non_allowed_contact_topology_pairs_are_forbidden(mesh: &Mesh, label: &str) {
+    let mut saw_non_allowed_pair = false;
+    for face_a in 0..mesh.faces.len() {
+        for face_b in (face_a + 1)..mesh.faces.len() {
+            let topology_allowed = mesh
+                .face_pair_has_allowed_contact_topology_for_testing(face_a, face_b)
+                .expect("pair classifier should produce an output for valid face ids");
+            if topology_allowed {
+                continue;
+            }
+
+            saw_non_allowed_pair = true;
+            let forbidden_no_cull = mesh
+                .face_pair_has_forbidden_intersection_for_testing(face_a, face_b, false)
+                .expect("pair forbidden-intersection hook should produce an output for valid face ids");
+            let forbidden_with_cull = mesh
+                .face_pair_has_forbidden_intersection_for_testing(face_a, face_b, true)
+                .expect("pair forbidden-intersection hook should produce an output for valid face ids");
+
+            assert_eq!(
+                forbidden_no_cull, forbidden_with_cull,
+                "broad-phase culling changed pair classification for non-allowed-topology pair ({face_a}, {face_b}) in {label}"
+            );
+            assert!(
+                forbidden_no_cull,
+                "non-allowed-topology pair ({face_a}, {face_b}) should be classified as forbidden in {label}"
+            );
+        }
+    }
+
+    assert!(
+        saw_non_allowed_pair,
+        "fixture {label} should include at least one non-allowed-topology face pair"
+    );
+}
+
+#[cfg(feature = "geometry-checks")]
 fn check_face_coplanarity_exhaustive_face_quadruple_oracle(mesh: &Mesh) -> bool {
     if !mesh.is_valid() {
         return false;
@@ -3168,6 +3205,43 @@ fn diagnostic_witness_is_real_counterexample(
             assert_shared_vertex_only_contacts_not_misclassified_as_forbidden_intersections(
                 &mesh,
                 label,
+            );
+        }
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn non_allowed_contact_topology_pairs_are_classified_as_forbidden() {
+        let coincident_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 1),
+            RuntimePoint3::from_ints(1, 0, 1),
+            RuntimePoint3::from_ints(0, 1, 1),
+        ];
+        let coincident_faces = vec![vec![0, 1, 2], vec![0, 2, 1]];
+        let coincident_double_face_mesh = Mesh::from_face_cycles(coincident_vertices, &coincident_faces)
+            .expect("coincident double-face fixture should build");
+        let rigid = transform_mesh_positions(&coincident_double_face_mesh, |point| {
+            rigid_rotate_z_90_then_translate(point, 11, -7, 5)
+        });
+        let reflected =
+            transform_mesh_positions(&coincident_double_face_mesh, reflect_point3_across_yz_plane);
+        let relabeled = relabel_mesh_vertices_for_testing(&coincident_double_face_mesh, &[2, 0, 1])
+            .expect("vertex-relabeled coincident fixture should build");
+
+        let fixtures = vec![
+            ("coincident_double_face", coincident_double_face_mesh),
+            ("coincident_double_face_rigid", rigid),
+            ("coincident_double_face_reflected", reflected),
+            ("coincident_double_face_relabeled", relabeled),
+        ];
+
+        for (label, mesh) in fixtures {
+            assert!(mesh.is_valid(), "fixture {label} should satisfy Phase 4 validity");
+            assert_allowed_contact_topology_classifier_matches_edge_index_oracle(&mesh);
+            assert_non_allowed_contact_topology_pairs_are_forbidden(&mesh, label);
+            assert!(
+                !mesh.check_no_forbidden_face_face_intersections(),
+                "fixture {label} should fail the forbidden face-face checker"
             );
         }
     }
