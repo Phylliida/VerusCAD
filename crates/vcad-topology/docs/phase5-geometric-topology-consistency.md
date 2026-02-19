@@ -193,6 +193,31 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.7 aggregate-spec soundness increment in
+  `src/runtime_halfedge_mesh_refinement/components_and_validity_specs.rs` and
+  `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`:
+  - added explicit aggregate refinement specs:
+    - `mesh_geometric_topological_consistency_spec`;
+    - `mesh_valid_with_geometry_spec`.
+  - added aggregate witness-to-spec bridge lemma:
+    - `lemma_geometric_topological_consistency_gate_witness_api_ok_implies_mesh_geometric_topological_consistency`.
+  - strengthened `lemma_valid_with_geometry_gate_witness_api_ok_implies_mesh_valid` to also establish:
+    - `mesh_valid_with_geometry_spec`.
+  - strengthened constructive gate contracts/proofs:
+    - `check_geometric_topological_consistency_constructive` now proves
+      `w.api_ok ==> mesh_geometric_topological_consistency_spec(m@)`;
+    - `is_valid_with_geometry_constructive` now proves
+      `w.api_ok ==> mesh_valid_with_geometry_spec(m@)`.
+  - this advances the unchecked P5.7 aggregate-equivalence item by making the aggregate target
+    predicate explicit and proving constructive soundness into it; remaining work is full checker/spec
+    equivalence (including completeness against the concrete runtime API path).
+- 2026-02-19: Failed attempts in this P5.7 aggregate-spec soundness pass: none.
+- 2026-02-19: Revalidated after the P5.7 aggregate-spec soundness additions:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (240 verified, 0 errors)
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology.sh` (277 verified, 0 errors)
 - 2026-02-19: Completed the remaining P5.8 kernelized-checker integration item across
   `src/verified_checker_kernels.rs`,
   `src/runtime_halfedge_mesh_refinement/kernel_bridge_lemmas.rs`,

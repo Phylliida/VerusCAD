@@ -516,7 +516,8 @@ pub fn check_geometric_topological_consistency_constructive(
         match out {
             Option::Some(w) => geometric_topological_consistency_gate_witness_spec(w)
                 && geometric_topological_consistency_gate_model_link_spec(m@, w)
-                && (w.phase4_valid_ok ==> mesh_valid_spec(m@)),
+                && (w.phase4_valid_ok ==> mesh_valid_spec(m@))
+                && (w.api_ok ==> mesh_geometric_topological_consistency_spec(m@)),
             Option::None => true,
         },
 {
@@ -574,10 +575,22 @@ pub fn check_geometric_topological_consistency_constructive(
             assert(shared_edge_local_orientation_bridge_ok);
             assert(mesh_shared_edge_local_orientation_consistency_spec(m@));
         }
+        if w.api_ok {
+            lemma_geometric_topological_consistency_gate_witness_api_ok_implies_mesh_geometric_topological_consistency(
+                m@,
+                w,
+            );
+            assert(mesh_geometric_topological_consistency_spec(m@));
+        }
         assert(geometric_topological_consistency_gate_model_link_spec(m@, w));
         assert(w.phase4_valid_ok ==> mesh_valid_spec(m@)) by {
             if w.phase4_valid_ok {
                 assert(mesh_valid_spec(m@));
+            }
+        };
+        assert(w.api_ok ==> mesh_geometric_topological_consistency_spec(m@)) by {
+            if w.api_ok {
+                assert(mesh_geometric_topological_consistency_spec(m@));
             }
         };
     }
@@ -594,7 +607,8 @@ pub fn is_valid_with_geometry_constructive(
         match out {
             Option::Some(w) => valid_with_geometry_gate_witness_spec(w)
                 && valid_with_geometry_gate_model_link_spec(m@, w)
-                && (w.api_ok ==> mesh_valid_spec(m@)),
+                && (w.api_ok ==> mesh_valid_spec(m@))
+                && (w.api_ok ==> mesh_valid_with_geometry_spec(m@)),
             Option::None => true,
         },
 {
@@ -651,10 +665,16 @@ pub fn is_valid_with_geometry_constructive(
         if w.api_ok {
             lemma_valid_with_geometry_gate_witness_api_ok_implies_mesh_valid(m@, w);
             assert(mesh_valid_spec(m@));
+            assert(mesh_valid_with_geometry_spec(m@));
         }
         assert(w.api_ok ==> mesh_valid_spec(m@)) by {
             if w.api_ok {
                 assert(mesh_valid_spec(m@));
+            }
+        };
+        assert(w.api_ok ==> mesh_valid_with_geometry_spec(m@)) by {
+            if w.api_ok {
+                assert(mesh_valid_with_geometry_spec(m@));
             }
         };
     }

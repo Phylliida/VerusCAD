@@ -978,6 +978,14 @@ pub open spec fn geometric_topological_consistency_gate_model_link_spec(
     &&& (w.shared_edge_local_orientation_ok ==> mesh_shared_edge_local_orientation_consistency_spec(m))
 }
 
+pub open spec fn mesh_geometric_topological_consistency_spec(m: MeshModel) -> bool {
+    exists|gw: GeometricTopologicalConsistencyGateWitness| {
+        &&& geometric_topological_consistency_gate_witness_spec(gw)
+        &&& geometric_topological_consistency_gate_model_link_spec(m, gw)
+        &&& gw.api_ok
+    }
+}
+
 #[derive(Structural, Copy, Clone, PartialEq, Eq)]
 pub struct ValidWithGeometryGateWitness {
     pub api_ok: bool,
@@ -1003,6 +1011,11 @@ pub open spec fn valid_with_geometry_gate_model_link_spec(
         &&& geometric_topological_consistency_gate_model_link_spec(m, gw)
         &&& gw.api_ok == w.geometric_topological_consistency_ok
     })
+}
+
+pub open spec fn mesh_valid_with_geometry_spec(m: MeshModel) -> bool {
+    &&& mesh_valid_spec(m)
+    &&& mesh_geometric_topological_consistency_spec(m)
 }
 
 #[verifier::spinoff_prover]
@@ -1129,6 +1142,30 @@ pub proof fn lemma_validity_gate_witness_api_ok_implies_mesh_valid(
     assert(mesh_valid_spec(m));
 }
 
+pub proof fn lemma_geometric_topological_consistency_gate_witness_api_ok_implies_mesh_geometric_topological_consistency(
+    m: MeshModel,
+    w: GeometricTopologicalConsistencyGateWitness,
+)
+    requires
+        geometric_topological_consistency_gate_witness_spec(w),
+        geometric_topological_consistency_gate_model_link_spec(m, w),
+        w.api_ok,
+    ensures
+        mesh_geometric_topological_consistency_spec(m),
+{
+    assert(exists|gw: GeometricTopologicalConsistencyGateWitness| {
+        &&& geometric_topological_consistency_gate_witness_spec(gw)
+        &&& geometric_topological_consistency_gate_model_link_spec(m, gw)
+        &&& gw.api_ok
+    }) by {
+        let gw = w;
+        assert(geometric_topological_consistency_gate_witness_spec(gw));
+        assert(geometric_topological_consistency_gate_model_link_spec(m, gw));
+        assert(gw.api_ok);
+    };
+    assert(mesh_geometric_topological_consistency_spec(m));
+}
+
 pub proof fn lemma_valid_with_geometry_gate_witness_api_ok_implies_mesh_valid(
     m: MeshModel,
     w: ValidWithGeometryGateWitness,
@@ -1139,9 +1176,11 @@ pub proof fn lemma_valid_with_geometry_gate_witness_api_ok_implies_mesh_valid(
         w.api_ok,
     ensures
         mesh_valid_spec(m),
+        mesh_valid_with_geometry_spec(m),
 {
     assert(w.api_ok == (w.phase4_validity_ok && w.geometric_topological_consistency_ok));
     assert(w.phase4_validity_ok);
+    assert(w.geometric_topological_consistency_ok);
 
     assert(w.phase4_validity_ok ==> exists|vw: ValidityGateWitness| {
         &&& validity_gate_witness_spec(vw)
@@ -1162,5 +1201,29 @@ pub proof fn lemma_valid_with_geometry_gate_witness_api_ok_implies_mesh_valid(
     assert(vw.api_ok);
     lemma_validity_gate_witness_api_ok_implies_mesh_valid(m, vw);
     assert(mesh_valid_spec(m));
+
+    assert(w.geometric_topological_consistency_ok ==> exists|gw: GeometricTopologicalConsistencyGateWitness| {
+        &&& geometric_topological_consistency_gate_witness_spec(gw)
+        &&& geometric_topological_consistency_gate_model_link_spec(m, gw)
+        &&& gw.api_ok == w.geometric_topological_consistency_ok
+    });
+    assert(exists|gw: GeometricTopologicalConsistencyGateWitness| {
+        &&& geometric_topological_consistency_gate_witness_spec(gw)
+        &&& geometric_topological_consistency_gate_model_link_spec(m, gw)
+        &&& gw.api_ok == w.geometric_topological_consistency_ok
+    });
+    let gw = choose|gw: GeometricTopologicalConsistencyGateWitness| {
+        &&& geometric_topological_consistency_gate_witness_spec(gw)
+        &&& geometric_topological_consistency_gate_model_link_spec(m, gw)
+        &&& gw.api_ok == w.geometric_topological_consistency_ok
+    };
+    assert(gw.api_ok == w.geometric_topological_consistency_ok);
+    assert(gw.api_ok);
+    lemma_geometric_topological_consistency_gate_witness_api_ok_implies_mesh_geometric_topological_consistency(
+        m,
+        gw,
+    );
+    assert(mesh_geometric_topological_consistency_spec(m));
+    assert(mesh_valid_with_geometry_spec(m));
 }
 } // verus!
