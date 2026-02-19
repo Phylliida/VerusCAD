@@ -29,7 +29,10 @@ Blocks: `P5.1` coplanarity checker correctness for `k > 4`.
 ## L2: Orient3d / Orient2d Projection Factoring
 Blocks: `P5.3` convexity checker correctness.
 
-- [ ] Define `witness_along_normal_spec(p0, p1, p2, witness, normal)` where `witness = p0 + normal` and `normal` is the chosen face normal from `(p1 - p0) x (p2 - p1)`.
+- [x] Define `witness_along_normal_spec(p0, p1, p2, witness, normal)` where `witness = p0 + normal` and `normal` is the chosen face normal from `(p1 - p0) x (p2 - p1)`.
+  - Landed (2026-02-19): added `witness_along_normal_spec` and helper
+    `lemma_witness_along_normal_implies_witness_offset` in
+    `crates/vcad-geometry/src/phase5_upstream_lemmas.rs`.
 - [ ] Prove:
   - `orient3d(prev, curr, next, witness) = (normal · normal) * orient2d(prev', curr', next')`
   - where `prev'`, `curr'`, `next'` are projections onto the plane orthogonal to `normal` along a chosen dominant axis.
@@ -38,6 +41,9 @@ Blocks: `P5.3` convexity checker correctness.
   - Decompose witness-minus-vertex vectors into in-plane + normal components.
   - Factor normal component as `normal · normal` times the 2D determinant.
 - [ ] Corollary: for nondegenerate faces, `normal · normal > 0`, so `sign(orient3d) == sign(orient2d)`.
+  - Verification attempt note (2026-02-19): `RUSTFLAGS='--cfg verus_keep_ghost' cargo test -p vcad-geometry`
+    still fails on stable due Verus macro crates requiring nightly-only `#![feature(proc_macro_...)]`;
+    this environment has no `rustup`, so ghost-proof checking remains blocked here.
 
 ## L3: Determinant Trilinearity / Linearity in Origin
 Blocks: `P5.4` signed-volume origin independence.

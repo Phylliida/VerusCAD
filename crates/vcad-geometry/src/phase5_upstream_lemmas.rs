@@ -38,8 +38,56 @@ pub open spec fn points_on_common_plane_spec(
     &&& plane_dot_spec(normal, d).eqv_spec(offset)
 }
 
+pub open spec fn witness_along_normal_spec(
+    p0: Point3,
+    p1: Point3,
+    p2: Point3,
+    witness: Point3,
+    normal: Vec3,
+) -> bool {
+    &&& witness.eqv_spec(p0.add_vec_spec(normal))
+    &&& normal.eqv_spec(p1.sub_spec(p0).cross_spec(p2.sub_spec(p1)))
+}
+
 pub open spec fn det3_spec(u: Vec3, v: Vec3, w: Vec3) -> Scalar {
     u.dot_spec(v.cross_spec(w))
+}
+
+pub proof fn lemma_witness_along_normal_implies_witness_offset(
+    p0: Point3,
+    p1: Point3,
+    p2: Point3,
+    witness: Point3,
+    normal: Vec3,
+)
+    requires
+        witness_along_normal_spec(p0, p1, p2, witness, normal),
+    ensures
+        witness.sub_spec(p0).eqv_spec(normal),
+{
+    let expected_witness = p0.add_vec_spec(normal);
+    let witness_delta = witness.sub_spec(p0);
+    let expected_delta = expected_witness.sub_spec(p0);
+
+    assert(witness.eqv_spec(expected_witness));
+    Scalar::lemma_eqv_sub_congruence(witness.x, expected_witness.x, p0.x, p0.x);
+    Scalar::lemma_eqv_sub_congruence(witness.y, expected_witness.y, p0.y, p0.y);
+    Scalar::lemma_eqv_sub_congruence(witness.z, expected_witness.z, p0.z, p0.z);
+    assert(witness_delta.x.eqv_spec(expected_delta.x));
+    assert(witness_delta.y.eqv_spec(expected_delta.y));
+    assert(witness_delta.z.eqv_spec(expected_delta.z));
+
+    Point3::lemma_add_then_sub_cancel(p0, normal);
+    assert(expected_delta.eqv_spec(normal));
+    assert(expected_delta.x.eqv_spec(normal.x));
+    assert(expected_delta.y.eqv_spec(normal.y));
+    assert(expected_delta.z.eqv_spec(normal.z));
+
+    Scalar::lemma_eqv_transitive(witness_delta.x, expected_delta.x, normal.x);
+    Scalar::lemma_eqv_transitive(witness_delta.y, expected_delta.y, normal.y);
+    Scalar::lemma_eqv_transitive(witness_delta.z, expected_delta.z, normal.z);
+    Vec3::lemma_eqv_from_components(witness_delta, normal);
+    assert(witness_delta.eqv_spec(normal));
 }
 
 pub proof fn lemma_det3_linear_first_argument(u: Vec3, t: Vec3, v: Vec3, w: Vec3)

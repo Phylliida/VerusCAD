@@ -1,1 +1,1 @@
-Added L3 det3 antisymmetry swap lemmas in vcad-geometry and documented the ghost-mode verification/toolchain limitation in the Phase 5 burndown, and 23 Phase 5 upstream-lemma tasks remain.
+Added the L2 witness-along-normal spec plus a witness-offset helper lemma in vcad-geometry, documented stable-toolchain ghost-check limitations in the Phase 5 burndown, and 22 Phase 5 upstream-lemma tasks remain.
