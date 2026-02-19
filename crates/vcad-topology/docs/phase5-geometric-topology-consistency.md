@@ -195,6 +195,28 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.1 runtime-checker-alignment increment in
+  `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`:
+  - refactored the per-face inner loop in
+    `runtime_check_face_coplanarity_seed0_fixed_witness_bridge` to start from
+    the 4th cycle vertex (`h = next(next(next(h0)))`, `steps = 3`), matching the
+    execution order used by `Mesh::check_face_coplanarity()`;
+  - added an explicit ghost base-case proof that the seed-0 plane witness holds
+    for `d = 0, 1, 2` using orientation-cycle identities plus repeated-point
+    coplanarity degeneracy lemmas before entering the runtime loop;
+  - retained the existing loop invariant shape (`forall d < steps`) while
+    removing the previous `steps == 0` bootstrap branch.
+  - outcome: the P5.1 bridge now structurally mirrors the runtime checker path
+    more closely and avoids three redundant runtime coplanarity predicate calls
+    per face within the constructive bridge loop.
+- 2026-02-19: Failed attempts in this P5.1 runtime-checker-alignment pass: none.
+- 2026-02-19: Revalidated after the P5.1 runtime-checker-alignment refactor:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (275 verified, 0 errors)
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (312 verified, 0 errors)
 - 2026-02-19: Completed a P5.1 runtime-checker-correctness staging increment in
   `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
   - added a face-level characterization lemma for oriented seed-0 plane semantics:
