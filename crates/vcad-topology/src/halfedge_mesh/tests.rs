@@ -626,6 +626,14 @@ fn assert_constructive_phase5_gate_parity(mesh: &Mesh, label: &str) {
             mesh.check_no_zero_length_geometric_edges(),
             "geometric sound bridge should imply non-zero geometric edges for {label}"
         );
+        assert!(
+            mesh.check_face_corner_non_collinearity(),
+            "geometric sound bridge should imply runtime face-corner non-collinearity for {label}"
+        );
+        assert!(
+            mesh.check_face_coplanarity(),
+            "geometric sound bridge should imply runtime coplanarity for {label}"
+        );
         if mesh_all_faces_are_triangles_or_quads(mesh) {
             assert!(
                 mesh.check_face_coplanarity(),

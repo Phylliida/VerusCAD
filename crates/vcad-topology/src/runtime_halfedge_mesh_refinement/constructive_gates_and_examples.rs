@@ -2802,6 +2802,11 @@ pub fn check_geometric_topological_consistency_constructive(
                     ==> mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(
                         m,
                     ))
+                && (w.api_ok ==> mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m))
+                && (w.api_ok ==> mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m))
+                && (w.api_ok ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m))
+                && (w.api_ok ==> mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m))
+                && (w.api_ok ==> mesh_runtime_all_faces_oriented_seed0_planes_spec(m))
                 && (w.api_ok
                     && mesh_runtime_all_faces_triangle_cycles_spec(m)
                     ==> mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m))
@@ -3023,6 +3028,36 @@ pub fn check_geometric_topological_consistency_constructive(
                 );
             }
         };
+        assert(w.api_ok ==> mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m)) by {
+            if w.api_ok {
+                assert(mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(m));
+                assert(mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m));
+            }
+        };
+        assert(w.api_ok ==> mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m)) by {
+            if w.api_ok {
+                assert(mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
+                assert(mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m));
+            }
+        };
+        assert(w.api_ok ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m)) by {
+            if w.api_ok {
+                assert(mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
+                assert(mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m));
+            }
+        };
+        assert(w.api_ok ==> mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m)) by {
+            if w.api_ok {
+                assert(mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
+                assert(mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m));
+            }
+        };
+        assert(w.api_ok ==> mesh_runtime_all_faces_oriented_seed0_planes_spec(m)) by {
+            if w.api_ok {
+                assert(mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
+                assert(mesh_runtime_all_faces_oriented_seed0_planes_spec(m));
+            }
+        };
         assert(
             w.api_ok
                 && mesh_runtime_all_faces_triangle_cycles_spec(m)
@@ -3173,6 +3208,11 @@ pub fn runtime_check_geometric_topological_consistency_sound_bridge(m: &Mesh) ->
         out ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m),
         out ==> mesh_runtime_geometric_topological_consistency_with_geometry_spec(m),
         out ==> mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(m),
+        out ==> mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m),
+        out ==> mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m),
+        out ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m),
+        out ==> mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m),
+        out ==> mesh_runtime_all_faces_oriented_seed0_planes_spec(m),
         out && mesh_runtime_all_faces_triangle_or_quad_cycles_spec(m)
             ==> mesh_runtime_all_faces_coplanar_spec(m),
         out && mesh_runtime_all_faces_triangle_cycles_spec(m)
@@ -3220,6 +3260,11 @@ pub fn runtime_check_geometric_topological_consistency_sound_bridge(m: &Mesh) ->
         );
         assert(mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
         assert(mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(m));
+        assert(mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m));
+        assert(mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m));
+        assert(mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m));
+        assert(mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m));
+        assert(mesh_runtime_all_faces_oriented_seed0_planes_spec(m));
         lemma_mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_implies_mesh_geometric_topological_consistency_with_geometry(
             m,
         );

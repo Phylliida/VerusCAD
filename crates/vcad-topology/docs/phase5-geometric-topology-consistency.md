@@ -195,6 +195,37 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with aggregate contract-strengthening for direct runtime consequences in:
+  - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
+  - `src/halfedge_mesh/tests.rs`.
+  - strengthened aggregate constructive gate witness contract:
+    - `check_geometric_topological_consistency_constructive` now additionally proves:
+      - `w.api_ok ==> mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m)`;
+      - `w.api_ok ==> mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m)`;
+      - `w.api_ok ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m)`;
+      - `w.api_ok ==> mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m)`;
+      - `w.api_ok ==> mesh_runtime_all_faces_oriented_seed0_planes_spec(m)`.
+  - strengthened aggregate runtime sound-bridge contract:
+    - `runtime_check_geometric_topological_consistency_sound_bridge` now additionally proves:
+      - `out ==> mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m)`;
+      - `out ==> mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m)`;
+      - `out ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m)`;
+      - `out ==> mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m)`;
+      - `out ==> mesh_runtime_all_faces_oriented_seed0_planes_spec(m)`.
+  - strengthened parity-lock assertions:
+    - `assert_constructive_phase5_gate_parity` now explicitly checks that a passing aggregate sound bridge implies runtime face-corner non-collinearity and runtime face coplanarity.
+  - outcome:
+    - aggregate P5 sound-path contracts now expose direct seed0-coplanarity-bundle and non-zero-edge consequences (not only bundled implications), reducing remaining P5.7 closure plumbing while checklist status remains unchanged.
+- 2026-02-19: Failed attempts in this P5.7 aggregate direct-consequence contract-strengthening pass: none.
+- 2026-02-19: Revalidated after this P5.7 aggregate direct-consequence contract-strengthening:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" geometric_consistency_constructive_gate_matches_runtime_boolean_gate` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" geometric_consistency_triangle_projected_turn_sound_bridge_matches_runtime_checker` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (95 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (383 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (420 verified, 0 errors)
 - 2026-02-19: Worked P5.3 (`Proof: runtime checker correctness vs convexity spec`) with a triangle projected-turn runtime-with-geometry+non-zero-edge sound+complete parity wrapper increment in:
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
   - `src/halfedge_mesh/tests.rs`.
