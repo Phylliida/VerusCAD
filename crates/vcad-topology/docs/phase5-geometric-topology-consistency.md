@@ -195,6 +195,45 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with a disjoint-boundary policy-branch lock + relation-level corollary increment in:
+  - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`;
+  - `src/halfedge_mesh/tests.rs`.
+  - added relation-level forbidden-policy corollaries:
+    - `lemma_mesh_faces_shared_boundary_allowed_contact_relation_not_runtime_forbidden_policy`;
+    - `lemma_mesh_disjoint_boundary_and_allowed_contact_relation_and_no_intersection_imply_not_runtime_forbidden_policy`;
+    - `lemma_mesh_disjoint_boundary_and_allowed_contact_relation_and_intersection_imply_runtime_forbidden_policy`.
+  - added pair-level disjoint-boundary regression coverage:
+    - helper `assert_disjoint_boundary_pairs_match_forbidden_classification`;
+    - test `disjoint_boundary_pair_policy_branch_matches_expected_forbidden_classification`.
+  - outcome:
+    - P5.5 now has direct relation-level corollaries for shared-boundary non-forbidden behavior and disjoint-boundary intersection/non-intersection classification, reducing classifier-surface plumbing in remaining soundness/completeness proofs;
+    - runtime regressions now explicitly lock the disjoint-boundary branch used by those proofs (including broad-phase/no-cull parity).
+- 2026-02-19: Failed attempts in this P5.5 disjoint-boundary policy-branch pass: none.
+- 2026-02-19: Revalidated after the P5.5 disjoint-boundary policy-branch increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (86 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (337 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (374 verified, 0 errors)
+- 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with an allowed-contact-spec normalization increment in:
+  - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`.
+  - added high-level allowed-contact decomposition lemmas for runtime forbidden-policy classification:
+    - `lemma_mesh_face_pair_runtime_forbidden_policy_iff_not_allowed_contact_relation_or_disjoint_boundary_and_intersection`;
+    - `lemma_mesh_not_allowed_contact_relation_implies_runtime_forbidden_policy`;
+    - `lemma_mesh_disjoint_boundary_and_allowed_contact_relation_imply_runtime_forbidden_policy_iff_intersection`.
+  - outcome:
+    - P5.5 forbidden-policy proof decomposition is now available directly over the high-level
+      `mesh_faces_allowed_contact_relation_spec` surface (not only the runtime branch-classifier surface);
+    - this reduces branch-classifier plumbing in downstream soundness/completeness arguments while keeping the checklist items open.
+- 2026-02-19: Failed attempts in this P5.5 allowed-contact normalization pass:
+  - first verification runs failed due parser errors from trailing commas inside two new `assert(...)` expressions in `model_and_bridge_specs.rs`;
+  - resolved by removing those trailing commas and rerunning verification/tests.
+- 2026-02-19: Revalidated after the P5.5 allowed-contact normalization increment:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" non_allowed_contact_topology_pairs_are_classified_as_forbidden` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (85 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (334 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
 - 2026-02-19: Worked P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with a kernel-shared-edge characterization-gap lock increment for zero-length-edge fixtures in:
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
   - `src/halfedge_mesh/tests.rs`.

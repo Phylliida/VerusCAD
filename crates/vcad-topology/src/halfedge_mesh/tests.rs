@@ -1125,6 +1125,59 @@ fn assert_non_allowed_contact_topology_pairs_are_forbidden(mesh: &Mesh, label: &
 }
 
 #[cfg(feature = "geometry-checks")]
+fn assert_disjoint_boundary_pairs_match_forbidden_classification(
+    mesh: &Mesh,
+    label: &str,
+    expect_any_forbidden: bool,
+) {
+    let mut saw_disjoint_boundary_pair = false;
+    let mut saw_forbidden_disjoint_boundary_pair = false;
+
+    for face_a in 0..mesh.faces.len() {
+        for face_b in (face_a + 1)..mesh.faces.len() {
+            let (shared_vertices, shared_edges) =
+                face_pair_shared_boundary_counts_edge_index_oracle(mesh, face_a, face_b)
+                    .expect("shared-boundary oracle should produce an output for valid face ids");
+            if shared_vertices != 0 || shared_edges != 0 {
+                continue;
+            }
+
+            saw_disjoint_boundary_pair = true;
+
+            let topology_allowed = mesh
+                .face_pair_has_allowed_contact_topology_for_testing(face_a, face_b)
+                .expect("pair classifier should produce an output for valid face ids");
+            assert!(
+                topology_allowed,
+                "disjoint-boundary pair ({face_a}, {face_b}) should satisfy allowed-contact topology for {label}"
+            );
+
+            let forbidden_no_cull = mesh
+                .face_pair_has_forbidden_intersection_for_testing(face_a, face_b, false)
+                .expect("pair forbidden-intersection hook should produce an output for valid face ids");
+            let forbidden_with_cull = mesh
+                .face_pair_has_forbidden_intersection_for_testing(face_a, face_b, true)
+                .expect("pair forbidden-intersection hook should produce an output for valid face ids");
+            assert_eq!(
+                forbidden_no_cull, forbidden_with_cull,
+                "broad-phase culling changed pair classification for disjoint-boundary pair ({face_a}, {face_b}) in {label}"
+            );
+
+            saw_forbidden_disjoint_boundary_pair |= forbidden_no_cull;
+        }
+    }
+
+    assert!(
+        saw_disjoint_boundary_pair,
+        "fixture {label} should include at least one disjoint-boundary face pair"
+    );
+    assert_eq!(
+        saw_forbidden_disjoint_boundary_pair, expect_any_forbidden,
+        "fixture {label} disjoint-boundary forbidden-pair expectation mismatch"
+    );
+}
+
+#[cfg(feature = "geometry-checks")]
 fn check_face_coplanarity_exhaustive_face_quadruple_oracle(mesh: &Mesh) -> bool {
     if !mesh.is_valid() {
         return false;
@@ -3378,6 +3431,43 @@ fn diagnostic_witness_is_real_counterexample(
                 "fixture {label} should fail the forbidden face-face checker"
             );
         }
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn disjoint_boundary_pair_policy_branch_matches_expected_forbidden_classification() {
+        let disjoint_components =
+            build_disconnected_translated_tetrahedra_mesh(&[(0, 0, 0), (15, 0, 0), (-12, 9, 4)]);
+        assert!(
+            disjoint_components.is_valid(),
+            "disjoint components fixture should satisfy Phase 4 validity"
+        );
+        assert_allowed_contact_topology_classifier_matches_edge_index_oracle(&disjoint_components);
+        assert!(
+            disjoint_components.check_no_forbidden_face_face_intersections(),
+            "disjoint components fixture should pass the forbidden face-face checker"
+        );
+        assert_disjoint_boundary_pairs_match_forbidden_classification(
+            &disjoint_components,
+            "disjoint_components",
+            false,
+        );
+
+        let overlapping_components = build_overlapping_tetrahedra_mesh();
+        assert!(
+            overlapping_components.is_valid(),
+            "overlapping components fixture should satisfy Phase 4 validity"
+        );
+        assert_allowed_contact_topology_classifier_matches_edge_index_oracle(&overlapping_components);
+        assert!(
+            !overlapping_components.check_no_forbidden_face_face_intersections(),
+            "overlapping components fixture should fail the forbidden face-face checker"
+        );
+        assert_disjoint_boundary_pairs_match_forbidden_classification(
+            &overlapping_components,
+            "overlapping_components",
+            true,
+        );
     }
 
     #[cfg(feature = "geometry-checks")]

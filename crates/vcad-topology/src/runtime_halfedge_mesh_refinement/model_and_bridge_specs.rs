@@ -952,6 +952,62 @@ pub proof fn lemma_mesh_face_pair_runtime_forbidden_policy_iff_not_allowed_or_di
 }
 
 #[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_face_pair_runtime_forbidden_policy_iff_not_allowed_contact_relation_or_disjoint_boundary_and_intersection(
+    m: MeshModel,
+    f1: int,
+    f2: int,
+    geometric_intersection_exists: bool,
+)
+    requires
+        0 <= f1 < mesh_face_count_spec(m),
+        0 <= f2 < mesh_face_count_spec(m),
+        f1 != f2,
+    ensures
+        mesh_face_pair_runtime_forbidden_intersection_policy_spec(
+            m,
+            f1,
+            f2,
+            geometric_intersection_exists,
+        ) == (
+            !mesh_faces_allowed_contact_relation_spec(m, f1, f2)
+                || (mesh_faces_disjoint_boundary_spec(m, f1, f2) && geometric_intersection_exists)
+        ),
+{
+    lemma_mesh_face_pair_runtime_forbidden_policy_iff_not_allowed_or_disjoint_boundary_and_intersection(
+        m,
+        f1,
+        f2,
+        geometric_intersection_exists,
+    );
+    lemma_mesh_faces_allowed_contact_relation_iff_runtime_branch_classifier(m, f1, f2);
+
+    assert(mesh_faces_allowed_contact_relation_spec(m, f1, f2)
+        == mesh_faces_allowed_contact_runtime_branch_classifier_spec(m, f1, f2));
+    assert(
+        !mesh_faces_allowed_contact_runtime_branch_classifier_spec(m, f1, f2)
+            == !mesh_faces_allowed_contact_relation_spec(m, f1, f2)
+    );
+    assert(mesh_face_pair_runtime_forbidden_intersection_policy_spec(
+        m,
+        f1,
+        f2,
+        geometric_intersection_exists,
+    ) == (
+        !mesh_faces_allowed_contact_runtime_branch_classifier_spec(m, f1, f2)
+            || (mesh_faces_disjoint_boundary_spec(m, f1, f2) && geometric_intersection_exists)
+    ));
+    assert(mesh_face_pair_runtime_forbidden_intersection_policy_spec(
+        m,
+        f1,
+        f2,
+        geometric_intersection_exists,
+    ) == (
+        !mesh_faces_allowed_contact_relation_spec(m, f1, f2)
+            || (mesh_faces_disjoint_boundary_spec(m, f1, f2) && geometric_intersection_exists)
+    ));
+}
+
+#[cfg(verus_keep_ghost)]
 pub proof fn lemma_mesh_not_allowed_contact_runtime_branch_classifier_implies_runtime_forbidden_policy(
     m: MeshModel,
     f1: int,
@@ -971,6 +1027,44 @@ pub proof fn lemma_mesh_not_allowed_contact_runtime_branch_classifier_implies_ru
             geometric_intersection_exists,
         ),
 {
+    assert(mesh_face_pair_runtime_forbidden_intersection_policy_spec(
+        m,
+        f1,
+        f2,
+        geometric_intersection_exists,
+    ));
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_not_allowed_contact_relation_implies_runtime_forbidden_policy(
+    m: MeshModel,
+    f1: int,
+    f2: int,
+    geometric_intersection_exists: bool,
+)
+    requires
+        0 <= f1 < mesh_face_count_spec(m),
+        0 <= f2 < mesh_face_count_spec(m),
+        f1 != f2,
+        !mesh_faces_allowed_contact_relation_spec(m, f1, f2),
+    ensures
+        mesh_face_pair_runtime_forbidden_intersection_policy_spec(
+            m,
+            f1,
+            f2,
+            geometric_intersection_exists,
+        ),
+{
+    lemma_mesh_face_pair_runtime_forbidden_policy_iff_not_allowed_contact_relation_or_disjoint_boundary_and_intersection(
+        m,
+        f1,
+        f2,
+        geometric_intersection_exists,
+    );
+    assert(
+        !mesh_faces_allowed_contact_relation_spec(m, f1, f2)
+            || (mesh_faces_disjoint_boundary_spec(m, f1, f2) && geometric_intersection_exists)
+    );
     assert(mesh_face_pair_runtime_forbidden_intersection_policy_spec(
         m,
         f1,
@@ -1018,6 +1112,37 @@ pub proof fn lemma_mesh_faces_shared_boundary_runtime_branch_classifier_not_runt
 }
 
 #[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_faces_shared_boundary_allowed_contact_relation_not_runtime_forbidden_policy(
+    m: MeshModel,
+    f1: int,
+    f2: int,
+    geometric_intersection_exists: bool,
+)
+    requires
+        0 <= f1 < mesh_face_count_spec(m),
+        0 <= f2 < mesh_face_count_spec(m),
+        f1 != f2,
+        mesh_faces_allowed_contact_relation_spec(m, f1, f2),
+        mesh_faces_share_vertex_spec(m, f1, f2) || mesh_faces_share_edge_spec(m, f1, f2),
+    ensures
+        !mesh_face_pair_runtime_forbidden_intersection_policy_spec(
+            m,
+            f1,
+            f2,
+            geometric_intersection_exists,
+        ),
+{
+    lemma_mesh_faces_allowed_contact_relation_iff_runtime_branch_classifier(m, f1, f2);
+    assert(mesh_faces_allowed_contact_runtime_branch_classifier_spec(m, f1, f2));
+    lemma_mesh_faces_shared_boundary_runtime_branch_classifier_not_runtime_forbidden_policy(
+        m,
+        f1,
+        f2,
+        geometric_intersection_exists,
+    );
+}
+
+#[cfg(verus_keep_ghost)]
 pub proof fn lemma_mesh_disjoint_boundary_and_runtime_allowed_contact_imply_runtime_forbidden_policy_iff_intersection(
     m: MeshModel,
     f1: int,
@@ -1061,6 +1186,96 @@ pub proof fn lemma_mesh_disjoint_boundary_and_runtime_allowed_contact_imply_runt
         f2,
         geometric_intersection_exists,
     ) == geometric_intersection_exists);
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_disjoint_boundary_and_allowed_contact_relation_imply_runtime_forbidden_policy_iff_intersection(
+    m: MeshModel,
+    f1: int,
+    f2: int,
+    geometric_intersection_exists: bool,
+)
+    requires
+        0 <= f1 < mesh_face_count_spec(m),
+        0 <= f2 < mesh_face_count_spec(m),
+        f1 != f2,
+        mesh_faces_allowed_contact_relation_spec(m, f1, f2),
+        mesh_faces_disjoint_boundary_spec(m, f1, f2),
+    ensures
+        mesh_face_pair_runtime_forbidden_intersection_policy_spec(
+            m,
+            f1,
+            f2,
+            geometric_intersection_exists,
+        ) == geometric_intersection_exists,
+{
+    lemma_mesh_face_pair_runtime_forbidden_policy_iff_not_allowed_contact_relation_or_disjoint_boundary_and_intersection(
+        m,
+        f1,
+        f2,
+        geometric_intersection_exists,
+    );
+    assert(
+        !mesh_faces_allowed_contact_relation_spec(m, f1, f2)
+            || (mesh_faces_disjoint_boundary_spec(m, f1, f2) && geometric_intersection_exists)
+            == geometric_intersection_exists
+    );
+    assert(mesh_face_pair_runtime_forbidden_intersection_policy_spec(
+        m,
+        f1,
+        f2,
+        geometric_intersection_exists,
+    ) == geometric_intersection_exists);
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_disjoint_boundary_and_allowed_contact_relation_and_no_intersection_imply_not_runtime_forbidden_policy(
+    m: MeshModel,
+    f1: int,
+    f2: int,
+)
+    requires
+        0 <= f1 < mesh_face_count_spec(m),
+        0 <= f2 < mesh_face_count_spec(m),
+        f1 != f2,
+        mesh_faces_allowed_contact_relation_spec(m, f1, f2),
+        mesh_faces_disjoint_boundary_spec(m, f1, f2),
+    ensures
+        !mesh_face_pair_runtime_forbidden_intersection_policy_spec(m, f1, f2, false),
+{
+    lemma_mesh_disjoint_boundary_and_allowed_contact_relation_imply_runtime_forbidden_policy_iff_intersection(
+        m,
+        f1,
+        f2,
+        false,
+    );
+    assert(mesh_face_pair_runtime_forbidden_intersection_policy_spec(m, f1, f2, false) == false);
+    assert(!mesh_face_pair_runtime_forbidden_intersection_policy_spec(m, f1, f2, false));
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_disjoint_boundary_and_allowed_contact_relation_and_intersection_imply_runtime_forbidden_policy(
+    m: MeshModel,
+    f1: int,
+    f2: int,
+)
+    requires
+        0 <= f1 < mesh_face_count_spec(m),
+        0 <= f2 < mesh_face_count_spec(m),
+        f1 != f2,
+        mesh_faces_allowed_contact_relation_spec(m, f1, f2),
+        mesh_faces_disjoint_boundary_spec(m, f1, f2),
+    ensures
+        mesh_face_pair_runtime_forbidden_intersection_policy_spec(m, f1, f2, true),
+{
+    lemma_mesh_disjoint_boundary_and_allowed_contact_relation_imply_runtime_forbidden_policy_iff_intersection(
+        m,
+        f1,
+        f2,
+        true,
+    );
+    assert(mesh_face_pair_runtime_forbidden_intersection_policy_spec(m, f1, f2, true) == true);
+    assert(mesh_face_pair_runtime_forbidden_intersection_policy_spec(m, f1, f2, true));
 }
 
 #[cfg(verus_keep_ghost)]
