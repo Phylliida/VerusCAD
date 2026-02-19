@@ -73,9 +73,6 @@ impl Mesh {
         if !self.is_valid() {
             return false;
         }
-        if !self.check_index_bounds() || !self.check_face_cycles() {
-            return false;
-        }
 
         let hcnt = self.half_edges.len();
         for face in &self.faces {
@@ -116,9 +113,6 @@ impl Mesh {
         if !self.is_valid() {
             return false;
         }
-        if !self.check_index_bounds() || !self.check_face_cycles() {
-            return false;
-        }
 
         for he in &self.half_edges {
             let a = &self.vertices[he.vertex].position;
@@ -135,9 +129,6 @@ impl Mesh {
     /// Optional geometric extension: each face cycle's vertices are coplanar.
     pub fn check_face_coplanarity(&self) -> bool {
         if !self.is_valid() {
-            return false;
-        }
-        if !self.check_index_bounds() || !self.check_face_cycles() {
             return false;
         }
         if !self.check_face_corner_non_collinearity() {
@@ -182,9 +173,6 @@ impl Mesh {
     /// - compare every corner turn orientation sign against that reference.
     pub fn check_face_convexity(&self) -> bool {
         if !self.is_valid() {
-            return false;
-        }
-        if !self.check_index_bounds() || !self.check_face_cycles() {
             return false;
         }
         if !self.check_face_coplanarity() {
@@ -338,9 +326,6 @@ impl Mesh {
         if !self.is_valid() {
             return None;
         }
-        if !self.check_index_bounds() || !self.check_face_cycles() {
-            return None;
-        }
         self.compute_face_plane_prevalidated(face_id)
     }
 
@@ -358,9 +343,6 @@ impl Mesh {
     /// vertices in that face cycle.
     pub fn check_face_plane_consistency(&self) -> bool {
         if !self.is_valid() {
-            return false;
-        }
-        if !self.check_index_bounds() || !self.check_face_cycles() {
             return false;
         }
         if !self.check_face_coplanarity() {
@@ -445,9 +427,6 @@ impl Mesh {
             return false;
         }
         if self.faces.is_empty() || self.half_edges.is_empty() {
-            return false;
-        }
-        if !self.check_index_bounds() || !self.check_face_cycles() {
             return false;
         }
         if !self.check_face_coplanarity() {
@@ -782,9 +761,6 @@ impl Mesh {
         if !self.is_valid() {
             return false;
         }
-        if !self.check_index_bounds() || !self.check_face_cycles() {
-            return false;
-        }
         if !self.check_no_zero_length_geometric_edges() {
             return false;
         }
@@ -1095,9 +1071,6 @@ impl Mesh {
         if !self.is_valid() {
             return false;
         }
-        if !self.check_index_bounds() || !self.check_face_cycles() {
-            return false;
-        }
         if !self.check_no_zero_length_geometric_edges() {
             return false;
         }
@@ -1186,9 +1159,6 @@ impl Mesh {
             return None;
         }
         if !self.is_valid() {
-            return None;
-        }
-        if !self.check_index_bounds() || !self.check_face_cycles() {
             return None;
         }
         if !self.check_no_zero_length_geometric_edges() {
@@ -1526,9 +1496,6 @@ impl Mesh {
     ) -> Result<(), GeometricTopologicalConsistencyFailure> {
         if !self.is_valid() {
             return Err(GeometricTopologicalConsistencyFailure::Phase4Validity);
-        }
-        if !self.check_index_bounds() || !self.check_face_cycles() {
-            return Err(GeometricTopologicalConsistencyFailure::InternalInconsistency);
         }
 
         if let Some(failure) = self.first_zero_length_geometric_edge_failure() {

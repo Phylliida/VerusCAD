@@ -197,6 +197,31 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
 ## Burndown Log
 - 2026-02-19: Completed a P5.11 scalability constant-factor cleanup in
   `src/halfedge_mesh/validation.rs`:
+  - removed redundant `check_index_bounds()` / `check_face_cycles()` pre-gates from
+    geometry-checker paths already gated by `is_valid()`:
+    - `check_face_corner_non_collinearity`;
+    - `check_no_zero_length_geometric_edges`;
+    - `check_face_coplanarity`;
+    - `check_face_convexity`;
+    - `compute_face_plane`;
+    - `check_face_plane_consistency`;
+    - `check_outward_face_normals_relative_to_reference_impl`;
+    - `check_shared_edge_local_orientation_consistency`;
+    - `check_no_forbidden_face_face_intersections_impl`;
+    - `face_pair_has_forbidden_intersection_for_testing`;
+    - `check_geometric_topological_consistency_diagnostic`.
+  - rationale: phase-4 validity already enforces index bounds and face-cycle integrity, so these
+    extra checks were duplicate whole-mesh passes with no behavioral effect.
+- 2026-02-19: Failed attempts in this P5.11 validity-precheck dedup pass: none.
+- 2026-02-19: Revalidated after the P5.11 validity-precheck dedup cleanup:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (286 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (323 verified, 0 errors)
+- 2026-02-19: Completed a P5.11 scalability constant-factor cleanup in
+  `src/halfedge_mesh/validation.rs`:
   - removed redundant `check_face_corner_non_collinearity()` pre-gates from Phase 5 checkers
     that already require `check_face_coplanarity()`:
     - `check_face_convexity`;
