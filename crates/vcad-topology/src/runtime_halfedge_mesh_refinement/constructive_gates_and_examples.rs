@@ -785,6 +785,171 @@ pub fn runtime_check_face_seed0_corner_non_collinearity_bridge(m: &Mesh) -> (out
 #[cfg(feature = "geometry-checks")]
 #[verifier::exec_allows_no_decreases_clause]
 #[allow(dead_code)]
+pub fn runtime_check_no_zero_length_geometric_edges_sound_bridge(
+    m: &Mesh,
+) -> (out: bool)
+    ensures
+        out ==> mesh_valid_spec(m@),
+        out ==> mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m),
+{
+    use vcad_math::runtime_scalar::RuntimeSign::*;
+
+    let runtime_ok = m.check_no_zero_length_geometric_edges();
+    if !runtime_ok {
+        return false;
+    }
+
+    let validity_w = match is_valid_constructive(m) {
+        Option::Some(w) => w,
+        Option::None => return false,
+    };
+    if !validity_w.api_ok {
+        return false;
+    }
+
+    let hcnt = m.half_edges.len();
+    let ghost vertex_positions = mesh_runtime_vertex_positions_spec(m);
+
+    proof {
+        assert(validity_gate_witness_spec(validity_w));
+        assert(validity_gate_model_link_spec(m@, validity_w));
+        lemma_validity_gate_witness_api_ok_implies_mesh_valid(m@, validity_w);
+        assert(mesh_valid_spec(m@));
+        assert(mesh_structurally_valid_spec(m@));
+        assert(mesh_index_bounds_spec(m@));
+        lemma_mesh_runtime_geometry_bridge_holds(m);
+        assert(mesh_runtime_geometry_bridge_spec(m));
+        assert(mesh_geometry_input_spec(m@, vertex_positions));
+        assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+    }
+
+    let mut h: usize = 0;
+    while h < hcnt
+        invariant
+            hcnt == m.half_edges.len(),
+            mesh_half_edge_count_spec(m@) == hcnt as int,
+            mesh_valid_spec(m@),
+            mesh_index_bounds_spec(m@),
+            mesh_runtime_geometry_bridge_spec(m),
+            mesh_geometry_input_spec(m@, vertex_positions),
+            0 <= h <= hcnt,
+            forall|hp: int|
+                0 <= hp < h as int
+                    ==> #[trigger] mesh_half_edge_non_zero_geometric_length_at_spec(
+                        m@,
+                        vertex_positions,
+                        hp,
+                    ),
+    {
+        let he = &m.half_edges[h];
+        let a = &m.vertices[he.vertex].position;
+        let b = &m.vertices[m.half_edges[he.next].vertex].position;
+
+        let d2 = a.dist2(b);
+        let d2_sign = d2.sign();
+        if let Zero = d2_sign {
+            return false;
+        }
+
+        proof {
+            let hi = h as int;
+            assert(0 <= hi < mesh_half_edge_count_spec(m@));
+            assert(mesh_geometry_input_spec(m@, vertex_positions));
+            lemma_mesh_half_edge_segment_geometry_at_from_model_and_positions(m@, vertex_positions, hi);
+            assert(mesh_half_edge_segment_geometry_at_spec(m@, vertex_positions, hi));
+
+            assert(m@.half_edges[hi].vertex == he.vertex as int);
+            assert(m@.half_edges[hi].next == he.next as int);
+            assert(
+                m@.half_edges[m@.half_edges[hi].next].vertex
+                    == m.half_edges[m.half_edges[h].next].vertex as int
+            );
+
+            assert(mesh_half_edge_from_position_spec(m@, vertex_positions, hi) == a@);
+            assert(mesh_half_edge_to_position_spec(m@, vertex_positions, hi) == b@);
+
+            assert((d2_sign is Zero) == (d2@.signum() == 0));
+            assert(d2@.signum() != 0);
+            Scalar::lemma_signum_zero_iff(d2@);
+            assert(!d2@.eqv_spec(Scalar::from_int_spec(0))) by {
+                if d2@.eqv_spec(Scalar::from_int_spec(0)) {
+                    assert(d2@.signum() == 0);
+                    assert(false);
+                }
+            };
+
+            vcad_math::point3::lemma_dist2_zero_iff_equal_points(a@, b@);
+            assert(d2@ == vcad_math::point3::dist2_spec(a@, b@));
+            assert(!a@.eqv_spec(b@)) by {
+                if a@.eqv_spec(b@) {
+                    assert(vcad_math::point3::dist2_spec(a@, b@).eqv_spec(Scalar::from_int_spec(0)));
+                    assert(d2@.eqv_spec(Scalar::from_int_spec(0)));
+                    assert(false);
+                }
+            };
+            assert(!mesh_half_edge_from_position_spec(m@, vertex_positions, hi).eqv_spec(
+                mesh_half_edge_to_position_spec(m@, vertex_positions, hi),
+            ));
+            assert(mesh_half_edge_non_zero_geometric_length_at_spec(m@, vertex_positions, hi));
+
+            assert(forall|hp: int|
+                0 <= hp < (h + 1) as int
+                    ==> #[trigger] mesh_half_edge_non_zero_geometric_length_at_spec(
+                        m@,
+                        vertex_positions,
+                        hp,
+                    )) by {
+                assert forall|hp: int|
+                    0 <= hp < (h + 1) as int
+                        implies #[trigger] mesh_half_edge_non_zero_geometric_length_at_spec(
+                            m@,
+                            vertex_positions,
+                            hp,
+                        ) by {
+                    if hp < h as int {
+                    } else {
+                        assert(hp == hi);
+                        assert(mesh_half_edge_non_zero_geometric_length_at_spec(m@, vertex_positions, hp));
+                    }
+                };
+            };
+        }
+
+        h += 1;
+    }
+
+    proof {
+        lemma_usize_loop_exit_eq(h, hcnt);
+        assert(h == hcnt);
+        assert(forall|hp: int|
+            0 <= hp < mesh_half_edge_count_spec(m@)
+                ==> #[trigger] mesh_half_edge_non_zero_geometric_length_at_spec(
+                    m@,
+                    vertex_positions,
+                    hp,
+                )) by {
+            assert forall|hp: int|
+                0 <= hp < mesh_half_edge_count_spec(m@)
+                    implies #[trigger] mesh_half_edge_non_zero_geometric_length_at_spec(
+                        m@,
+                        vertex_positions,
+                        hp,
+                    ) by {
+                assert(mesh_half_edge_count_spec(m@) == hcnt as int);
+                assert(0 <= hp < h as int);
+            };
+        };
+        assert(mesh_all_half_edges_non_zero_geometric_length_spec(m@, vertex_positions));
+        assert(mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m));
+        assert(mesh_valid_spec(m@));
+    }
+
+    true
+}
+
+#[cfg(feature = "geometry-checks")]
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
 pub fn runtime_check_face_coplanarity_seed0_fixed_witness_bridge(m: &Mesh) -> (out: bool)
     ensures
         out ==> mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m),
@@ -2139,6 +2304,8 @@ pub fn check_geometric_topological_consistency_constructive(
             Option::Some(w) => geometric_topological_consistency_gate_witness_spec(w)
                 && geometric_topological_consistency_gate_model_link_spec(m@, w)
                 && (w.phase4_valid_ok ==> mesh_valid_spec(m@))
+                && (w.no_zero_length_geometric_edges_ok
+                    ==> mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m))
                 && (w.face_coplanarity_ok ==> mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m))
                 && (w.face_coplanarity_ok ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m))
                 && (w.face_coplanarity_ok ==> mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m))
@@ -2158,7 +2325,11 @@ pub fn check_geometric_topological_consistency_constructive(
     };
 
     let phase4_valid_ok = validity_w.api_ok;
-    let no_zero_length_geometric_edges_ok = m.check_no_zero_length_geometric_edges();
+    let no_zero_length_geometric_edges_runtime_ok = m.check_no_zero_length_geometric_edges();
+    let no_zero_length_geometric_edges_bridge_ok =
+        runtime_check_no_zero_length_geometric_edges_sound_bridge(m);
+    let no_zero_length_geometric_edges_ok = no_zero_length_geometric_edges_runtime_ok
+        && no_zero_length_geometric_edges_bridge_ok;
     let face_corner_non_collinearity_ok = m.check_face_corner_non_collinearity();
     let face_coplanarity_runtime_ok = m.check_face_coplanarity();
     let face_coplanarity_bridge_ok = runtime_check_face_coplanarity_seed0_fixed_witness_bridge(m);
@@ -2200,11 +2371,18 @@ pub fn check_geometric_topological_consistency_constructive(
         assert(validity_gate_witness_spec(validity_w));
         assert(validity_gate_model_link_spec(m@, validity_w));
         assert(geometric_topological_consistency_gate_witness_spec(w));
+        assert(w.no_zero_length_geometric_edges_ok == no_zero_length_geometric_edges_ok);
+        assert(no_zero_length_geometric_edges_ok
+            == (no_zero_length_geometric_edges_runtime_ok && no_zero_length_geometric_edges_bridge_ok));
         assert(w.face_coplanarity_ok == face_coplanarity_ok);
         assert(face_coplanarity_ok == (face_coplanarity_runtime_ok && face_coplanarity_bridge_ok));
         if w.phase4_valid_ok {
             lemma_validity_gate_witness_api_ok_implies_mesh_valid(m@, validity_w);
             assert(mesh_valid_spec(m@));
+        }
+        if w.no_zero_length_geometric_edges_ok {
+            assert(no_zero_length_geometric_edges_bridge_ok);
+            assert(mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m));
         }
         if w.face_coplanarity_ok {
             assert(face_coplanarity_bridge_ok);
@@ -2228,6 +2406,15 @@ pub fn check_geometric_topological_consistency_constructive(
         assert(w.phase4_valid_ok ==> mesh_valid_spec(m@)) by {
             if w.phase4_valid_ok {
                 assert(mesh_valid_spec(m@));
+            }
+        };
+        assert(
+            w.no_zero_length_geometric_edges_ok
+                ==> mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m)
+        ) by {
+            if w.no_zero_length_geometric_edges_ok {
+                assert(no_zero_length_geometric_edges_bridge_ok);
+                assert(mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m));
             }
         };
         assert(

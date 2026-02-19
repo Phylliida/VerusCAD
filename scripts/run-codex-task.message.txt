@@ -1,1 +1,1 @@
-Normalized the P5.7 runtime aggregate geometry spec to a canonical valid+oriented-seed0+shared-edge characterization and revalidated full vcad-topology proofs/tests; 8 Phase 5 tasks remain.
+Added a verified no-zero-length geometric-edge bridge and threaded it into the P5.7 aggregate constructive witness guarantees, then revalidated vcad-topology proofs/tests; 8 Phase 5 tasks remain.

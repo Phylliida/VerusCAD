@@ -2690,6 +2690,30 @@ pub open spec fn mesh_runtime_face_ordered_vertex_positions_spec(
 }
 
 #[cfg(verus_keep_ghost)]
+pub open spec fn mesh_half_edge_non_zero_geometric_length_at_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    h: int,
+) -> bool {
+    &&& mesh_half_edge_segment_geometry_at_spec(m, vertex_positions, h)
+    &&& !mesh_half_edge_from_position_spec(m, vertex_positions, h).eqv_spec(
+        mesh_half_edge_to_position_spec(m, vertex_positions, h),
+    )
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_all_half_edges_non_zero_geometric_length_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+) -> bool {
+    &&& mesh_index_bounds_spec(m)
+    &&& mesh_geometry_input_spec(m, vertex_positions)
+    &&& forall|h: int|
+        0 <= h < mesh_half_edge_count_spec(m)
+            ==> #[trigger] mesh_half_edge_non_zero_geometric_length_at_spec(m, vertex_positions, h)
+}
+
+#[cfg(verus_keep_ghost)]
 pub open spec fn mesh_points_collinear3_spec(
     a: vcad_math::point3::Point3,
     b: vcad_math::point3::Point3,
@@ -7364,6 +7388,16 @@ pub open spec fn mesh_runtime_face_oriented_plane_normal_spec(
     offset: vcad_math::scalar::Scalar,
 ) -> bool {
     mesh_face_oriented_plane_normal_spec(m@, mesh_runtime_vertex_positions_spec(m), f, normal, offset)
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_runtime_half_edge_non_zero_geometric_length_at_spec(m: &Mesh, h: int) -> bool {
+    mesh_half_edge_non_zero_geometric_length_at_spec(m@, mesh_runtime_vertex_positions_spec(m), h)
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m: &Mesh) -> bool {
+    mesh_all_half_edges_non_zero_geometric_length_spec(m@, mesh_runtime_vertex_positions_spec(m))
 }
 
 #[cfg(verus_keep_ghost)]

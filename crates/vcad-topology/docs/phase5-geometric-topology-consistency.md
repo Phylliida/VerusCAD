@@ -195,6 +195,33 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with a no-zero-length geometric-edge bridge strengthening increment in:
+  - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`;
+  - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`.
+  - added new geometric edge-length spec surfaces:
+    - `mesh_half_edge_non_zero_geometric_length_at_spec`;
+    - `mesh_all_half_edges_non_zero_geometric_length_spec`;
+    - runtime aliases:
+      - `mesh_runtime_half_edge_non_zero_geometric_length_at_spec`;
+      - `mesh_runtime_all_half_edges_non_zero_geometric_length_spec`.
+  - added a new verified runtime bridge:
+    - `runtime_check_no_zero_length_geometric_edges_sound_bridge`.
+  - wired the aggregate constructive checker witness to consume the new bridge:
+    - `check_geometric_topological_consistency_constructive` now computes
+      `no_zero_length_geometric_edges_ok` as
+      `check_no_zero_length_geometric_edges && runtime_check_no_zero_length_geometric_edges_sound_bridge`;
+    - strengthened constructive postconditions with
+      `w.no_zero_length_geometric_edges_ok ==> mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m)`.
+  - outcome:
+    - the aggregate constructive witness now carries an explicit proved model-level no-zero-length geometric-edge guarantee (instead of a raw runtime boolean only), reducing remaining checker/spec equivalence gap plumbing in P5.7 without changing checklist status.
+- 2026-02-19: Failed attempts in this P5.7 no-zero-length bridge strengthening pass: none.
+- 2026-02-19: Revalidated after the P5.7 no-zero-length bridge strengthening increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (86 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (370 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (407 verified, 0 errors)
 - 2026-02-19: Worked P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with a runtime aggregate-spec normalization increment in:
   - `src/runtime_halfedge_mesh_refinement/components_and_validity_specs.rs`.
   - added new aggregate characterization lemmas:
