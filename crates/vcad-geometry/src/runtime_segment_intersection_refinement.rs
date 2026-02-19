@@ -177,4 +177,24 @@ pub fn runtime_segment_intersection_kind_disjointness_from_classifier(
     out
 }
 
+#[allow(dead_code)]
+pub fn runtime_segment_intersection_point_refines_spec(
+    a: &RuntimePoint2,
+    b: &RuntimePoint2,
+    c: &RuntimePoint2,
+    d: &RuntimePoint2,
+) -> (out: Option<RuntimePoint2>)
+    requires
+        wf::point2_wf4_spec(a, b, c, d),
+    ensures
+        (segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is Disjoint) ==> out.is_none(),
+        (segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is CollinearOverlap) ==> out.is_none(),
+        (segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is EndpointTouch) ==> match out {
+            Option::None => true,
+            Option::Some(p) => segment_intersection::point_on_both_segments_spec(p@, a@, b@, c@, d@),
+        },
+{
+    segment_intersection::segment_intersection_point_2d(a, b, c, d)
+}
+
 } // verus!

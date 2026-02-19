@@ -110,17 +110,27 @@ Blocks: `P5.5` intersection checker soundness (narrow phase).
       kind-partition lemmas in `crates/vcad-geometry/src/runtime_segment_intersection_refinement.rs`.
     - `point_in_convex_polygon_2d` already exports runtime/spec equality plus convex-geometric iff wrappers in
       `crates/vcad-geometry/src/runtime_convex_polygon_refinement.rs`.
-    - Remaining gap from this audit: `segment_intersection_point_2d` has no `verus_keep_ghost`
-      contract tying returned witnesses to `point_on_both_segments_spec`, so the coplanar
-      segment-segment/polygon witness chain is not yet fully closed.
-  - Failed attempt note (2026-02-19): none (audit-only pass).
+    - Landed (2026-02-19, later pass): `segment_intersection_point_2d` now has a
+      `verus_keep_ghost` contract in `crates/vcad-geometry/src/segment_intersection.rs`
+      and a runtime wrapper in
+      `crates/vcad-geometry/src/runtime_segment_intersection_refinement.rs`
+      (`runtime_segment_intersection_point_refines_spec`) that:
+      - guarantees `None` for `Disjoint` and `CollinearOverlap` classifier results;
+      - guarantees `EndpointTouch && Some(p) -> point_on_both_segments_spec(p, ...)`.
+    - Remaining gap from this audit: not yet proved that `EndpointTouch` always returns
+      `Some(_)`, and no `Proper`-case `Some(p) -> point_on_both_segments_spec` proof yet.
+- [x] Add `segment_intersection_point_2d` witness-soundness contracts for endpoint-touch outputs.
+  - Landed (2026-02-19): added `verus_keep_ghost` `segment_intersection_point_2d`,
+    plus endpoint helper `endpoint_touch_point_runtime` proving returned endpoint witnesses
+    satisfy `point_on_both_segments_spec`.
 - [ ] For each used predicate, ensure there is a proved iff-style spec (add missing proofs/specs as needed):
   - [ ] segment-triangle intersection (`ray/segment-plane parameter` + barycentric containment).
     - Audit note (2026-02-19): topology currently composes plane crossing/intersection with a local
       in-face boundary test; upstream still needs a unified iff wrapper at the geometry boundary.
   - [ ] coplanar segment-segment intersection (2D projection + interval overlap).
-    - Audit note (2026-02-19): classifier iff is present, but point-witness iff for
-      `segment_intersection_point_2d` is still missing upstream.
+    - Update (2026-02-19, later pass): endpoint-touch witness-soundness landed, but full
+      point-witness iff is still open (`EndpointTouch -> is_some` totality and `Proper`
+      witness-on-both proof remain).
   - [ ] coplanar segment-polygon overlap (dominant-axis projection + edge-crossing containment tests).
     - Audit note (2026-02-19): ingredient predicates are present, but their composed
       dominant-axis overlap witness proof is not yet packaged upstream.

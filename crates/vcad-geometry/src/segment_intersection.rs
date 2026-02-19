@@ -548,6 +548,88 @@ fn collinear_overlap_dimension_kind(
     }
 }
 
+fn endpoint_touch_point_runtime(
+    a: &RuntimePoint2,
+    b: &RuntimePoint2,
+    c: &RuntimePoint2,
+    d: &RuntimePoint2,
+) -> (out: Option<RuntimePoint2>)
+    requires
+        wf::point2_wf4_spec(a, b, c, d),
+    ensures
+        match out {
+            Option::None => true,
+            Option::Some(p) => point_on_both_segments_spec(p@, a@, b@, c@, d@),
+        },
+{
+    let c_on_ab = point_on_segment_inclusive_runtime(c, a, b);
+    let c_on_cd = point_on_segment_inclusive_runtime(c, c, d);
+    if c_on_ab && c_on_cd {
+        proof {
+            assert(c_on_ab == point_on_segment_inclusive_spec(c@, a@, b@));
+            assert(c_on_cd == point_on_segment_inclusive_spec(c@, c@, d@));
+            assert(point_on_both_segments_spec(c@, a@, b@, c@, d@));
+        }
+        return Option::Some(c.clone());
+    }
+
+    let d_on_ab = point_on_segment_inclusive_runtime(d, a, b);
+    let d_on_cd = point_on_segment_inclusive_runtime(d, c, d);
+    if d_on_ab && d_on_cd {
+        proof {
+            assert(d_on_ab == point_on_segment_inclusive_spec(d@, a@, b@));
+            assert(d_on_cd == point_on_segment_inclusive_spec(d@, c@, d@));
+            assert(point_on_both_segments_spec(d@, a@, b@, c@, d@));
+        }
+        return Option::Some(d.clone());
+    }
+
+    let a_on_ab = point_on_segment_inclusive_runtime(a, a, b);
+    let a_on_cd = point_on_segment_inclusive_runtime(a, c, d);
+    if a_on_ab && a_on_cd {
+        proof {
+            assert(a_on_ab == point_on_segment_inclusive_spec(a@, a@, b@));
+            assert(a_on_cd == point_on_segment_inclusive_spec(a@, c@, d@));
+            assert(point_on_both_segments_spec(a@, a@, b@, c@, d@));
+        }
+        return Option::Some(a.clone());
+    }
+
+    let b_on_ab = point_on_segment_inclusive_runtime(b, a, b);
+    let b_on_cd = point_on_segment_inclusive_runtime(b, c, d);
+    if b_on_ab && b_on_cd {
+        proof {
+            assert(b_on_ab == point_on_segment_inclusive_spec(b@, a@, b@));
+            assert(b_on_cd == point_on_segment_inclusive_spec(b@, c@, d@));
+            assert(point_on_both_segments_spec(b@, a@, b@, c@, d@));
+        }
+        return Option::Some(b.clone());
+    }
+
+    Option::None
+}
+
+fn proper_intersection_point_runtime(
+    a: &RuntimePoint2,
+    b: &RuntimePoint2,
+    c: &RuntimePoint2,
+    d: &RuntimePoint2,
+) -> (out: Option<RuntimePoint2>)
+    requires
+        wf::point2_wf4_spec(a, b, c, d),
+{
+    // Line-line intersection parameterization:
+    // a + t (b-a), where t = cross(c-a, d-c) / cross(b-a, d-c).
+    let r = b.sub(a);
+    let s = d.sub(c);
+    let den = r.cross(&s);
+    let inv = den.recip()?;
+    let cma = c.sub(a);
+    let t = cma.cross(&s).mul(&inv);
+    let step = r.scale(&t);
+    Option::Some(a.add_vec(&step))
+}
+
 pub fn segment_intersection_kind_2d(
     a: &RuntimePoint2,
     b: &RuntimePoint2,
@@ -688,6 +770,63 @@ pub fn segment_intersection_kind_2d(
             assert(out@ is Disjoint);
         }
         out
+    }
+}
+
+pub fn segment_intersection_point_2d(
+    a: &RuntimePoint2,
+    b: &RuntimePoint2,
+    c: &RuntimePoint2,
+    d: &RuntimePoint2,
+) -> (out: Option<RuntimePoint2>)
+    requires
+        wf::point2_wf4_spec(a, b, c, d),
+    ensures
+        (segment_intersection_kind_spec(a@, b@, c@, d@) is Disjoint) ==> out.is_none(),
+        (segment_intersection_kind_spec(a@, b@, c@, d@) is CollinearOverlap) ==> out.is_none(),
+        (segment_intersection_kind_spec(a@, b@, c@, d@) is EndpointTouch) ==> match out {
+            Option::None => true,
+            Option::Some(p) => point_on_both_segments_spec(p@, a@, b@, c@, d@),
+        },
+{
+    let kind = segment_intersection_kind_2d(a, b, c, d);
+    match kind {
+        SegmentIntersection2dKind::Proper => {
+            let out = proper_intersection_point_runtime(a, b, c, d);
+            proof {
+                assert(kind@ is Proper);
+                assert(segment_intersection_kind_spec(a@, b@, c@, d@) is Proper);
+            }
+            out
+        }
+        SegmentIntersection2dKind::EndpointTouch => {
+            let out = endpoint_touch_point_runtime(a, b, c, d);
+            proof {
+                assert(kind@ is EndpointTouch);
+                assert(segment_intersection_kind_spec(a@, b@, c@, d@) is EndpointTouch);
+                match &out {
+                    Option::None => {}
+                    Option::Some(p) => {
+                        assert(point_on_both_segments_spec(p@, a@, b@, c@, d@));
+                    }
+                }
+            }
+            out
+        }
+        SegmentIntersection2dKind::Disjoint => {
+            proof {
+                assert(kind@ is Disjoint);
+                assert(segment_intersection_kind_spec(a@, b@, c@, d@) is Disjoint);
+            }
+            Option::None
+        }
+        SegmentIntersection2dKind::CollinearOverlap => {
+            proof {
+                assert(kind@ is CollinearOverlap);
+                assert(segment_intersection_kind_spec(a@, b@, c@, d@) is CollinearOverlap);
+            }
+            Option::None
+        }
     }
 }
 
