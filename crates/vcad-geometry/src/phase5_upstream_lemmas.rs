@@ -113,6 +113,70 @@ pub proof fn lemma_det3_linear_third_argument(u: Vec3, v: Vec3, w: Vec3, t: Vec3
     assert(lhs.eqv_spec(uvw.add_spec(uvt)));
 }
 
+pub proof fn lemma_det3_swap_first_second_argument(u: Vec3, v: Vec3, w: Vec3)
+    ensures
+        det3_spec(v, u, w).eqv_spec(det3_spec(u, v, w).neg_spec()),
+{
+    let uvw = det3_spec(u, v, w);
+    let vuw = det3_spec(v, u, w);
+
+    Vec3::lemma_dot_cross_swap_first_two(u, v, w);
+    assert(uvw.eqv_spec(vuw.neg_spec()));
+
+    Scalar::lemma_eqv_neg_congruence(uvw, vuw.neg_spec());
+    assert(uvw.neg_spec().eqv_spec(vuw.neg_spec().neg_spec()));
+    Scalar::lemma_neg_involution(vuw);
+    assert(vuw.neg_spec().neg_spec() == vuw);
+    Scalar::lemma_eqv_reflexive(vuw);
+    Scalar::lemma_eqv_transitive(uvw.neg_spec(), vuw.neg_spec().neg_spec(), vuw);
+    assert(uvw.neg_spec().eqv_spec(vuw));
+    Scalar::lemma_eqv_symmetric(uvw.neg_spec(), vuw);
+    assert(vuw.eqv_spec(uvw.neg_spec()));
+}
+
+pub proof fn lemma_det3_swap_second_third_argument(u: Vec3, v: Vec3, w: Vec3)
+    ensures
+        det3_spec(u, w, v).eqv_spec(det3_spec(u, v, w).neg_spec()),
+{
+    let uvw = det3_spec(u, v, w);
+    let uwv = det3_spec(u, w, v);
+    let wv = w.cross_spec(v);
+    let vw = v.cross_spec(w);
+
+    Vec3::lemma_cross_antisymmetric(w, v);
+    assert(wv == vw.neg_spec());
+
+    Vec3::lemma_dot_eqv_congruence(u, u, wv, vw.neg_spec());
+    assert(u.dot_spec(wv).eqv_spec(u.dot_spec(vw.neg_spec())));
+    Vec3::lemma_dot_neg_right(u, vw);
+    assert(u.dot_spec(vw.neg_spec()).eqv_spec(u.dot_spec(vw).neg_spec()));
+    Scalar::lemma_eqv_transitive(u.dot_spec(wv), u.dot_spec(vw.neg_spec()), u.dot_spec(vw).neg_spec());
+    assert(u.dot_spec(wv).eqv_spec(u.dot_spec(vw).neg_spec()));
+    assert(uwv == u.dot_spec(wv));
+    assert(uvw == u.dot_spec(vw));
+    assert(uwv.eqv_spec(uvw.neg_spec()));
+}
+
+pub proof fn lemma_det3_swap_first_third_argument(u: Vec3, v: Vec3, w: Vec3)
+    ensures
+        det3_spec(w, v, u).eqv_spec(det3_spec(u, v, w).neg_spec()),
+{
+    let uvw = det3_spec(u, v, w);
+    let vwu = det3_spec(v, w, u);
+    let wvu = det3_spec(w, v, u);
+
+    Vec3::lemma_dot_cross_cyclic(u, v, w);
+    assert(uvw.eqv_spec(vwu));
+
+    lemma_det3_swap_first_second_argument(v, w, u);
+    assert(wvu.eqv_spec(vwu.neg_spec()));
+
+    Scalar::lemma_eqv_neg_congruence(vwu, uvw);
+    assert(vwu.neg_spec().eqv_spec(uvw.neg_spec()));
+    Scalar::lemma_eqv_transitive(wvu, vwu.neg_spec(), uvw.neg_spec());
+    assert(wvu.eqv_spec(uvw.neg_spec()));
+}
+
 proof fn lemma_point3_as_vec_sub_spec(p: Point3, q: Point3)
     ensures
         point3_as_vec_spec(p).sub_spec(point3_as_vec_spec(q)) == p.sub_spec(q),

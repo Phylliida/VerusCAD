@@ -55,7 +55,15 @@ Blocks: `P5.4` signed-volume origin independence.
   - Expand origin shift by trilinearity into terms involving `(O - O')`.
   - Group terms as signed edge contributions.
   - Use closed-mesh edge pairing (already proved in `vcad-topology`) to cancel all shift terms.
-- [ ] Intermediate lemma: `det3` antisymmetry under argument swap (if missing from existing surface).
+- [x] Intermediate lemma: `det3` antisymmetry under argument swap (if missing from existing surface).
+  - Landed (2026-02-19): added
+    `lemma_det3_swap_first_second_argument`,
+    `lemma_det3_swap_second_third_argument`,
+    `lemma_det3_swap_first_third_argument`
+    in `crates/vcad-geometry/src/phase5_upstream_lemmas.rs`.
+  - Failed attempt note (2026-02-19): `RUSTFLAGS='--cfg verus_keep_ghost' cargo test -p vcad-geometry`
+    fails in this environment on stable due Verus macro crates requiring nightly-only
+    `#![feature(proc_macro_...)]`; `rustup` is unavailable here, so toolchain switching was not possible.
 
 ## L4: Consistent Orientation + Signed-Volume Sign -> All Normals Outward
 Blocks: `P5.4` global outwardness.
