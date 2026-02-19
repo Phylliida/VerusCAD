@@ -4,6 +4,12 @@ Purpose: land algebraic/geometric lemmas in `vcad-geometry` that currently block
 Reference downstream tracker:
 - `crates/vcad-topology/docs/phase5-geometric-topology-consistency.md`
 
+## Verification Commands (Use These)
+- Stable `vcad-geometry` test lane with `verus-proofs`:
+  `./scripts/test-vcad-geometry-verus-proofs.sh`
+- Ghost/proof verification lane (`verus_keep_ghost` + nightly Verus):
+  `./scripts/verify-vcad-geometry.sh`
+
 ## Why These Block Phase 5
 The remaining open proof items in `vcad-topology` Phase 5 bottom out on missing facts about `orient3d`, `orient2d`, determinants, and plane membership. Those facts belong in `vcad-geometry` because they are pure geometry/algebra and do not depend on half-edge topology structure.
 
@@ -41,9 +47,8 @@ Blocks: `P5.3` convexity checker correctness.
   - Decompose witness-minus-vertex vectors into in-plane + normal components.
   - Factor normal component as `normal · normal` times the 2D determinant.
 - [ ] Corollary: for nondegenerate faces, `normal · normal > 0`, so `sign(orient3d) == sign(orient2d)`.
-  - Verification attempt note (2026-02-19): `RUSTFLAGS='--cfg verus_keep_ghost' cargo test -p vcad-geometry`
-    still fails on stable due Verus macro crates requiring nightly-only `#![feature(proc_macro_...)]`;
-    this environment has no `rustup`, so ghost-proof checking remains blocked here.
+  - Verification lane note (2026-02-19): run
+    `./scripts/verify-vcad-geometry.sh` for ghost-proof checking of this item.
 
 ## L3: Determinant Trilinearity / Linearity in Origin
 Blocks: `P5.4` signed-volume origin independence.
@@ -67,9 +72,8 @@ Blocks: `P5.4` signed-volume origin independence.
     `lemma_det3_swap_second_third_argument`,
     `lemma_det3_swap_first_third_argument`
     in `crates/vcad-geometry/src/phase5_upstream_lemmas.rs`.
-  - Failed attempt note (2026-02-19): `RUSTFLAGS='--cfg verus_keep_ghost' cargo test -p vcad-geometry`
-    fails in this environment on stable due Verus macro crates requiring nightly-only
-    `#![feature(proc_macro_...)]`; `rustup` is unavailable here, so toolchain switching was not possible.
+  - Verification lane note (2026-02-19): run
+    `./scripts/verify-vcad-geometry.sh` for ghost-proof checking of this item.
 
 ## L4: Consistent Orientation + Signed-Volume Sign -> All Normals Outward
 Blocks: `P5.4` global outwardness.
@@ -101,14 +105,10 @@ Blocks: `P5.5` intersection checker soundness (broad phase).
   - Verification attempt note (2026-02-19, containment-wrapper pass):
     `cargo test -p vcad-geometry` passes in this environment.
   - Verification attempt note (2026-02-19, containment-wrapper pass):
-    `cargo test -p vcad-geometry --features verus-proofs` fails here without
-    `--cfg verus_keep_ghost` due unresolved ghost-module imports from
-    `vcad-math`; the proof build still needs both the cfg and a nightly-capable
-    Verus toolchain.
-  - Verification attempt note (2026-02-19, containment-wrapper pass):
-    `RUSTFLAGS='--cfg verus_keep_ghost' cargo test -p vcad-geometry --features verus-proofs`
-    still fails on stable due Verus macro crates requiring nightly-only
-    `#![feature(proc_macro_...)]`, and `rustup` is unavailable in this environment.
+    `./scripts/test-vcad-geometry-verus-proofs.sh` is the supported stable
+    test path for this crate.
+  - Verification lane note (2026-02-19, containment-wrapper pass): run
+    `./scripts/verify-vcad-geometry.sh` for ghost-proof verification.
 - [ ] Prove: if all vertices of face `A` are strictly on one side of face `B` plane, then `A` and `B` do not intersect.
 - [ ] Proof sketch for plane separation:
   - If all polygon vertices evaluate strictly positive under a plane equation, every convex combination is strictly positive.
@@ -132,21 +132,15 @@ Blocks: `P5.5` intersection checker soundness (broad phase).
   - Verification attempt note (2026-02-19, convex-combo positivity pass):
     `cargo test -p vcad-geometry` passes in this environment.
   - Verification attempt note (2026-02-19, convex-combo positivity pass):
-    `cargo test -p vcad-geometry --features verus-proofs` passes in this
-    environment (without `verus_keep_ghost`).
-  - Verification attempt note (2026-02-19, convex-combo positivity pass):
-    `RUSTFLAGS='--cfg verus_keep_ghost' cargo test -p vcad-geometry --features verus-proofs`
-    fails on stable in this environment because Verus macro crates require
-    nightly-only `#![feature(proc_macro_...)]`.
+    `./scripts/test-vcad-geometry-verus-proofs.sh` passes in this environment.
+  - Verification lane note (2026-02-19, convex-combo positivity pass): run
+    `./scripts/verify-vcad-geometry.sh` for ghost-proof verification.
   - Verification attempt note (2026-02-19, ternary convex-combo pass):
     `cargo test -p vcad-geometry` passes in this environment.
   - Verification attempt note (2026-02-19, ternary convex-combo pass):
-    `cargo test -p vcad-geometry --features verus-proofs` passes in this
-    environment (without `verus_keep_ghost`).
-  - Verification attempt note (2026-02-19, ternary convex-combo pass):
-    `RUSTFLAGS='--cfg verus_keep_ghost' cargo test -p vcad-geometry --features verus-proofs`
-    fails on stable in this environment because Verus macro crates require
-    nightly-only `#![feature(proc_macro_...)]`.
+    `./scripts/test-vcad-geometry-verus-proofs.sh` passes in this environment.
+  - Verification lane note (2026-02-19, ternary convex-combo pass): run
+    `./scripts/verify-vcad-geometry.sh` for ghost-proof verification.
 
 ## L6: Segment-Face Intersection Predicate Correctness
 Blocks: `P5.5` intersection checker soundness (narrow phase).
@@ -200,12 +194,9 @@ Blocks: `P5.5` intersection checker soundness (narrow phase).
     - Verification attempt note (2026-02-19, dual-support-line pass): `cargo test -p vcad-geometry`
       passes in this environment.
     - Verification attempt note (2026-02-19, proper-totality pass):
-      `RUSTFLAGS='--cfg verus_keep_ghost' cargo test -p vcad-geometry --features verus-proofs`
-      still fails on stable because Verus macro crates require nightly-only `#![feature(proc_macro_...)]`.
-    - Verification attempt note (2026-02-19, proper-totality pass): running
-      `cargo test -p vcad-geometry --features verus-proofs` without `--cfg verus_keep_ghost`
-      fails with unresolved ghost-module imports from `vcad-math`; the proof build needs both
-      the `verus_keep_ghost` cfg and a nightly-capable Verus toolchain.
+      `./scripts/test-vcad-geometry-verus-proofs.sh` passes in this environment.
+    - Verification lane note (2026-02-19, proper-totality pass): run
+      `./scripts/verify-vcad-geometry.sh` for ghost-proof verification.
     - Remaining gap from this audit: no `Proper`-case
       `Some(p) -> point_on_both_segments_spec` proof yet.
 - [x] Add `segment_intersection_point_2d` witness-soundness contracts for endpoint-touch outputs.
@@ -231,12 +222,10 @@ Blocks: `P5.5` intersection checker soundness (narrow phase).
     - Verification attempt note (2026-02-19, strict-wrapper runtime pass):
       `cargo test -p vcad-geometry` passes in this environment.
     - Verification attempt note (2026-02-19, strict-wrapper runtime pass):
-      `cargo test -p vcad-geometry --features verus-proofs` passes in this
+      `./scripts/test-vcad-geometry-verus-proofs.sh` passes in this
       environment.
-    - Verification attempt note (2026-02-19, strict-wrapper runtime pass):
-      `RUSTFLAGS='--cfg verus_keep_ghost' cargo test -p vcad-geometry --features verus-proofs`
-      fails on stable in this environment because Verus macro crates require
-      nightly-only `#![feature(...)]`.
+    - Verification lane note (2026-02-19, strict-wrapper runtime pass): run
+      `./scripts/verify-vcad-geometry.sh` for ghost-proof verification.
   - [ ] coplanar segment-segment intersection (2D projection + interval overlap).
     - Update (2026-02-19, proper-totality pass): endpoint-touch witness-soundness plus
       `EndpointTouch -> is_some` and `Proper -> is_some` totality are now landed; remaining
@@ -288,13 +277,10 @@ Blocks: `P5.5` intersection checker soundness (narrow phase).
     - Verification attempt note (2026-02-19, composed-spec pass):
       `cargo test -p vcad-geometry` passes in this environment.
     - Verification attempt note (2026-02-19, composed-spec pass):
-      `cargo test -p vcad-geometry --features verus-proofs` still fails here
-      without `--cfg verus_keep_ghost` due unresolved ghost-module imports from
-      `vcad-math`.
-    - Verification attempt note (2026-02-19, composed-spec pass):
-      `RUSTFLAGS='--cfg verus_keep_ghost' cargo test -p vcad-geometry --features verus-proofs`
-      still fails on stable due Verus macro crates requiring nightly-only
-      `#![feature(proc_macro_...)]` and this environment has no `rustup`.
+      `./scripts/test-vcad-geometry-verus-proofs.sh` is the supported stable
+      test path for this crate.
+    - Verification lane note (2026-02-19, composed-spec pass): run
+      `./scripts/verify-vcad-geometry.sh` for ghost-proof verification.
 - [ ] Proof shape: predicate returns `true` iff a witness point exists satisfying all geometric constraints simultaneously.
 
 ## Suggested Landing Order
