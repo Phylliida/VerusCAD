@@ -195,6 +195,26 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with shared-edge local-orientation kernel-bridge completeness strengthening in:
+  - `src/runtime_halfedge_mesh_refinement/kernel_bridge_lemmas.rs`;
+  - `src/runtime_halfedge_mesh_refinement/kernel_component_runtime_checks.rs`.
+  - added index-bounds converse bridge lemma:
+    - `lemma_mesh_index_bounds_implies_kernel_index_bounds(km, m)`;
+    - proves kernel index bounds from mesh index bounds plus `kernel_mesh_matches_mesh_model_spec`.
+  - strengthened runtime/kernel shared-edge bridge contract:
+    - `runtime_check_shared_edge_local_orientation_kernel_bridge(m)` now additionally proves:
+      - `out == (mesh_index_bounds_spec(m@) && mesh_shared_edge_local_orientation_consistency_spec(m@))`;
+    - retained existing soundness consequence `out ==> mesh_shared_edge_local_orientation_consistency_spec(m@)`.
+  - outcome:
+    - shared-edge local-orientation kernel bridging now provides an explicit completeness direction under mesh index bounds, reducing one-way proof debt in the aggregate-equivalence closure path while checklist status remains unchanged.
+- 2026-02-19: Failed attempts in this P5.7 shared-edge kernel-bridge completeness pass: none.
+- 2026-02-19: Revalidated after the P5.7 shared-edge kernel-bridge completeness strengthening:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (383 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (93 passed, 0 failed)
+  - `./scripts/verify-vcad-topology.sh` (420 verified, 0 errors)
 - 2026-02-19: Worked P5.3 (`Proof: runtime checker correctness vs convexity spec`) with geometry-check proof-branch compile-hygiene fixes in:
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`.
   - fixed a proof-block binding typo in `runtime_check_face_convexity_triangle_projected_turn_complete_from_phase5_runtime_bundle_sound_bridge`:

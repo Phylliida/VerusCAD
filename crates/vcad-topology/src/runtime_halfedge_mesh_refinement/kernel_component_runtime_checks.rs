@@ -325,21 +325,60 @@ pub fn runtime_check_vertex_manifold_kernel_bridge(m: &Mesh) -> (out: bool)
 pub fn runtime_check_shared_edge_local_orientation_kernel_bridge(m: &Mesh) -> (out: bool)
     ensures
         out ==> mesh_shared_edge_local_orientation_consistency_spec(m@),
+        out == (mesh_index_bounds_spec(m@) && mesh_shared_edge_local_orientation_consistency_spec(m@)),
 {
     let km = runtime_mesh_to_kernel_mesh(m);
     let ok = kernels::kernel_check_shared_edge_local_orientation_consistency(&km);
-    if !ok {
-        return false;
-    }
+
     proof {
-        assert(kernels::kernel_shared_edge_local_orientation_consistency_total_spec(&km));
-        lemma_kernel_shared_edge_local_orientation_total_implies_mesh_shared_edge_local_orientation(
-            &km,
-            m@,
-        );
-        assert(mesh_shared_edge_local_orientation_consistency_spec(m@));
+        assert(ok == kernels::kernel_shared_edge_local_orientation_consistency_total_spec(&km));
+        assert(ok ==> mesh_shared_edge_local_orientation_consistency_spec(m@)) by {
+            if ok {
+                assert(kernels::kernel_shared_edge_local_orientation_consistency_total_spec(&km));
+                lemma_kernel_shared_edge_local_orientation_total_implies_mesh_shared_edge_local_orientation(
+                    &km,
+                    m@,
+                );
+                assert(mesh_shared_edge_local_orientation_consistency_spec(m@));
+            }
+        };
+        assert(ok ==> mesh_index_bounds_spec(m@)) by {
+            if ok {
+                assert(kernels::kernel_shared_edge_local_orientation_consistency_total_spec(&km));
+                assert(kernels::kernel_index_bounds_spec(&km));
+                lemma_kernel_index_bounds_implies_mesh_index_bounds(&km, m@);
+                assert(mesh_index_bounds_spec(m@));
+            }
+        };
+        assert(
+            (mesh_index_bounds_spec(m@) && mesh_shared_edge_local_orientation_consistency_spec(m@))
+                ==> ok
+        ) by {
+            if mesh_index_bounds_spec(m@) && mesh_shared_edge_local_orientation_consistency_spec(m@) {
+                lemma_mesh_index_bounds_implies_kernel_index_bounds(&km, m@);
+                assert(kernels::kernel_index_bounds_spec(&km));
+                lemma_kernel_shared_edge_local_orientation_matches_mesh(&km, m@);
+                assert(kernels::kernel_shared_edge_local_orientation_consistency_spec(&km));
+                assert(kernels::kernel_shared_edge_local_orientation_consistency_total_spec(&km));
+                assert(ok);
+            }
+        };
+        assert(
+            ok == (mesh_index_bounds_spec(m@) && mesh_shared_edge_local_orientation_consistency_spec(
+                m@,
+            ))
+        ) by {
+            assert(ok ==> (
+                mesh_index_bounds_spec(m@) && mesh_shared_edge_local_orientation_consistency_spec(m@)
+            ));
+            assert(
+                (mesh_index_bounds_spec(m@) && mesh_shared_edge_local_orientation_consistency_spec(m@))
+                    ==> ok
+            );
+        };
     }
-    true
+
+    ok
 }
 
 #[verifier::exec_allows_no_decreases_clause]

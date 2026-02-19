@@ -502,6 +502,100 @@ pub proof fn lemma_kernel_index_bounds_implies_mesh_index_bounds(
     assert(mesh_index_bounds_spec(m));
 }
 
+pub proof fn lemma_mesh_index_bounds_implies_kernel_index_bounds(
+    km: &kernels::KernelMesh,
+    m: MeshModel,
+)
+    requires
+        kernel_mesh_matches_mesh_model_spec(km, m),
+        mesh_index_bounds_spec(m),
+    ensures
+        kernels::kernel_index_bounds_spec(km),
+{
+    let hcnt = kernels::kernel_half_edge_count_spec(km);
+    let vcnt = kernels::kernel_vertex_count_spec(km);
+    let ecnt = kernels::kernel_edge_count_spec(km);
+    let fcnt = kernels::kernel_face_count_spec(km);
+    assert(hcnt == mesh_half_edge_count_spec(m));
+    assert(vcnt == mesh_vertex_count_spec(m));
+    assert(ecnt == mesh_edge_count_spec(m));
+    assert(fcnt == mesh_face_count_spec(m));
+
+    assert(forall|v: int|
+        0 <= v < vcnt ==> (#[trigger] km.vertex_half_edges@[v] as int) < hcnt) by {
+        assert forall|v: int|
+            0 <= v < vcnt implies (#[trigger] km.vertex_half_edges@[v] as int) < hcnt by {
+            assert((#[trigger] km.vertex_half_edges@[v] as int) == m.vertex_half_edges[v]);
+            assert(0 <= m.vertex_half_edges[v] < mesh_half_edge_count_spec(m));
+            assert((km.vertex_half_edges@[v] as int) < hcnt);
+        };
+    };
+
+    assert(forall|e: int|
+        0 <= e < ecnt ==> (#[trigger] km.edge_half_edges@[e] as int) < hcnt) by {
+        assert forall|e: int|
+            0 <= e < ecnt implies (#[trigger] km.edge_half_edges@[e] as int) < hcnt by {
+            assert((#[trigger] km.edge_half_edges@[e] as int) == m.edge_half_edges[e]);
+            assert(0 <= m.edge_half_edges[e] < mesh_half_edge_count_spec(m));
+            assert((km.edge_half_edges@[e] as int) < hcnt);
+        };
+    };
+
+    assert(forall|f: int|
+        0 <= f < fcnt ==> (#[trigger] km.face_half_edges@[f] as int) < hcnt) by {
+        assert forall|f: int|
+            0 <= f < fcnt implies (#[trigger] km.face_half_edges@[f] as int) < hcnt by {
+            assert((#[trigger] km.face_half_edges@[f] as int) == m.face_half_edges[f]);
+            assert(0 <= m.face_half_edges[f] < mesh_half_edge_count_spec(m));
+            assert((km.face_half_edges@[f] as int) < hcnt);
+        };
+    };
+
+    assert(forall|h: int| 0 <= h < hcnt ==> {
+        let he = #[trigger] km.half_edges@[h];
+        &&& (he.twin as int) < hcnt
+        &&& (he.next as int) < hcnt
+        &&& (he.prev as int) < hcnt
+        &&& (he.vertex as int) < vcnt
+        &&& (he.edge as int) < ecnt
+        &&& (he.face as int) < fcnt
+    }) by {
+        assert forall|h: int| 0 <= h < hcnt implies {
+            let he = #[trigger] km.half_edges@[h];
+            &&& (he.twin as int) < hcnt
+            &&& (he.next as int) < hcnt
+            &&& (he.prev as int) < hcnt
+            &&& (he.vertex as int) < vcnt
+            &&& (he.edge as int) < ecnt
+            &&& (he.face as int) < fcnt
+        } by {
+            let mhe = #[trigger] m.half_edges[h];
+            assert((km.half_edges@[h].twin as int) == mhe.twin);
+            assert((km.half_edges@[h].next as int) == mhe.next);
+            assert((km.half_edges@[h].prev as int) == mhe.prev);
+            assert((km.half_edges@[h].vertex as int) == mhe.vertex);
+            assert((km.half_edges@[h].edge as int) == mhe.edge);
+            assert((km.half_edges@[h].face as int) == mhe.face);
+
+            assert(0 <= mhe.twin < mesh_half_edge_count_spec(m));
+            assert(0 <= mhe.next < mesh_half_edge_count_spec(m));
+            assert(0 <= mhe.prev < mesh_half_edge_count_spec(m));
+            assert(0 <= mhe.vertex < mesh_vertex_count_spec(m));
+            assert(0 <= mhe.edge < mesh_edge_count_spec(m));
+            assert(0 <= mhe.face < mesh_face_count_spec(m));
+
+            assert((km.half_edges@[h].twin as int) < hcnt);
+            assert((km.half_edges@[h].next as int) < hcnt);
+            assert((km.half_edges@[h].prev as int) < hcnt);
+            assert((km.half_edges@[h].vertex as int) < vcnt);
+            assert((km.half_edges@[h].edge as int) < ecnt);
+            assert((km.half_edges@[h].face as int) < fcnt);
+        };
+    };
+
+    assert(kernels::kernel_index_bounds_spec(km));
+}
+
 pub proof fn lemma_kernel_twin_faces_distinct_matches_mesh(
     km: &kernels::KernelMesh,
     m: MeshModel,
