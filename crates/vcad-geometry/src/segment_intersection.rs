@@ -109,16 +109,24 @@ fn endpoint_touch_point_runtime(
     c: &RuntimePoint2,
     d: &RuntimePoint2,
 ) -> Option<RuntimePoint2> {
-    if point_on_segment_inclusive_runtime(c, a, b) {
+    let c_on_ab = point_on_segment_inclusive_runtime(c, a, b);
+    let c_on_cd = point_on_segment_inclusive_runtime(c, c, d);
+    if c_on_ab && c_on_cd {
         return Some(c.clone());
     }
-    if point_on_segment_inclusive_runtime(d, a, b) {
+    let d_on_ab = point_on_segment_inclusive_runtime(d, a, b);
+    let d_on_cd = point_on_segment_inclusive_runtime(d, c, d);
+    if d_on_ab && d_on_cd {
         return Some(d.clone());
     }
-    if point_on_segment_inclusive_runtime(a, c, d) {
+    let a_on_ab = point_on_segment_inclusive_runtime(a, a, b);
+    let a_on_cd = point_on_segment_inclusive_runtime(a, c, d);
+    if a_on_ab && a_on_cd {
         return Some(a.clone());
     }
-    if point_on_segment_inclusive_runtime(b, c, d) {
+    let b_on_ab = point_on_segment_inclusive_runtime(b, a, b);
+    let b_on_cd = point_on_segment_inclusive_runtime(b, c, d);
+    if b_on_ab && b_on_cd {
         return Some(b.clone());
     }
     None
@@ -155,10 +163,14 @@ pub fn segment_intersection_kind_2d(
     let o2 = orient2d_sign(a, b, d);
     let o3 = orient2d_sign(c, d, a);
     let o4 = orient2d_sign(c, d, b);
-    let touch1 = o1 == 0 && point_on_segment_inclusive_runtime(c, a, b);
-    let touch2 = o2 == 0 && point_on_segment_inclusive_runtime(d, a, b);
-    let touch3 = o3 == 0 && point_on_segment_inclusive_runtime(a, c, d);
-    let touch4 = o4 == 0 && point_on_segment_inclusive_runtime(b, c, d);
+    let touch1 = point_on_segment_inclusive_runtime(c, a, b)
+        && point_on_segment_inclusive_runtime(c, c, d);
+    let touch2 = point_on_segment_inclusive_runtime(d, a, b)
+        && point_on_segment_inclusive_runtime(d, c, d);
+    let touch3 = point_on_segment_inclusive_runtime(a, a, b)
+        && point_on_segment_inclusive_runtime(a, c, d);
+    let touch4 = point_on_segment_inclusive_runtime(b, a, b)
+        && point_on_segment_inclusive_runtime(b, c, d);
 
     if o1 == 0 && o2 == 0 && o3 == 0 && o4 == 0 {
         let use_x = scalar_sign(a.x(), b.x()) != 0 || scalar_sign(c.x(), d.x()) != 0;
@@ -169,7 +181,7 @@ pub fn segment_intersection_kind_2d(
         };
         if overlap_kind < 0 {
             SegmentIntersection2dKind::Disjoint
-        } else if overlap_kind == 0 {
+        } else if overlap_kind == 0 && (touch1 || touch2 || touch3 || touch4) {
             SegmentIntersection2dKind::EndpointTouch
         } else {
             SegmentIntersection2dKind::CollinearOverlap
@@ -276,6 +288,10 @@ pub open spec fn segment_intersection_kind_spec(
     let o2 = orient2d_spec(a, b, d).signum();
     let o3 = orient2d_spec(c, d, a).signum();
     let o4 = orient2d_spec(c, d, b).signum();
+    let touch1 = point_on_both_segments_spec(c, a, b, c, d);
+    let touch2 = point_on_both_segments_spec(d, a, b, c, d);
+    let touch3 = point_on_both_segments_spec(a, a, b, c, d);
+    let touch4 = point_on_both_segments_spec(b, a, b, c, d);
     if o1 == 0 && o2 == 0 && o3 == 0 && o4 == 0 {
         let use_x = scalar_sign_spec(a.x, b.x) != 0 || scalar_sign_spec(c.x, d.x) != 0;
         let overlap_kind = if use_x {
@@ -285,17 +301,14 @@ pub open spec fn segment_intersection_kind_spec(
         };
         if overlap_kind < 0 {
             SegmentIntersection2dKindSpec::Disjoint
-        } else if overlap_kind == 0 {
+        } else if overlap_kind == 0 && (touch1 || touch2 || touch3 || touch4) {
             SegmentIntersection2dKindSpec::EndpointTouch
         } else {
             SegmentIntersection2dKindSpec::CollinearOverlap
         }
     } else if o1 != 0 && o2 != 0 && o3 != 0 && o4 != 0 && o1 != o2 && o3 != o4 {
         SegmentIntersection2dKindSpec::Proper
-    } else if (o1 == 0 && point_on_segment_inclusive_spec(c, a, b))
-        || (o2 == 0 && point_on_segment_inclusive_spec(d, a, b))
-        || (o3 == 0 && point_on_segment_inclusive_spec(a, c, d))
-        || (o4 == 0 && point_on_segment_inclusive_spec(b, c, d))
+    } else if touch1 || touch2 || touch3 || touch4
     {
         SegmentIntersection2dKindSpec::EndpointTouch
     } else {
@@ -561,10 +574,17 @@ fn endpoint_touch_point_runtime(
             Option::None => true,
             Option::Some(p) => point_on_both_segments_spec(p@, a@, b@, c@, d@),
         },
+        (
+            point_on_both_segments_spec(c@, a@, b@, c@, d@)
+                || point_on_both_segments_spec(d@, a@, b@, c@, d@)
+                || point_on_both_segments_spec(a@, a@, b@, c@, d@)
+                || point_on_both_segments_spec(b@, a@, b@, c@, d@)
+        ) ==> out.is_some(),
 {
     let c_on_ab = point_on_segment_inclusive_runtime(c, a, b);
     let c_on_cd = point_on_segment_inclusive_runtime(c, c, d);
-    if c_on_ab && c_on_cd {
+    let touch1 = c_on_ab && c_on_cd;
+    if touch1 {
         proof {
             assert(c_on_ab == point_on_segment_inclusive_spec(c@, a@, b@));
             assert(c_on_cd == point_on_segment_inclusive_spec(c@, c@, d@));
@@ -575,7 +595,8 @@ fn endpoint_touch_point_runtime(
 
     let d_on_ab = point_on_segment_inclusive_runtime(d, a, b);
     let d_on_cd = point_on_segment_inclusive_runtime(d, c, d);
-    if d_on_ab && d_on_cd {
+    let touch2 = d_on_ab && d_on_cd;
+    if touch2 {
         proof {
             assert(d_on_ab == point_on_segment_inclusive_spec(d@, a@, b@));
             assert(d_on_cd == point_on_segment_inclusive_spec(d@, c@, d@));
@@ -586,7 +607,8 @@ fn endpoint_touch_point_runtime(
 
     let a_on_ab = point_on_segment_inclusive_runtime(a, a, b);
     let a_on_cd = point_on_segment_inclusive_runtime(a, c, d);
-    if a_on_ab && a_on_cd {
+    let touch3 = a_on_ab && a_on_cd;
+    if touch3 {
         proof {
             assert(a_on_ab == point_on_segment_inclusive_spec(a@, a@, b@));
             assert(a_on_cd == point_on_segment_inclusive_spec(a@, c@, d@));
@@ -597,7 +619,8 @@ fn endpoint_touch_point_runtime(
 
     let b_on_ab = point_on_segment_inclusive_runtime(b, a, b);
     let b_on_cd = point_on_segment_inclusive_runtime(b, c, d);
-    if b_on_ab && b_on_cd {
+    let touch4 = b_on_ab && b_on_cd;
+    if touch4 {
         proof {
             assert(b_on_ab == point_on_segment_inclusive_spec(b@, a@, b@));
             assert(b_on_cd == point_on_segment_inclusive_spec(b@, c@, d@));
@@ -606,6 +629,24 @@ fn endpoint_touch_point_runtime(
         return Option::Some(b.clone());
     }
 
+    proof {
+        assert(!touch1);
+        assert(!touch2);
+        assert(!touch3);
+        assert(!touch4);
+        assert(c_on_ab == point_on_segment_inclusive_spec(c@, a@, b@));
+        assert(c_on_cd == point_on_segment_inclusive_spec(c@, c@, d@));
+        assert(d_on_ab == point_on_segment_inclusive_spec(d@, a@, b@));
+        assert(d_on_cd == point_on_segment_inclusive_spec(d@, c@, d@));
+        assert(a_on_ab == point_on_segment_inclusive_spec(a@, a@, b@));
+        assert(a_on_cd == point_on_segment_inclusive_spec(a@, c@, d@));
+        assert(b_on_ab == point_on_segment_inclusive_spec(b@, a@, b@));
+        assert(b_on_cd == point_on_segment_inclusive_spec(b@, c@, d@));
+        assert(!point_on_both_segments_spec(c@, a@, b@, c@, d@));
+        assert(!point_on_both_segments_spec(d@, a@, b@, c@, d@));
+        assert(!point_on_both_segments_spec(a@, a@, b@, c@, d@));
+        assert(!point_on_both_segments_spec(b@, a@, b@, c@, d@));
+    }
     Option::None
 }
 
@@ -645,10 +686,14 @@ pub fn segment_intersection_kind_2d(
     let o2 = orient2d_sign(a, b, d);
     let o3 = orient2d_sign(c, d, a);
     let o4 = orient2d_sign(c, d, b);
-    let touch1 = o1 == 0 && point_on_segment_inclusive_runtime(c, a, b);
-    let touch2 = o2 == 0 && point_on_segment_inclusive_runtime(d, a, b);
-    let touch3 = o3 == 0 && point_on_segment_inclusive_runtime(a, c, d);
-    let touch4 = o4 == 0 && point_on_segment_inclusive_runtime(b, c, d);
+    let touch1 = point_on_segment_inclusive_runtime(c, a, b)
+        && point_on_segment_inclusive_runtime(c, c, d);
+    let touch2 = point_on_segment_inclusive_runtime(d, a, b)
+        && point_on_segment_inclusive_runtime(d, c, d);
+    let touch3 = point_on_segment_inclusive_runtime(a, a, b)
+        && point_on_segment_inclusive_runtime(a, c, d);
+    let touch4 = point_on_segment_inclusive_runtime(b, a, b)
+        && point_on_segment_inclusive_runtime(b, c, d);
 
     if o1 == 0 && o2 == 0 && o3 == 0 && o4 == 0 {
         let sx1 = scalar_sign(&a.x, &b.x);
@@ -683,7 +728,7 @@ pub fn segment_intersection_kind_2d(
                 assert(out@ is Disjoint);
             }
             out
-        } else if overlap_kind == 0 {
+        } else if overlap_kind == 0 && (touch1 || touch2 || touch3 || touch4) {
             let out = SegmentIntersection2dKind::EndpointTouch;
             proof {
                 assert((o1 == 0) == (orient2d_spec(a@, b@, c@).signum() == 0));
@@ -703,6 +748,11 @@ pub fn segment_intersection_kind_2d(
                     assert(overlap_kind as int == collinear_overlap_dimension_kind_spec(a@.y, b@.y, c@.y, d@.y));
                 }
                 assert(overlap_kind as int == 0);
+                assert(touch1 == point_on_both_segments_spec(c@, a@, b@, c@, d@));
+                assert(touch2 == point_on_both_segments_spec(d@, a@, b@, c@, d@));
+                assert(touch3 == point_on_both_segments_spec(a@, a@, b@, c@, d@));
+                assert(touch4 == point_on_both_segments_spec(b@, a@, b@, c@, d@));
+                assert(touch1 || touch2 || touch3 || touch4);
                 assert(segment_intersection_kind_spec(a@, b@, c@, d@) is EndpointTouch);
                 assert(out@ is EndpointTouch);
             }
@@ -726,8 +776,12 @@ pub fn segment_intersection_kind_2d(
                 } else {
                     assert(overlap_kind as int == collinear_overlap_dimension_kind_spec(a@.y, b@.y, c@.y, d@.y));
                 }
-                assert(overlap_kind as int != 0);
-                assert(overlap_kind as int >= 0);
+                assert(touch1 == point_on_both_segments_spec(c@, a@, b@, c@, d@));
+                assert(touch2 == point_on_both_segments_spec(d@, a@, b@, c@, d@));
+                assert(touch3 == point_on_both_segments_spec(a@, a@, b@, c@, d@));
+                assert(touch4 == point_on_both_segments_spec(b@, a@, b@, c@, d@));
+                assert(!(overlap_kind as int < 0));
+                assert(!((overlap_kind as int == 0) && (touch1 || touch2 || touch3 || touch4)));
                 assert(segment_intersection_kind_spec(a@, b@, c@, d@) is CollinearOverlap);
                 assert(out@ is CollinearOverlap);
             }
@@ -755,10 +809,10 @@ pub fn segment_intersection_kind_2d(
             assert((o2 == 0) == (orient2d_spec(a@, b@, d@).signum() == 0));
             assert((o3 == 0) == (orient2d_spec(c@, d@, a@).signum() == 0));
             assert((o4 == 0) == (orient2d_spec(c@, d@, b@).signum() == 0));
-            assert(touch1 == ((orient2d_spec(a@, b@, c@).signum() == 0) && point_on_segment_inclusive_spec(c@, a@, b@)));
-            assert(touch2 == ((orient2d_spec(a@, b@, d@).signum() == 0) && point_on_segment_inclusive_spec(d@, a@, b@)));
-            assert(touch3 == ((orient2d_spec(c@, d@, a@).signum() == 0) && point_on_segment_inclusive_spec(a@, c@, d@)));
-            assert(touch4 == ((orient2d_spec(c@, d@, b@).signum() == 0) && point_on_segment_inclusive_spec(b@, c@, d@)));
+            assert(touch1 == point_on_both_segments_spec(c@, a@, b@, c@, d@));
+            assert(touch2 == point_on_both_segments_spec(d@, a@, b@, c@, d@));
+            assert(touch3 == point_on_both_segments_spec(a@, a@, b@, c@, d@));
+            assert(touch4 == point_on_both_segments_spec(b@, a@, b@, c@, d@));
             assert(segment_intersection_kind_spec(a@, b@, c@, d@) is EndpointTouch);
             assert(out@ is EndpointTouch);
         }
@@ -784,6 +838,7 @@ pub fn segment_intersection_point_2d(
     ensures
         (segment_intersection_kind_spec(a@, b@, c@, d@) is Disjoint) ==> out.is_none(),
         (segment_intersection_kind_spec(a@, b@, c@, d@) is CollinearOverlap) ==> out.is_none(),
+        (segment_intersection_kind_spec(a@, b@, c@, d@) is EndpointTouch) ==> out.is_some(),
         (segment_intersection_kind_spec(a@, b@, c@, d@) is EndpointTouch) ==> match out {
             Option::None => true,
             Option::Some(p) => point_on_both_segments_spec(p@, a@, b@, c@, d@),
@@ -804,6 +859,13 @@ pub fn segment_intersection_point_2d(
             proof {
                 assert(kind@ is EndpointTouch);
                 assert(segment_intersection_kind_spec(a@, b@, c@, d@) is EndpointTouch);
+                assert(
+                    point_on_both_segments_spec(c@, a@, b@, c@, d@)
+                        || point_on_both_segments_spec(d@, a@, b@, c@, d@)
+                        || point_on_both_segments_spec(a@, a@, b@, c@, d@)
+                        || point_on_both_segments_spec(b@, a@, b@, c@, d@),
+                );
+                assert(out.is_some());
                 match &out {
                     Option::None => {}
                     Option::Some(p) => {
@@ -938,6 +1000,22 @@ mod tests {
         );
 
         let p = segment_intersection_point_2d(&a, &b, &c, &d).expect("endpoint witness");
+        assert_eq!(p, RuntimePoint2::from_ints(2, 0));
+    }
+
+    #[test]
+    fn segment_intersection_collinear_endpoint_touch_has_witness() {
+        let a = RuntimePoint2::from_ints(0, 0);
+        let b = RuntimePoint2::from_ints(2, 0);
+        let c = RuntimePoint2::from_ints(2, 0);
+        let d = RuntimePoint2::from_ints(5, 0);
+
+        assert_eq!(
+            segment_intersection_kind_2d(&a, &b, &c, &d),
+            SegmentIntersection2dKind::EndpointTouch
+        );
+
+        let p = segment_intersection_point_2d(&a, &b, &c, &d).expect("collinear endpoint witness");
         assert_eq!(p, RuntimePoint2::from_ints(2, 0));
     }
 

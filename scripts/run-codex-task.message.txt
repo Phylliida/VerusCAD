@@ -1,1 +1,1 @@
-Completed the L6 narrow-phase predicate audit in vcad-geometry’s Phase 5 upstream-lemma burndown with concrete callsites and proof-gap mapping, and 24 Phase 5 upstream-lemma tasks remain.
+Landed L6 endpoint-touch totality (EndpointTouch -> out.is_some()) for segment_intersection_point_2d and its runtime refinement wrapper, and 21 Phase 5 upstream-lemma tasks remain.
