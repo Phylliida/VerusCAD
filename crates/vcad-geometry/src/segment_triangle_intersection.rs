@@ -61,7 +61,7 @@ fn point_in_triangle_boundary_on_supporting_plane(
         None => return false,
     };
 
-    let tri_2d = vec![
+    let tri_2d = [
         project_point3_to_2d(tri_a, axis),
         project_point3_to_2d(tri_b, axis),
         project_point3_to_2d(tri_c, axis),
@@ -131,6 +131,20 @@ mod tests {
         let p = segment_triangle_intersection_point_strict(&s0, &s1, &a, &b, &c)
             .expect("strict segment-triangle crossing should be winding-invariant");
         assert_eq!(p, RuntimePoint3::from_ints(1, 1, 0));
+        assert!(segment_triangle_intersects_strict(&s0, &s1, &a, &b, &c));
+    }
+
+    #[test]
+    fn segment_triangle_strict_crossing_at_vertex_returns_vertex_witness() {
+        let a = RuntimePoint3::from_ints(0, 0, 0);
+        let b = RuntimePoint3::from_ints(4, 0, 0);
+        let c = RuntimePoint3::from_ints(0, 4, 0);
+        let s0 = RuntimePoint3::from_ints(0, 0, 3);
+        let s1 = RuntimePoint3::from_ints(0, 0, -2);
+
+        let p = segment_triangle_intersection_point_strict(&s0, &s1, &a, &b, &c)
+            .expect("strict crossing through boundary vertex should yield that vertex");
+        assert_eq!(p, RuntimePoint3::from_ints(0, 0, 0));
         assert!(segment_triangle_intersects_strict(&s0, &s1, &a, &b, &c));
     }
 

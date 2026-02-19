@@ -259,6 +259,24 @@ Blocks: `P5.5` intersection checker soundness (narrow phase).
       `shape_contained_in_aabb3_spec`/`lemma_aabb_separation_and_containment_implies_disjoint_sets`
       in `crates/vcad-geometry/src/phase5_upstream_lemmas.rs` and then repairing
       the now-exposed scalar positivity proof obligations in the same file.
+    - Update (2026-02-19, boundary-vertex regression + allocation cleanup pass):
+      tightened `crates/vcad-geometry/src/segment_triangle_intersection.rs` by:
+      - replacing the temporary triangle projection `Vec` with a fixed-size
+        array (still passed as a slice), removing per-call heap allocation in
+        the projected boundary check path;
+      - adding regression test
+        `segment_triangle_strict_crossing_at_vertex_returns_vertex_witness`
+        to pin boundary-inclusive behavior for strict segment-plane crossings
+        that hit a triangle vertex exactly.
+    - Failed attempt note (2026-02-19, ghost-plane-witness-contract pass, reverted):
+      attempted to add direct `verus_keep_ghost` witness contracts to
+      `segment_triangle_intersection_point_strict` /
+      `segment_triangle_intersects_strict`, but this hit a verifier boundary:
+      once the wrapper moved into `verus!`, helper calls and helper internals
+      depended on items currently treated as external in proof mode
+      (`RuntimeVec3::{x,y,z}`, `RuntimeScalar::clone`, and the local
+      `ProjectionAxis` runtime enum). Reverted that proof scaffolding to keep
+      `./scripts/verify-vcad-geometry.sh` green.
     - Remaining gap (post strict-wrapper runtime pass): still missing a
       `verus_keep_ghost` iff/refinement theorem tying the new runtime wrapper to
       an explicit existential geometric spec (`true <==> exists p` on segment and
@@ -277,6 +295,13 @@ Blocks: `P5.5` intersection checker soundness (narrow phase).
     - Verification attempt note (2026-02-19, ghost-verifier-unblock pass):
       `./scripts/verify-vcad-geometry.sh` now passes in this environment
       (`194 verified, 0 errors`).
+    - Verification attempt note (2026-02-19, boundary-vertex regression + allocation cleanup pass):
+      `./scripts/test-vcad-geometry-verus-proofs.sh` passes in this environment.
+    - Verification attempt note (2026-02-19, boundary-vertex regression + allocation cleanup pass):
+      `./scripts/verify-vcad-geometry.sh` passes in this environment
+      (`205 verified, 0 errors`; one existing verifier warning remains about
+      `assert forall` antecedent handling for `==>` in
+      `lemma_aabb_separation_and_containment_implies_disjoint_sets`).
   - [ ] coplanar segment-segment intersection (2D projection + interval overlap).
     - Update (2026-02-19, proper-totality pass): endpoint-touch witness-soundness plus
       `EndpointTouch -> is_some` and `Proper -> is_some` totality are now landed; remaining
