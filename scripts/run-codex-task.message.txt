@@ -1,1 +1,1 @@
-Added a verified P5.1 runtime bridge that proves full-face-cycle seed-0 coplanarity checks imply the aggregate seed-0 fixed witness spec, documented failed parse attempts and outcomes in the Phase 5 burndown, and revalidated vcad-topology with proofs and tests.
+Integrated the seed-0 coplanarity bridge into the constructive Phase 5 gate with explicit face-coplanarity witness implications, documented the burndown increment, and revalidated the full vcad-topology proof/test matrix.

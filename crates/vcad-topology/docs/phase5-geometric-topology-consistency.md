@@ -193,6 +193,33 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.1/P5.7 constructive coplanarity-bridge integration increment in
+  `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`:
+  - strengthened `runtime_check_face_coplanarity_seed0_fixed_witness_bridge` to additionally prove:
+    - `out ==> mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m)`;
+  - in the same bridge tail proof, explicitly derived the new guarantee via:
+    - `lemma_mesh_runtime_all_faces_coplanar_seed0_fixed_witness_implies_all_faces_seed0_plane_contains_vertices`;
+  - strengthened `check_geometric_topological_consistency_constructive` so the constructive
+    `face_coplanarity_ok` witness path now includes the proved seed-0 bridge bundle:
+    - evaluates both `m.check_face_coplanarity()` and
+      `runtime_check_face_coplanarity_seed0_fixed_witness_bridge(m)`;
+    - uses their conjunction for `face_coplanarity_ok`;
+    - exports new witness implications:
+      - `w.face_coplanarity_ok ==> mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m)`;
+      - `w.face_coplanarity_ok ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m)`;
+      - `w.face_coplanarity_ok ==> mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m)`;
+      - `w.face_coplanarity_ok ==> mesh_runtime_all_faces_oriented_seed0_planes_spec(m)`.
+  - outcome: the aggregate constructive Phase 5 witness now carries a machine-checked coplanarity
+    proof bundle at the point where `face_coplanarity_ok` is asserted, reducing later proof plumbing
+    for the remaining unchecked P5.1 runtime checker correctness and P5.7 aggregate-equivalence work.
+- 2026-02-19: Failed attempts in this P5.1/P5.7 constructive coplanarity-bridge integration pass: none.
+- 2026-02-19: Revalidated after the P5.1/P5.7 constructive coplanarity-bridge integration additions:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (260 verified, 0 errors)
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (297 verified, 0 errors)
 - 2026-02-19: Completed a P5.1 runtime-soundness/oriented-seed-plane groundwork increment across
   `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs` and
   `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`:
