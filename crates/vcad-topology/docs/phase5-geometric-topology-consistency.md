@@ -195,6 +195,26 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.1 runtime-checker-correctness staging increment in
+  `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
+  - added a face-level characterization lemma for oriented seed-0 plane semantics:
+    - `lemma_mesh_face_oriented_seed0_plane_iff_seed0_fixed_witness_and_seed0_non_collinear`;
+  - added runtime-alias specs to reduce repeated long-form terms in downstream proof obligations:
+    - `mesh_runtime_face_seed0_corner_non_collinear_spec`;
+    - `mesh_runtime_face_oriented_seed0_plane_spec`;
+  - added the runtime-alias face-level characterization lemma:
+    - `lemma_mesh_runtime_face_oriented_seed0_plane_iff_seed0_fixed_witness_and_seed0_non_collinear`.
+  - outcome: P5.1 reverse-bridge obligations can now swap oriented seed-0 faces and
+    `(seed0 fixed witness + seed0 non-collinearity)` at face granularity directly, reducing
+    per-face proof expansion overhead in the remaining checker-correctness work.
+- 2026-02-19: Failed attempts in this P5.1 face-level oriented-seed0 characterization pass: none.
+- 2026-02-19: Revalidated after the P5.1 face-level oriented-seed0 characterization additions:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (275 verified, 0 errors)
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (312 verified, 0 errors)
 - 2026-02-19: Completed a P5.11 face-plane preprocessing refactor in
   `src/halfedge_mesh/validation.rs`:
   - added internal helper `Mesh::compute_face_plane_prevalidated(face_id)` for call paths where

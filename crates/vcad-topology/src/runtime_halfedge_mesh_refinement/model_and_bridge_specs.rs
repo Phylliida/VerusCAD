@@ -2896,6 +2896,118 @@ pub proof fn lemma_mesh_face_oriented_seed0_plane_implies_seed0_non_collinear(
 }
 
 #[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_face_oriented_seed0_plane_iff_seed0_fixed_witness_and_seed0_non_collinear(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+)
+    ensures
+        mesh_face_oriented_plane_normal_spec(
+            m,
+            vertex_positions,
+            f,
+            mesh_face_seed_plane_normal_spec(m, vertex_positions, f, 0),
+            mesh_face_seed_plane_offset_relative_to_origin_spec(m, vertex_positions, f, 0),
+        ) == (
+            mesh_face_coplanar_seed0_fixed_witness_spec(m, vertex_positions, f)
+                && !mesh_points_collinear3_spec(
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 0),
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 1),
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 2),
+                )
+        ),
+{
+    assert(
+        mesh_face_oriented_plane_normal_spec(
+            m,
+            vertex_positions,
+            f,
+            mesh_face_seed_plane_normal_spec(m, vertex_positions, f, 0),
+            mesh_face_seed_plane_offset_relative_to_origin_spec(m, vertex_positions, f, 0),
+        ) ==> (
+            mesh_face_coplanar_seed0_fixed_witness_spec(m, vertex_positions, f)
+                && !mesh_points_collinear3_spec(
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 0),
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 1),
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 2),
+                )
+        )
+    ) by {
+        if mesh_face_oriented_plane_normal_spec(
+            m,
+            vertex_positions,
+            f,
+            mesh_face_seed_plane_normal_spec(m, vertex_positions, f, 0),
+            mesh_face_seed_plane_offset_relative_to_origin_spec(m, vertex_positions, f, 0),
+        ) {
+            lemma_mesh_face_oriented_seed0_plane_implies_seed0_fixed_witness(m, vertex_positions, f);
+            lemma_mesh_face_oriented_seed0_plane_implies_seed0_non_collinear(m, vertex_positions, f);
+            assert(
+                mesh_face_coplanar_seed0_fixed_witness_spec(m, vertex_positions, f)
+                    && !mesh_points_collinear3_spec(
+                        mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                            m,
+                            vertex_positions,
+                            f,
+                            0,
+                        ),
+                        mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                            m,
+                            vertex_positions,
+                            f,
+                            1,
+                        ),
+                        mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                            m,
+                            vertex_positions,
+                            f,
+                            2,
+                        ),
+                    )
+            );
+        }
+    };
+    assert(
+        (
+            mesh_face_coplanar_seed0_fixed_witness_spec(m, vertex_positions, f)
+                && !mesh_points_collinear3_spec(
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 0),
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 1),
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 2),
+                )
+        ) ==> mesh_face_oriented_plane_normal_spec(
+            m,
+            vertex_positions,
+            f,
+            mesh_face_seed_plane_normal_spec(m, vertex_positions, f, 0),
+            mesh_face_seed_plane_offset_relative_to_origin_spec(m, vertex_positions, f, 0),
+        )
+    ) by {
+        if
+            mesh_face_coplanar_seed0_fixed_witness_spec(m, vertex_positions, f)
+                && !mesh_points_collinear3_spec(
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 0),
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 1),
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 2),
+                )
+        {
+            lemma_mesh_face_coplanar_seed0_fixed_witness_non_collinear_seed0_implies_oriented_seed0_plane(
+                m,
+                vertex_positions,
+                f,
+            );
+            assert(mesh_face_oriented_plane_normal_spec(
+                m,
+                vertex_positions,
+                f,
+                mesh_face_seed_plane_normal_spec(m, vertex_positions, f, 0),
+                mesh_face_seed_plane_offset_relative_to_origin_spec(m, vertex_positions, f, 0),
+            ));
+        }
+    };
+}
+
+#[cfg(verus_keep_ghost)]
 pub proof fn lemma_mesh_face_oriented_seed0_plane_implies_seed0_fixed_witness(
     m: MeshModel,
     vertex_positions: Seq<vcad_math::point3::Point3>,
@@ -3068,6 +3180,30 @@ pub open spec fn mesh_runtime_face_coplanar_seed0_fixed_witness_spec(m: &Mesh, f
 }
 
 #[cfg(verus_keep_ghost)]
+pub open spec fn mesh_runtime_face_seed0_corner_non_collinear_spec(m: &Mesh, f: int) -> bool {
+    !mesh_points_collinear3_spec(
+        mesh_face_cycle_vertex_position_or_default_at_int_spec(
+            m@,
+            mesh_runtime_vertex_positions_spec(m),
+            f,
+            0,
+        ),
+        mesh_face_cycle_vertex_position_or_default_at_int_spec(
+            m@,
+            mesh_runtime_vertex_positions_spec(m),
+            f,
+            1,
+        ),
+        mesh_face_cycle_vertex_position_or_default_at_int_spec(
+            m@,
+            mesh_runtime_vertex_positions_spec(m),
+            f,
+            2,
+        ),
+    )
+}
+
+#[cfg(verus_keep_ghost)]
 pub open spec fn mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m: &Mesh) -> bool {
     mesh_all_faces_coplanar_seed0_fixed_witness_spec(m@, mesh_runtime_vertex_positions_spec(m))
 }
@@ -3085,6 +3221,40 @@ pub open spec fn mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m: &M
 #[cfg(verus_keep_ghost)]
 pub open spec fn mesh_runtime_all_faces_oriented_seed0_planes_spec(m: &Mesh) -> bool {
     mesh_all_faces_oriented_seed0_planes_spec(m@, mesh_runtime_vertex_positions_spec(m))
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_runtime_face_oriented_seed0_plane_spec(m: &Mesh, f: int) -> bool {
+    mesh_face_oriented_plane_normal_spec(
+        m@,
+        mesh_runtime_vertex_positions_spec(m),
+        f,
+        mesh_face_seed_plane_normal_spec(m@, mesh_runtime_vertex_positions_spec(m), f, 0),
+        mesh_face_seed_plane_offset_relative_to_origin_spec(
+            m@,
+            mesh_runtime_vertex_positions_spec(m),
+            f,
+            0,
+        ),
+    )
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_runtime_face_oriented_seed0_plane_iff_seed0_fixed_witness_and_seed0_non_collinear(
+    m: &Mesh,
+    f: int,
+)
+    ensures
+        mesh_runtime_face_oriented_seed0_plane_spec(m, f) == (
+            mesh_runtime_face_coplanar_seed0_fixed_witness_spec(m, f)
+                && mesh_runtime_face_seed0_corner_non_collinear_spec(m, f)
+        ),
+{
+    lemma_mesh_face_oriented_seed0_plane_iff_seed0_fixed_witness_and_seed0_non_collinear(
+        m@,
+        mesh_runtime_vertex_positions_spec(m),
+        f,
+    );
 }
 
 #[cfg(verus_keep_ghost)]
