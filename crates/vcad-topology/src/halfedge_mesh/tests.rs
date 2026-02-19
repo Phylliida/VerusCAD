@@ -305,12 +305,20 @@ fn face_cycle_contains_half_edge(mesh: &Mesh, face: usize, target_half_edge: usi
 }
 
 #[cfg(feature = "geometry-checks")]
-fn component_signed_volume_six_from_start_half_edge(mesh: &Mesh, start_half_edge: usize) -> RuntimeScalar {
+fn component_signed_volume_six_from_start_half_edge_relative_to_reference(
+    mesh: &Mesh,
+    start_half_edge: usize,
+    reference: &RuntimePoint3,
+) -> RuntimeScalar {
     if start_half_edge >= mesh.half_edges.len() {
         return RuntimeScalar::from_int(0);
     }
 
-    fn face_signed_volume_six_relative_to_origin(mesh: &Mesh, face_id: usize) -> RuntimeScalar {
+    fn face_signed_volume_six_relative_to_reference(
+        mesh: &Mesh,
+        face_id: usize,
+        reference: &RuntimePoint3,
+    ) -> RuntimeScalar {
         if face_id >= mesh.faces.len() {
             return RuntimeScalar::from_int(0);
         }
@@ -319,7 +327,6 @@ fn component_signed_volume_six_from_start_half_edge(mesh: &Mesh, start_half_edge
             return RuntimeScalar::from_int(0);
         }
 
-        let origin = RuntimePoint3::from_ints(0, 0, 0);
         let h0 = mesh.faces[face_id].half_edge;
         if h0 >= hcnt {
             return RuntimeScalar::from_int(0);
@@ -355,7 +362,7 @@ fn component_signed_volume_six_from_start_half_edge(mesh: &Mesh, start_half_edge
             }
             let pi = &mesh.vertices[pi_vid].position;
             let pj = &mesh.vertices[pj_vid].position;
-            let det = orient3d_value(&origin, p0, pi, pj);
+            let det = orient3d_value(reference, p0, pi, pj);
             sum = sum.add(&det);
 
             hi = hj;
@@ -379,7 +386,7 @@ fn component_signed_volume_six_from_start_half_edge(mesh: &Mesh, start_half_edge
     while let Some(h) = queue.pop_front() {
         let he = &mesh.half_edges[h];
         if seen_faces.insert(he.face) {
-            let face_volume6 = face_signed_volume_six_relative_to_origin(mesh, he.face);
+            let face_volume6 = face_signed_volume_six_relative_to_reference(mesh, he.face, reference);
             signed_volume6 = signed_volume6.add(&face_volume6);
         }
         for n in [he.twin, he.next, he.prev] {
@@ -391,6 +398,49 @@ fn component_signed_volume_six_from_start_half_edge(mesh: &Mesh, start_half_edge
     }
 
     signed_volume6
+}
+
+#[cfg(feature = "geometry-checks")]
+fn component_signed_volume_six_from_start_half_edge(mesh: &Mesh, start_half_edge: usize) -> RuntimeScalar {
+    let origin = RuntimePoint3::from_ints(0, 0, 0);
+    component_signed_volume_six_from_start_half_edge_relative_to_reference(
+        mesh,
+        start_half_edge,
+        &origin,
+    )
+}
+
+#[cfg(feature = "geometry-checks")]
+fn component_start_half_edges(mesh: &Mesh) -> Vec<usize> {
+    let hcnt = mesh.half_edges.len();
+    let mut starts = Vec::new();
+    if hcnt == 0 {
+        return starts;
+    }
+
+    let mut visited = vec![false; hcnt];
+    for start in 0..hcnt {
+        if visited[start] {
+            continue;
+        }
+
+        starts.push(start);
+        let mut queue = std::collections::VecDeque::new();
+        queue.push_back(start);
+        visited[start] = true;
+
+        while let Some(h) = queue.pop_front() {
+            let he = &mesh.half_edges[h];
+            for n in [he.twin, he.next, he.prev] {
+                if !visited[n] {
+                    visited[n] = true;
+                    queue.push_back(n);
+                }
+            }
+        }
+    }
+
+    starts
 }
 
 #[cfg(feature = "geometry-checks")]
@@ -929,6 +979,44 @@ fn diagnostic_witness_is_real_counterexample(
         );
         assert!(!intersecting_original.check_geometric_topological_consistency());
         assert!(!intersecting_transformed.check_geometric_topological_consistency());
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn outward_signed_volume_is_reference_origin_invariant_per_component() {
+        let origins = vec![(0, 0, 0), (20, 0, 0), (-15, 7, 3)];
+        let mesh = build_disconnected_translated_tetrahedra_mesh(&origins);
+        assert!(mesh.is_valid());
+        assert!(mesh.check_outward_face_normals());
+
+        let component_starts = component_start_half_edges(&mesh);
+        assert_eq!(component_starts.len(), origins.len());
+
+        let reference_origin = RuntimePoint3::from_ints(0, 0, 0);
+        let reference_shifted_a = RuntimePoint3::from_ints(11, -7, 5);
+        let reference_shifted_b = RuntimePoint3::from_ints(-19, 13, -4);
+
+        for start in component_starts {
+            let baseline = component_signed_volume_six_from_start_half_edge_relative_to_reference(
+                &mesh,
+                start,
+                &reference_origin,
+            );
+            let shifted_a = component_signed_volume_six_from_start_half_edge_relative_to_reference(
+                &mesh,
+                start,
+                &reference_shifted_a,
+            );
+            let shifted_b = component_signed_volume_six_from_start_half_edge_relative_to_reference(
+                &mesh,
+                start,
+                &reference_shifted_b,
+            );
+
+            assert!(baseline.signum_i8() < 0);
+            assert_eq!(shifted_a.sub(&baseline).signum_i8(), 0);
+            assert_eq!(shifted_b.sub(&baseline).signum_i8(), 0);
+        }
     }
 
     #[cfg(feature = "geometry-checks")]

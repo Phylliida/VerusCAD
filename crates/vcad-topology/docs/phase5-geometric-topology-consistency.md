@@ -195,6 +195,33 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.4 signed-volume-origin-independence runtime-test staging increment in
+  `src/halfedge_mesh/tests.rs`:
+  - generalized the existing test-side component signed-six-volume helper to accept an explicit
+    reference point:
+    - `component_signed_volume_six_from_start_half_edge_relative_to_reference`;
+  - kept the existing origin-based helper as a wrapper for current witness checks:
+    - `component_signed_volume_six_from_start_half_edge`;
+  - added a component traversal helper for deterministic per-component checks in invariance tests:
+    - `component_start_half_edges`;
+  - added a new regression test that locks per-component signed-six-volume invariance under
+    reference-point changes:
+    - `outward_signed_volume_is_reference_origin_invariant_per_component`.
+  - outcome: outward-orientation signed-volume behavior now has explicit test coverage that the
+    computed per-component signed six-volume is unchanged across multiple reference-point choices,
+    reducing regression risk while the formal P5.4 origin-independence proof remains open.
+- 2026-02-19: Failed attempt in this P5.4 signed-volume-origin-independence staging pass:
+  - attempted to close the checklist item as a proof, but this pass did not land a Verus theorem;
+    current refinement layers still lack a dedicated outward signed-volume model/spec bridge to
+    prove origin-independence end-to-end.
+- 2026-02-19: Revalidated after the P5.4 signed-volume-origin-independence staging additions:
+  - `cargo test -p vcad-topology --features geometry-checks outward_signed_volume_is_reference_origin_invariant_per_component`
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (278 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (315 verified, 0 errors)
 - 2026-02-19: Completed a P5.1 face-level oriented-seed0/plane-contains characterization increment in
   `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
   - added a direct face-level iff lemma:
