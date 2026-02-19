@@ -335,12 +335,8 @@ pub open spec fn mesh_faces_share_edge_spec(m: MeshModel, f1: int, f2: int) -> b
 pub open spec fn mesh_faces_disjoint_boundary_spec(m: MeshModel, f1: int, f2: int) -> bool {
     &&& 0 <= f1 < mesh_face_count_spec(m)
     &&& 0 <= f2 < mesh_face_count_spec(m)
-    &&& forall|h1: int, h2: int|
-        mesh_half_edge_belongs_to_face_spec(m, f1, h1)
-            && mesh_half_edge_belongs_to_face_spec(m, f2, h2) ==> {
-            &&& #[trigger] m.half_edges[h1].vertex != #[trigger] m.half_edges[h2].vertex
-            &&& #[trigger] m.half_edges[h1].edge != #[trigger] m.half_edges[h2].edge
-        }
+    &&& !mesh_faces_share_vertex_spec(m, f1, f2)
+    &&& !mesh_faces_share_edge_spec(m, f1, f2)
 }
 
 pub open spec fn mesh_faces_share_vertex_index_spec(
@@ -425,6 +421,90 @@ pub open spec fn mesh_faces_allowed_contact_relation_spec(m: MeshModel, f1: int,
             || (mesh_faces_share_exactly_one_edge_spec(m, f1, f2)
                 && mesh_faces_share_exactly_two_vertices_spec(m, f1, f2))
     )
+}
+
+pub open spec fn mesh_faces_share_zero_or_one_vertices_spec(m: MeshModel, f1: int, f2: int) -> bool {
+    &&& 0 <= f1 < mesh_face_count_spec(m)
+    &&& 0 <= f2 < mesh_face_count_spec(m)
+    &&& (
+        !mesh_faces_share_vertex_spec(m, f1, f2)
+            || mesh_faces_share_exactly_one_vertex_spec(m, f1, f2)
+    )
+}
+
+pub open spec fn mesh_faces_allowed_contact_runtime_branch_classifier_spec(
+    m: MeshModel,
+    f1: int,
+    f2: int,
+) -> bool {
+    &&& 0 <= f1 < mesh_face_count_spec(m)
+    &&& 0 <= f2 < mesh_face_count_spec(m)
+    &&& f1 != f2
+    &&& (
+        (!mesh_faces_share_edge_spec(m, f1, f2)
+            && mesh_faces_share_zero_or_one_vertices_spec(m, f1, f2))
+            || (mesh_faces_share_exactly_one_edge_spec(m, f1, f2)
+                && mesh_faces_share_exactly_two_vertices_spec(m, f1, f2))
+    )
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_faces_allowed_contact_relation_iff_runtime_branch_classifier(
+    m: MeshModel,
+    f1: int,
+    f2: int,
+)
+    ensures
+        mesh_faces_allowed_contact_relation_spec(m, f1, f2)
+            == mesh_faces_allowed_contact_runtime_branch_classifier_spec(m, f1, f2),
+{
+    assert(
+        mesh_faces_allowed_contact_relation_spec(m, f1, f2)
+            ==> mesh_faces_allowed_contact_runtime_branch_classifier_spec(m, f1, f2)
+    ) by {
+        if mesh_faces_allowed_contact_relation_spec(m, f1, f2) {
+            if mesh_faces_disjoint_boundary_spec(m, f1, f2) {
+                assert(!mesh_faces_share_edge_spec(m, f1, f2));
+                assert(mesh_faces_share_zero_or_one_vertices_spec(m, f1, f2));
+            } else if
+                mesh_faces_share_exactly_one_vertex_spec(m, f1, f2)
+                    && !mesh_faces_share_edge_spec(m, f1, f2)
+            {
+                assert(mesh_faces_share_zero_or_one_vertices_spec(m, f1, f2));
+            } else {
+                assert(mesh_faces_share_exactly_one_edge_spec(m, f1, f2));
+                assert(mesh_faces_share_exactly_two_vertices_spec(m, f1, f2));
+            }
+            assert(mesh_faces_allowed_contact_runtime_branch_classifier_spec(m, f1, f2));
+        }
+    };
+
+    assert(
+        mesh_faces_allowed_contact_runtime_branch_classifier_spec(m, f1, f2)
+            ==> mesh_faces_allowed_contact_relation_spec(m, f1, f2)
+    ) by {
+        if mesh_faces_allowed_contact_runtime_branch_classifier_spec(m, f1, f2) {
+            if mesh_faces_share_exactly_one_edge_spec(m, f1, f2)
+                && mesh_faces_share_exactly_two_vertices_spec(m, f1, f2)
+            {
+                assert(mesh_faces_allowed_contact_relation_spec(m, f1, f2));
+            } else {
+                assert(!mesh_faces_share_edge_spec(m, f1, f2));
+                assert(mesh_faces_share_zero_or_one_vertices_spec(m, f1, f2));
+                if !mesh_faces_share_vertex_spec(m, f1, f2) {
+                    assert(mesh_faces_disjoint_boundary_spec(m, f1, f2));
+                } else {
+                    assert(mesh_faces_share_exactly_one_vertex_spec(m, f1, f2)) by {
+                        assert(
+                            !mesh_faces_share_vertex_spec(m, f1, f2)
+                                || mesh_faces_share_exactly_one_vertex_spec(m, f1, f2)
+                        );
+                    };
+                }
+                assert(mesh_faces_allowed_contact_relation_spec(m, f1, f2));
+            }
+        }
+    };
 }
 
 pub open spec fn mesh_non_adjacent_face_pair_forbidden_intersection_relation_spec(

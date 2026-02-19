@@ -758,6 +758,13 @@ fn assert_face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle(mesh
         checker_result, oracle_result,
         "face coplanarity checker diverged from exhaustive face-quadruple oracle for {label}"
     );
+
+    #[cfg(feature = "verus-proofs")]
+    {
+        assert_face_coplanarity_runtime_seed0_bridge_parity(mesh, label);
+        assert_face_coplanarity_runtime_seed0_sound_bridge_parity(mesh, label);
+        assert_face_coplanarity_seed0_phase5_runtime_bundle_completeness_bridge_parity(mesh, label);
+    }
 }
 
 #[cfg(feature = "geometry-checks")]

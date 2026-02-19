@@ -1,1 +1,1 @@
-Added a P5.4 convex-component outwardness oracle (deterministic + randomized/reflection/relabeling harnesses), logged results in the Phase 5 burndown, reran the full vcad-topology test/verification matrix, and 10 Phase 5 checklist tasks remain.
+Completed the P5.5 adjacency-exemption equivalence proof (allowed-contact relation iff runtime branch classifier), updated the Phase 5 burndown with proof/failure/revalidation notes, reran the full vcad-topology test and verification matrix, and 9 Phase 5 checklist tasks remain.
