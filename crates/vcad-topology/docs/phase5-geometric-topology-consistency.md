@@ -195,6 +195,27 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.5 (`Proof: shared-edge and shared-vertex contacts are never misclassified as forbidden intersections`) with a spec-level non-adjacent-forbidden exclusion theorem increment in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
+  - added helper lemmas:
+    - `lemma_mesh_faces_share_exactly_one_vertex_implies_share_vertex`;
+    - `lemma_mesh_faces_share_exactly_one_edge_implies_share_edge`.
+  - added theorem:
+    - `lemma_mesh_faces_shared_boundary_allowed_contact_not_non_adjacent_forbidden_relation`, proving that for distinct in-bounds face pairs in either shared-boundary allowed-contact branch:
+      - exactly-one-shared-vertex with no shared edge; or
+      - exactly-one-shared-edge with exactly-two-shared-vertices;
+      the pair:
+      - satisfies `mesh_faces_allowed_contact_relation_spec`;
+      - satisfies `mesh_faces_allowed_contact_runtime_branch_classifier_spec`; and
+      - cannot satisfy `mesh_non_adjacent_face_pair_forbidden_intersection_relation_spec` for any `geometric_intersection_exists` flag (because shared-boundary contact contradicts the disjoint-boundary requirement in the forbidden non-adjacent relation).
+  - outcome: the model surface now has an explicit formal theorem locking shared-boundary non-adjacent-forbidden exclusion and classifier parity for shared-edge/shared-vertex allowed-contact topologies; the full runtime-checker misclassification proof item remains open because geometric narrow-phase acceptance for shared-boundary contacts is not yet formally bridged.
+- 2026-02-19: Failed attempts in this P5.5 shared-boundary non-adjacent-forbidden exclusion pass: none.
+- 2026-02-19: Revalidated after the P5.5 shared-boundary non-adjacent-forbidden exclusion increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (60 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (74 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (290 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (327 verified, 0 errors)
 - 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) with an oriented-seed-plane completeness bridge increment in `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`:
   - added
     `runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_preconditions`;
