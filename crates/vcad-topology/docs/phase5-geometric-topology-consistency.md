@@ -193,6 +193,27 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.1 runtime-soundness bridge normalization increment in
+  `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
+  - added a model-level equivalence lemma:
+    - `lemma_mesh_all_faces_oriented_seed0_planes_and_index_bounds_and_face_cycles_iff_seed0_plane_contains_vertices_and_seed0_non_collinear`;
+  - added a runtime-alias equivalence lemma:
+    - `lemma_mesh_runtime_all_faces_oriented_seed0_planes_and_index_bounds_and_face_cycles_iff_seed0_plane_contains_vertices_and_seed0_non_collinear`;
+  - outcome: under existing index-bounds + face-cycle preconditions, the oriented seed-0 bundle is
+    now directly characterizable as:
+    - all-faces seed-0 plane containment; and
+    - all-faces seed-0 corner non-collinearity;
+    eliminating an extra fixed-witness intermediate in downstream P5.1 proof plumbing.
+  - this advances the unchecked P5.1 checker-correctness item by making oriented-seed-plane
+    runtime consequences directly interchangeable with the plane-containment/non-collinearity pair
+    used by later full-coplanarity reconstruction obligations.
+- 2026-02-19: Failed attempts in this P5.1 bridge-normalization pass: none.
+- 2026-02-19: Revalidated after the P5.1 bridge-normalization additions:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (273 verified, 0 errors)
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology.sh` (310 verified, 0 errors)
 - 2026-02-19: Completed a P5.1 full-coplanarity-to-oriented-seed0 bridge increment in
   `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
   - added a face-level bridge lemma from full coplanarity + seed-0 non-collinearity to oriented

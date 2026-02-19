@@ -2981,6 +2981,68 @@ pub proof fn lemma_mesh_all_faces_oriented_seed0_planes_and_index_bounds_and_fac
 }
 
 #[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_all_faces_oriented_seed0_planes_and_index_bounds_and_face_cycles_iff_seed0_plane_contains_vertices_and_seed0_non_collinear(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+)
+    requires
+        mesh_index_bounds_spec(m),
+        mesh_face_next_cycles_spec(m),
+    ensures
+        mesh_all_faces_oriented_seed0_planes_spec(m, vertex_positions) == (
+            mesh_all_faces_seed0_plane_contains_vertices_spec(m, vertex_positions)
+                && mesh_all_faces_seed0_corner_non_collinear_spec(m, vertex_positions)
+        ),
+{
+    assert(
+        mesh_all_faces_oriented_seed0_planes_spec(m, vertex_positions) ==> (
+            mesh_all_faces_seed0_plane_contains_vertices_spec(m, vertex_positions)
+                && mesh_all_faces_seed0_corner_non_collinear_spec(m, vertex_positions)
+        )
+    ) by {
+        if mesh_all_faces_oriented_seed0_planes_spec(m, vertex_positions) {
+            lemma_mesh_all_faces_oriented_seed0_planes_imply_all_faces_seed0_fixed_witness(
+                m,
+                vertex_positions,
+            );
+            lemma_mesh_all_faces_coplanar_seed0_fixed_witness_implies_all_faces_seed0_plane_contains_vertices(
+                m,
+                vertex_positions,
+            );
+            lemma_mesh_all_faces_oriented_seed0_planes_and_index_bounds_and_face_cycles_imply_all_faces_seed0_corner_non_collinear(
+                m,
+                vertex_positions,
+            );
+            assert(
+                mesh_all_faces_seed0_plane_contains_vertices_spec(m, vertex_positions)
+                    && mesh_all_faces_seed0_corner_non_collinear_spec(m, vertex_positions)
+            );
+        }
+    };
+    assert(
+        (
+            mesh_all_faces_seed0_plane_contains_vertices_spec(m, vertex_positions)
+                && mesh_all_faces_seed0_corner_non_collinear_spec(m, vertex_positions)
+        ) ==> mesh_all_faces_oriented_seed0_planes_spec(m, vertex_positions)
+    ) by {
+        if
+            mesh_all_faces_seed0_plane_contains_vertices_spec(m, vertex_positions)
+                && mesh_all_faces_seed0_corner_non_collinear_spec(m, vertex_positions)
+        {
+            lemma_mesh_all_faces_seed0_plane_contains_vertices_implies_all_faces_seed0_fixed_witness(
+                m,
+                vertex_positions,
+            );
+            lemma_mesh_all_faces_coplanar_seed0_fixed_witness_and_seed0_non_collinear_imply_all_faces_oriented_seed0_planes(
+                m,
+                vertex_positions,
+            );
+            assert(mesh_all_faces_oriented_seed0_planes_spec(m, vertex_positions));
+        }
+    };
+}
+
+#[cfg(verus_keep_ghost)]
 pub open spec fn mesh_runtime_face_oriented_plane_normal_spec(
     m: &Mesh,
     f: int,
@@ -3212,6 +3274,25 @@ pub proof fn lemma_mesh_runtime_all_faces_oriented_seed0_planes_and_index_bounds
             assert(mesh_runtime_all_faces_oriented_seed0_planes_spec(m));
         }
     };
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_runtime_all_faces_oriented_seed0_planes_and_index_bounds_and_face_cycles_iff_seed0_plane_contains_vertices_and_seed0_non_collinear(
+    m: &Mesh,
+)
+    requires
+        mesh_index_bounds_spec(m@),
+        mesh_face_next_cycles_spec(m@),
+    ensures
+        mesh_runtime_all_faces_oriented_seed0_planes_spec(m) == (
+            mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m)
+                && mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m)
+        ),
+{
+    lemma_mesh_all_faces_oriented_seed0_planes_and_index_bounds_and_face_cycles_iff_seed0_plane_contains_vertices_and_seed0_non_collinear(
+        m@,
+        mesh_runtime_vertex_positions_spec(m),
+    );
 }
 
 pub open spec fn kernel_mesh_matches_mesh_model_spec(km: &kernels::KernelMesh, m: MeshModel) -> bool {

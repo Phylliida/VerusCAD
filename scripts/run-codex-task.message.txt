@@ -1,1 +1,1 @@
-Added P5.1 full-coplanarity-to-oriented-seed0 bridge lemmas in vcad-topology, documented and revalidated the increment, and 10 tasks remain in crates/vcad-topology/docs/phase5-geometric-topology-consistency.md.
+Added P5.1 oriented-seed0-to-plane/non-collinearity equivalence lemmas in vcad-topology, documented and revalidated the increment, and 10 tasks remain in crates/vcad-topology/docs/phase5-geometric-topology-consistency.md.
