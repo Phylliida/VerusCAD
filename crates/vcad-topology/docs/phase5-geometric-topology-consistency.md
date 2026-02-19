@@ -193,6 +193,26 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.1 bridge-characterization increment in
+  `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
+  - added face-level iff characterization lemma:
+    - `lemma_mesh_face_seed0_fixed_witness_iff_seed0_plane_contains_vertices`;
+  - added all-faces iff characterization lemma:
+    - `lemma_mesh_all_faces_seed0_fixed_witness_iff_all_faces_seed0_plane_contains_vertices`;
+  - added runtime-alias iff characterization lemma:
+    - `lemma_mesh_runtime_all_faces_seed0_fixed_witness_iff_all_faces_seed0_plane_contains_vertices`;
+  - outcome: the seed-0 coplanarity bridge layer now has explicit two-way characterizations at face scope,
+    aggregate scope, and runtime-alias scope (instead of only directional lemmas), which reduces proof
+    plumbing for future checker/spec correctness steps.
+  - this advances the unchecked P5.1 checker-correctness item by making the seed-0 witness/plane-containment
+    bridge reusable as direct equivalences in later runtime-soundness/completeness proofs.
+- 2026-02-19: Failed attempt in this P5.1 bridge-characterization pass:
+  - initial proof edit left trailing commas inside `assert(...)` implication expressions in
+    `model_and_bridge_specs.rs`, causing a parse error (`expected ')'` near line 2198);
+  - fixed by removing those trailing commas and re-running verification.
+- 2026-02-19: Revalidated after the P5.1 bridge-characterization additions:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (258 verified, 0 errors)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
 - 2026-02-19: Completed a P5.7 aggregate-spec characterization increment in
   `src/runtime_halfedge_mesh_refinement/components_and_validity_specs.rs`:
   - added aggregate-spec consequence lemma:

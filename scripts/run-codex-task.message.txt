@@ -1,1 +1,1 @@
-Added P5.7 aggregate-spec characterization lemmas for geometric-topological consistency, documented the incremental progress in the Phase 5 burndown, and revalidated vcad-topology proofs/tests.
+Added P5.1 seed-0 coplanarity bridge iff lemmas across model and runtime aliases, documented the progress and fixed parse-error attempt in the Phase 5 burndown, and revalidated runtime refinement proofs plus geometry-checks+verus-proofs tests.
