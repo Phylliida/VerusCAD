@@ -1,1 +1,1 @@
-Added runtime proper-intersection witness guards and non-integer regression tests for the L6 coplanar segment-segment path, and 21 Phase 5 upstream-lemma tasks remain.
+Added a Proper-case supporting-line witness contract for segment intersections in vcad-geometry and documented the remaining coplanar witness gap, and 21 Phase 5 upstream-lemma tasks remain.

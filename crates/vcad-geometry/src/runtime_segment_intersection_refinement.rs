@@ -191,6 +191,10 @@ pub fn runtime_segment_intersection_point_refines_spec(
         (segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is CollinearOverlap) ==> out.is_none(),
         (segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is Proper) ==> out.is_some(),
         (segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is EndpointTouch) ==> out.is_some(),
+        (segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is Proper) ==> match out {
+            Option::None => true,
+            Option::Some(p) => segment_intersection::point_on_segment_supporting_line_spec(p@, a@, b@),
+        },
         (segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is EndpointTouch) ==> match out {
             Option::None => true,
             Option::Some(p) => segment_intersection::point_on_both_segments_spec(p@, a@, b@, c@, d@),

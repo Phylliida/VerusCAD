@@ -331,6 +331,14 @@ pub open spec fn point_on_both_segments_spec(
     point_on_segment_inclusive_spec(p, a, b) && point_on_segment_inclusive_spec(p, c, d)
 }
 
+pub open spec fn point_on_segment_supporting_line_spec(
+    p: Point2,
+    a: Point2,
+    b: Point2,
+) -> bool {
+    orient2d_spec(a, b, p).signum() == 0
+}
+
 proof fn lemma_segment_intersection_kind_spec_proper_implies_straddling_signs(
     a: Point2,
     b: Point2,
@@ -786,6 +794,10 @@ fn proper_intersection_point_runtime(
         !b@.sub_spec(a@).cross_spec(d@.sub_spec(c@)).eqv_spec(Scalar::from_int_spec(0)),
     ensures
         out.is_some(),
+        match out {
+            Option::None => true,
+            Option::Some(p) => point_on_segment_supporting_line_spec(p@, a@, b@),
+        },
 {
     // Line-line intersection parameterization:
     // a + t (b-a), where t = cross(c-a, d-c) / cross(b-a, d-c).
@@ -814,7 +826,50 @@ fn proper_intersection_point_runtime(
     let cma = c.sub(a);
     let t = cma.cross(&s).mul(&inv);
     let step = r.scale(&t);
-    Option::Some(a.add_vec(&step))
+    let p = a.add_vec(&step);
+    proof {
+        let z = Scalar::from_int_spec(0);
+        let pa = p@.sub_spec(a@);
+
+        assert(cma@ == c@.sub_spec(a@));
+        assert(t@ == cma@.cross_spec(s@).mul_spec(inv@));
+        assert(step@ == r@.scale_spec(t@));
+
+        Point2::lemma_add_then_sub_cancel(a@, step@);
+        assert(pa.eqv_spec(step@));
+
+        Vec2::lemma_cross_eqv_congruence(r@, r@, pa, step@);
+        assert(r@.cross_spec(pa).eqv_spec(r@.cross_spec(step@)));
+
+        Vec2::lemma_cross_scale_extract_right(r@, r@, t@);
+        assert(r@.cross_spec(step@).eqv_spec(t@.mul_spec(r@.cross_spec(r@))));
+
+        Vec2::lemma_cross_self_zero(r@);
+        Scalar::lemma_eqv_mul_congruence_right(t@, t@, r@.cross_spec(r@), z);
+        assert(t@.mul_spec(r@.cross_spec(r@)).eqv_spec(t@.mul_spec(z)));
+        Scalar::lemma_mul_zero(t@);
+        assert(t@.mul_spec(z).eqv_spec(z));
+
+        Scalar::lemma_eqv_transitive(
+            r@.cross_spec(step@),
+            t@.mul_spec(r@.cross_spec(r@)),
+            t@.mul_spec(z),
+        );
+        assert(r@.cross_spec(step@).eqv_spec(t@.mul_spec(z)));
+        Scalar::lemma_eqv_transitive(r@.cross_spec(step@), t@.mul_spec(z), z);
+        assert(r@.cross_spec(step@).eqv_spec(z));
+        Scalar::lemma_eqv_transitive(r@.cross_spec(pa), r@.cross_spec(step@), z);
+        assert(r@.cross_spec(pa).eqv_spec(z));
+
+        assert(orient2d_spec(a@, b@, p@) == b@.sub_spec(a@).cross_spec(p@.sub_spec(a@)));
+        assert(b@.sub_spec(a@).cross_spec(p@.sub_spec(a@)).eqv_spec(z));
+        assert(orient2d_spec(a@, b@, p@).eqv_spec(z));
+        Scalar::lemma_eqv_signum(orient2d_spec(a@, b@, p@), z);
+        assert(orient2d_spec(a@, b@, p@).signum() == z.signum());
+        assert(z.signum() == 0);
+        assert(point_on_segment_supporting_line_spec(p@, a@, b@));
+    }
+    Option::Some(p)
 }
 
 pub fn segment_intersection_kind_2d(
@@ -986,6 +1041,10 @@ pub fn segment_intersection_point_2d(
         (segment_intersection_kind_spec(a@, b@, c@, d@) is CollinearOverlap) ==> out.is_none(),
         (segment_intersection_kind_spec(a@, b@, c@, d@) is Proper) ==> out.is_some(),
         (segment_intersection_kind_spec(a@, b@, c@, d@) is EndpointTouch) ==> out.is_some(),
+        (segment_intersection_kind_spec(a@, b@, c@, d@) is Proper) ==> match out {
+            Option::None => true,
+            Option::Some(p) => point_on_segment_supporting_line_spec(p@, a@, b@),
+        },
         (segment_intersection_kind_spec(a@, b@, c@, d@) is EndpointTouch) ==> match out {
             Option::None => true,
             Option::Some(p) => point_on_both_segments_spec(p@, a@, b@, c@, d@),
@@ -1004,6 +1063,12 @@ pub fn segment_intersection_point_2d(
             let out = proper_intersection_point_runtime(a, b, c, d);
             proof {
                 assert(out.is_some());
+                match &out {
+                    Option::None => {}
+                    Option::Some(p) => {
+                        assert(point_on_segment_supporting_line_spec(p@, a@, b@));
+                    }
+                }
             }
             out
         }

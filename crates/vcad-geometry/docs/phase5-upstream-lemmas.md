@@ -128,6 +128,13 @@ Blocks: `P5.5` intersection checker soundness (narrow phase).
       `lemma_segment_intersection_kind_spec_proper_implies_straddling_signs` and
       `lemma_proper_straddling_implies_nonzero_direction_cross`, which establish the
       proper-case straddling sign pattern and nonzero line-direction denominator.
+    - Update (2026-02-19, support-line pass): added
+      `point_on_segment_supporting_line_spec` in
+      `crates/vcad-geometry/src/segment_intersection.rs`, and strengthened both
+      `segment_intersection_point_2d` and
+      `runtime_segment_intersection_point_refines_spec` with
+      `Proper && Some(p) -> orient2d_spec(a, b, p).signum() == 0`
+      (returned witness is proven collinear with segment `[a,b]`'s supporting line).
     - Verification attempt note (2026-02-19, proper-totality pass):
       `RUSTFLAGS='--cfg verus_keep_ghost' cargo test -p vcad-geometry --features verus-proofs`
       still fails on stable because Verus macro crates require nightly-only `#![feature(proc_macro_...)]`.
@@ -154,6 +161,10 @@ Blocks: `P5.5` intersection checker soundness (narrow phase).
       `crates/vcad-geometry/src/segment_intersection.rs` that exercise non-integer proper
       intersections and assert returned witnesses lie on both source segments at runtime.
       Formal ghost proof for `Proper`-case witness-on-both remains open.
+    - Update (2026-02-19, support-line pass): formalized an intermediate `Proper` witness fact:
+      the computed witness is collinear with `[a,b]`'s supporting line; remaining formal gap is
+      proving collinearity with `[c,d]` and closed-segment bound inclusion to recover full
+      `point_on_both_segments_spec`.
   - [ ] coplanar segment-polygon overlap (dominant-axis projection + edge-crossing containment tests).
     - Audit note (2026-02-19): ingredient predicates are present, but their composed
       dominant-axis overlap witness proof is not yet packaged upstream.
