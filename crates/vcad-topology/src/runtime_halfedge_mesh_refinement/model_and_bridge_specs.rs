@@ -567,37 +567,20 @@ pub proof fn lemma_mesh_faces_shared_boundary_runtime_branch_classifier_not_non_
     lemma_mesh_faces_allowed_contact_relation_iff_runtime_branch_classifier(m, f1, f2);
     assert(mesh_faces_allowed_contact_relation_spec(m, f1, f2));
 
-    assert(!mesh_faces_disjoint_boundary_spec(m, f1, f2)) by {
-        if mesh_faces_disjoint_boundary_spec(m, f1, f2) {
-            assert(!mesh_faces_share_vertex_spec(m, f1, f2));
-            assert(!mesh_faces_share_edge_spec(m, f1, f2));
-            assert(mesh_faces_share_vertex_spec(m, f1, f2) || mesh_faces_share_edge_spec(m, f1, f2));
-            if mesh_faces_share_vertex_spec(m, f1, f2) {
-                assert(false);
-            } else {
-                assert(mesh_faces_share_edge_spec(m, f1, f2));
-                assert(false);
-            }
-        }
-    };
+    assert(!mesh_faces_disjoint_boundary_spec(m, f1, f2));
 
+    lemma_mesh_non_disjoint_boundary_implies_not_non_adjacent_face_pair_forbidden_relation(
+        m,
+        f1,
+        f2,
+        geometric_intersection_exists,
+    );
     assert(!mesh_non_adjacent_face_pair_forbidden_intersection_relation_spec(
         m,
         f1,
         f2,
         geometric_intersection_exists,
-    )) by {
-        if mesh_non_adjacent_face_pair_forbidden_intersection_relation_spec(
-            m,
-            f1,
-            f2,
-            geometric_intersection_exists,
-        ) {
-            assert(mesh_faces_disjoint_boundary_spec(m, f1, f2));
-            assert(!mesh_faces_disjoint_boundary_spec(m, f1, f2));
-            assert(false);
-        }
-    };
+    ));
 }
 
 #[cfg(verus_keep_ghost)]
@@ -740,6 +723,167 @@ pub open spec fn mesh_non_adjacent_face_pair_forbidden_intersection_relation_spe
     &&& f1 != f2
     &&& mesh_faces_disjoint_boundary_spec(m, f1, f2)
     &&& geometric_intersection_exists
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_non_adjacent_face_pair_forbidden_relation_implies_disjoint_boundary_and_intersection(
+    m: MeshModel,
+    f1: int,
+    f2: int,
+    geometric_intersection_exists: bool,
+)
+    requires
+        mesh_non_adjacent_face_pair_forbidden_intersection_relation_spec(
+            m,
+            f1,
+            f2,
+            geometric_intersection_exists,
+        ),
+    ensures
+        0 <= f1 < mesh_face_count_spec(m),
+        0 <= f2 < mesh_face_count_spec(m),
+        f1 != f2,
+        mesh_faces_disjoint_boundary_spec(m, f1, f2),
+        geometric_intersection_exists,
+{
+    assert(0 <= f1 < mesh_face_count_spec(m));
+    assert(0 <= f2 < mesh_face_count_spec(m));
+    assert(f1 != f2);
+    assert(mesh_faces_disjoint_boundary_spec(m, f1, f2));
+    assert(geometric_intersection_exists);
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_disjoint_boundary_and_intersection_imply_non_adjacent_face_pair_forbidden_relation(
+    m: MeshModel,
+    f1: int,
+    f2: int,
+    geometric_intersection_exists: bool,
+)
+    requires
+        0 <= f1 < mesh_face_count_spec(m),
+        0 <= f2 < mesh_face_count_spec(m),
+        f1 != f2,
+        mesh_faces_disjoint_boundary_spec(m, f1, f2),
+        geometric_intersection_exists,
+    ensures
+        mesh_non_adjacent_face_pair_forbidden_intersection_relation_spec(
+            m,
+            f1,
+            f2,
+            geometric_intersection_exists,
+        ),
+{
+    assert(mesh_non_adjacent_face_pair_forbidden_intersection_relation_spec(
+        m,
+        f1,
+        f2,
+        geometric_intersection_exists,
+    ));
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_non_adjacent_face_pair_forbidden_relation_iff_disjoint_boundary_and_intersection(
+    m: MeshModel,
+    f1: int,
+    f2: int,
+    geometric_intersection_exists: bool,
+)
+    requires
+        0 <= f1 < mesh_face_count_spec(m),
+        0 <= f2 < mesh_face_count_spec(m),
+        f1 != f2,
+    ensures
+        mesh_non_adjacent_face_pair_forbidden_intersection_relation_spec(
+            m,
+            f1,
+            f2,
+            geometric_intersection_exists,
+        ) == (mesh_faces_disjoint_boundary_spec(m, f1, f2) && geometric_intersection_exists),
+{
+    assert(
+        mesh_non_adjacent_face_pair_forbidden_intersection_relation_spec(
+            m,
+            f1,
+            f2,
+            geometric_intersection_exists,
+        ) ==> (mesh_faces_disjoint_boundary_spec(m, f1, f2) && geometric_intersection_exists)
+    ) by {
+        if mesh_non_adjacent_face_pair_forbidden_intersection_relation_spec(
+            m,
+            f1,
+            f2,
+            geometric_intersection_exists,
+        ) {
+            lemma_mesh_non_adjacent_face_pair_forbidden_relation_implies_disjoint_boundary_and_intersection(
+                m,
+                f1,
+                f2,
+                geometric_intersection_exists,
+            );
+            assert(mesh_faces_disjoint_boundary_spec(m, f1, f2));
+            assert(geometric_intersection_exists);
+        }
+    };
+
+    assert(
+        (mesh_faces_disjoint_boundary_spec(m, f1, f2) && geometric_intersection_exists) ==> mesh_non_adjacent_face_pair_forbidden_intersection_relation_spec(
+            m,
+            f1,
+            f2,
+            geometric_intersection_exists,
+        )
+    ) by {
+        if mesh_faces_disjoint_boundary_spec(m, f1, f2) && geometric_intersection_exists {
+            lemma_mesh_disjoint_boundary_and_intersection_imply_non_adjacent_face_pair_forbidden_relation(
+                m,
+                f1,
+                f2,
+                geometric_intersection_exists,
+            );
+            assert(mesh_non_adjacent_face_pair_forbidden_intersection_relation_spec(
+                m,
+                f1,
+                f2,
+                geometric_intersection_exists,
+            ));
+        }
+    };
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_non_disjoint_boundary_implies_not_non_adjacent_face_pair_forbidden_relation(
+    m: MeshModel,
+    f1: int,
+    f2: int,
+    geometric_intersection_exists: bool,
+)
+    requires
+        0 <= f1 < mesh_face_count_spec(m),
+        0 <= f2 < mesh_face_count_spec(m),
+        f1 != f2,
+        !mesh_faces_disjoint_boundary_spec(m, f1, f2),
+    ensures
+        !mesh_non_adjacent_face_pair_forbidden_intersection_relation_spec(
+            m,
+            f1,
+            f2,
+            geometric_intersection_exists,
+        ),
+{
+    lemma_mesh_non_adjacent_face_pair_forbidden_relation_iff_disjoint_boundary_and_intersection(
+        m,
+        f1,
+        f2,
+        geometric_intersection_exists,
+    );
+    assert(!(mesh_faces_disjoint_boundary_spec(m, f1, f2) && geometric_intersection_exists));
+    assert(!mesh_non_adjacent_face_pair_forbidden_intersection_relation_spec(
+        m,
+        f1,
+        f2,
+        geometric_intersection_exists,
+    ));
 }
 
 #[cfg(verus_keep_ghost)]
@@ -3329,10 +3473,15 @@ pub proof fn lemma_mesh_face_seed0_fixed_witness_and_quad_cycle_imply_face_copla
     let p2 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 2);
     let p3 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 3);
 
-    assert(vcad_math::orientation3::is_coplanar(p0, p1, p2, p3)) by {
-        assert(mesh_face_coplanar_fixed_seed_witness_spec(m, vertex_positions, f, 4, 0));
-        assert(0 <= 3 < 4);
-    };
+    assert(mesh_face_coplanar_fixed_seed_witness_spec(m, vertex_positions, f, 4, 0));
+    assert(0 <= 3 < 4);
+    assert(vcad_math::orientation3::is_coplanar(
+        mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 0),
+        mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 1),
+        mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 2),
+        mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 3),
+    ));
+    assert(vcad_math::orientation3::is_coplanar(p0, p1, p2, p3));
 
     assert forall|i: int, j: int, l: int, d: int|
         0 <= i < 4 && 0 <= j < 4 && 0 <= l < 4 && 0 <= d < 4 implies #[trigger]

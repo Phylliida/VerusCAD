@@ -195,6 +195,31 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)`) with a forbidden-relation decomposition + shared-boundary exclusion refactor increment in:
+  - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`.
+  - added reusable forbidden-relation decomposition lemmas:
+    - `lemma_mesh_non_adjacent_face_pair_forbidden_relation_implies_disjoint_boundary_and_intersection`;
+    - `lemma_mesh_disjoint_boundary_and_intersection_imply_non_adjacent_face_pair_forbidden_relation`;
+    - `lemma_mesh_non_adjacent_face_pair_forbidden_relation_iff_disjoint_boundary_and_intersection`;
+    - `lemma_mesh_non_disjoint_boundary_implies_not_non_adjacent_face_pair_forbidden_relation`.
+  - refactored:
+    - `lemma_mesh_faces_shared_boundary_runtime_branch_classifier_not_non_adjacent_forbidden_relation`
+    - to route through the new non-disjoint-boundary exclusion lemma instead of the previous local contradiction-only proof.
+  - outcome:
+    - the P5.5 proof surface now has an explicit iff decomposition for the non-adjacent forbidden relation and a reusable non-disjoint-boundary exclusion lemma;
+    - this reduces duplicated case-splitting for the remaining open checker soundness/completeness work.
+- 2026-02-19: Failed attempt in this P5.5 forbidden-relation decomposition pass:
+  - first prover run introduced a trigger-instantiation regression in existing quad-cycle plumbing (`lemma_mesh_face_seed0_fixed_witness_and_quad_cycle_imply_face_coplanar_spec`, assertion on `is_coplanar(p0,p1,p2,p3)`), causing `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` to fail with one proof error;
+  - resolved by replacing the fragile `by` instantiation with a direct fixed-witness assertion at the concrete indices (`0,1,2,3`), restoring stable verification.
+- 2026-02-19: Revalidated after the P5.5 forbidden-relation decomposition/refactor increment:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" face_coplanarity_seed0_triangle_or_quad_sound_complete_bridge_matches_runtime_checker` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" shared_edge_contacts_are_not_misclassified_as_forbidden_intersections` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (61 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (82 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (327 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (364 verified, 0 errors)
 - 2026-02-19: Worked P5.3 (`Proof: runtime checker correctness vs convexity spec`) with a triangle-face sound-bridge contract-hardening + parity-surface expansion increment in:
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
   - `src/halfedge_mesh/tests.rs`.

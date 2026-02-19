@@ -1,1 +1,1 @@
-Hardened the P5.3 triangle convexity sound bridge to export full seed-0 coplanarity/validity artifacts and broadened its parity coverage through the shared constructive harness, with revalidation logged in the burndown; 8 Phase 5 tasks remain in vcad-topology.
+Added P5.5 forbidden-relation decomposition lemmas and refactored shared-boundary exclusion proof plumbing with full revalidation logged in the burndown; 8 Phase 5 tasks remain in vcad-topology.
