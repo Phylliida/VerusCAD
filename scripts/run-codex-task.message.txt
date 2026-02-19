@@ -1,1 +1,1 @@
-Added a P5.1 runtime coplanarity sound-bridge API with parity regressions against Mesh::check_face_coplanarity and full revalidation, and 10 Phase 5 checklist tasks remain.
+Added a P5.1 phase5-runtime-bundle coplanarity completeness bridge with new constructive/runtime parity locks and full vcad-topology revalidation, and 10 Phase 5 checklist tasks remain.

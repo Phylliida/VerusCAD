@@ -195,6 +195,41 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.1 runtime-checker-correctness completeness-precondition tightening
+  increment across
+  `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs` and
+  `src/halfedge_mesh/tests.rs`:
+  - added a new completeness entrypoint that consumes the existing Phase-5 runtime bundle directly
+    (without re-requiring full coplanarity):
+    - `runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_phase5_runtime_bundle_preconditions`;
+    - this wrapper now derives index/cycle/runtime-geometry prerequisites from
+      `mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec`.
+  - retained compatibility for the existing helper
+    `runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_phase5_runtime_bundle_and_full_coplanarity_preconditions`,
+    but normalized its implementation to delegate through the new bundle-only completeness wrapper.
+  - added a runtime-facing bridge wrapper to make the bundle-only completeness path executable from
+    parity tests:
+    - `runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_phase5_runtime_bundle_sound_bridge`.
+  - extended `geometry-checks + verus-proofs` parity coverage:
+    - new helper
+      `assert_face_coplanarity_seed0_phase5_runtime_bundle_completeness_bridge_parity`;
+    - wired into `assert_constructive_phase5_gate_parity`;
+    - added focused regression
+      `face_coplanarity_seed0_phase5_runtime_bundle_completeness_bridge_matches_geometric_sound_bridge`.
+  - outcome: the P5.1 completeness direction now has a stricter precondition-lift path from the
+    already-proved Phase-5 runtime bundle, reducing redundant coplanarity assumptions at call sites
+    while keeping runtime/constructive parity locked.
+- 2026-02-19: Failed attempts in this P5.1 completeness-precondition tightening pass: none.
+- 2026-02-19: Revalidated after the P5.1 completeness-precondition tightening additions:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" face_coplanarity_seed0_phase5_runtime_bundle_completeness_bridge_matches_geometric_sound_bridge`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" geometric_consistency_constructive_gate_matches_runtime_boolean_gate`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" differential_randomized_constructive_geometric_gate_parity_harness`
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (286 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (323 verified, 0 errors)
 - 2026-02-19: Completed a P5.1 runtime-checker-correctness sound-bridge API increment across
   `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs` and
   `src/halfedge_mesh/tests.rs`:
