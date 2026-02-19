@@ -694,6 +694,34 @@ pub open spec fn mesh_face_cycle_next_index_spec(i: int, k: int) -> int {
 }
 
 #[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_face_cycle_prev_next_indices_in_bounds(i: int, k: int)
+    requires
+        0 < k,
+        0 <= i < k,
+    ensures
+        0 <= mesh_face_cycle_prev_index_spec(i, k) < k,
+        0 <= mesh_face_cycle_next_index_spec(i, k) < k,
+{
+    if i == 0 {
+        assert(mesh_face_cycle_prev_index_spec(i, k) == k - 1);
+        assert(0 <= k - 1);
+        assert(k - 1 < k);
+    } else {
+        assert(i - 1 >= 0);
+        assert(mesh_face_cycle_prev_index_spec(i, k) == i - 1);
+        assert(i - 1 < k);
+    }
+
+    if i + 1 < k {
+        assert(mesh_face_cycle_next_index_spec(i, k) == i + 1);
+        assert(0 <= i + 1 < k);
+    } else {
+        assert(mesh_face_cycle_next_index_spec(i, k) == 0);
+        assert(0 < k);
+    }
+}
+
+#[cfg(verus_keep_ghost)]
 pub open spec fn mesh_face_projected_turn_sign_at_spec(
     m: MeshModel,
     vertex_positions: Seq<vcad_math::point3::Point3>,
@@ -796,6 +824,159 @@ pub open spec fn mesh_all_faces_projected_turn_sign_consistency_spec(
     &&& mesh_geometry_input_spec(m, vertex_positions)
     &&& forall|f: int| 0 <= f < mesh_face_count_spec(m)
         ==> #[trigger] mesh_face_projected_turn_sign_consistency_spec(m, vertex_positions, f)
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_face_projected_turn_legal_projection_inputs_witness_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+    k: int,
+    seed_i: int,
+) -> bool {
+    let normal = mesh_face_seed_plane_normal_spec(m, vertex_positions, f, seed_i);
+    let offset = mesh_face_seed_plane_offset_relative_to_origin_spec(m, vertex_positions, f, seed_i);
+    &&& mesh_index_bounds_spec(m)
+    &&& mesh_geometry_input_spec(m, vertex_positions)
+    &&& 0 <= f < mesh_face_count_spec(m)
+    &&& #[trigger] mesh_face_cycle_witness_spec(m, f, k)
+    &&& 0 <= seed_i
+    &&& seed_i + 2 < k
+    &&& normal.norm2_spec().signum() != 0
+    &&& forall|i: int| 0 <= i < k ==> {
+        let prev_i = mesh_face_cycle_prev_index_spec(i, k);
+        let next_i = mesh_face_cycle_next_index_spec(i, k);
+        &&& 0 <= prev_i < k
+        &&& 0 <= next_i < k
+        &&& #[trigger] mesh_point_satisfies_plane_relative_to_origin_spec(
+            normal,
+            offset,
+            mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, i),
+        )
+        &&& mesh_point_satisfies_plane_relative_to_origin_spec(
+            normal,
+            offset,
+            mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                m,
+                vertex_positions,
+                f,
+                prev_i,
+            ),
+        )
+        &&& mesh_point_satisfies_plane_relative_to_origin_spec(
+            normal,
+            offset,
+            mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                m,
+                vertex_positions,
+                f,
+                next_i,
+            ),
+        )
+    }
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_face_projected_turn_sign_witness_uses_legal_projection_inputs(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+    k: int,
+    seed_i: int,
+    expected_sign: int,
+)
+    requires
+        mesh_face_projected_turn_sign_consistency_witness_spec(
+            m,
+            vertex_positions,
+            f,
+            k,
+            seed_i,
+            expected_sign,
+        ),
+        mesh_face_coplanar_witness_spec(m, vertex_positions, f, k),
+    ensures
+        mesh_face_projected_turn_legal_projection_inputs_witness_spec(
+            m,
+            vertex_positions,
+            f,
+            k,
+            seed_i,
+        ),
+{
+    let normal = mesh_face_seed_plane_normal_spec(m, vertex_positions, f, seed_i);
+    let offset = mesh_face_seed_plane_offset_relative_to_origin_spec(m, vertex_positions, f, seed_i);
+    assert(3 <= k);
+    lemma_mesh_face_coplanar_witness_seed_plane_contains_vertices(m, vertex_positions, f, k, seed_i);
+    assert(mesh_face_plane_contains_vertex_witness_spec(
+        m,
+        vertex_positions,
+        f,
+        k,
+        normal,
+        offset,
+    ));
+
+    assert forall|i: int| 0 <= i < k implies {
+        let prev_i = mesh_face_cycle_prev_index_spec(i, k);
+        let next_i = mesh_face_cycle_next_index_spec(i, k);
+        &&& 0 <= prev_i < k
+        &&& 0 <= next_i < k
+        &&& #[trigger] mesh_point_satisfies_plane_relative_to_origin_spec(
+            normal,
+            offset,
+            mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, i),
+        )
+        &&& mesh_point_satisfies_plane_relative_to_origin_spec(
+            normal,
+            offset,
+            mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                m,
+                vertex_positions,
+                f,
+                prev_i,
+            ),
+        )
+        &&& mesh_point_satisfies_plane_relative_to_origin_spec(
+            normal,
+            offset,
+            mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                m,
+                vertex_positions,
+                f,
+                next_i,
+            ),
+        )
+    } by {
+        let prev_i = mesh_face_cycle_prev_index_spec(i, k);
+        let next_i = mesh_face_cycle_next_index_spec(i, k);
+        lemma_mesh_face_cycle_prev_next_indices_in_bounds(i, k);
+        assert(0 <= prev_i < k);
+        assert(0 <= next_i < k);
+
+        assert(mesh_point_satisfies_plane_relative_to_origin_spec(
+            normal,
+            offset,
+            mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, prev_i),
+        ));
+        assert(mesh_point_satisfies_plane_relative_to_origin_spec(
+            normal,
+            offset,
+            mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, i),
+        ));
+        assert(mesh_point_satisfies_plane_relative_to_origin_spec(
+            normal,
+            offset,
+            mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, next_i),
+        ));
+    };
+    assert(mesh_face_projected_turn_legal_projection_inputs_witness_spec(
+        m,
+        vertex_positions,
+        f,
+        k,
+        seed_i,
+    ));
 }
 
 #[cfg(verus_keep_ghost)]

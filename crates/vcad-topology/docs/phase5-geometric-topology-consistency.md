@@ -44,7 +44,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [x] Spec: projected consecutive `orient2d` signs are globally consistent per face.
 - [x] Runtime checker: implement `check_face_convexity`.
 - [ ] Proof: runtime checker correctness vs convexity spec.
-- [ ] Proof: convexity checker uses only legally projected points from a coplanar face.
+- [x] Proof: convexity checker uses only legally projected points from a coplanar face.
 - [x] Proof: triangle faces satisfy convexity trivially.
 
 ## P5.4 Invariant: Outward Face Normals (Roadmap)
@@ -182,6 +182,25 @@ Current differential/property-based harness policy (runtime behavior locked by t
 - optimized intersection checking (`check_no_forbidden_face_face_intersections`) is asserted equivalent to a no-cull brute-force oracle path (`check_no_forbidden_face_face_intersections_without_broad_phase_for_testing`) across all generated fixtures.
 
 ## Burndown Log
+- 2026-02-19: Completed the remaining P5.3 legal-projection-input proof item in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
+  - added `lemma_mesh_face_cycle_prev_next_indices_in_bounds`, proving cyclic `prev`/`next` corner indices remain in `[0, k)` for any valid face-cycle index;
+  - added `mesh_face_projected_turn_legal_projection_inputs_witness_spec`, making the projected-turn legality contract explicit:
+    - projected `prev`/`curr`/`next` turn points are face-cycle points; and
+    - all three points satisfy the face seed-plane equation;
+  - added `lemma_mesh_face_projected_turn_sign_witness_uses_legal_projection_inputs`, deriving the legality witness from:
+    - projected-turn sign consistency witness; plus
+    - coplanarity witness for the same face cycle.
+  - this discharges the checklist item:
+    - P5.3 `Proof: convexity checker uses only legally projected points from a coplanar face`.
+- 2026-02-19: Failed attempt in this P5.3 legal-projection pass:
+  - first revision used `#[trigger]` on `let`-bound quantifier locals inside Verus quantified formulas; Verus rejects let-bound trigger terms.
+  - resolved by rewriting triggers to direct function terms over quantified indices.
+- 2026-02-19: Revalidated after the P5.3 legal-projection proof additions:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (222 verified, 0 errors)
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology.sh` (257 verified, 0 errors)
 - 2026-02-18: Completed the remaining P5.6 twin/adjacent orientation interaction proof item across
   `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs` and
   `src/runtime_halfedge_mesh_refinement/from_face_cycles_specs_and_lemmas.rs`:
