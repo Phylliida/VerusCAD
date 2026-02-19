@@ -1,1 +1,1 @@
-Added a low-cost P5.5 forbidden-policy symmetry bridge lemma (with documented high-cost symmetry attempt rollback) in vcad-topology, and 8 Phase 5 tasks remain.
+Factored P5.5 forbidden-policy symmetry in vcad-topology into a reusable classifier-parity helper (after documenting a failed unconditional exact-two-vertex symmetry proof attempt), and 8 Phase 5 tasks remain.
