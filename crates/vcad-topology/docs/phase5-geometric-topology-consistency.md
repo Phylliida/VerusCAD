@@ -195,6 +195,32 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.1 runtime-checker-correctness proof-plumbing increment in
+  `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
+  - added a face-cycle witness length uniqueness lemma:
+    - `lemma_mesh_face_cycle_witness_length_unique`;
+  - added model-level normalization lemmas that pin existential face-coplanarity witnesses to a
+    concrete face-cycle length witness:
+    - `lemma_mesh_face_coplanar_spec_and_face_cycle_witness_imply_coplanar_witness_at_cycle_len`;
+    - `lemma_mesh_face_coplanar_spec_and_face_cycle_witness_imply_seed0_fixed_witness_at_cycle_len`;
+  - added a runtime-alias aggregate lemma to lift full runtime coplanarity + face-cycle witnesses
+    into per-face seed-0 fixed witnesses at those exact cycle lengths:
+    - `lemma_mesh_runtime_all_faces_coplanar_spec_and_face_next_cycles_witness_imply_all_faces_seed0_fixed_witness_at_cycle_lens`.
+  - outcome: P5.1 completeness-side obligations can now rewrite existential coplanarity witnesses
+    into the concrete cycle lengths used by runtime loops, reducing the remaining gap to a full
+    runtime checker soundness/completeness theorem.
+- 2026-02-19: Failed attempt in this P5.1 witness-normalization pass:
+  - initial `lemma_mesh_face_cycle_witness_length_unique` draft failed due insufficiently explicit
+    face-index bounds and quantifier instantiation for the no-repeat cycle clause; resolved by
+    adding an explicit face-index precondition and explicit `i=0`/`j=k` instantiations in each
+    contradiction branch.
+- 2026-02-19: Revalidated after the P5.1 witness-normalization additions:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (282 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (319 verified, 0 errors)
 - 2026-02-19: Completed a P5.5 shared-boundary non-misclassification differential-oracle
   increment across `src/halfedge_mesh/validation.rs` and `src/halfedge_mesh/tests.rs`:
   - added a test-only pair-level runtime hook that exposes the forbidden-intersection decision
