@@ -90,7 +90,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [x] Extend `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs` with Phase 5 geometry specs.
 - [x] Add Phase 5 bridge lemmas alongside `src/runtime_halfedge_mesh_refinement/kernel_bridge_lemmas.rs`.
 - [x] Add runtime constructive check wrappers analogous to current structural check wrappers.
-- [ ] If kernelized checkers are added, extend `src/verified_checker_kernels.rs` and prove bridge equivalence.
+- [x] If kernelized checkers are added, extend `src/verified_checker_kernels.rs` and prove bridge equivalence.
 - [x] Ensure new proof modules are included from `src/runtime_halfedge_mesh_refinement.rs`.
 
 ## P5.9 Tests and Counterexamples
@@ -193,6 +193,37 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed the remaining P5.8 kernelized-checker integration item across
+  `src/verified_checker_kernels.rs`,
+  `src/runtime_halfedge_mesh_refinement/kernel_bridge_lemmas.rs`,
+  `src/runtime_halfedge_mesh_refinement/kernel_component_runtime_checks.rs`,
+  and `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`:
+  - added a new kernelized Phase 5 shared-edge local-orientation checker path:
+    - `kernel_twin_faces_distinct_*` specs;
+    - `kernel_twin_endpoint_correspondence_*` specs;
+    - `kernel_shared_edge_local_orientation_consistency_*` specs;
+    - `kernel_check_shared_edge_local_orientation_consistency` with exact checker/spec equivalence (`out == total_spec`);
+  - added kernel-to-mesh bridge lemmas for the new checker semantics:
+    - twin-face distinctness and twin-endpoint correspondence bridges in both directions;
+    - aggregate bridge equivalence lemma:
+      - `lemma_kernel_shared_edge_local_orientation_matches_mesh`;
+    - aggregate soundness bridge used by runtime wrapper:
+      - `lemma_kernel_shared_edge_local_orientation_total_implies_mesh_shared_edge_local_orientation`;
+  - added runtime kernel-bridge wrapper:
+    - `runtime_check_shared_edge_local_orientation_kernel_bridge`;
+  - wired the constructive Phase 5 gate to use the new kernel bridge wrapper for the shared-edge local-orientation proof link.
+- 2026-02-19: Failed attempts in this P5.8 kernelized-checker pass:
+  - initial endpoint-correspondence bridge proofs failed without explicit index-bounds preconditions on kernel/mesh `next` traversals;
+    resolved by tightening lemma preconditions and reusing existing kernel->mesh index-bounds bridging;
+  - initial checker loop strengthening attempted to re-establish universal invariants even when `ok == false`;
+    resolved by guarding the strengthening step under `if ok`.
+- 2026-02-19: Revalidated after the P5.8 kernelized-checker additions:
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (239 verified, 0 errors)
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology.sh` (276 verified, 0 errors)
 - 2026-02-19: Completed a P5.1 runtime-soundness groundwork increment in
   `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
   - added an aggregate seed-plane containment spec derived from the seed-0 face plane:

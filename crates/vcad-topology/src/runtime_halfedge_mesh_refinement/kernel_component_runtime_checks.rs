@@ -321,6 +321,27 @@ pub fn runtime_check_vertex_manifold_kernel_bridge(m: &Mesh) -> (out: bool)
     true
 }
 
+#[allow(dead_code)]
+pub fn runtime_check_shared_edge_local_orientation_kernel_bridge(m: &Mesh) -> (out: bool)
+    ensures
+        out ==> mesh_shared_edge_local_orientation_consistency_spec(m@),
+{
+    let km = runtime_mesh_to_kernel_mesh(m);
+    let ok = kernels::kernel_check_shared_edge_local_orientation_consistency(&km);
+    if !ok {
+        return false;
+    }
+    proof {
+        assert(kernels::kernel_shared_edge_local_orientation_consistency_total_spec(&km));
+        lemma_kernel_shared_edge_local_orientation_total_implies_mesh_shared_edge_local_orientation(
+            &km,
+            m@,
+        );
+        assert(mesh_shared_edge_local_orientation_consistency_spec(m@));
+    }
+    true
+}
+
 #[verifier::exec_allows_no_decreases_clause]
 #[allow(dead_code)]
 pub fn runtime_compute_half_edge_components(m: &Mesh) -> (out: Option<Vec<Vec<usize>>>)

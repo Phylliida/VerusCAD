@@ -502,6 +502,210 @@ pub proof fn lemma_kernel_index_bounds_implies_mesh_index_bounds(
     assert(mesh_index_bounds_spec(m));
 }
 
+pub proof fn lemma_kernel_twin_faces_distinct_matches_mesh(
+    km: &kernels::KernelMesh,
+    m: MeshModel,
+)
+    requires
+        kernel_mesh_matches_mesh_model_spec(km, m),
+        kernels::kernel_twin_faces_distinct_spec(km),
+    ensures
+        mesh_twin_faces_distinct_spec(m),
+{
+    let hcnt = mesh_half_edge_count_spec(m);
+    assert(hcnt == kernels::kernel_half_edge_count_spec(km));
+
+    assert(forall|h: int|
+        0 <= h < hcnt ==> #[trigger] mesh_twin_faces_distinct_at_spec(m, h)) by {
+        assert forall|h: int|
+            0 <= h < hcnt implies #[trigger] mesh_twin_faces_distinct_at_spec(m, h) by {
+            assert(kernels::kernel_twin_faces_distinct_at_spec(km, h));
+            let t = m.half_edges[h].twin;
+            assert(t == km.half_edges@[h].twin as int);
+            assert(0 <= t < hcnt);
+            assert(m.half_edges[h].face == km.half_edges@[h].face as int);
+            assert(m.half_edges[t].face == km.half_edges@[t].face as int);
+            assert(m.half_edges[h].face != m.half_edges[t].face);
+            assert(mesh_twin_faces_distinct_at_spec(m, h));
+        };
+    };
+    assert(mesh_twin_faces_distinct_spec(m));
+}
+
+pub proof fn lemma_mesh_twin_faces_distinct_matches_kernel(
+    km: &kernels::KernelMesh,
+    m: MeshModel,
+)
+    requires
+        kernel_mesh_matches_mesh_model_spec(km, m),
+        mesh_twin_faces_distinct_spec(m),
+    ensures
+        kernels::kernel_twin_faces_distinct_spec(km),
+{
+    let hcnt = kernels::kernel_half_edge_count_spec(km);
+    assert(hcnt == mesh_half_edge_count_spec(m));
+
+    assert(forall|h: int|
+        0 <= h < hcnt ==> #[trigger] kernels::kernel_twin_faces_distinct_at_spec(km, h)) by {
+        assert forall|h: int|
+            0 <= h < hcnt implies #[trigger] kernels::kernel_twin_faces_distinct_at_spec(km, h) by {
+            assert(mesh_twin_faces_distinct_at_spec(m, h));
+            let t = km.half_edges@[h].twin as int;
+            assert(t == m.half_edges[h].twin);
+            assert(0 <= t < hcnt);
+            assert(km.half_edges@[h].face as int == m.half_edges[h].face);
+            assert(km.half_edges@[t].face as int == m.half_edges[t].face);
+            assert(km.half_edges@[h].face as int != km.half_edges@[t].face as int);
+            assert(kernels::kernel_twin_faces_distinct_at_spec(km, h));
+        };
+    };
+    assert(kernels::kernel_twin_faces_distinct_spec(km));
+}
+
+pub proof fn lemma_kernel_twin_endpoint_correspondence_matches_mesh(
+    km: &kernels::KernelMesh,
+    m: MeshModel,
+)
+    requires
+        kernel_mesh_matches_mesh_model_spec(km, m),
+        kernels::kernel_index_bounds_spec(km),
+        kernels::kernel_twin_endpoint_correspondence_spec(km),
+    ensures
+        from_face_cycles_twin_endpoint_correspondence_spec(m),
+{
+    let hcnt = mesh_half_edge_count_spec(m);
+    assert(hcnt == kernels::kernel_half_edge_count_spec(km));
+
+    assert(forall|h: int|
+        0 <= h < hcnt ==> from_face_cycles_twin_endpoint_correspondence_at_spec(m, h)) by {
+        assert forall|h: int|
+            0 <= h < hcnt implies from_face_cycles_twin_endpoint_correspondence_at_spec(m, h) by {
+            assert(kernels::kernel_twin_endpoint_correspondence_at_spec(km, h));
+            let t = m.half_edges[h].twin;
+            let n_h = m.half_edges[h].next;
+            let n_t = m.half_edges[t].next;
+            assert(t == km.half_edges@[h].twin as int);
+            assert(0 <= t < hcnt);
+            assert(n_h == km.half_edges@[h].next as int);
+            assert(n_t == km.half_edges@[t].next as int);
+            assert(0 <= n_h < hcnt);
+            assert(0 <= n_t < hcnt);
+
+            assert(kernels::kernel_half_edge_from_vertex_spec(km, t)
+                == kernels::kernel_half_edge_to_vertex_spec(km, h));
+            assert(kernels::kernel_half_edge_to_vertex_spec(km, t)
+                == kernels::kernel_half_edge_from_vertex_spec(km, h));
+
+            assert(m.half_edges[t].vertex == km.half_edges@[t].vertex as int);
+            assert(m.half_edges[n_h].vertex == km.half_edges@[n_h].vertex as int);
+            assert(m.half_edges[n_t].vertex == km.half_edges@[n_t].vertex as int);
+            assert(m.half_edges[h].vertex == km.half_edges@[h].vertex as int);
+
+            assert(mesh_half_edge_from_vertex_spec(m, t) == m.half_edges[t].vertex);
+            assert(mesh_half_edge_to_vertex_spec(m, h) == m.half_edges[n_h].vertex);
+            assert(mesh_half_edge_to_vertex_spec(m, t) == m.half_edges[n_t].vertex);
+            assert(mesh_half_edge_from_vertex_spec(m, h) == m.half_edges[h].vertex);
+
+            assert(mesh_half_edge_from_vertex_spec(m, t) == mesh_half_edge_to_vertex_spec(m, h));
+            assert(mesh_half_edge_to_vertex_spec(m, t) == mesh_half_edge_from_vertex_spec(m, h));
+            assert(from_face_cycles_twin_endpoint_correspondence_at_spec(m, h));
+        };
+    };
+    assert(from_face_cycles_twin_endpoint_correspondence_spec(m));
+}
+
+pub proof fn lemma_mesh_twin_endpoint_correspondence_matches_kernel(
+    km: &kernels::KernelMesh,
+    m: MeshModel,
+)
+    requires
+        kernel_mesh_matches_mesh_model_spec(km, m),
+        mesh_index_bounds_spec(m),
+        from_face_cycles_twin_endpoint_correspondence_spec(m),
+    ensures
+        kernels::kernel_twin_endpoint_correspondence_spec(km),
+{
+    let hcnt = kernels::kernel_half_edge_count_spec(km);
+    assert(hcnt == mesh_half_edge_count_spec(m));
+
+    assert(forall|h: int|
+        0 <= h < hcnt ==> #[trigger] kernels::kernel_twin_endpoint_correspondence_at_spec(km, h)) by {
+        assert forall|h: int|
+            0 <= h < hcnt implies #[trigger] kernels::kernel_twin_endpoint_correspondence_at_spec(km, h) by {
+            assert(from_face_cycles_twin_endpoint_correspondence_at_spec(m, h));
+            let t = km.half_edges@[h].twin as int;
+            let n_h = km.half_edges@[h].next as int;
+            let n_t = km.half_edges@[t].next as int;
+            assert(t == m.half_edges[h].twin);
+            assert(0 <= t < hcnt);
+            assert(n_h == m.half_edges[h].next);
+            assert(n_t == m.half_edges[t].next);
+            assert(0 <= n_h < hcnt);
+            assert(0 <= n_t < hcnt);
+
+            assert(mesh_half_edge_from_vertex_spec(m, t) == mesh_half_edge_to_vertex_spec(m, h));
+            assert(mesh_half_edge_to_vertex_spec(m, t) == mesh_half_edge_from_vertex_spec(m, h));
+
+            assert(km.half_edges@[t].vertex as int == m.half_edges[t].vertex);
+            assert(km.half_edges@[n_h].vertex as int == m.half_edges[n_h].vertex);
+            assert(km.half_edges@[n_t].vertex as int == m.half_edges[n_t].vertex);
+            assert(km.half_edges@[h].vertex as int == m.half_edges[h].vertex);
+
+            assert(kernels::kernel_half_edge_from_vertex_spec(km, t)
+                == kernels::kernel_half_edge_to_vertex_spec(km, h));
+            assert(kernels::kernel_half_edge_to_vertex_spec(km, t)
+                == kernels::kernel_half_edge_from_vertex_spec(km, h));
+            assert(kernels::kernel_twin_endpoint_correspondence_at_spec(km, h));
+        };
+    };
+    assert(kernels::kernel_twin_endpoint_correspondence_spec(km));
+}
+
+pub proof fn lemma_kernel_shared_edge_local_orientation_matches_mesh(
+    km: &kernels::KernelMesh,
+    m: MeshModel,
+)
+    requires
+        kernel_mesh_matches_mesh_model_spec(km, m),
+        kernels::kernel_index_bounds_spec(km),
+    ensures
+        kernels::kernel_shared_edge_local_orientation_consistency_spec(km)
+            <==> mesh_shared_edge_local_orientation_consistency_spec(m),
+{
+    if kernels::kernel_shared_edge_local_orientation_consistency_spec(km) {
+        assert(kernels::kernel_twin_faces_distinct_spec(km));
+        assert(kernels::kernel_twin_endpoint_correspondence_spec(km));
+        lemma_kernel_twin_faces_distinct_matches_mesh(km, m);
+        lemma_kernel_twin_endpoint_correspondence_matches_mesh(km, m);
+        assert(mesh_shared_edge_local_orientation_consistency_spec(m));
+    }
+    if mesh_shared_edge_local_orientation_consistency_spec(m) {
+        assert(mesh_twin_faces_distinct_spec(m));
+        assert(from_face_cycles_twin_endpoint_correspondence_spec(m));
+        lemma_kernel_index_bounds_implies_mesh_index_bounds(km, m);
+        assert(mesh_index_bounds_spec(m));
+        lemma_mesh_twin_faces_distinct_matches_kernel(km, m);
+        lemma_mesh_twin_endpoint_correspondence_matches_kernel(km, m);
+        assert(kernels::kernel_shared_edge_local_orientation_consistency_spec(km));
+    }
+}
+
+pub proof fn lemma_kernel_shared_edge_local_orientation_total_implies_mesh_shared_edge_local_orientation(
+    km: &kernels::KernelMesh,
+    m: MeshModel,
+)
+    requires
+        kernel_mesh_matches_mesh_model_spec(km, m),
+        kernels::kernel_shared_edge_local_orientation_consistency_total_spec(km),
+    ensures
+        mesh_shared_edge_local_orientation_consistency_spec(m),
+{
+    assert(kernels::kernel_index_bounds_spec(km));
+    assert(kernels::kernel_shared_edge_local_orientation_consistency_spec(km));
+    lemma_kernel_shared_edge_local_orientation_matches_mesh(km, m);
+    assert(mesh_shared_edge_local_orientation_consistency_spec(m));
+}
+
 pub proof fn lemma_kernel_face_cycles_cover_all_matches_mesh(
     km: &kernels::KernelMesh,
     m: MeshModel,

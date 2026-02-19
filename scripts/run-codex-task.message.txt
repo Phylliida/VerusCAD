@@ -1,1 +1,1 @@
-Added P5.1 seed-0 fixed-witness to seed-plane-containment bridge lemmas and runtime aliases, updated the Phase 5 burndown log, and revalidated vcad-topology end-to-end (267 verified, 0 errors).
+Added a kernelized Phase 5 shared-edge local-orientation checker with kernel<->mesh bridge proofs, wired it into the constructive gate, updated the burndown log, and revalidated vcad-topology end-to-end (276 verified, 0 errors).

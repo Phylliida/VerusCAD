@@ -532,7 +532,8 @@ pub fn check_geometric_topological_consistency_constructive(
     let face_convexity_ok = m.check_face_convexity();
     let face_plane_consistency_ok = m.check_face_plane_consistency();
     let shared_edge_local_orientation_runtime_ok = m.check_shared_edge_local_orientation_consistency();
-    let shared_edge_local_orientation_bridge_ok = runtime_check_shared_edge_local_orientation_consistency(m);
+    let shared_edge_local_orientation_bridge_ok =
+        runtime_check_shared_edge_local_orientation_kernel_bridge(m);
     let shared_edge_local_orientation_ok = shared_edge_local_orientation_runtime_ok
         && shared_edge_local_orientation_bridge_ok;
     let no_forbidden_face_face_intersections_ok = m.check_no_forbidden_face_face_intersections();

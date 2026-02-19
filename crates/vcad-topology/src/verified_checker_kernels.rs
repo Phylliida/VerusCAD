@@ -68,6 +68,54 @@ pub open spec fn kernel_twin_involution_total_spec(m: &KernelMesh) -> bool {
     kernel_index_bounds_spec(m) && kernel_twin_involution_spec(m)
 }
 
+pub open spec fn kernel_twin_faces_distinct_at_spec(m: &KernelMesh, h: int) -> bool {
+    let hcnt = kernel_half_edge_count_spec(m);
+    let t = m.half_edges@[h].twin as int;
+    &&& 0 <= h < hcnt
+    &&& 0 <= t < hcnt
+    &&& m.half_edges@[h].face as int != m.half_edges@[t].face as int
+}
+
+pub open spec fn kernel_twin_faces_distinct_spec(m: &KernelMesh) -> bool {
+    forall|h: int|
+        0 <= h < kernel_half_edge_count_spec(m)
+            ==> #[trigger] kernel_twin_faces_distinct_at_spec(m, h)
+}
+
+pub open spec fn kernel_half_edge_from_vertex_spec(m: &KernelMesh, h: int) -> int {
+    m.half_edges@[h].vertex as int
+}
+
+pub open spec fn kernel_half_edge_to_vertex_spec(m: &KernelMesh, h: int) -> int {
+    m.half_edges@[m.half_edges@[h].next as int].vertex as int
+}
+
+pub open spec fn kernel_twin_endpoint_correspondence_at_spec(m: &KernelMesh, h: int) -> bool {
+    let hcnt = kernel_half_edge_count_spec(m);
+    let t = m.half_edges@[h].twin as int;
+    &&& 0 <= h < hcnt
+    &&& 0 <= t < hcnt
+    &&& kernel_half_edge_from_vertex_spec(m, t) == kernel_half_edge_to_vertex_spec(m, h)
+    &&& kernel_half_edge_to_vertex_spec(m, t) == kernel_half_edge_from_vertex_spec(m, h)
+}
+
+pub open spec fn kernel_twin_endpoint_correspondence_spec(m: &KernelMesh) -> bool {
+    forall|h: int|
+        0 <= h < kernel_half_edge_count_spec(m)
+            ==> #[trigger] kernel_twin_endpoint_correspondence_at_spec(m, h)
+}
+
+pub open spec fn kernel_shared_edge_local_orientation_consistency_spec(m: &KernelMesh) -> bool {
+    &&& kernel_twin_faces_distinct_spec(m)
+    &&& kernel_twin_endpoint_correspondence_spec(m)
+}
+
+pub open spec fn kernel_shared_edge_local_orientation_consistency_total_spec(
+    m: &KernelMesh,
+) -> bool {
+    kernel_index_bounds_spec(m) && kernel_shared_edge_local_orientation_consistency_spec(m)
+}
+
 pub open spec fn kernel_next_prev_inverse_only_spec(m: &KernelMesh) -> bool {
     forall|h: int| 0 <= h < kernel_half_edge_count_spec(m) ==> kernel_next_prev_inverse_at_spec(m, h)
 }
@@ -775,6 +823,173 @@ pub fn kernel_check_no_degenerate_edges(m: &KernelMesh) -> (out: bool)
         assert(bounds_ok);
         assert(kernel_no_degenerate_edges_total_spec(m) == (kernel_index_bounds_spec(m) && kernel_no_degenerate_edges_spec(m)));
     }
+    ok
+}
+
+#[verifier::exec_allows_no_decreases_clause]
+pub fn kernel_check_shared_edge_local_orientation_consistency(m: &KernelMesh) -> (out: bool)
+    ensures
+        out == kernel_shared_edge_local_orientation_consistency_total_spec(m),
+{
+    let bounds_ok = kernel_check_index_bounds(m);
+    if !bounds_ok {
+        return false;
+    }
+
+    let mut ok = true;
+    let mut bad_idx: usize = 0;
+    let mut i: usize = 0;
+    while i < m.half_edges.len()
+        invariant
+            kernel_index_bounds_spec(m),
+            0 <= i <= m.half_edges.len(),
+            ok ==> (forall|j: int|
+                0 <= j < i as int ==> #[trigger] kernel_twin_faces_distinct_at_spec(m, j)),
+            ok ==> (forall|j: int|
+                0 <= j < i as int ==> #[trigger] kernel_twin_endpoint_correspondence_at_spec(m, j)),
+            !ok ==> {
+                &&& bad_idx < i
+                &&& (
+                    !kernel_twin_faces_distinct_at_spec(m, bad_idx as int)
+                        || !kernel_twin_endpoint_correspondence_at_spec(m, bad_idx as int)
+                )
+            },
+    {
+        let he = m.half_edges[i];
+        let t = he.twin;
+        let twin = m.half_edges[t];
+        let n = he.next;
+        let tn = twin.next;
+        let from_h = he.vertex;
+        let to_h = m.half_edges[n].vertex;
+        let from_t = twin.vertex;
+        let to_t = m.half_edges[tn].vertex;
+
+        let face_distinct_ok = he.face != twin.face;
+        let endpoint_ok = from_t == to_h && to_t == from_h;
+        if !(face_distinct_ok && endpoint_ok) {
+            if ok {
+                bad_idx = i;
+            }
+            ok = false;
+            proof {
+                assert(0 <= i as int && (i as int) < kernel_half_edge_count_spec(m));
+                assert(0 <= t as int && (t as int) < kernel_half_edge_count_spec(m));
+                assert(0 <= n as int && (n as int) < kernel_half_edge_count_spec(m));
+                assert(0 <= tn as int && (tn as int) < kernel_half_edge_count_spec(m));
+
+                if !face_distinct_ok {
+                    assert(he.face as int == twin.face as int);
+                    assert(!kernel_twin_faces_distinct_at_spec(m, i as int));
+                }
+                if !endpoint_ok {
+                    if from_t != to_h {
+                        assert((m.half_edges@[t as int].vertex as int)
+                            != (m.half_edges@[n as int].vertex as int));
+                        assert(kernel_half_edge_from_vertex_spec(m, t as int)
+                            != kernel_half_edge_to_vertex_spec(m, i as int));
+                    } else {
+                        assert(to_t != from_h);
+                        assert((m.half_edges@[tn as int].vertex as int)
+                            != (m.half_edges@[i as int].vertex as int));
+                        assert(kernel_half_edge_to_vertex_spec(m, t as int)
+                            != kernel_half_edge_from_vertex_spec(m, i as int));
+                    }
+                    assert(!kernel_twin_endpoint_correspondence_at_spec(m, i as int));
+                }
+            }
+        } else {
+            if ok {
+                proof {
+                    assert(0 <= i as int && (i as int) < kernel_half_edge_count_spec(m));
+                    assert(0 <= t as int && (t as int) < kernel_half_edge_count_spec(m));
+                    assert(0 <= n as int && (n as int) < kernel_half_edge_count_spec(m));
+                    assert(0 <= tn as int && (tn as int) < kernel_half_edge_count_spec(m));
+                    assert(he.face as int != twin.face as int);
+                    assert(from_t as int == to_h as int);
+                    assert(to_t as int == from_h as int);
+                    assert(kernel_twin_faces_distinct_at_spec(m, i as int));
+                    assert(kernel_twin_endpoint_correspondence_at_spec(m, i as int));
+
+                    assert(forall|j: int|
+                        0 <= j < (i + 1) as int ==> #[trigger] kernel_twin_faces_distinct_at_spec(m, j)) by {
+                        assert forall|j: int|
+                            0 <= j < (i + 1) as int
+                                implies #[trigger] kernel_twin_faces_distinct_at_spec(m, j) by {
+                            if j < i as int {
+                            } else {
+                                assert(j == i as int);
+                                assert(kernel_twin_faces_distinct_at_spec(m, j));
+                            }
+                        };
+                    };
+                    assert(forall|j: int|
+                        0 <= j < (i + 1) as int
+                            ==> #[trigger] kernel_twin_endpoint_correspondence_at_spec(m, j)) by {
+                        assert forall|j: int|
+                            0 <= j < (i + 1) as int
+                                implies #[trigger] kernel_twin_endpoint_correspondence_at_spec(m, j) by {
+                            if j < i as int {
+                            } else {
+                                assert(j == i as int);
+                                assert(kernel_twin_endpoint_correspondence_at_spec(m, j));
+                            }
+                        };
+                    };
+                }
+            }
+        }
+
+        i += 1;
+    }
+
+    let _ = bad_idx;
+
+    proof {
+        assert(bounds_ok);
+        if ok {
+            assert(forall|j: int|
+                0 <= j < kernel_half_edge_count_spec(m) ==> #[trigger] kernel_twin_faces_distinct_at_spec(m, j)) by {
+                assert forall|j: int|
+                    0 <= j < kernel_half_edge_count_spec(m)
+                        implies #[trigger] kernel_twin_faces_distinct_at_spec(m, j) by {
+                    assert(kernel_half_edge_count_spec(m) == i as int);
+                    assert(0 <= j < i as int);
+                };
+            };
+            assert(forall|j: int|
+                0 <= j < kernel_half_edge_count_spec(m)
+                    ==> #[trigger] kernel_twin_endpoint_correspondence_at_spec(m, j)) by {
+                assert forall|j: int|
+                    0 <= j < kernel_half_edge_count_spec(m)
+                        implies #[trigger] kernel_twin_endpoint_correspondence_at_spec(m, j) by {
+                    assert(kernel_half_edge_count_spec(m) == i as int);
+                    assert(0 <= j < i as int);
+                };
+            };
+            assert(kernel_twin_faces_distinct_spec(m));
+            assert(kernel_twin_endpoint_correspondence_spec(m));
+            assert(kernel_shared_edge_local_orientation_consistency_spec(m));
+            assert(kernel_shared_edge_local_orientation_consistency_total_spec(m));
+        } else {
+            assert(bad_idx < m.half_edges@.len());
+            assert(
+                !kernel_twin_faces_distinct_at_spec(m, bad_idx as int)
+                    || !kernel_twin_endpoint_correspondence_at_spec(m, bad_idx as int)
+            );
+            assert(!kernel_shared_edge_local_orientation_consistency_spec(m)) by {
+                if kernel_shared_edge_local_orientation_consistency_spec(m) {
+                    assert(kernel_twin_faces_distinct_spec(m));
+                    assert(kernel_twin_endpoint_correspondence_spec(m));
+                    assert(kernel_twin_faces_distinct_at_spec(m, bad_idx as int));
+                    assert(kernel_twin_endpoint_correspondence_at_spec(m, bad_idx as int));
+                    assert(false);
+                }
+            };
+            assert(!kernel_shared_edge_local_orientation_consistency_total_spec(m));
+        }
+    }
+
     ok
 }
 
