@@ -195,6 +195,27 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with a geometry-aware aggregate-spec strengthening increment in:
+  - `src/runtime_halfedge_mesh_refinement/components_and_validity_specs.rs`.
+  - added geometry-linked aggregate gate specs:
+    - `geometric_topological_consistency_gate_geometry_model_link_spec`;
+    - `mesh_geometric_topological_consistency_with_geometry_spec`;
+    - `mesh_runtime_geometric_topological_consistency_with_geometry_spec`.
+  - added bridge lemmas from aggregate witnesses/bundles into the new geometry-aware aggregate spec:
+    - `lemma_geometric_topological_consistency_gate_witness_api_ok_implies_mesh_geometric_topological_consistency_with_geometry`;
+    - `lemma_mesh_geometric_topological_consistency_with_geometry_implies_mesh_geometric_topological_consistency`;
+    - `lemma_mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_implies_mesh_geometric_topological_consistency_with_geometry`.
+  - outcome:
+    - aggregate proof layering now has an explicit geometry-aware spec target (seed0 coplanarity-plane bundle + Phase 4 validity + shared-edge local orientation), instead of routing only through the weaker topology-only aggregate characterization;
+    - `check_geometric_topological_consistency_constructive` and `runtime_check_geometric_topological_consistency_sound_bridge` now prove into that stronger geometry-aware aggregate spec.
+- 2026-02-19: Failed attempts in this P5.7 geometry-aware aggregate-spec pass: none.
+- 2026-02-19: Revalidated after the P5.7 geometry-aware aggregate-spec increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (86 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (354 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (391 verified, 0 errors)
 - 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with an unconditional exact-two-vertex symmetry bridge increment in:
   - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`.
   - added new relation-level symmetry lemmas:

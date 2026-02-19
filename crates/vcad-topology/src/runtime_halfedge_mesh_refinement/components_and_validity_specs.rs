@@ -978,12 +978,53 @@ pub open spec fn geometric_topological_consistency_gate_model_link_spec(
     &&& (w.shared_edge_local_orientation_ok ==> mesh_shared_edge_local_orientation_consistency_spec(m))
 }
 
+pub open spec fn geometric_topological_consistency_gate_geometry_model_link_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    w: GeometricTopologicalConsistencyGateWitness,
+) -> bool {
+    &&& geometric_topological_consistency_gate_model_link_spec(m, w)
+    &&& (w.face_coplanarity_ok ==> mesh_all_faces_coplanar_seed0_fixed_witness_spec(
+        m,
+        vertex_positions,
+    ))
+    &&& (w.face_coplanarity_ok ==> mesh_all_faces_seed0_corner_non_collinear_spec(
+        m,
+        vertex_positions,
+    ))
+    &&& (w.face_coplanarity_ok ==> mesh_all_faces_seed0_plane_contains_vertices_spec(
+        m,
+        vertex_positions,
+    ))
+    &&& (w.face_coplanarity_ok ==> mesh_all_faces_oriented_seed0_planes_spec(
+        m,
+        vertex_positions,
+    ))
+}
+
 pub open spec fn mesh_geometric_topological_consistency_spec(m: MeshModel) -> bool {
     exists|gw: GeometricTopologicalConsistencyGateWitness| {
         &&& geometric_topological_consistency_gate_witness_spec(gw)
         &&& geometric_topological_consistency_gate_model_link_spec(m, gw)
         &&& gw.api_ok
     }
+}
+
+pub open spec fn mesh_geometric_topological_consistency_with_geometry_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+) -> bool {
+    exists|gw: GeometricTopologicalConsistencyGateWitness| {
+        &&& geometric_topological_consistency_gate_witness_spec(gw)
+        &&& geometric_topological_consistency_gate_geometry_model_link_spec(m, vertex_positions, gw)
+        &&& gw.api_ok
+    }
+}
+
+pub open spec fn mesh_runtime_geometric_topological_consistency_with_geometry_spec(
+    m: &Mesh,
+) -> bool {
+    mesh_geometric_topological_consistency_with_geometry_spec(m@, mesh_runtime_vertex_positions_spec(m))
 }
 
 pub open spec fn mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(
@@ -1177,6 +1218,62 @@ pub proof fn lemma_geometric_topological_consistency_gate_witness_api_ok_implies
     assert(mesh_geometric_topological_consistency_spec(m));
 }
 
+pub proof fn lemma_geometric_topological_consistency_gate_witness_api_ok_implies_mesh_geometric_topological_consistency_with_geometry(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    w: GeometricTopologicalConsistencyGateWitness,
+)
+    requires
+        geometric_topological_consistency_gate_witness_spec(w),
+        geometric_topological_consistency_gate_geometry_model_link_spec(m, vertex_positions, w),
+        w.api_ok,
+    ensures
+        mesh_geometric_topological_consistency_with_geometry_spec(m, vertex_positions),
+{
+    assert(exists|gw: GeometricTopologicalConsistencyGateWitness| {
+        &&& geometric_topological_consistency_gate_witness_spec(gw)
+        &&& geometric_topological_consistency_gate_geometry_model_link_spec(m, vertex_positions, gw)
+        &&& gw.api_ok
+    }) by {
+        let gw = w;
+        assert(geometric_topological_consistency_gate_witness_spec(gw));
+        assert(geometric_topological_consistency_gate_geometry_model_link_spec(m, vertex_positions, gw));
+        assert(gw.api_ok);
+    };
+    assert(mesh_geometric_topological_consistency_with_geometry_spec(m, vertex_positions));
+}
+
+pub proof fn lemma_mesh_geometric_topological_consistency_with_geometry_implies_mesh_geometric_topological_consistency(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+)
+    requires
+        mesh_geometric_topological_consistency_with_geometry_spec(m, vertex_positions),
+    ensures
+        mesh_geometric_topological_consistency_spec(m),
+{
+    let gw = choose|gw: GeometricTopologicalConsistencyGateWitness| {
+        &&& geometric_topological_consistency_gate_witness_spec(gw)
+        &&& geometric_topological_consistency_gate_geometry_model_link_spec(m, vertex_positions, gw)
+        &&& gw.api_ok
+    };
+    assert(geometric_topological_consistency_gate_witness_spec(gw));
+    assert(geometric_topological_consistency_gate_geometry_model_link_spec(m, vertex_positions, gw));
+    assert(gw.api_ok);
+    assert(geometric_topological_consistency_gate_model_link_spec(m, gw));
+    assert(exists|gw0: GeometricTopologicalConsistencyGateWitness| {
+        &&& geometric_topological_consistency_gate_witness_spec(gw0)
+        &&& geometric_topological_consistency_gate_model_link_spec(m, gw0)
+        &&& gw0.api_ok
+    }) by {
+        let gw0 = gw;
+        assert(geometric_topological_consistency_gate_witness_spec(gw0));
+        assert(geometric_topological_consistency_gate_model_link_spec(m, gw0));
+        assert(gw0.api_ok);
+    };
+    assert(mesh_geometric_topological_consistency_spec(m));
+}
+
 pub proof fn lemma_geometric_topological_consistency_gate_witness_api_ok_implies_mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle(
     m: &Mesh,
     w: GeometricTopologicalConsistencyGateWitness,
@@ -1233,6 +1330,90 @@ pub proof fn lemma_geometric_topological_consistency_gate_witness_api_ok_implies
     assert(mesh_runtime_all_faces_oriented_seed0_planes_spec(m));
 
     assert(mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
+}
+
+pub proof fn lemma_mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_implies_mesh_geometric_topological_consistency_with_geometry(
+    m: &Mesh,
+)
+    requires
+        mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m),
+    ensures
+        mesh_runtime_geometric_topological_consistency_with_geometry_spec(m),
+{
+    let gw = GeometricTopologicalConsistencyGateWitness {
+        api_ok: true,
+        phase4_valid_ok: true,
+        no_zero_length_geometric_edges_ok: true,
+        face_corner_non_collinearity_ok: true,
+        face_coplanarity_ok: true,
+        face_convexity_ok: true,
+        face_plane_consistency_ok: true,
+        shared_edge_local_orientation_ok: true,
+        no_forbidden_face_face_intersections_ok: true,
+        outward_face_normals_ok: true,
+    };
+    assert(geometric_topological_consistency_gate_witness_spec(gw));
+    assert(geometric_topological_consistency_gate_geometry_model_link_spec(
+        m@,
+        mesh_runtime_vertex_positions_spec(m),
+        gw,
+    )) by {
+        assert(geometric_topological_consistency_gate_model_link_spec(m@, gw)) by {
+            assert(gw.phase4_valid_ok ==> mesh_valid_spec(m@));
+            assert(gw.shared_edge_local_orientation_ok ==> mesh_shared_edge_local_orientation_consistency_spec(m@));
+        };
+        assert(
+            gw.face_coplanarity_ok ==> mesh_all_faces_coplanar_seed0_fixed_witness_spec(
+                m@,
+                mesh_runtime_vertex_positions_spec(m),
+            )
+        ) by {
+            assert(mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m));
+        };
+        assert(
+            gw.face_coplanarity_ok ==> mesh_all_faces_seed0_corner_non_collinear_spec(
+                m@,
+                mesh_runtime_vertex_positions_spec(m),
+            )
+        ) by {
+            assert(mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m));
+        };
+        assert(
+            gw.face_coplanarity_ok ==> mesh_all_faces_seed0_plane_contains_vertices_spec(
+                m@,
+                mesh_runtime_vertex_positions_spec(m),
+            )
+        ) by {
+            assert(mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m));
+        };
+        assert(
+            gw.face_coplanarity_ok ==> mesh_all_faces_oriented_seed0_planes_spec(
+                m@,
+                mesh_runtime_vertex_positions_spec(m),
+            )
+        ) by {
+            assert(mesh_runtime_all_faces_oriented_seed0_planes_spec(m));
+        };
+    };
+    assert(exists|gw0: GeometricTopologicalConsistencyGateWitness| {
+        &&& geometric_topological_consistency_gate_witness_spec(gw0)
+        &&& geometric_topological_consistency_gate_geometry_model_link_spec(
+            m@,
+            mesh_runtime_vertex_positions_spec(m),
+            gw0,
+        )
+        &&& gw0.api_ok
+    }) by {
+        let gw0 = gw;
+        assert(geometric_topological_consistency_gate_witness_spec(gw0));
+        assert(geometric_topological_consistency_gate_geometry_model_link_spec(
+            m@,
+            mesh_runtime_vertex_positions_spec(m),
+            gw0,
+        ));
+        assert(gw0.api_ok);
+    };
+    assert(mesh_runtime_geometric_topological_consistency_with_geometry_spec(m));
 }
 
 pub proof fn lemma_mesh_geometric_topological_consistency_implies_mesh_valid_and_shared_edge_local_orientation(

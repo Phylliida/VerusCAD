@@ -2147,6 +2147,7 @@ pub fn check_geometric_topological_consistency_constructive(
                     ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(
                         m,
                     ))
+                && (w.api_ok ==> mesh_runtime_geometric_topological_consistency_with_geometry_spec(m))
                 && (w.api_ok ==> mesh_geometric_topological_consistency_spec(m@)),
             Option::None => true,
         },
@@ -2267,6 +2268,10 @@ pub fn check_geometric_topological_consistency_constructive(
                 w,
             );
             assert(mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
+            lemma_mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_implies_mesh_geometric_topological_consistency_with_geometry(
+                m,
+            );
+            assert(mesh_runtime_geometric_topological_consistency_with_geometry_spec(m));
         }
         assert(
             w.api_ok ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(
@@ -2275,6 +2280,11 @@ pub fn check_geometric_topological_consistency_constructive(
         ) by {
             if w.api_ok {
                 assert(mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
+            }
+        };
+        assert(w.api_ok ==> mesh_runtime_geometric_topological_consistency_with_geometry_spec(m)) by {
+            if w.api_ok {
+                assert(mesh_runtime_geometric_topological_consistency_with_geometry_spec(m));
             }
         };
         assert(w.api_ok ==> mesh_geometric_topological_consistency_spec(m@)) by {
@@ -2376,6 +2386,7 @@ pub fn runtime_check_phase4_valid_and_kernel_shared_edge_local_orientation_imply
 pub fn runtime_check_geometric_topological_consistency_sound_bridge(m: &Mesh) -> (out: bool)
     ensures
         out ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m),
+        out ==> mesh_runtime_geometric_topological_consistency_with_geometry_spec(m),
         out ==> mesh_geometric_topological_consistency_spec(m@),
         out ==> mesh_valid_spec(m@),
         out ==> mesh_shared_edge_local_orientation_consistency_spec(m@),
@@ -2402,6 +2413,10 @@ pub fn runtime_check_geometric_topological_consistency_sound_bridge(m: &Mesh) ->
         );
         assert(constructive_w.api_ok ==> mesh_geometric_topological_consistency_spec(m@));
         assert(mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
+        lemma_mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_implies_mesh_geometric_topological_consistency_with_geometry(
+            m,
+        );
+        assert(mesh_runtime_geometric_topological_consistency_with_geometry_spec(m));
         assert(mesh_geometric_topological_consistency_spec(m@));
         lemma_mesh_geometric_topological_consistency_implies_mesh_valid_and_shared_edge_local_orientation(
             m@,
