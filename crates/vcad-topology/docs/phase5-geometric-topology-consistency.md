@@ -195,6 +195,29 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.4 signed-volume-origin-independence differential-harness increment in
+  `src/halfedge_mesh/tests.rs`:
+  - added a reusable per-component assertion helper for reference-point invariance checks:
+    - `assert_component_signed_volume_reference_invariance`;
+  - added a deterministic randomized regression harness (40 cases) that checks per-component
+    signed-six-volume invariance across multiple reference points on:
+    - randomized valid disconnected tetrahedra fixtures;
+    - rigidly transformed variants of those fixtures:
+      - `differential_randomized_outward_signed_volume_reference_origin_invariance_harness`.
+  - outcome: outward signed-volume origin-independence coverage is now broadened from a single
+    deterministic fixture to a seeded randomized harness spanning mixed component layouts and rigid
+    transforms, reducing regression risk while the formal P5.4 origin-independence theorem remains open.
+- 2026-02-19: Failed attempts in this P5.4 signed-volume-origin-independence differential-harness pass: none.
+- 2026-02-19: Revalidated after the P5.4 signed-volume-origin-independence differential-harness additions:
+  - `cargo test -p vcad-topology --features geometry-checks differential_randomized_outward_signed_volume_reference_origin_invariance_harness`
+  - `cargo test -p vcad-topology --features geometry-checks outward_signed_volume_is_reference_origin_invariant_per_component`
+  - `cargo test -p vcad-topology --features geometry-checks reflection_flips_outward_orientation_sensitive_phase5_checks`
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (278 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (315 verified, 0 errors)
 - 2026-02-19: Completed a P5.5 adjacency-exemption topology-classifier differential-oracle
   increment across `src/halfedge_mesh/validation.rs` and `src/halfedge_mesh/tests.rs`:
   - added a test-only runtime hook that exposes the checker’s per-face-pair allowed-contact
