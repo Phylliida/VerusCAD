@@ -195,6 +195,31 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.3 (`Proof: runtime checker correctness vs convexity spec`) with a triangle-face sound-bridge contract-hardening + parity-surface expansion increment in:
+  - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
+  - `src/halfedge_mesh/tests.rs`.
+  - strengthened `runtime_check_face_convexity_triangle_projected_turn_sound_bridge` postconditions so successful runs now additionally export:
+    - `mesh_valid_spec(m@)`;
+    - `mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m)`;
+    - `mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m)`;
+    - `mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m)`;
+    - `mesh_runtime_all_faces_oriented_seed0_planes_spec(m)`;
+    - alongside the existing projected-turn consequence
+      `mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m)`.
+  - expanded convexity bridge parity coverage by wiring
+    `assert_face_convexity_triangle_projected_turn_sound_bridge_parity` into
+    `assert_constructive_phase5_gate_parity` for all-triangle fixtures.
+  - outcome:
+    - the triangle convexity sound bridge now exposes the full seed-0 coplanarity/validity artifacts it already depends on, reducing downstream proof-plumbing friction;
+    - triangle-only convexity bridge/runtime parity now rides on the shared deterministic + seeded-randomized constructive parity harness surface, tightening regression lock while the mixed/high-arity P5.3 checker/spec proof remains open.
+- 2026-02-19: Failed attempts in this P5.3 triangle-face contract-hardening/parity pass: none.
+- 2026-02-19: Revalidated after the P5.3 triangle-face contract-hardening/parity increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (61 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (82 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (323 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (360 verified, 0 errors)
 - 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) with a triangle/quad sound+complete bridge consolidation increment in:
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
   - `src/halfedge_mesh/tests.rs`.

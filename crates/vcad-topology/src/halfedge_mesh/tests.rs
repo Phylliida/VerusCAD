@@ -285,6 +285,9 @@ fn assert_face_coplanarity_seed0_oriented_plane_triangle_or_quad_completeness_br
 fn assert_constructive_phase5_gate_parity(mesh: &Mesh, label: &str) {
     assert_face_coplanarity_runtime_seed0_bridge_parity(mesh, label);
     assert_face_coplanarity_runtime_seed0_sound_bridge_parity(mesh, label);
+    if mesh_all_faces_are_triangles(mesh) {
+        assert_face_convexity_triangle_projected_turn_sound_bridge_parity(mesh, label);
+    }
     if mesh_all_faces_are_triangles_or_quads(mesh) {
         assert_face_coplanarity_runtime_seed0_triangle_or_quad_sound_bridge_parity(mesh, label);
         assert_face_coplanarity_seed0_triangle_or_quad_sound_complete_bridge_parity(mesh, label);

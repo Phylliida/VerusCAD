@@ -1479,6 +1479,11 @@ pub fn runtime_check_face_convexity_triangle_projected_turn_sound_bridge(
     requires
         mesh_runtime_all_faces_triangle_cycles_spec(m),
     ensures
+        out ==> mesh_valid_spec(m@),
+        out ==> mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m),
+        out ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m),
+        out ==> mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m),
+        out ==> mesh_runtime_all_faces_oriented_seed0_planes_spec(m),
         out ==> mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m),
 {
     let runtime_ok = m.check_face_convexity();
@@ -1492,8 +1497,16 @@ pub fn runtime_check_face_convexity_triangle_projected_turn_sound_bridge(
     }
 
     proof {
+        assert(coplanarity_bridge_ok ==> mesh_valid_spec(m@));
+        assert(coplanarity_bridge_ok ==> mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m));
         assert(coplanarity_bridge_ok ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m));
+        assert(coplanarity_bridge_ok ==> mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m));
+        assert(coplanarity_bridge_ok ==> mesh_runtime_all_faces_oriented_seed0_planes_spec(m));
+        assert(mesh_valid_spec(m@));
+        assert(mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m));
         assert(mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m));
+        assert(mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m));
+        assert(mesh_runtime_all_faces_oriented_seed0_planes_spec(m));
         assert(mesh_runtime_all_faces_triangle_cycles_spec(m));
         lemma_mesh_runtime_all_faces_seed0_corner_non_collinear_and_triangle_cycles_imply_all_faces_projected_turn_sign_consistency(
             m,
