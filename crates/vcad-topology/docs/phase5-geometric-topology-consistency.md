@@ -195,6 +195,24 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) with a triangle/quad soundness bridge increment in:
+  - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
+  - `src/halfedge_mesh/tests.rs`.
+  - added constructive soundness wrapper:
+    - `runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_sound_bridge`, proving:
+      - if `Mesh::check_face_coplanarity()` passes and all faces are triangle/quad cycles, then `mesh_runtime_all_faces_coplanar_spec(m)` holds;
+      - along with existing seed0 coplanarity/oriented-plane bridge obligations.
+  - added regression parity coverage:
+    - helper `assert_face_coplanarity_runtime_seed0_triangle_or_quad_sound_bridge_parity`;
+    - test `face_coplanarity_seed0_triangle_or_quad_sound_bridge_matches_runtime_checker` (triangle/quad passing and failing fixtures: tetrahedron, cube, triangular prism, overlapping tetrahedra, reflected-cube outward failure, noncoplanar quad pair, collinear triangle pair, zero-length-edge triangle pair).
+  - outcome: P5.1 now has a direct runtime-to-full-spec soundness route for triangle/quad meshes; combined with the existing triangle/quad completeness wrappers, checker/spec correctness is now locked for that documented precondition class, while the high-arity face (`k > 4`) proof gap remains.
+- 2026-02-19: Failed attempts in this P5.1 triangle/quad soundness pass: none.
+- 2026-02-19: Revalidated after the P5.1 triangle/quad soundness increment:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" face_coplanarity_seed0_triangle_or_quad_sound_bridge_matches_runtime_checker` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (78 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (320 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (357 verified, 0 errors)
 - 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) with a mixed triangle/quad completeness bridge increment in:
   - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`;
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;

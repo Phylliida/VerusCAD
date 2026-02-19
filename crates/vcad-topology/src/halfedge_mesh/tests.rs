@@ -14,6 +14,7 @@ use crate::runtime_halfedge_mesh_refinement::{
     runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_preconditions,
     runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_phase5_runtime_bundle_sound_bridge,
     runtime_check_face_coplanarity_seed0_fixed_witness_sound_bridge,
+    runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_sound_bridge,
     runtime_check_geometric_topological_consistency_sound_bridge,
     runtime_check_phase4_valid_and_shared_edge_local_orientation_imply_geometric_topological_consistency_spec,
 };
@@ -118,6 +119,24 @@ fn assert_face_coplanarity_runtime_seed0_sound_bridge_parity(mesh: &Mesh, label:
     assert_eq!(
         seed0_sound_bridge_ok, runtime_coplanarity_ok,
         "seed0 coplanarity sound bridge parity failed for {label}"
+    );
+}
+
+#[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+fn assert_face_coplanarity_runtime_seed0_triangle_or_quad_sound_bridge_parity(
+    mesh: &Mesh,
+    label: &str,
+) {
+    assert!(
+        mesh_all_faces_are_triangles_or_quads(mesh),
+        "triangle/quad seed0 coplanarity sound bridge parity requires triangle/quad faces in {label}"
+    );
+    let runtime_coplanarity_ok = mesh.check_face_coplanarity();
+    let seed0_triangle_or_quad_sound_bridge_ok =
+        runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_sound_bridge(mesh);
+    assert_eq!(
+        seed0_triangle_or_quad_sound_bridge_ok, runtime_coplanarity_ok,
+        "triangle/quad seed0 coplanarity sound bridge parity failed for {label}"
     );
 }
 
@@ -4269,6 +4288,59 @@ fn diagnostic_witness_is_real_counterexample(
 
         for (label, mesh) in fixtures {
             assert_face_coplanarity_runtime_seed0_sound_bridge_parity(&mesh, label);
+        }
+    }
+
+    #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+    #[test]
+    fn face_coplanarity_seed0_triangle_or_quad_sound_bridge_matches_runtime_checker() {
+        let noncoplanar_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(1, 1, 1),
+            RuntimePoint3::from_ints(0, 1, 0),
+        ];
+        let noncoplanar_faces = vec![vec![0, 1, 2, 3], vec![0, 3, 2, 1]];
+        let noncoplanar_mesh = Mesh::from_face_cycles(noncoplanar_vertices, &noncoplanar_faces)
+            .expect("noncoplanar face fixture should build");
+
+        let collinear_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(2, 0, 0),
+        ];
+        let collinear_faces = vec![vec![0, 1, 2], vec![0, 2, 1]];
+        let collinear_mesh = Mesh::from_face_cycles(collinear_vertices, &collinear_faces)
+            .expect("collinear face fixture should build");
+
+        let zero_length_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+        ];
+        let zero_length_faces = vec![vec![0, 1, 2], vec![0, 2, 1]];
+        let zero_length_mesh = Mesh::from_face_cycles(zero_length_vertices, &zero_length_faces)
+            .expect("zero-length edge fixture should build");
+
+        let fixtures = vec![
+            ("tetrahedron", Mesh::tetrahedron()),
+            ("cube", Mesh::cube()),
+            ("triangular_prism", Mesh::triangular_prism()),
+            ("overlapping_disconnected_tetrahedra", build_overlapping_tetrahedra_mesh()),
+            (
+                "reflected_cube_outward_failure",
+                build_reflected_cube_outward_failure_mesh(),
+            ),
+            ("noncoplanar_face", noncoplanar_mesh),
+            ("collinear_face", collinear_mesh),
+            ("zero_length_edge", zero_length_mesh),
+        ];
+
+        for (label, mesh) in fixtures {
+            assert!(mesh_all_faces_are_triangles_or_quads(&mesh));
+            assert_face_coplanarity_runtime_seed0_triangle_or_quad_sound_bridge_parity(
+                &mesh, label,
+            );
         }
     }
 
