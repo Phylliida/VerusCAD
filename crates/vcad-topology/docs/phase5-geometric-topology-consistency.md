@@ -195,6 +195,24 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with a disjoint-boundary/no-intersection table-normalization increment in:
+  - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`.
+  - added new all-face-pairs disjoint-boundary table surface:
+    - `mesh_all_face_pairs_disjoint_boundary_imply_no_intersection_table_spec`.
+  - added new global iff/composition corollaries:
+    - `lemma_mesh_all_face_pairs_not_non_adjacent_forbidden_relation_table_iff_disjoint_boundary_imply_no_intersection`;
+    - `lemma_mesh_all_face_pairs_not_runtime_forbidden_policy_table_iff_allowed_contact_relation_and_disjoint_boundary_imply_no_intersection`.
+  - outcome:
+    - P5.5 now has a direct global rewrite from `!non_adjacent_forbidden_relation` to explicit disjoint-boundary/no-intersection obligations, and a composed global characterization of `!runtime_forbidden_policy` over `(allowed_contact_relation && disjoint_boundary => !intersection)`;
+    - this reduces remaining soundness/completeness closure boilerplate by avoiding repeated per-pair expansion through the intermediate non-adjacent-forbidden relation surface while keeping checklist status unchanged.
+- 2026-02-19: Failed attempts in this P5.5 disjoint-boundary/no-intersection table-normalization pass: none.
+- 2026-02-19: Revalidated after the P5.5 disjoint-boundary/no-intersection table-normalization increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (86 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (373 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (410 verified, 0 errors)
 - 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) and P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with a runtime-with-geometry coplanarity-completeness bridge increment in:
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
   - `src/halfedge_mesh/tests.rs`.
