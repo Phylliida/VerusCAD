@@ -1,1 +1,1 @@
-Added a P5.3 randomized convexity projected-orient2d oracle differential harness (plus labeled parity helper refactor), documented full revalidation, and 10 Phase 5 checklist tasks remain.
+Added a P5.1 preconditioned completeness bridge for the runtime-style seed-0 face-coplanarity checker core, documented the remaining direct `Mesh::check_face_coplanarity()` equivalence gap with full revalidation, and 10 Phase 5 checklist tasks remain.

@@ -195,6 +195,34 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.1 runtime-checker-correctness completeness-direction increment in
+  `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`:
+  - added a new proof-side runtime helper:
+    - `runtime_check_face_coplanarity_seed0_fixed_witness_complete_under_preconditions`;
+  - the helper executes the same face-loop coplanarity core and proves it cannot fail when the
+    documented preconditions are already established:
+    - index bounds + face-cycle witnesses;
+    - runtime geometry bridge;
+    - all-face seed-0 fixed coplanarity witnesses;
+    - all-face seed-0 corner non-collinearity;
+  - postconditions additionally export the expected seed-0 coplanarity bundle artifacts:
+    - `mesh_runtime_all_faces_seed0_plane_contains_vertices_spec`;
+    - `mesh_runtime_all_faces_oriented_seed0_planes_spec`.
+  - outcome: P5.1 now has an explicit formal completeness-direction bridge for the runtime-style
+    coplanarity loop under documented preconditions, reducing remaining proof gap plumbing for full
+    checker/spec equivalence.
+- 2026-02-19: Failed attempt in this P5.1 completeness-direction pass:
+  - attempted to close the full checklist item directly, but this pass did not prove a direct
+    end-to-end theorem tying `Mesh::check_face_coplanarity()` itself to
+    `mesh_all_faces_coplanar_spec`; the new result is a preconditioned completeness bridge for the
+    verified runtime-style seed-0 checker core.
+- 2026-02-19: Revalidated after the P5.1 completeness-direction additions:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (286 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (323 verified, 0 errors)
 - 2026-02-19: Completed a P5.3 runtime-checker-correctness randomized-oracle increment in
   `src/halfedge_mesh/tests.rs`:
   - added a reusable convexity-oracle parity helper:
