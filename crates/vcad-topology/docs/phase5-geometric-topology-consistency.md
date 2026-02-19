@@ -195,6 +195,34 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.7 aggregate-checker soundness/parity increment across
+  `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs` and
+  `src/halfedge_mesh/tests.rs`:
+  - added a constructive soundness bridge wrapper:
+    - `runtime_check_geometric_topological_consistency_sound_bridge`;
+    - proven postconditions now expose `out ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m)` and `out ==> mesh_geometric_topological_consistency_spec(m@)`.
+  - strengthened the shared constructive/runtime parity helper:
+    - `assert_constructive_phase5_gate_parity` now additionally checks
+      `runtime_check_geometric_topological_consistency_sound_bridge(mesh)` parity with
+      `mesh.check_geometric_topological_consistency()`.
+  - added a seeded differential randomized parity harness:
+    - `differential_randomized_constructive_geometric_gate_parity_harness` (40 cases);
+    - per case coverage now includes:
+      - disjoint multi-component closed meshes;
+      - randomized rigid quarter-turn `z` rotations plus integer translations;
+      - adversarial component perturbations (exact overlap and boundary-touch placements).
+  - outcome: aggregate Phase-5 gate behavior is now additionally locked by a verified
+    soundness bridge entrypoint plus broader randomized constructive/runtime parity regression
+    coverage; the formal unchecked P5.7 full equivalence theorem remains open.
+- 2026-02-19: Failed attempts in this P5.7 aggregate-checker soundness/parity pass: none.
+- 2026-02-19: Revalidated after the P5.7 aggregate-checker soundness/parity additions:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" differential_randomized_constructive_geometric_gate_parity_harness`
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (286 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (323 verified, 0 errors)
 - 2026-02-19: Completed a P5.1 seed-0 witness cycle-length normalization increment across
   `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs` and
   `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`:

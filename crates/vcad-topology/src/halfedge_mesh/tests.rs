@@ -7,6 +7,7 @@ use std::collections::BTreeSet;
 use crate::runtime_halfedge_mesh_refinement::{
     check_geometric_topological_consistency_constructive,
     is_valid_with_geometry_constructive,
+    runtime_check_geometric_topological_consistency_sound_bridge,
 };
 #[cfg(feature = "geometry-checks")]
 use super::GeometricTopologicalConsistencyFailure;
@@ -95,6 +96,12 @@ fn phase5_checker_signature(mesh: &Mesh) -> [bool; 10] {
 #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
 fn assert_constructive_phase5_gate_parity(mesh: &Mesh, label: &str) {
     let geometric_runtime = mesh.check_geometric_topological_consistency();
+    let geometric_sound_bridge = runtime_check_geometric_topological_consistency_sound_bridge(mesh);
+    assert_eq!(
+        geometric_sound_bridge, geometric_runtime,
+        "constructive geometric sound bridge parity failed for {label}"
+    );
+
     let geometric_constructive = check_geometric_topological_consistency_constructive(mesh)
         .expect("constructive geometric gate should produce a witness");
     assert_eq!(
@@ -2345,6 +2352,64 @@ fn diagnostic_witness_is_real_counterexample(
         let noncoplanar_mesh = Mesh::from_face_cycles(noncoplanar_vertices, &noncoplanar_faces)
             .expect("noncoplanar quad fixture should build");
         assert_constructive_phase5_gate_parity(&noncoplanar_mesh, "noncoplanar_quad_fixture");
+    }
+
+    #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+    #[test]
+    fn differential_randomized_constructive_geometric_gate_parity_harness() {
+        const CASES: usize = 40;
+        let mut rng = DeterministicRng::new(0x8C95_DA41_2B7E_4F11);
+
+        for case_id in 0..CASES {
+            let component_count = rng.next_usize_inclusive(2, 5);
+            let disjoint_origins =
+                random_well_separated_component_origins(&mut rng, component_count);
+            let disjoint_mesh = build_disconnected_translated_tetrahedra_mesh(&disjoint_origins);
+            assert!(
+                disjoint_mesh.is_valid(),
+                "generated disjoint fixture should preserve Phase 4 validity"
+            );
+            assert_constructive_phase5_gate_parity(
+                &disjoint_mesh,
+                &format!("random_disjoint_case_{case_id}"),
+            );
+
+            let quarter_turns = rng.next_u64() % 4;
+            let tx = rng.next_i64_inclusive(-15, 15);
+            let ty = rng.next_i64_inclusive(-15, 15);
+            let tz = rng.next_i64_inclusive(-15, 15);
+            let rigid_disjoint = transform_mesh_positions(&disjoint_mesh, |point| {
+                rigid_rotate_z_quarter_turns_then_translate(point, quarter_turns, tx, ty, tz)
+            });
+            assert!(
+                rigid_disjoint.is_valid(),
+                "rigidly transformed disjoint fixture should preserve Phase 4 validity"
+            );
+            assert_constructive_phase5_gate_parity(
+                &rigid_disjoint,
+                &format!("random_disjoint_rigid_case_{case_id}"),
+            );
+
+            let (source_component, perturbed_component) =
+                pick_distinct_indices(&mut rng, component_count);
+            let mut perturbed_origins = disjoint_origins.clone();
+            let touch_mode = rng.next_usize_inclusive(0, 2);
+            let (ox, oy, oz) = perturbed_origins[source_component];
+            perturbed_origins[perturbed_component] = match touch_mode {
+                0 => (ox, oy, oz),
+                1 => (ox + 1, oy, oz),
+                _ => (ox, oy, oz + 1),
+            };
+            let perturbed_mesh = build_disconnected_translated_tetrahedra_mesh(&perturbed_origins);
+            assert!(
+                perturbed_mesh.is_valid(),
+                "perturbed fixture should preserve Phase 4 validity"
+            );
+            assert_constructive_phase5_gate_parity(
+                &perturbed_mesh,
+                &format!("random_perturbed_case_{case_id}"),
+            );
+        }
     }
 
     #[cfg(feature = "geometry-checks")]

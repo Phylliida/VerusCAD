@@ -1,1 +1,1 @@
-Added a P5.1 seed-0 coplanarity witness cycle-length normalization bridge in refinement proofs and runtime postconditions with full revalidation; 10 Phase 5 checklist tasks remain.
+Added a P5.7 aggregate geometric-consistency soundness bridge plus a 40-case randomized constructive/runtime parity harness with full revalidation; 10 Phase 5 checklist tasks remain.

@@ -1491,6 +1491,41 @@ pub fn check_geometric_topological_consistency_constructive(
 
 #[cfg(feature = "geometry-checks")]
 #[allow(dead_code)]
+pub fn runtime_check_geometric_topological_consistency_sound_bridge(m: &Mesh) -> (out: bool)
+    ensures
+        out ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m),
+        out ==> mesh_geometric_topological_consistency_spec(m@),
+{
+    let runtime_ok = m.check_geometric_topological_consistency();
+    if !runtime_ok {
+        return false;
+    }
+
+    let constructive_w = match check_geometric_topological_consistency_constructive(m) {
+        Option::Some(w) => w,
+        Option::None => return false,
+    };
+    if !constructive_w.api_ok {
+        return false;
+    }
+
+    proof {
+        assert(geometric_topological_consistency_gate_witness_spec(constructive_w));
+        assert(geometric_topological_consistency_gate_model_link_spec(m@, constructive_w));
+        assert(
+            constructive_w.api_ok
+                ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m)
+        );
+        assert(constructive_w.api_ok ==> mesh_geometric_topological_consistency_spec(m@));
+        assert(mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
+        assert(mesh_geometric_topological_consistency_spec(m@));
+    }
+
+    true
+}
+
+#[cfg(feature = "geometry-checks")]
+#[allow(dead_code)]
 pub fn is_valid_with_geometry_constructive(
     m: &Mesh,
 ) -> (out: Option<ValidWithGeometryGateWitness>)
