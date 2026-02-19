@@ -1407,6 +1407,39 @@ pub fn runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_sound
 }
 
 #[cfg(feature = "geometry-checks")]
+#[allow(dead_code)]
+pub fn runtime_check_face_convexity_triangle_projected_turn_sound_bridge(
+    m: &Mesh,
+) -> (out: bool)
+    requires
+        mesh_runtime_all_faces_triangle_cycles_spec(m),
+    ensures
+        out ==> mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m),
+{
+    let runtime_ok = m.check_face_convexity();
+    if !runtime_ok {
+        return false;
+    }
+
+    let coplanarity_bridge_ok = runtime_check_face_coplanarity_seed0_fixed_witness_sound_bridge(m);
+    if !coplanarity_bridge_ok {
+        return false;
+    }
+
+    proof {
+        assert(coplanarity_bridge_ok ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m));
+        assert(mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m));
+        assert(mesh_runtime_all_faces_triangle_cycles_spec(m));
+        lemma_mesh_runtime_all_faces_seed0_corner_non_collinear_and_triangle_cycles_imply_all_faces_projected_turn_sign_consistency(
+            m,
+        );
+        assert(mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m));
+    }
+
+    true
+}
+
+#[cfg(feature = "geometry-checks")]
 #[verifier::exec_allows_no_decreases_clause]
 #[allow(dead_code)]
 #[allow(unused_variables)]

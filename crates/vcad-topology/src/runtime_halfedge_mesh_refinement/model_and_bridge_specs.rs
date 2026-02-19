@@ -1559,6 +1559,261 @@ pub proof fn lemma_triangle_face_projected_turn_sign_consistency_trivial(
 }
 
 #[cfg(verus_keep_ghost)]
+pub proof fn lemma_triangle_face_seed0_projected_turn_sign_nonzero_from_nonzero_seed_normal(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+)
+    requires
+        mesh_index_bounds_spec(m),
+        mesh_geometry_input_spec(m, vertex_positions),
+        0 <= f < mesh_face_count_spec(m),
+        mesh_face_cycle_witness_spec(m, f, 3),
+        mesh_face_seed_plane_normal_spec(m, vertex_positions, f, 0).norm2_spec().signum() != 0,
+    ensures
+        mesh_face_projected_turn_sign_at_spec(m, vertex_positions, f, 3, 0, 0) != 0,
+{
+    let normal = mesh_face_seed_plane_normal_spec(m, vertex_positions, f, 0);
+    let axis = mesh_face_projection_axis_from_normal_spec(normal);
+
+    let p0 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 0);
+    let p1 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 1);
+    let p2 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 2);
+
+    let turn_sign = mesh_face_projected_turn_sign_at_spec(m, vertex_positions, f, 3, 0, 0);
+    let o_cycle = vcad_math::orientation::orient2d_spec(
+        mesh_project_point3_to_2d_for_face_axis_spec(p2, axis),
+        mesh_project_point3_to_2d_for_face_axis_spec(p0, axis),
+        mesh_project_point3_to_2d_for_face_axis_spec(p1, axis),
+    );
+    assert(turn_sign == o_cycle.signum());
+
+    if axis == 0 {
+        assert(normal.x.signum() != 0);
+
+        let o012 = vcad_math::orientation::orient2d_spec(
+            mesh_project_point3_to_2d_for_face_axis_spec(p0, 0),
+            mesh_project_point3_to_2d_for_face_axis_spec(p1, 0),
+            mesh_project_point3_to_2d_for_face_axis_spec(p2, 0),
+        );
+        vcad_math::orientation::lemma_orient2d_cyclic_eqv(
+            mesh_project_point3_to_2d_for_face_axis_spec(p2, 0),
+            mesh_project_point3_to_2d_for_face_axis_spec(p0, 0),
+            mesh_project_point3_to_2d_for_face_axis_spec(p1, 0),
+        );
+        assert(o_cycle.eqv_spec(o012));
+
+        let nx_a = p1.y.sub_spec(p0.y).mul_spec(p2.z.sub_spec(p0.z));
+        let nx_b = p1.z.sub_spec(p0.z).mul_spec(p2.y.sub_spec(p0.y));
+        assert(normal.x == nx_a.sub_spec(nx_b));
+        assert(o012 == nx_a.sub_spec(nx_b));
+        assert(o012 == normal.x);
+        assert(o012.eqv_spec(normal.x));
+        vcad_math::scalar::Scalar::lemma_eqv_signum(o_cycle, o012);
+        vcad_math::scalar::Scalar::lemma_eqv_signum(o012, normal.x);
+        assert(o_cycle.signum() == o012.signum());
+        assert(o012.signum() == normal.x.signum());
+        assert(turn_sign == normal.x.signum());
+        assert(turn_sign != 0);
+    } else if axis == 1 {
+        assert(normal.x.signum() == 0);
+        assert(normal.y.signum() != 0);
+
+        let o012 = vcad_math::orientation::orient2d_spec(
+            mesh_project_point3_to_2d_for_face_axis_spec(p0, 1),
+            mesh_project_point3_to_2d_for_face_axis_spec(p1, 1),
+            mesh_project_point3_to_2d_for_face_axis_spec(p2, 1),
+        );
+        vcad_math::orientation::lemma_orient2d_cyclic_eqv(
+            mesh_project_point3_to_2d_for_face_axis_spec(p2, 1),
+            mesh_project_point3_to_2d_for_face_axis_spec(p0, 1),
+            mesh_project_point3_to_2d_for_face_axis_spec(p1, 1),
+        );
+        assert(o_cycle.eqv_spec(o012));
+
+        let ny_a = p1.z.sub_spec(p0.z).mul_spec(p2.x.sub_spec(p0.x));
+        let ny_b = p1.x.sub_spec(p0.x).mul_spec(p2.z.sub_spec(p0.z));
+        assert(normal.y == ny_a.sub_spec(ny_b));
+        assert(o012 == ny_b.sub_spec(ny_a));
+        vcad_math::scalar::Scalar::lemma_sub_antisymmetric(ny_b, ny_a);
+        assert(ny_b.sub_spec(ny_a) == ny_a.sub_spec(ny_b).neg_spec());
+        assert(o012 == normal.y.neg_spec());
+        assert(o012.eqv_spec(normal.y.neg_spec()));
+        vcad_math::scalar::Scalar::lemma_eqv_signum(o_cycle, o012);
+        vcad_math::scalar::Scalar::lemma_eqv_signum(o012, normal.y.neg_spec());
+        vcad_math::scalar::Scalar::lemma_signum_negate(normal.y);
+        assert(o_cycle.signum() == o012.signum());
+        assert(o012.signum() == normal.y.neg_spec().signum());
+        assert(normal.y.neg_spec().signum() == -normal.y.signum());
+        assert(turn_sign == -normal.y.signum());
+        assert(turn_sign != 0);
+    } else {
+        assert(axis == 2);
+        if normal.x.signum() != 0 {
+            assert(mesh_face_projection_axis_from_normal_spec(normal) == 0);
+            assert(false);
+        }
+        assert(normal.x.signum() == 0);
+        if normal.y.signum() != 0 {
+            assert(mesh_face_projection_axis_from_normal_spec(normal) == 1);
+            assert(false);
+        }
+        assert(normal.y.signum() == 0);
+
+        if normal.z.signum() == 0 {
+            assert(normal.x.signum() == 0);
+            assert(normal.y.signum() == 0);
+            if normal.x.num > 0 {
+                assert(normal.x.signum() == 1);
+                assert(false);
+            }
+            if normal.x.num < 0 {
+                assert(normal.x.signum() == -1);
+                assert(false);
+            }
+            assert(normal.x.num == 0);
+            if normal.y.num > 0 {
+                assert(normal.y.signum() == 1);
+                assert(false);
+            }
+            if normal.y.num < 0 {
+                assert(normal.y.signum() == -1);
+                assert(false);
+            }
+            assert(normal.y.num == 0);
+            if normal.z.num > 0 {
+                assert(normal.z.signum() == 1);
+                assert(false);
+            }
+            if normal.z.num < 0 {
+                assert(normal.z.signum() == -1);
+                assert(false);
+            }
+            assert(normal.z.num == 0);
+
+            assert(normal.x.num == 0);
+            assert(normal.y.num == 0);
+            assert(normal.z.num == 0);
+            let z = vcad_math::scalar::Scalar::from_int_spec(0);
+            assert(z.num == 0);
+            assert(z.denom() == 1);
+
+            assert(normal.x.num * z.denom() == 0);
+            assert(z.num * normal.x.denom() == 0);
+            assert(normal.x.num * z.denom() == z.num * normal.x.denom());
+            assert(normal.x.eqv_spec(z));
+
+            assert(normal.y.num * z.denom() == 0);
+            assert(z.num * normal.y.denom() == 0);
+            assert(normal.y.num * z.denom() == z.num * normal.y.denom());
+            assert(normal.y.eqv_spec(z));
+
+            assert(normal.z.num * z.denom() == 0);
+            assert(z.num * normal.z.denom() == 0);
+            assert(normal.z.num * z.denom() == z.num * normal.z.denom());
+            assert(normal.z.eqv_spec(z));
+            vcad_math::vec3::Vec3::lemma_eqv_from_components(normal, vcad_math::vec3::Vec3::zero_spec());
+            assert(normal.eqv_spec(vcad_math::vec3::Vec3::zero_spec()));
+            vcad_math::vec3::Vec3::lemma_norm2_zero_iff_zero(normal);
+            assert(normal.norm2_spec().eqv_spec(vcad_math::scalar::Scalar::from_int_spec(0)));
+            vcad_math::scalar::Scalar::lemma_eqv_signum(
+                normal.norm2_spec(),
+                vcad_math::scalar::Scalar::from_int_spec(0),
+            );
+            assert(normal.norm2_spec().signum() == 0);
+            assert(false);
+        }
+        assert(normal.z.signum() != 0);
+
+        let o012 = vcad_math::orientation::orient2d_spec(
+            mesh_project_point3_to_2d_for_face_axis_spec(p0, 2),
+            mesh_project_point3_to_2d_for_face_axis_spec(p1, 2),
+            mesh_project_point3_to_2d_for_face_axis_spec(p2, 2),
+        );
+        vcad_math::orientation::lemma_orient2d_cyclic_eqv(
+            mesh_project_point3_to_2d_for_face_axis_spec(p2, 2),
+            mesh_project_point3_to_2d_for_face_axis_spec(p0, 2),
+            mesh_project_point3_to_2d_for_face_axis_spec(p1, 2),
+        );
+        assert(o_cycle.eqv_spec(o012));
+
+        let nz_a = p1.x.sub_spec(p0.x).mul_spec(p2.y.sub_spec(p0.y));
+        let nz_b = p1.y.sub_spec(p0.y).mul_spec(p2.x.sub_spec(p0.x));
+        assert(normal.z == nz_a.sub_spec(nz_b));
+        assert(o012 == nz_a.sub_spec(nz_b));
+        assert(o012 == normal.z);
+        assert(o012.eqv_spec(normal.z));
+        vcad_math::scalar::Scalar::lemma_eqv_signum(o_cycle, o012);
+        vcad_math::scalar::Scalar::lemma_eqv_signum(o012, normal.z);
+        assert(o_cycle.signum() == o012.signum());
+        assert(o012.signum() == normal.z.signum());
+        assert(turn_sign == normal.z.signum());
+        assert(turn_sign != 0);
+    }
+
+    assert(mesh_face_projected_turn_sign_at_spec(m, vertex_positions, f, 3, 0, 0) != 0);
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_all_faces_seed0_corner_non_collinear_and_triangle_cycles_imply_all_faces_projected_turn_sign_consistency(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+)
+    requires
+        mesh_all_faces_seed0_corner_non_collinear_spec(m, vertex_positions),
+        mesh_all_faces_triangle_cycles_spec(m),
+    ensures
+        mesh_all_faces_projected_turn_sign_consistency_spec(m, vertex_positions),
+{
+    assert(mesh_geometry_input_spec(m, vertex_positions));
+    assert(mesh_index_bounds_spec(m));
+    assert(mesh_face_next_cycles_spec(m));
+
+    assert forall|f: int| 0 <= f < mesh_face_count_spec(m)
+        implies #[trigger] mesh_face_projected_turn_sign_consistency_spec(m, vertex_positions, f) by {
+        assert(mesh_face_cycle_witness_spec(m, f, 3));
+        assert(!mesh_points_collinear3_spec(
+            mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 0),
+            mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 1),
+            mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 2),
+        ));
+        lemma_mesh_non_collinear_seed_normal_self_dot_sign_is_positive(m, vertex_positions, f, 0);
+        assert(mesh_face_seed_plane_normal_spec(m, vertex_positions, f, 0).dot_spec(
+            mesh_face_seed_plane_normal_spec(m, vertex_positions, f, 0),
+        ).signum() == 1);
+        assert(mesh_face_seed_plane_normal_spec(m, vertex_positions, f, 0).norm2_spec()
+            == mesh_face_seed_plane_normal_spec(m, vertex_positions, f, 0).dot_spec(
+            mesh_face_seed_plane_normal_spec(m, vertex_positions, f, 0),
+        ));
+        assert(mesh_face_seed_plane_normal_spec(m, vertex_positions, f, 0).norm2_spec().signum() == 1);
+        lemma_triangle_face_seed0_projected_turn_sign_nonzero_from_nonzero_seed_normal(
+            m,
+            vertex_positions,
+            f,
+        );
+        lemma_triangle_face_projected_turn_sign_consistency_trivial(m, vertex_positions, f, 0);
+        assert(mesh_face_projected_turn_sign_consistency_spec(m, vertex_positions, f));
+    };
+    assert(mesh_all_faces_projected_turn_sign_consistency_spec(m, vertex_positions));
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_runtime_all_faces_seed0_corner_non_collinear_and_triangle_cycles_imply_all_faces_projected_turn_sign_consistency(
+    m: &Mesh,
+)
+    requires
+        mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m),
+        mesh_runtime_all_faces_triangle_cycles_spec(m),
+    ensures
+        mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m),
+{
+    lemma_mesh_all_faces_seed0_corner_non_collinear_and_triangle_cycles_imply_all_faces_projected_turn_sign_consistency(
+        m@,
+        mesh_runtime_vertex_positions_spec(m),
+    );
+}
+
+#[cfg(verus_keep_ghost)]
 pub open spec fn mesh_face_cycle_shift_index_spec(i: int, shift: int, k: int) -> int {
     if i + shift < k {
         i + shift
@@ -5365,6 +5620,11 @@ pub open spec fn mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m: &M
 #[cfg(verus_keep_ghost)]
 pub open spec fn mesh_runtime_all_faces_oriented_seed0_planes_spec(m: &Mesh) -> bool {
     mesh_all_faces_oriented_seed0_planes_spec(m@, mesh_runtime_vertex_positions_spec(m))
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m: &Mesh) -> bool {
+    mesh_all_faces_projected_turn_sign_consistency_spec(m@, mesh_runtime_vertex_positions_spec(m))
 }
 
 #[cfg(verus_keep_ghost)]

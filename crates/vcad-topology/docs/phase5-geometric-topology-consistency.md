@@ -195,6 +195,34 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.3 (`Proof: runtime checker correctness vs convexity spec`) with a triangle-face projected-turn soundness increment in:
+  - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`;
+  - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
+  - `src/halfedge_mesh/tests.rs`.
+  - added projected-turn proof/model bridge lemmas:
+    - `lemma_triangle_face_seed0_projected_turn_sign_nonzero_from_nonzero_seed_normal`;
+    - `lemma_mesh_all_faces_seed0_corner_non_collinear_and_triangle_cycles_imply_all_faces_projected_turn_sign_consistency`;
+    - `lemma_mesh_runtime_all_faces_seed0_corner_non_collinear_and_triangle_cycles_imply_all_faces_projected_turn_sign_consistency`;
+    - runtime alias spec `mesh_runtime_all_faces_projected_turn_sign_consistency_spec`.
+  - added constructive runtime wrapper:
+    - `runtime_check_face_convexity_triangle_projected_turn_sound_bridge`, proving triangle-face convexity runtime success implies projected-turn-sign consistency spec.
+  - added regression parity coverage:
+    - helper `assert_face_convexity_triangle_projected_turn_sound_bridge_parity`;
+    - test `face_convexity_triangle_projected_turn_sound_bridge_matches_runtime_checker` (triangle fixtures: tetrahedron, overlapping tetrahedra, collinear triangle-pair failure, zero-length-edge triangle-pair failure).
+  - outcome:
+    - P5.3 now has a direct verified runtime-to-projected-turn-spec sound bridge for the all-triangle face class;
+    - mixed/high-arity face correctness-vs-spec proof remains open.
+- 2026-02-19: Failed attempt in this P5.3 triangle-face soundness pass:
+  - first proof draft called non-public `vcad_math::Scalar` lemmas (`lemma_sub_swap_neg`, `lemma_signum_zero_iff`, `lemma_eqv_zero_iff_num_zero`) and failed under `verus_keep_ghost` verification;
+  - resolved by rewriting those steps using public lemmas (`lemma_sub_antisymmetric`, `lemma_eqv_signum`) plus direct signum/num case reasoning.
+- 2026-02-19: Revalidated after the P5.3 triangle-face projected-turn soundness increment:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" face_convexity_triangle_projected_turn_sound_bridge_matches_runtime_checker` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (61 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (81 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (323 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (360 verified, 0 errors)
 - 2026-02-19: Worked P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) by extending the existing spec/runtime characterization-gap lock surface in:
   - `src/halfedge_mesh/tests.rs`.
   - added a new deterministic + randomized gap class for the currently missing aggregate-spec coverage of face-corner non-collinearity:

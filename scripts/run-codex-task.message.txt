@@ -1,1 +1,1 @@
-Extended the P5.7 aggregate-spec gap harness with a new collinear-corner failure class (plus randomized coverage) and documented the zero-length failed attempt in the burndown log; 8 Phase 5 tasks remain in vcad-topology.
+Added a verified triangle-face convexity projected-turn sound bridge (lemmas, constructive wrapper, and parity regression) and documented the failed private-lemma proof attempt in the burndown log; 8 Phase 5 tasks remain in vcad-topology.
