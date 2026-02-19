@@ -1,1 +1,1 @@
-Added a triangle runtime-with-geometry convexity completeness bridge and parity coverage for P5.3 in vcad-topology, revalidated full tests/proofs, and 8 burndown tasks remain.
+Strengthened the P5.7 aggregate runtime bridge with an explicit geometry-aware plus non-zero-edge spec consequence, added parity assertions, revalidated full vcad-topology tests/proofs, and 8 burndown tasks remain.

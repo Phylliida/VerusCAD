@@ -2431,6 +2431,10 @@ pub fn check_geometric_topological_consistency_constructive(
                     ))
                 && (w.api_ok ==> mesh_runtime_geometric_topological_consistency_with_geometry_spec(m))
                 && (w.api_ok
+                    ==> mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(
+                        m,
+                    ))
+                && (w.api_ok
                     && mesh_runtime_all_faces_triangle_cycles_spec(m)
                     ==> mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m))
                 && (w.api_ok ==> mesh_geometric_topological_consistency_spec(m@)),
@@ -2614,6 +2618,36 @@ pub fn check_geometric_topological_consistency_constructive(
         };
         assert(
             w.api_ok
+                ==> mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(
+                    m,
+                )
+        ) by {
+            if w.api_ok {
+                assert(mesh_runtime_geometric_topological_consistency_with_geometry_spec(m));
+                assert(
+                    w.api_ok == (
+                        w.phase4_valid_ok
+                            && w.no_zero_length_geometric_edges_ok
+                            && w.face_corner_non_collinearity_ok
+                            && w.face_coplanarity_ok
+                            && w.face_convexity_ok
+                            && w.face_plane_consistency_ok
+                            && w.shared_edge_local_orientation_ok
+                            && w.no_forbidden_face_face_intersections_ok
+                            && w.outward_face_normals_ok
+                    )
+                );
+                assert(w.no_zero_length_geometric_edges_ok);
+                assert(mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m));
+                assert(
+                    mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(
+                        m,
+                    )
+                );
+            }
+        };
+        assert(
+            w.api_ok
                 && mesh_runtime_all_faces_triangle_cycles_spec(m)
                 ==> mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m)
         ) by {
@@ -2725,6 +2759,7 @@ pub fn runtime_check_geometric_topological_consistency_sound_bridge(m: &Mesh) ->
     ensures
         out ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m),
         out ==> mesh_runtime_geometric_topological_consistency_with_geometry_spec(m),
+        out ==> mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(m),
         out ==> mesh_geometric_topological_consistency_spec(m@),
         out ==> mesh_valid_spec(m@),
         out ==> mesh_shared_edge_local_orientation_consistency_spec(m@),
@@ -2750,7 +2785,14 @@ pub fn runtime_check_geometric_topological_consistency_sound_bridge(m: &Mesh) ->
                 ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m)
         );
         assert(constructive_w.api_ok ==> mesh_geometric_topological_consistency_spec(m@));
+        assert(
+            constructive_w.api_ok
+                ==> mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(
+                    m,
+                )
+        );
         assert(mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
+        assert(mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(m));
         lemma_mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_implies_mesh_geometric_topological_consistency_with_geometry(
             m,
         );

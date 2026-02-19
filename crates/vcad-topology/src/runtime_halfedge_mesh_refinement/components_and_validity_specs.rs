@@ -1033,6 +1033,13 @@ pub open spec fn mesh_runtime_geometric_topological_consistency_with_geometry_sp
     mesh_geometric_topological_consistency_with_geometry_spec(m@, mesh_runtime_vertex_positions_spec(m))
 }
 
+pub open spec fn mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(
+    m: &Mesh,
+) -> bool {
+    &&& mesh_runtime_geometric_topological_consistency_with_geometry_spec(m)
+    &&& mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m)
+}
+
 pub open spec fn mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(
     m: &Mesh,
 ) -> bool {

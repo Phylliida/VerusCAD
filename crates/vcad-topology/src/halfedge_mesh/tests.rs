@@ -400,6 +400,12 @@ fn assert_constructive_phase5_gate_parity(mesh: &Mesh, label: &str) {
         geometric_sound_bridge, geometric_runtime,
         "constructive geometric sound bridge parity failed for {label}"
     );
+    if geometric_sound_bridge {
+        assert!(
+            mesh.check_no_zero_length_geometric_edges(),
+            "geometric sound bridge should imply non-zero geometric edges for {label}"
+        );
+    }
 
     let geometric_constructive = check_geometric_topological_consistency_constructive(mesh)
         .expect("constructive geometric gate should produce a witness");
@@ -417,6 +423,12 @@ fn assert_constructive_phase5_gate_parity(mesh: &Mesh, label: &str) {
         mesh.check_no_zero_length_geometric_edges(),
         "constructive zero-length-edge witness mismatch for {label}"
     );
+    if geometric_constructive.api_ok {
+        assert!(
+            geometric_constructive.no_zero_length_geometric_edges_ok,
+            "constructive aggregate witness should carry non-zero edge witness for {label}"
+        );
+    }
     assert_eq!(
         geometric_constructive.face_corner_non_collinearity_ok,
         mesh.check_face_corner_non_collinearity()

@@ -195,6 +195,30 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with a runtime aggregate bridge strengthening increment (geometry-aware + non-zero-edge bundle) in:
+  - `src/runtime_halfedge_mesh_refinement/components_and_validity_specs.rs`;
+  - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
+  - `src/halfedge_mesh/tests.rs`.
+  - added a new strengthened runtime aggregate spec surface:
+    - `mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec`.
+  - strengthened aggregate constructive/runtime bridge contracts:
+    - `check_geometric_topological_consistency_constructive` now additionally proves:
+      - `w.api_ok ==> mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(m)`;
+    - `runtime_check_geometric_topological_consistency_sound_bridge` now additionally proves:
+      - `out ==> mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(m)`.
+  - strengthened parity lock coverage:
+    - constructive parity harness now explicitly asserts that a passing aggregate sound bridge implies the runtime zero-length-edge checker passes;
+    - constructive parity harness now explicitly asserts `geometric_constructive.api_ok ==> geometric_constructive.no_zero_length_geometric_edges_ok`.
+  - outcome:
+    - the aggregate runtime sound bridge now carries an explicit model-level no-zero-length geometric-edge guarantee alongside the existing geometry-aware aggregate admission, reducing P5.7 checker/spec-equivalence gap surface while checklist status remains unchanged.
+- 2026-02-19: Failed attempts in this P5.7 geometry-aware + non-zero-edge aggregate-bridge strengthening pass: none.
+- 2026-02-19: Revalidated after the P5.7 geometry-aware + non-zero-edge aggregate-bridge strengthening increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (88 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (374 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (411 verified, 0 errors)
 - 2026-02-19: Worked P5.3 (`Proof: runtime checker correctness vs convexity spec`) with a triangle projected-turn runtime-with-geometry completeness-bridge increment in:
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
   - `src/halfedge_mesh/tests.rs`.
