@@ -7,6 +7,7 @@ use std::collections::BTreeSet;
 use crate::runtime_halfedge_mesh_refinement::{
     check_geometric_topological_consistency_constructive,
     is_valid_with_geometry_constructive,
+    runtime_check_face_coplanarity_seed0_fixed_witness_bridge,
     runtime_check_geometric_topological_consistency_sound_bridge,
 };
 #[cfg(feature = "geometry-checks")]
@@ -94,7 +95,19 @@ fn phase5_checker_signature(mesh: &Mesh) -> [bool; 10] {
 }
 
 #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+fn assert_face_coplanarity_runtime_seed0_bridge_parity(mesh: &Mesh, label: &str) {
+    let runtime_coplanarity_ok = mesh.check_face_coplanarity();
+    let seed0_bridge_ok = runtime_check_face_coplanarity_seed0_fixed_witness_bridge(mesh);
+    assert_eq!(
+        seed0_bridge_ok, runtime_coplanarity_ok,
+        "seed0 coplanarity bridge parity failed for {label}"
+    );
+}
+
+#[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
 fn assert_constructive_phase5_gate_parity(mesh: &Mesh, label: &str) {
+    assert_face_coplanarity_runtime_seed0_bridge_parity(mesh, label);
+
     let geometric_runtime = mesh.check_geometric_topological_consistency();
     let geometric_sound_bridge = runtime_check_geometric_topological_consistency_sound_bridge(mesh);
     assert_eq!(
@@ -2352,6 +2365,52 @@ fn diagnostic_witness_is_real_counterexample(
         let noncoplanar_mesh = Mesh::from_face_cycles(noncoplanar_vertices, &noncoplanar_faces)
             .expect("noncoplanar quad fixture should build");
         assert_constructive_phase5_gate_parity(&noncoplanar_mesh, "noncoplanar_quad_fixture");
+    }
+
+    #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+    #[test]
+    fn face_coplanarity_seed0_bridge_matches_runtime_checker() {
+        let noncoplanar_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(1, 1, 1),
+            RuntimePoint3::from_ints(0, 1, 0),
+        ];
+        let noncoplanar_faces = vec![vec![0, 1, 2, 3], vec![0, 3, 2, 1]];
+        let noncoplanar_mesh = Mesh::from_face_cycles(noncoplanar_vertices, &noncoplanar_faces)
+            .expect("noncoplanar face fixture should build");
+
+        let collinear_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(2, 0, 0),
+        ];
+        let collinear_faces = vec![vec![0, 1, 2], vec![0, 2, 1]];
+        let collinear_mesh = Mesh::from_face_cycles(collinear_vertices, &collinear_faces)
+            .expect("collinear face fixture should build");
+
+        let zero_length_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+        ];
+        let zero_length_faces = vec![vec![0, 1, 2], vec![0, 2, 1]];
+        let zero_length_mesh = Mesh::from_face_cycles(zero_length_vertices, &zero_length_faces)
+            .expect("zero-length edge fixture should build");
+
+        let fixtures = vec![
+            ("tetrahedron", Mesh::tetrahedron()),
+            ("cube", Mesh::cube()),
+            ("triangular_prism", Mesh::triangular_prism()),
+            ("overlapping_disconnected_tetrahedra", build_overlapping_tetrahedra_mesh()),
+            ("noncoplanar_face", noncoplanar_mesh),
+            ("collinear_face", collinear_mesh),
+            ("zero_length_edge", zero_length_mesh),
+        ];
+
+        for (label, mesh) in fixtures {
+            assert_face_coplanarity_runtime_seed0_bridge_parity(&mesh, label);
+        }
     }
 
     #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]

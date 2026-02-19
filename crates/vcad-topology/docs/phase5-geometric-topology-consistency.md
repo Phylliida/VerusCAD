@@ -195,6 +195,34 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.1 runtime-checker-correctness bridge-parity increment in
+  `src/halfedge_mesh/tests.rs`:
+  - imported `runtime_check_face_coplanarity_seed0_fixed_witness_bridge` into the
+    `geometry-checks + verus-proofs` test harness;
+  - added a reusable parity helper:
+    - `assert_face_coplanarity_runtime_seed0_bridge_parity`;
+  - strengthened the constructive/runtime aggregate parity helper:
+    - `assert_constructive_phase5_gate_parity` now always asserts
+      `Mesh::check_face_coplanarity()` parity with
+      `runtime_check_face_coplanarity_seed0_fixed_witness_bridge(..)`;
+  - added a focused deterministic regression:
+    - `face_coplanarity_seed0_bridge_matches_runtime_checker`
+      (tetrahedron/cube/prism, overlapping disconnected tetrahedra, noncoplanar face,
+      collinear face, zero-length-edge face).
+  - outcome: coplanarity runtime behavior is now additionally regression-locked against the
+    verified seed-0 bridge on representative fixtures and across the existing randomized
+    constructive parity harness cases.
+- 2026-02-19: Failed attempts in this P5.1 bridge-parity pass: none.
+- 2026-02-19: Revalidated after the P5.1 bridge-parity additions:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" face_coplanarity_seed0_bridge_matches_runtime_checker`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" geometric_consistency_constructive_gate_matches_runtime_boolean_gate`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" differential_randomized_constructive_geometric_gate_parity_harness`
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (286 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (323 verified, 0 errors)
 - 2026-02-19: Completed a P5.7 aggregate-checker-equivalence proof-decomposition + strictness-gap
   regression increment across
   `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs` and
