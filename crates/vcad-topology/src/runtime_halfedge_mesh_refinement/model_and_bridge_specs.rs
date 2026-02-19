@@ -1135,6 +1135,48 @@ pub proof fn lemma_mesh_non_adjacent_face_pair_forbidden_intersection_relation_s
 }
 
 #[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_face_pair_runtime_forbidden_intersection_policy_spec_symmetric(
+    m: MeshModel,
+    f1: int,
+    f2: int,
+    geometric_intersection_exists: bool,
+)
+    requires
+        mesh_faces_allowed_contact_runtime_branch_classifier_spec(m, f1, f2)
+            == mesh_faces_allowed_contact_runtime_branch_classifier_spec(m, f2, f1),
+    ensures
+        mesh_face_pair_runtime_forbidden_intersection_policy_spec(
+            m,
+            f1,
+            f2,
+            geometric_intersection_exists,
+        ) == mesh_face_pair_runtime_forbidden_intersection_policy_spec(
+            m,
+            f2,
+            f1,
+            geometric_intersection_exists,
+        ),
+{
+    lemma_mesh_non_adjacent_face_pair_forbidden_intersection_relation_spec_symmetric(
+        m,
+        f1,
+        f2,
+        geometric_intersection_exists,
+    );
+    assert(mesh_face_pair_runtime_forbidden_intersection_policy_spec(
+        m,
+        f1,
+        f2,
+        geometric_intersection_exists,
+    ) == mesh_face_pair_runtime_forbidden_intersection_policy_spec(
+        m,
+        f2,
+        f1,
+        geometric_intersection_exists,
+    ));
+}
+
+#[cfg(verus_keep_ghost)]
 pub proof fn lemma_mesh_non_adjacent_face_pair_forbidden_relation_implies_disjoint_boundary_and_intersection(
     m: MeshModel,
     f1: int,

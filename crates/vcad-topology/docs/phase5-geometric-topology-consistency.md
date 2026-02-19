@@ -195,6 +195,28 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with a low-cost forbidden-policy pair-order symmetry bridge increment in:
+  - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`.
+  - added a new policy-level symmetry lemma with an explicit classifier-symmetry assumption:
+    - `lemma_mesh_face_pair_runtime_forbidden_intersection_policy_spec_symmetric`.
+  - this lemma proves swapped-argument parity for
+    `mesh_face_pair_runtime_forbidden_intersection_policy_spec(m, f1, f2, geometric_intersection_exists)`
+    under the precondition
+    `mesh_faces_allowed_contact_runtime_branch_classifier_spec(m, f1, f2) == mesh_faces_allowed_contact_runtime_branch_classifier_spec(m, f2, f1)`.
+  - outcome:
+    - P5.5 now has a direct reusable policy-level symmetry hook for face-pair forbidden classification without re-expanding branch decomposition at each call site;
+    - existing runtime regressions already lock the required classifier-symmetry precondition (`assert_face_pair_policy_classifiers_are_symmetric_under_face_argument_swap`), so the new proof bridge composes with current pair-order parity coverage.
+- 2026-02-19: Failed attempt in this P5.5 policy-symmetry pass:
+  - attempted to add full quantified symmetry for `mesh_faces_share_exactly_two_vertices_spec` and derived unconditional allowed-contact/runtime-policy symmetry lemmas;
+  - Verus hit an rlimit blow-up on the quantified two-vertex symmetry lemma, and the fallback `spinoff_prover` + elevated `#[verifier::rlimit(...)]` variant was too costly for practical burndown verification throughput;
+  - resolved by removing the high-cost lemmas and landing the lower-cost policy-level symmetry bridge above.
+- 2026-02-19: Revalidated after the P5.5 policy-level symmetry bridge increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (86 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (347 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (384 verified, 0 errors)
 - 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with a pair-order symmetry groundwork increment in:
   - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`;
   - `src/halfedge_mesh/tests.rs`.

@@ -1,1 +1,1 @@
-Added P5.5 face-pair symmetry lemmas and swapped-argument classifier parity locks in vcad-topology; 8 Phase 5 tasks remain.
+Added a low-cost P5.5 forbidden-policy symmetry bridge lemma (with documented high-cost symmetry attempt rollback) in vcad-topology, and 8 Phase 5 tasks remain.
