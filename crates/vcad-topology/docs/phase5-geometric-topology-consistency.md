@@ -195,6 +195,49 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.4 (`Proof: signed-volume outwardness criterion is independent of the chosen reference origin`) with relabeling-aware outwardness invariance harness increments in `src/halfedge_mesh/tests.rs`:
+  - added helper `assert_component_signed_volume_reference_invariance_with_expected_sign` to lock both:
+    - reference-origin invariance of per-component signed six-volume; and
+    - expected orientation polarity (`-1` for outward fixtures, `+1` for reflected fixtures).
+  - strengthened deterministic and seeded-randomized outward invariance tests to include vertex-relabeling variants:
+    - `outward_face_normals_checker_is_reference_origin_invariant`;
+    - `differential_randomized_outward_checker_reference_origin_invariance_harness`;
+    - `outward_signed_volume_is_reference_origin_invariant_per_component`;
+    - `differential_randomized_outward_signed_volume_reference_origin_invariance_harness`.
+  - extended signed-volume invariance coverage to reflected (orientation-flipped) randomized fixtures, asserting reference-origin invariance under both outward and reflected polarity.
+  - outcome: stronger executable lock that outwardness and component signed-volume reference-origin invariance are stable under topology-preserving index relabelings (and reflected polarity flips), while the formal P5.4 proof item remains open.
+- 2026-02-19: Failed attempts in this P5.4 relabeling-aware outward invariance pass: none.
+- 2026-02-19: Revalidated after the P5.4 relabeling-aware outward invariance harness increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (58 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (71 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (286 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (323 verified, 0 errors)
+- 2026-02-19: Worked P5.3 (`Proof: runtime checker correctness vs convexity spec`) with a reflection-and-relabeling differential-harness increment in `src/halfedge_mesh/tests.rs`:
+  - strengthened deterministic convexity/spec parity coverage in
+    `face_convexity_checker_matches_projected_orient2d_sign_oracle` by adding reflected variants of:
+    - positive fixtures (`tetrahedron`, `cube`, `triangular_prism`, disconnected stress, overlapping tetrahedra);
+    - failing fixtures (`concave_face`, `noncoplanar_face`, `collinear_face`, `zero_length_edge`).
+  - added a deterministic reverse-index relabeling check in the same test for every fixture (both passing and failing families), asserting Phase 4 validity preservation plus convexity checker parity against the projected `orient2d` oracle.
+  - extended
+    `differential_randomized_face_convexity_checker_projected_orient2d_oracle_harness`
+    so each seeded case now checks projected-oracle parity not only on base and relabeled meshes, but also on reflected and reflected+relabeled variants for:
+    - disjoint fixtures;
+    - rigid transformed fixtures;
+    - adversarial perturbed fixtures;
+    - rigidly transformed failing fixtures.
+  - outcome: tighter regression lock that the runtime convexity checker remains equivalent to the projected `orient2d` oracle under orientation-flipping transforms and topology-preserving index isomorphisms, while the formal P5.3 proof obligation remains open.
+- 2026-02-19: Failed attempts in this P5.3 reflection-and-relabeling convexity harness pass: none.
+- 2026-02-19: Revalidated after the P5.3 reflection-and-relabeling convexity harness increment:
+  - `cargo test -p vcad-topology --features geometry-checks face_convexity_checker_matches_projected_orient2d_sign_oracle`
+  - `cargo test -p vcad-topology --features geometry-checks differential_randomized_face_convexity_checker_projected_orient2d_oracle_harness`
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (58 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (71 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (286 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (323 verified, 0 errors)
 - 2026-02-19: Worked P5.5 (`Proof: shared-edge and shared-vertex contacts are never misclassified as forbidden intersections`) with a relabeling-aware differential-harness increment in `src/halfedge_mesh/tests.rs`:
   - extended
     `differential_randomized_shared_boundary_contact_non_misclassification_harness`

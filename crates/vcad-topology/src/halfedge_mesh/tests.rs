@@ -1272,6 +1272,38 @@ fn assert_component_signed_volume_reference_invariance(
 }
 
 #[cfg(feature = "geometry-checks")]
+fn assert_component_signed_volume_reference_invariance_with_expected_sign(
+    mesh: &Mesh,
+    references: &[RuntimePoint3],
+    expected_sign: i8,
+    label: &str,
+) {
+    assert!(
+        expected_sign == -1 || expected_sign == 1,
+        "expected sign must be -1 or +1"
+    );
+    assert_component_signed_volume_reference_invariance(mesh, references);
+
+    let component_starts = component_start_half_edges(mesh);
+    assert!(
+        !component_starts.is_empty(),
+        "fixture {label} should expose at least one connected component"
+    );
+    for start in component_starts {
+        let baseline = component_signed_volume_six_from_start_half_edge_relative_to_reference(
+            mesh,
+            start,
+            &references[0],
+        );
+        assert_eq!(
+            baseline.signum_i8(),
+            expected_sign,
+            "unexpected signed-volume orientation sign for {label}"
+        );
+    }
+}
+
+#[cfg(feature = "geometry-checks")]
 fn assert_outward_face_normals_checker_reference_invariance(
     mesh: &Mesh,
     references: &[RuntimePoint3],
@@ -1847,6 +1879,13 @@ fn diagnostic_witness_is_real_counterexample(
             assert!(mesh.is_valid());
             assert!(mesh.check_outward_face_normals());
             assert_outward_face_normals_checker_reference_invariance(mesh, &references);
+
+            let relabel_permutation: Vec<usize> = (0..mesh.vertices.len()).rev().collect();
+            let relabeled_mesh = relabel_mesh_vertices_for_testing(mesh, &relabel_permutation)
+                .expect("vertex-relabeled outwardness reference-invariance fixture should build");
+            assert!(relabeled_mesh.is_valid());
+            assert!(relabeled_mesh.check_outward_face_normals());
+            assert_outward_face_normals_checker_reference_invariance(&relabeled_mesh, &references);
         }
 
         let reflected_cube = transform_mesh_positions(&Mesh::cube(), |point| {
@@ -1856,6 +1895,20 @@ fn diagnostic_witness_is_real_counterexample(
         assert!(reflected_cube.is_valid());
         assert!(!reflected_cube.check_outward_face_normals());
         assert_outward_face_normals_checker_reference_invariance(&reflected_cube, &references);
+
+        let reflected_relabel_permutation: Vec<usize> =
+            (0..reflected_cube.vertices.len()).rev().collect();
+        let relabeled_reflected_cube =
+            relabel_mesh_vertices_for_testing(&reflected_cube, &reflected_relabel_permutation)
+                .expect(
+                    "vertex-relabeled reflected outwardness reference-invariance fixture should build",
+                );
+        assert!(relabeled_reflected_cube.is_valid());
+        assert!(!relabeled_reflected_cube.check_outward_face_normals());
+        assert_outward_face_normals_checker_reference_invariance(
+            &relabeled_reflected_cube,
+            &references,
+        );
     }
 
     #[cfg(feature = "geometry-checks")]
@@ -1864,7 +1917,7 @@ fn diagnostic_witness_is_real_counterexample(
         const CASES: usize = 40;
         let mut rng = DeterministicRng::new(0x0D15_EA5F);
 
-        for _ in 0..CASES {
+        for case_id in 0..CASES {
             let component_count = rng.next_usize_inclusive(2, 7);
             let disjoint_origins = random_well_separated_component_origins(&mut rng, component_count);
             let disjoint_mesh = build_disconnected_translated_tetrahedra_mesh(&disjoint_origins);
@@ -1890,6 +1943,22 @@ fn diagnostic_witness_is_real_counterexample(
                 ),
             ];
             assert_outward_face_normals_checker_reference_invariance(&disjoint_mesh, &references);
+            let disjoint_permutation = random_permutation(&mut rng, disjoint_mesh.vertices.len());
+            let relabeled_disjoint =
+                relabel_mesh_vertices_for_testing(&disjoint_mesh, &disjoint_permutation)
+                    .expect("vertex-relabeled disjoint outwardness fixture should build");
+            assert!(
+                relabeled_disjoint.is_valid(),
+                "vertex-relabeled disjoint outwardness fixture should preserve validity in case {case_id}"
+            );
+            assert!(
+                relabeled_disjoint.check_outward_face_normals(),
+                "vertex-relabeled disjoint outwardness fixture should preserve orientation in case {case_id}"
+            );
+            assert_outward_face_normals_checker_reference_invariance(
+                &relabeled_disjoint,
+                &references,
+            );
 
             let quarter_turns = rng.next_u64() % 4;
             let tx = rng.next_i64_inclusive(-25, 25);
@@ -1901,6 +1970,22 @@ fn diagnostic_witness_is_real_counterexample(
             assert!(rigid_disjoint.is_valid());
             assert!(rigid_disjoint.check_outward_face_normals());
             assert_outward_face_normals_checker_reference_invariance(&rigid_disjoint, &references);
+            let rigid_permutation = random_permutation(&mut rng, rigid_disjoint.vertices.len());
+            let relabeled_rigid_disjoint =
+                relabel_mesh_vertices_for_testing(&rigid_disjoint, &rigid_permutation)
+                    .expect("vertex-relabeled rigid outwardness fixture should build");
+            assert!(
+                relabeled_rigid_disjoint.is_valid(),
+                "vertex-relabeled rigid outwardness fixture should preserve validity in case {case_id}"
+            );
+            assert!(
+                relabeled_rigid_disjoint.check_outward_face_normals(),
+                "vertex-relabeled rigid outwardness fixture should preserve orientation in case {case_id}"
+            );
+            assert_outward_face_normals_checker_reference_invariance(
+                &relabeled_rigid_disjoint,
+                &references,
+            );
 
             let reflected_disjoint = transform_mesh_positions(&disjoint_mesh, |point| {
                 let mirrored = reflect_point3_across_yz_plane(point);
@@ -1910,6 +1995,22 @@ fn diagnostic_witness_is_real_counterexample(
             assert!(!reflected_disjoint.check_outward_face_normals());
             assert_outward_face_normals_checker_reference_invariance(
                 &reflected_disjoint,
+                &references,
+            );
+            let reflected_permutation = random_permutation(&mut rng, reflected_disjoint.vertices.len());
+            let relabeled_reflected_disjoint =
+                relabel_mesh_vertices_for_testing(&reflected_disjoint, &reflected_permutation)
+                    .expect("vertex-relabeled reflected outwardness fixture should build");
+            assert!(
+                relabeled_reflected_disjoint.is_valid(),
+                "vertex-relabeled reflected outwardness fixture should preserve validity in case {case_id}"
+            );
+            assert!(
+                !relabeled_reflected_disjoint.check_outward_face_normals(),
+                "vertex-relabeled reflected outwardness fixture should remain inward in case {case_id}"
+            );
+            assert_outward_face_normals_checker_reference_invariance(
+                &relabeled_reflected_disjoint,
                 &references,
             );
         }
@@ -1922,35 +2023,57 @@ fn diagnostic_witness_is_real_counterexample(
         let mesh = build_disconnected_translated_tetrahedra_mesh(&origins);
         assert!(mesh.is_valid());
         assert!(mesh.check_outward_face_normals());
-
         let component_starts = component_start_half_edges(&mesh);
         assert_eq!(component_starts.len(), origins.len());
 
-        let reference_origin = RuntimePoint3::from_ints(0, 0, 0);
-        let reference_shifted_a = RuntimePoint3::from_ints(11, -7, 5);
-        let reference_shifted_b = RuntimePoint3::from_ints(-19, 13, -4);
+        let references = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(11, -7, 5),
+            RuntimePoint3::from_ints(-19, 13, -4),
+        ];
+        assert_component_signed_volume_reference_invariance_with_expected_sign(
+            &mesh,
+            &references,
+            -1,
+            "deterministic_disjoint_outward",
+        );
 
-        for start in component_starts {
-            let baseline = component_signed_volume_six_from_start_half_edge_relative_to_reference(
-                &mesh,
-                start,
-                &reference_origin,
-            );
-            let shifted_a = component_signed_volume_six_from_start_half_edge_relative_to_reference(
-                &mesh,
-                start,
-                &reference_shifted_a,
-            );
-            let shifted_b = component_signed_volume_six_from_start_half_edge_relative_to_reference(
-                &mesh,
-                start,
-                &reference_shifted_b,
-            );
+        let relabel_permutation: Vec<usize> = (0..mesh.vertices.len()).rev().collect();
+        let relabeled_mesh = relabel_mesh_vertices_for_testing(&mesh, &relabel_permutation)
+            .expect("vertex-relabeled deterministic disjoint mesh should build");
+        assert!(relabeled_mesh.is_valid());
+        assert!(relabeled_mesh.check_outward_face_normals());
+        assert_component_signed_volume_reference_invariance_with_expected_sign(
+            &relabeled_mesh,
+            &references,
+            -1,
+            "deterministic_disjoint_outward_relabeled",
+        );
 
-            assert!(baseline.signum_i8() < 0);
-            assert_eq!(shifted_a.sub(&baseline).signum_i8(), 0);
-            assert_eq!(shifted_b.sub(&baseline).signum_i8(), 0);
-        }
+        let reflected_mesh = transform_mesh_positions(&mesh, |point| {
+            let mirrored = reflect_point3_across_yz_plane(point);
+            translate_point3(&mirrored, 11, 3, -5)
+        });
+        assert!(reflected_mesh.is_valid());
+        assert!(!reflected_mesh.check_outward_face_normals());
+        assert_component_signed_volume_reference_invariance_with_expected_sign(
+            &reflected_mesh,
+            &references,
+            1,
+            "deterministic_disjoint_reflected",
+        );
+
+        let relabeled_reflected_mesh =
+            relabel_mesh_vertices_for_testing(&reflected_mesh, &relabel_permutation)
+                .expect("vertex-relabeled deterministic reflected mesh should build");
+        assert!(relabeled_reflected_mesh.is_valid());
+        assert!(!relabeled_reflected_mesh.check_outward_face_normals());
+        assert_component_signed_volume_reference_invariance_with_expected_sign(
+            &relabeled_reflected_mesh,
+            &references,
+            1,
+            "deterministic_disjoint_reflected_relabeled",
+        );
     }
 
     #[cfg(feature = "geometry-checks")]
@@ -1959,7 +2082,7 @@ fn diagnostic_witness_is_real_counterexample(
         const CASES: usize = 40;
         let mut rng = DeterministicRng::new(0x0D15_EA5E);
 
-        for _ in 0..CASES {
+        for case_id in 0..CASES {
             let component_count = rng.next_usize_inclusive(2, 7);
             let disjoint_origins = random_well_separated_component_origins(&mut rng, component_count);
             let disjoint_mesh = build_disconnected_translated_tetrahedra_mesh(&disjoint_origins);
@@ -1984,7 +2107,30 @@ fn diagnostic_witness_is_real_counterexample(
                     rng.next_i64_inclusive(-31, 31),
                 ),
             ];
-            assert_component_signed_volume_reference_invariance(&disjoint_mesh, &references);
+            assert_component_signed_volume_reference_invariance_with_expected_sign(
+                &disjoint_mesh,
+                &references,
+                -1,
+                &format!("random_disjoint_signed_volume_case_{case_id}"),
+            );
+            let disjoint_permutation = random_permutation(&mut rng, disjoint_mesh.vertices.len());
+            let relabeled_disjoint =
+                relabel_mesh_vertices_for_testing(&disjoint_mesh, &disjoint_permutation)
+                    .expect("vertex-relabeled disjoint signed-volume fixture should build");
+            assert!(
+                relabeled_disjoint.is_valid(),
+                "vertex-relabeled disjoint signed-volume fixture should preserve validity in case {case_id}"
+            );
+            assert!(
+                relabeled_disjoint.check_outward_face_normals(),
+                "vertex-relabeled disjoint signed-volume fixture should preserve outwardness in case {case_id}"
+            );
+            assert_component_signed_volume_reference_invariance_with_expected_sign(
+                &relabeled_disjoint,
+                &references,
+                -1,
+                &format!("random_disjoint_signed_volume_relabeled_case_{case_id}"),
+            );
 
             let quarter_turns = rng.next_u64() % 4;
             let tx = rng.next_i64_inclusive(-25, 25);
@@ -1995,7 +2141,61 @@ fn diagnostic_witness_is_real_counterexample(
             });
             assert!(rigid_disjoint.is_valid());
             assert!(rigid_disjoint.check_outward_face_normals());
-            assert_component_signed_volume_reference_invariance(&rigid_disjoint, &references);
+            assert_component_signed_volume_reference_invariance_with_expected_sign(
+                &rigid_disjoint,
+                &references,
+                -1,
+                &format!("random_rigid_signed_volume_case_{case_id}"),
+            );
+            let rigid_permutation = random_permutation(&mut rng, rigid_disjoint.vertices.len());
+            let relabeled_rigid_disjoint =
+                relabel_mesh_vertices_for_testing(&rigid_disjoint, &rigid_permutation)
+                    .expect("vertex-relabeled rigid signed-volume fixture should build");
+            assert!(
+                relabeled_rigid_disjoint.is_valid(),
+                "vertex-relabeled rigid signed-volume fixture should preserve validity in case {case_id}"
+            );
+            assert!(
+                relabeled_rigid_disjoint.check_outward_face_normals(),
+                "vertex-relabeled rigid signed-volume fixture should preserve outwardness in case {case_id}"
+            );
+            assert_component_signed_volume_reference_invariance_with_expected_sign(
+                &relabeled_rigid_disjoint,
+                &references,
+                -1,
+                &format!("random_rigid_signed_volume_relabeled_case_{case_id}"),
+            );
+
+            let reflected_disjoint = transform_mesh_positions(&disjoint_mesh, |point| {
+                let mirrored = reflect_point3_across_yz_plane(point);
+                translate_point3(&mirrored, tx, ty, tz)
+            });
+            assert!(reflected_disjoint.is_valid());
+            assert!(!reflected_disjoint.check_outward_face_normals());
+            assert_component_signed_volume_reference_invariance_with_expected_sign(
+                &reflected_disjoint,
+                &references,
+                1,
+                &format!("random_reflected_signed_volume_case_{case_id}"),
+            );
+            let reflected_permutation = random_permutation(&mut rng, reflected_disjoint.vertices.len());
+            let relabeled_reflected_disjoint =
+                relabel_mesh_vertices_for_testing(&reflected_disjoint, &reflected_permutation)
+                    .expect("vertex-relabeled reflected signed-volume fixture should build");
+            assert!(
+                relabeled_reflected_disjoint.is_valid(),
+                "vertex-relabeled reflected signed-volume fixture should preserve validity in case {case_id}"
+            );
+            assert!(
+                !relabeled_reflected_disjoint.check_outward_face_normals(),
+                "vertex-relabeled reflected signed-volume fixture should remain inward in case {case_id}"
+            );
+            assert_component_signed_volume_reference_invariance_with_expected_sign(
+                &relabeled_reflected_disjoint,
+                &references,
+                1,
+                &format!("random_reflected_signed_volume_relabeled_case_{case_id}"),
+            );
         }
     }
 
@@ -2818,6 +3018,18 @@ fn diagnostic_witness_is_real_counterexample(
 
         for (label, mesh) in fixtures {
             assert_face_convexity_checker_matches_projected_orient2d_oracle(&mesh, label);
+
+            let reverse_permutation: Vec<usize> = (0..mesh.vertices.len()).rev().collect();
+            let relabeled = relabel_mesh_vertices_for_testing(&mesh, &reverse_permutation)
+                .expect("deterministic reverse-relabeled convexity fixture should build");
+            assert!(
+                relabeled.is_valid(),
+                "deterministic reverse-relabeled convexity fixture should satisfy Phase 4 validity for {label}"
+            );
+            assert_face_convexity_checker_matches_projected_orient2d_oracle(
+                &relabeled,
+                &format!("{label}_deterministic_reverse_relabeled"),
+            );
         }
     }
 
