@@ -1,1 +1,1 @@
-Added a P5.1 completeness-lift helper that derives seed-0 witness preconditions from full runtime coplanarity spec before reusing the verified checker-core bridge, and 10 Phase 5 checklist tasks remain.
+Added two P5.1 coplanarity completeness wrappers that lift preconditions from mesh validity and the Phase-5 runtime seed-0 bundle into the existing full-coplanarity bridge, and 10 Phase 5 checklist tasks remain.

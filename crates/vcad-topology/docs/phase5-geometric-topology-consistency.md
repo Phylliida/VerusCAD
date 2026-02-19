@@ -195,6 +195,28 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.1 runtime-checker-correctness completeness-precondition-lift increment in
+  `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`:
+  - added two new proof-side wrappers that reuse the existing full-coplanarity completeness bridge
+    while reducing caller-side precondition plumbing:
+    - `runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_full_coplanarity_preconditions`;
+    - `runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_phase5_runtime_bundle_and_full_coplanarity_preconditions`.
+  - the first wrapper lifts from `mesh_valid_spec(m@)` (plus full runtime coplanarity +
+    seed-0 non-collinearity) by deriving:
+    - `mesh_runtime_geometry_bridge_spec(m)` via `lemma_mesh_runtime_geometry_bridge_holds`;
+    - `mesh_index_bounds_spec(m@)` and `mesh_face_next_cycles_spec(m@)` from
+      `mesh_structurally_valid_spec(m@)`.
+  - the second wrapper composes directly from
+    `mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m)` plus full
+    runtime coplanarity, so aggregate-gate-side proofs can route into the same completeness path
+    without re-expanding lower-level validity obligations.
+  - outcome: P5.1 completeness-direction entrypoints now compose more directly with both Phase-4
+    validity and existing Phase-5 runtime bundle artifacts, reducing proof call-site friction for
+    remaining checker/spec equivalence work.
+- 2026-02-19: Failed attempts in this P5.1 completeness-precondition-lift pass: none.
+- 2026-02-19: Revalidated after the P5.1 completeness-precondition-lift additions:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (286 verified, 0 errors)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
 - 2026-02-19: Completed a P5.1 runtime-checker-correctness completeness-lift increment in
   `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`:
   - added a new proof-side helper:
