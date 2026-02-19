@@ -637,12 +637,54 @@ fn assert_phase4_shared_edge_spec_characterization_gap(
 }
 
 #[cfg(feature = "geometry-checks")]
+fn no_forbidden_face_face_intersections_pairwise_oracle(
+    mesh: &Mesh,
+    use_broad_phase: bool,
+) -> Option<bool> {
+    if !mesh.is_valid() {
+        return Some(false);
+    }
+    if !mesh.check_face_convexity() {
+        return Some(false);
+    }
+
+    for face_a in 0..mesh.faces.len() {
+        for face_b in (face_a + 1)..mesh.faces.len() {
+            let pair_forbidden = mesh.face_pair_has_forbidden_intersection_for_testing(
+                face_a,
+                face_b,
+                use_broad_phase,
+            )?;
+            if pair_forbidden {
+                return Some(false);
+            }
+        }
+    }
+
+    Some(true)
+}
+
+#[cfg(feature = "geometry-checks")]
 fn assert_forbidden_face_face_checker_broad_phase_sound(mesh: &Mesh) {
     let broad_phase_result = mesh.check_no_forbidden_face_face_intersections();
-    let no_cull_oracle_result =
+    let no_cull_result =
         mesh.check_no_forbidden_face_face_intersections_without_broad_phase_for_testing();
+    let broad_phase_pairwise_oracle =
+        no_forbidden_face_face_intersections_pairwise_oracle(mesh, true)
+            .expect("pairwise broad-phase oracle should produce an output");
+    let no_cull_pairwise_oracle =
+        no_forbidden_face_face_intersections_pairwise_oracle(mesh, false)
+            .expect("pairwise no-cull oracle should produce an output");
     assert_eq!(
-        broad_phase_result, no_cull_oracle_result,
+        broad_phase_result, broad_phase_pairwise_oracle,
+        "broad-phase aggregate result diverged from explicit pairwise oracle"
+    );
+    assert_eq!(
+        no_cull_result, no_cull_pairwise_oracle,
+        "no-cull aggregate result diverged from explicit pairwise oracle"
+    );
+    assert_eq!(
+        broad_phase_result, no_cull_result,
         "broad-phase culling changed the forbidden face-face intersection outcome"
     );
 }

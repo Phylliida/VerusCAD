@@ -1,1 +1,1 @@
-Added a P5.5 runtime forbidden-policy decomposition proof surface plus non-allowed-topology pair-classification regressions with full vcad-topology revalidation; 8 Phase 5 tasks remain in vcad-topology.
+Added a P5.5 aggregate-vs-pairwise forbidden-intersection parity lock by introducing an explicit pairwise oracle in topology tests with full revalidation; 8 Phase 5 tasks remain in vcad-topology.

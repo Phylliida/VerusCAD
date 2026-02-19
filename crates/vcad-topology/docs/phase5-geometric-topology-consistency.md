@@ -195,6 +195,27 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with an aggregate/pairwise classification parity-lock increment in:
+  - `src/halfedge_mesh/tests.rs`.
+  - added a reusable explicit pairwise oracle:
+    - helper `no_forbidden_face_face_intersections_pairwise_oracle`.
+  - strengthened broad-phase parity coverage:
+    - `assert_forbidden_face_face_checker_broad_phase_sound` now additionally asserts:
+      - aggregate broad-phase checker result matches explicit all-face-pairs oracle evaluation with broad-phase enabled;
+      - aggregate no-cull checker result matches explicit all-face-pairs oracle evaluation with broad-phase disabled;
+      - broad-phase and no-cull aggregate outcomes remain equal.
+  - outcome:
+    - P5.5 checker behavior is now locked against an explicit pairwise decomposition path in both culling modes (not only broad-vs-no-cull parity), reducing regression risk in aggregate/pair integration while formal soundness/completeness proofs remain open.
+- 2026-02-19: Failed attempts in this P5.5 aggregate/pairwise parity-lock pass: none.
+- 2026-02-19: Revalidated after the P5.5 aggregate/pairwise parity-lock increment:
+  - `cargo test -p vcad-topology --features geometry-checks broad_phase_face_pair_culling_matches_no_cull_oracle` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks differential_randomized_forbidden_intersection_checker_harness` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (62 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (83 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (331 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (368 verified, 0 errors)
 - 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)`) with a runtime-policy decomposition + non-allowed-topology lock increment in:
   - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`;
   - `src/halfedge_mesh/tests.rs`.
