@@ -523,6 +523,16 @@ fn check_face_convexity_projected_orient2d_oracle(mesh: &Mesh) -> bool {
 }
 
 #[cfg(feature = "geometry-checks")]
+fn assert_face_convexity_checker_matches_projected_orient2d_oracle(mesh: &Mesh, label: &str) {
+    let checker_result = mesh.check_face_convexity();
+    let oracle_result = check_face_convexity_projected_orient2d_oracle(mesh);
+    assert_eq!(
+        checker_result, oracle_result,
+        "face convexity checker diverged from projected orient2d-sign oracle for {label}"
+    );
+}
+
+#[cfg(feature = "geometry-checks")]
 fn build_overlapping_tetrahedra_mesh() -> Mesh {
     let vertices = vec![
         RuntimePoint3::from_ints(0, 0, 0),
@@ -2143,24 +2153,152 @@ fn diagnostic_witness_is_real_counterexample(
         let disjoint_stress = build_disconnected_translated_tetrahedra_mesh(&disjoint_origins);
 
         let fixtures = vec![
-            Mesh::tetrahedron(),
-            Mesh::cube(),
-            Mesh::triangular_prism(),
-            build_overlapping_tetrahedra_mesh(),
-            disjoint_stress,
-            concave_mesh,
-            noncoplanar_mesh,
-            collinear_mesh,
-            zero_length_mesh,
+            ("tetrahedron", Mesh::tetrahedron()),
+            ("cube", Mesh::cube()),
+            ("triangular_prism", Mesh::triangular_prism()),
+            (
+                "overlapping_disconnected_tetrahedra",
+                build_overlapping_tetrahedra_mesh(),
+            ),
+            ("disconnected_stress", disjoint_stress),
+            ("concave_face", concave_mesh),
+            ("noncoplanar_face", noncoplanar_mesh),
+            ("collinear_face", collinear_mesh),
+            ("zero_length_edge", zero_length_mesh),
         ];
 
-        for mesh in fixtures {
-            let checker_result = mesh.check_face_convexity();
-            let oracle_result = check_face_convexity_projected_orient2d_oracle(&mesh);
-            assert_eq!(
-                checker_result, oracle_result,
-                "face convexity checker diverged from projected orient2d-sign oracle"
+        for (label, mesh) in fixtures {
+            assert_face_convexity_checker_matches_projected_orient2d_oracle(&mesh, label);
+        }
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn differential_randomized_face_convexity_checker_projected_orient2d_oracle_harness() {
+        const CASES: usize = 40;
+        let mut rng = DeterministicRng::new(0xC0A2_3F57_9B1D_6E42);
+
+        let noncoplanar_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(0, 1, 0),
+            RuntimePoint3::from_ints(0, 0, 1),
+        ];
+        let noncoplanar_faces = vec![vec![0, 1, 2, 3], vec![0, 3, 2, 1]];
+        let noncoplanar_mesh = Mesh::from_face_cycles(noncoplanar_vertices, &noncoplanar_faces)
+            .expect("noncoplanar face fixture should build");
+
+        let concave_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(2, 0, 0),
+            RuntimePoint3::from_ints(2, 2, 0),
+            RuntimePoint3::from_ints(1, 1, 0),
+            RuntimePoint3::from_ints(0, 2, 0),
+        ];
+        let concave_faces = vec![vec![0, 1, 2, 3, 4], vec![0, 4, 3, 2, 1]];
+        let concave_mesh = Mesh::from_face_cycles(concave_vertices, &concave_faces)
+            .expect("concave face fixture should build");
+
+        let collinear_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(2, 0, 0),
+        ];
+        let collinear_faces = vec![vec![0, 1, 2], vec![0, 2, 1]];
+        let collinear_mesh = Mesh::from_face_cycles(collinear_vertices, &collinear_faces)
+            .expect("collinear face fixture should build");
+
+        let zero_length_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+        ];
+        let zero_length_faces = vec![vec![0, 1, 2], vec![0, 2, 1]];
+        let zero_length_mesh = Mesh::from_face_cycles(zero_length_vertices, &zero_length_faces)
+            .expect("zero-length edge fixture should build");
+
+        let failing_fixtures = vec![
+            ("concave_face", concave_mesh),
+            ("noncoplanar_face", noncoplanar_mesh),
+            ("collinear_face", collinear_mesh),
+            ("zero_length_edge", zero_length_mesh),
+        ];
+        for (label, mesh) in &failing_fixtures {
+            assert_face_convexity_checker_matches_projected_orient2d_oracle(mesh, label);
+        }
+
+        for case_id in 0..CASES {
+            let component_count = rng.next_usize_inclusive(2, 7);
+            let disjoint_origins = random_well_separated_component_origins(&mut rng, component_count);
+            let disjoint_mesh = build_disconnected_translated_tetrahedra_mesh(&disjoint_origins);
+            assert!(
+                disjoint_mesh.is_valid(),
+                "generated disjoint fixture should satisfy Phase 4 validity"
             );
+            assert_face_convexity_checker_matches_projected_orient2d_oracle(
+                &disjoint_mesh,
+                &format!("disjoint_case_{case_id}"),
+            );
+
+            let quarter_turns = rng.next_u64() % 4;
+            let tx = rng.next_i64_inclusive(-25, 25);
+            let ty = rng.next_i64_inclusive(-25, 25);
+            let tz = rng.next_i64_inclusive(-25, 25);
+            let rigid_disjoint = transform_mesh_positions(&disjoint_mesh, |point| {
+                rigid_rotate_z_quarter_turns_then_translate(point, quarter_turns, tx, ty, tz)
+            });
+            assert!(
+                rigid_disjoint.is_valid(),
+                "rigidly transformed disjoint fixture should preserve Phase 4 validity"
+            );
+            assert_face_convexity_checker_matches_projected_orient2d_oracle(
+                &rigid_disjoint,
+                &format!("disjoint_rigid_case_{case_id}"),
+            );
+
+            let (source_component, perturbed_component) =
+                pick_distinct_indices(&mut rng, component_count);
+            let mut perturbed_origins = disjoint_origins.clone();
+            let perturbation = match rng.next_u64() % 3 {
+                0 => (0, 0, 0),
+                1 => (1, 0, 0),
+                _ => (0, 1, 0),
+            };
+            let (ox, oy, oz) = perturbed_origins[source_component];
+            perturbed_origins[perturbed_component] = (
+                ox + perturbation.0,
+                oy + perturbation.1,
+                oz + perturbation.2,
+            );
+            let perturbed_mesh = build_disconnected_translated_tetrahedra_mesh(&perturbed_origins);
+            assert!(
+                perturbed_mesh.is_valid(),
+                "topology should remain valid under coordinate perturbations"
+            );
+            assert_face_convexity_checker_matches_projected_orient2d_oracle(
+                &perturbed_mesh,
+                &format!("perturbed_case_{case_id}"),
+            );
+
+            for (label, mesh) in &failing_fixtures {
+                let fail_turns = rng.next_u64() % 4;
+                let fail_tx = rng.next_i64_inclusive(-30, 30);
+                let fail_ty = rng.next_i64_inclusive(-30, 30);
+                let fail_tz = rng.next_i64_inclusive(-30, 30);
+                let transformed = transform_mesh_positions(mesh, |point| {
+                    rigid_rotate_z_quarter_turns_then_translate(
+                        point,
+                        fail_turns,
+                        fail_tx,
+                        fail_ty,
+                        fail_tz,
+                    )
+                });
+                assert_face_convexity_checker_matches_projected_orient2d_oracle(
+                    &transformed,
+                    &format!("{label}_rigid_case_{case_id}"),
+                );
+            }
         }
     }
 
