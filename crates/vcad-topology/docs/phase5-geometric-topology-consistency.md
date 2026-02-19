@@ -195,6 +195,26 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.4 (`Proof: signed-volume outwardness criterion is independent of the chosen reference origin`) with mixed-component-arity reference-invariance lock coverage in:
+  - `src/halfedge_mesh/tests.rs`.
+  - added mixed disconnected closed-component fixture helpers:
+    - `append_translated_mesh_component`;
+    - `build_disconnected_translated_mixed_polyhedra_mesh` (cycles tetrahedron/cube/triangular_prism templates per component).
+  - added new P5.4 regression:
+    - `outward_signed_volume_reference_origin_invariance_holds_for_mixed_component_arities`;
+    - validates checker-level and per-component signed-volume reference-origin invariance on mixed triangle/quad component sets, including relabelled and reflected variants.
+  - outcome:
+    - outward signed-volume/reference-origin invariance coverage now includes mixed face-arity closed components (not only tetrahedra-only disconnected fixtures), reducing regression risk on the still-open formal origin-independence proof item.
+- 2026-02-19: Failed attempts in this P5.4 mixed-component-arity reference-invariance pass:
+  - repository formatting commands are unavailable in this environment (`cargo fmt` subcommand missing; `rustfmt` executable missing), so this pass relied on manual style consistency.
+- 2026-02-19: Revalidated after this P5.4 mixed-component-arity reference-invariance increment:
+  - `cargo test -p vcad-topology --features geometry-checks outward_signed_volume_reference_origin_invariance_holds_for_mixed_component_arities` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (64 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (97 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (388 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (425 verified, 0 errors)
 - 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec`) with triangle/quad oriented-plane equivalence strengthening in:
   - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`;
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`.

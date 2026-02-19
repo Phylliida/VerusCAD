@@ -1,1 +1,1 @@
-Strengthened vcad-topology P5.1 triangle/quad coplanarity proof packaging with new oriented-seed0-plane <-> coplanarity/non-collinearity equivalence lemmas and propagated contract strengthening across constructive bridges, and 8 Phase 5 checklist tasks remain.
+Expanded vcad-topology P5.4 outward signed-volume reference-origin invariance coverage to mixed tetrahedron/cube/prism disconnected components (including relabeled and reflected variants), and 8 Phase 5 checklist tasks remain.

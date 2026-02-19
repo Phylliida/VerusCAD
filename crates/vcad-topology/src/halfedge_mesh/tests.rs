@@ -104,6 +104,42 @@ fn build_disconnected_translated_tetrahedra_mesh(component_origins: &[(i64, i64,
 }
 
 #[cfg(feature = "geometry-checks")]
+fn append_translated_mesh_component(
+    vertices: &mut Vec<RuntimePoint3>,
+    faces: &mut Vec<Vec<usize>>,
+    component: &Mesh,
+    tx: i64,
+    ty: i64,
+    tz: i64,
+) {
+    let base = vertices.len();
+    for vertex in &component.vertices {
+        vertices.push(translate_point3(&vertex.position, tx, ty, tz));
+    }
+    for face_id in 0..component.faces.len() {
+        let face_cycle = ordered_face_vertex_cycle_indices(component, face_id)
+            .expect("component fixture should expose valid face cycles");
+        let remapped_cycle: Vec<usize> = face_cycle.into_iter().map(|index| base + index).collect();
+        faces.push(remapped_cycle);
+    }
+}
+
+#[cfg(feature = "geometry-checks")]
+fn build_disconnected_translated_mixed_polyhedra_mesh(component_origins: &[(i64, i64, i64)]) -> Mesh {
+    let templates = [Mesh::tetrahedron(), Mesh::cube(), Mesh::triangular_prism()];
+
+    let mut vertices = Vec::new();
+    let mut faces = Vec::new();
+    for (component_idx, &(tx, ty, tz)) in component_origins.iter().enumerate() {
+        let template = &templates[component_idx % templates.len()];
+        append_translated_mesh_component(&mut vertices, &mut faces, template, tx, ty, tz);
+    }
+
+    Mesh::from_face_cycles(vertices, &faces)
+        .expect("disconnected translated mixed-polyhedra stress fixture should build")
+}
+
+#[cfg(feature = "geometry-checks")]
 fn phase5_checker_signature(mesh: &Mesh) -> [bool; 10] {
     [
         mesh.check_no_zero_length_geometric_edges(),
@@ -3205,6 +3241,73 @@ fn diagnostic_witness_is_real_counterexample(
             &references,
             1,
             "deterministic_disjoint_reflected_relabeled",
+        );
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn outward_signed_volume_reference_origin_invariance_holds_for_mixed_component_arities() {
+        let origins = vec![(0, 0, 0), (40, 0, 0), (-35, 14, 6), (12, -42, 9)];
+        let mesh = build_disconnected_translated_mixed_polyhedra_mesh(&origins);
+        assert!(mesh.is_valid());
+        assert!(mesh.check_outward_face_normals());
+
+        let references = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(11, -7, 5),
+            RuntimePoint3::from_ints(-19, 13, -4),
+        ];
+        assert_outward_face_normals_checker_reference_invariance(&mesh, &references);
+        assert_component_signed_volume_reference_invariance_with_expected_sign(
+            &mesh,
+            &references,
+            -1,
+            "deterministic_mixed_outward",
+        );
+
+        let relabel_permutation: Vec<usize> = (0..mesh.vertices.len()).rev().collect();
+        let relabeled_mesh = relabel_mesh_vertices_for_testing(&mesh, &relabel_permutation)
+            .expect("vertex-relabeled deterministic mixed mesh should build");
+        assert!(relabeled_mesh.is_valid());
+        assert!(relabeled_mesh.check_outward_face_normals());
+        assert_outward_face_normals_checker_reference_invariance(&relabeled_mesh, &references);
+        assert_component_signed_volume_reference_invariance_with_expected_sign(
+            &relabeled_mesh,
+            &references,
+            -1,
+            "deterministic_mixed_outward_relabeled",
+        );
+
+        let reflected_mesh = transform_mesh_positions(&mesh, |point| {
+            let mirrored = reflect_point3_across_yz_plane(point);
+            translate_point3(&mirrored, 17, -9, 4)
+        });
+        assert!(reflected_mesh.is_valid());
+        assert!(!reflected_mesh.check_outward_face_normals());
+        assert_outward_face_normals_checker_reference_invariance(&reflected_mesh, &references);
+        assert_component_signed_volume_reference_invariance_with_expected_sign(
+            &reflected_mesh,
+            &references,
+            1,
+            "deterministic_mixed_reflected",
+        );
+
+        let reflected_relabel_permutation: Vec<usize> =
+            (0..reflected_mesh.vertices.len()).rev().collect();
+        let relabeled_reflected_mesh =
+            relabel_mesh_vertices_for_testing(&reflected_mesh, &reflected_relabel_permutation)
+                .expect("vertex-relabeled deterministic mixed reflected mesh should build");
+        assert!(relabeled_reflected_mesh.is_valid());
+        assert!(!relabeled_reflected_mesh.check_outward_face_normals());
+        assert_outward_face_normals_checker_reference_invariance(
+            &relabeled_reflected_mesh,
+            &references,
+        );
+        assert_component_signed_volume_reference_invariance_with_expected_sign(
+            &relabeled_reflected_mesh,
+            &references,
+            1,
+            "deterministic_mixed_reflected_relabeled",
         );
     }
 
