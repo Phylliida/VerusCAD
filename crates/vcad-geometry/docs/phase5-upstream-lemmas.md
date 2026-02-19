@@ -133,8 +133,15 @@ Blocks: `P5.5` intersection checker soundness (broad phase).
     Proof note: avoided crate-private scalar lemmas and discharged the
     `w3 == 0` branch via numerator reasoning plus `sum == 1` contradiction when
     all first-three weights are non-positive.
-  - Remaining gap: proof surface now covers binary/ternary/quaternary convex
-    combinations; still need an n-ary/general convex-combination wrapper for
+  - Partial (2026-02-19, quinary convex-combo pass): extended
+    `crates/vcad-geometry/src/phase5_upstream_lemmas.rs` with
+    `lemma_nonnegative_five_weights_summing_to_one_implies_some_positive` and
+    `lemma_quinary_convex_combination_of_positive_values_is_positive`
+    (`w0*x0 + w1*x1 + w2*x2 + w3*x3 + w4*x4` with nonnegative weights summing
+    to `1`), using a dedicated five-weight positivity split helper to avoid
+    re-normalization/division subproofs.
+  - Remaining gap: proof surface now covers binary/ternary/quaternary/quinary
+    convex combinations; still need an n-ary/general convex-combination wrapper for
     full face-plane separation composition.
   - Verification attempt note (2026-02-19, convex-combo positivity pass):
     `cargo test -p vcad-geometry` passes in this environment.
@@ -164,6 +171,15 @@ Blocks: `P5.5` intersection checker soundness (broad phase).
     `./scripts/verify-vcad-geometry.sh` now passes in this environment
     (`194 verified, 0 errors`; one verifier warning remains about `assert forall`
     antecedent handling for `==>` in
+    `lemma_aabb_separation_and_containment_implies_disjoint_sets`).
+  - Verification attempt note (2026-02-19, quinary convex-combo pass):
+    `cargo test -p vcad-geometry` passes in this environment.
+  - Verification attempt note (2026-02-19, quinary convex-combo pass):
+    `./scripts/test-vcad-geometry-verus-proofs.sh` passes in this environment.
+  - Verification attempt note (2026-02-19, quinary convex-combo pass):
+    `./scripts/verify-vcad-geometry.sh` passes in this environment
+    (`221 verified, 0 errors`; one existing verifier warning remains about
+    `assert forall` antecedent handling for `==>` in
     `lemma_aabb_separation_and_containment_implies_disjoint_sets`).
 
 ## L6: Segment-Face Intersection Predicate Correctness
