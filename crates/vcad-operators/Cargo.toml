@@ -1,0 +1,19 @@
+[package]
+name = "vcad-operators"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+vcad-topology = { path = "../vcad-topology" }
+vstd = { path = "../../../verus/source/vstd" }
+
+[features]
+default = []
+geometry-checks = ["vcad-topology/geometry-checks"]
+verus-proofs = ["vcad-topology/verus-proofs"]
+
+[package.metadata.verus]
+verify = true
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(verus_keep_ghost)'] }

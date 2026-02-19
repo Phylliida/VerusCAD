@@ -1,3 +1,8 @@
 [workspace]
-members = ["crates/vcad-math", "crates/vcad-geometry", "crates/vcad-topology"]
+members = [
+  "crates/vcad-math",
+  "crates/vcad-geometry",
+  "crates/vcad-topology",
+  "crates/vcad-operators",
+]
 resolver = "2"

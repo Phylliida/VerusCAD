@@ -31,7 +31,19 @@ Helper scripts for local Verus workflows.
      and `geometry-checks,verus-proofs`.
    - no separate fallback logic in this script; topology verifier fallback behavior is inherited from `verify-vcad-topology-fast.sh` / `verify-vcad-topology.sh`.
 10. `verify-vad-topology.sh`: compatibility alias that forwards to `verify-vcad-topology.sh`.
-11. `run-codex-task.sh`: lightweight client that POSTs to the looper service (`http://127.0.0.1:3456/run` by default).
+11. `check-vcad-operators-trust-surface.sh`: scans `crates/vcad-operators/src` for forbidden trust markers (`assume_specification`, `external_fn_specification`, `uninterpreted`, `admit(`, `assume(`, `#[verifier::external_body]`, and `#[verifier::external_type_specification]`).
+12. `verify-vcad-operators.sh`: full `vcad-operators` verification with `verus-proofs` (runs trust-surface scan first).
+   - execution path:
+     prefers `nix-shell -p rustup`; if unavailable, automatically falls back to direct `cargo verus`
+     with a temporary local `rustup` shim wired to `VERUS_TOOLCHAIN` under `$RUSTUP_HOME`/`$HOME/.rustup`.
+13. `verify-vcad-operators-fast.sh`: fast dev loop for `vcad-operators` using focused verification (runs trust-surface scan first).
+   - execution path:
+     same automatic `nix-shell` -> direct `cargo verus` fallback behavior as `verify-vcad-operators.sh`.
+   - default: `./scripts/verify-vcad-operators-fast.sh`
+     verifies `vcad-operators` with `verus-proofs` and no module filter.
+   - module: `./scripts/verify-vcad-operators-fast.sh <module>`
+   - function: `./scripts/verify-vcad-operators-fast.sh <module> <function_pattern>`
+14. `run-codex-task.sh`: lightweight client that POSTs to the looper service (`http://127.0.0.1:3456/run` by default).
    - sends a `zulip_message` to looper; looper handles Zulip DM + VS Code restart/new Codex panel
    - message source file: `scripts/run-codex-task.message.txt`
    - default: `./scripts/run-codex-task.sh`

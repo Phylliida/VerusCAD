@@ -127,6 +127,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "vcad-operators"
+version = "0.1.0"
+dependencies = [
+ "vcad-topology",
+ "vstd",
+]
+
+[[package]]
 name = "vcad-topology"
 version = "0.1.0"
 dependencies = [

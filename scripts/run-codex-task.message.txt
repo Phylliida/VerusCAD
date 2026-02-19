@@ -1,1 +1,1 @@
-Added a P5.1 phase5-runtime-bundle coplanarity completeness bridge with new constructive/runtime parity locks and full vcad-topology revalidation, and 10 Phase 5 checklist tasks remain.
+Reduced redundant coplanarity-dependent non-collinearity pre-gates in vcad-topology validation paths with full test-matrix revalidation, and 10 Phase 5 checklist tasks remain.
