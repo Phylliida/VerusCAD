@@ -1,1 +1,1 @@
-Added a P5.3 fixed-seed convexity legal-projection proof bridge/refactor in model_and_bridge_specs with full revalidation and burndown updates; 10 Phase 5 checklist tasks remain.
+Added a P5.1 seed-0 coplanarity witness cycle-length normalization bridge in refinement proofs and runtime postconditions with full revalidation; 10 Phase 5 checklist tasks remain.

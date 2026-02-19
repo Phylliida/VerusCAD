@@ -791,6 +791,18 @@ pub fn runtime_check_face_coplanarity_seed0_fixed_witness_bridge(m: &Mesh) -> (o
         out ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m),
         out ==> mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m),
         out ==> mesh_runtime_all_faces_oriented_seed0_planes_spec(m),
+        out ==> exists|face_cycle_lens: Seq<usize>| {
+            &&& mesh_face_next_cycles_witness_spec(m@, face_cycle_lens)
+            &&& forall|f: int|
+                0 <= f < mesh_face_count_spec(m@)
+                    ==> #[trigger] mesh_face_coplanar_fixed_seed_witness_spec(
+                        m@,
+                        mesh_runtime_vertex_positions_spec(m),
+                        f,
+                        face_cycle_lens[f] as int,
+                        0,
+                    )
+        },
 {
     if !m.is_valid() {
         return false;
@@ -1275,6 +1287,34 @@ pub fn runtime_check_face_coplanarity_seed0_fixed_witness_bridge(m: &Mesh) -> (o
             };
         };
         assert(mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m));
+        lemma_mesh_runtime_all_faces_coplanar_seed0_fixed_witness_and_face_next_cycles_witness_imply_all_faces_seed0_fixed_witness_at_cycle_lens(
+            m,
+            face_cycle_lens,
+        );
+        assert(exists|face_cycle_lens0: Seq<usize>| {
+            &&& mesh_face_next_cycles_witness_spec(m@, face_cycle_lens0)
+            &&& forall|f: int|
+                0 <= f < mesh_face_count_spec(m@)
+                    ==> #[trigger] mesh_face_coplanar_fixed_seed_witness_spec(
+                        m@,
+                        mesh_runtime_vertex_positions_spec(m),
+                        f,
+                        face_cycle_lens0[f] as int,
+                        0,
+                    )
+        }) by {
+            let face_cycle_lens0 = face_cycle_lens;
+            assert(mesh_face_next_cycles_witness_spec(m@, face_cycle_lens0));
+            assert(forall|f: int|
+                0 <= f < mesh_face_count_spec(m@)
+                    ==> #[trigger] mesh_face_coplanar_fixed_seed_witness_spec(
+                        m@,
+                        mesh_runtime_vertex_positions_spec(m),
+                        f,
+                        face_cycle_lens0[f] as int,
+                        0,
+                    ));
+        };
         lemma_mesh_runtime_all_faces_coplanar_seed0_fixed_witness_implies_all_faces_seed0_plane_contains_vertices(
             m,
         );

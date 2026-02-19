@@ -1639,6 +1639,76 @@ pub proof fn lemma_mesh_face_coplanar_spec_and_face_cycle_witness_imply_seed0_fi
 }
 
 #[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_face_coplanar_seed0_fixed_witness_and_face_cycle_witness_imply_fixed_witness_at_cycle_len(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+    k: int,
+)
+    requires
+        mesh_face_coplanar_seed0_fixed_witness_spec(m, vertex_positions, f),
+        mesh_face_cycle_witness_spec(m, f, k),
+    ensures
+        mesh_face_coplanar_fixed_seed_witness_spec(m, vertex_positions, f, k, 0),
+{
+    assert(0 <= f < mesh_face_count_spec(m));
+    let kw = choose|kw: int| mesh_face_coplanar_fixed_seed_witness_spec(
+        m,
+        vertex_positions,
+        f,
+        kw,
+        0,
+    );
+    assert(mesh_face_coplanar_fixed_seed_witness_spec(m, vertex_positions, f, kw, 0));
+    assert(mesh_face_cycle_witness_spec(m, f, kw));
+    lemma_mesh_face_cycle_witness_length_unique(m, f, kw, k);
+    assert(kw == k);
+    assert(mesh_face_coplanar_fixed_seed_witness_spec(m, vertex_positions, f, k, 0));
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_all_faces_coplanar_seed0_fixed_witness_and_face_next_cycles_witness_imply_all_faces_seed0_fixed_witness_at_cycle_lens(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    face_cycle_lens: Seq<usize>,
+)
+    requires
+        mesh_all_faces_coplanar_seed0_fixed_witness_spec(m, vertex_positions),
+        mesh_face_next_cycles_witness_spec(m, face_cycle_lens),
+    ensures
+        forall|f: int|
+            0 <= f < mesh_face_count_spec(m)
+                ==> #[trigger] mesh_face_coplanar_fixed_seed_witness_spec(
+                    m,
+                    vertex_positions,
+                    f,
+                    face_cycle_lens[f] as int,
+                    0,
+                ),
+{
+    assert(mesh_geometry_input_spec(m, vertex_positions));
+    assert(face_cycle_lens.len() == mesh_face_count_spec(m));
+    assert forall|f: int|
+        0 <= f < mesh_face_count_spec(m)
+            implies #[trigger] mesh_face_coplanar_fixed_seed_witness_spec(
+                m,
+                vertex_positions,
+                f,
+                face_cycle_lens[f] as int,
+                0,
+            ) by {
+        assert(mesh_face_coplanar_seed0_fixed_witness_spec(m, vertex_positions, f));
+        assert(mesh_face_cycle_witness_spec(m, f, face_cycle_lens[f] as int));
+        lemma_mesh_face_coplanar_seed0_fixed_witness_and_face_cycle_witness_imply_fixed_witness_at_cycle_len(
+            m,
+            vertex_positions,
+            f,
+            face_cycle_lens[f] as int,
+        );
+    };
+}
+
+#[cfg(verus_keep_ghost)]
 pub open spec fn mesh_plane_offset_relative_to_origin_spec(
     normal: vcad_math::vec3::Vec3,
     point: vcad_math::point3::Point3,
@@ -3693,6 +3763,32 @@ pub proof fn lemma_mesh_runtime_all_faces_coplanar_spec_and_face_next_cycles_wit
             0,
         ));
     };
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_runtime_all_faces_coplanar_seed0_fixed_witness_and_face_next_cycles_witness_imply_all_faces_seed0_fixed_witness_at_cycle_lens(
+    m: &Mesh,
+    face_cycle_lens: Seq<usize>,
+)
+    requires
+        mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m),
+        mesh_face_next_cycles_witness_spec(m@, face_cycle_lens),
+    ensures
+        forall|f: int|
+            0 <= f < mesh_face_count_spec(m@)
+                ==> #[trigger] mesh_face_coplanar_fixed_seed_witness_spec(
+                    m@,
+                    mesh_runtime_vertex_positions_spec(m),
+                    f,
+                    face_cycle_lens[f] as int,
+                    0,
+                ),
+{
+    lemma_mesh_all_faces_coplanar_seed0_fixed_witness_and_face_next_cycles_witness_imply_all_faces_seed0_fixed_witness_at_cycle_lens(
+        m@,
+        mesh_runtime_vertex_positions_spec(m),
+        face_cycle_lens,
+    );
 }
 
 #[cfg(verus_keep_ghost)]
