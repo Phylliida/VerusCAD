@@ -195,6 +195,36 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec`) with a differential
+  stress-oracle increment in `src/halfedge_mesh/tests.rs`:
+  - factored the exhaustive coplanarity oracle parity assertion into
+    `assert_face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle`;
+  - added
+    `differential_randomized_face_coplanarity_checker_exhaustive_quadruple_oracle_harness`
+    (40 deterministic seeded cases) to compare `check_face_coplanarity()` against the exhaustive
+    face-quadruple oracle across:
+    - valid disconnected closed-component fixtures;
+    - rigid rotation + translation transforms;
+    - adversarial component-coordinate perturbations (exact overlap and vertex/edge-touch modes);
+    - rigidly transformed negative fixtures (non-coplanar face, collinear seed corner, zero-length
+      geometric edge).
+  - outcome: stronger executable evidence that the optimized coplanarity checker matches the full
+    face-quadruple oracle under documented runtime preconditions (Phase 4 validity + seed-0 corner
+    non-collinearity), while the remaining formal P5.1 proof obligation stays open.
+- 2026-02-19: Failed attempt in this P5.1 pass:
+  - tried to close the missing formal reverse direction
+    (`seed0-fixed witness + seed0 non-collinear -> mesh_runtime_all_faces_coplanar_spec`) in
+    `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`;
+  - blocker: no existing upstream lemma in the current proof stack to discharge the generic
+    “all face vertices satisfy one non-degenerate seed plane implies arbitrary face-vertex
+    quadruple coplanarity” step without introducing new trusted assumptions.
+- 2026-02-19: Revalidated after the P5.1 coplanarity-oracle stress-harness increment:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks` (58 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (66 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (286 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (323 verified, 0 errors)
 - 2026-02-19: Completed a P5.4 outward signed-volume traversal dedup + checker/diagnostic parity cleanup in
   `src/halfedge_mesh/validation.rs`:
   - added shared helper `first_component_with_non_negative_signed_volume_relative_to_reference()`
