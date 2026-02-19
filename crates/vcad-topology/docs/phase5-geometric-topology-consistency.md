@@ -195,6 +195,30 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) by extending the existing spec/runtime characterization-gap lock surface in:
+  - `src/halfedge_mesh/tests.rs`.
+  - added a new deterministic + randomized gap class for the currently missing aggregate-spec coverage of face-corner non-collinearity:
+    - helper fixture `build_collinear_single_triangle_pair_mesh`;
+    - new `Phase4SharedEdgeSpecGapFailure::CollinearCorner` branch in `assert_phase4_shared_edge_spec_characterization_gap`;
+    - new regression `collinear_fixture_keeps_phase4_and_shared_edge_orientation_but_fails_aggregate_gate`;
+    - extended randomized multiclass gap harness (`differential_randomized_multiclass_phase4_shared_edge_spec_gap_harness`) to include the collinear class.
+  - outcome:
+    - aggregate-spec gap coverage now explicitly includes all of:
+      - face non-coplanarity;
+      - face non-convexity;
+      - forbidden face-face intersection;
+      - inward/degenerate outwardness failure;
+      - face-corner collinearity.
+    - this tightens blocker visibility for P5.7 while preserving the current open status (runtime checker/spec equivalence still not proved).
+- 2026-02-19: Failed attempt in this P5.7 gap pass:
+  - first attempted to add a zero-length-edge gap class, but the fixture cannot satisfy the shared-edge-local-orientation precondition used by the current aggregate-spec characterization helper (`check_shared_edge_local_orientation_consistency()` explicitly requires `check_no_zero_length_geometric_edges()`), so that class was not a valid Phase4+shared-edge characterization counterexample and was replaced by the collinear-corner class above.
+- 2026-02-19: Revalidated after the P5.7 gap-harness extension:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" collinear_fixture_keeps_phase4_and_shared_edge_orientation_but_fails_aggregate_gate` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" differential_randomized_multiclass_phase4_shared_edge_spec_gap_harness` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (80 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (320 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (357 verified, 0 errors)
 - 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) by scoping the remaining `k > 4` completeness gap and adding a blocker-lock regression in:
   - `src/halfedge_mesh/tests.rs`.
   - added regression:

@@ -364,8 +364,21 @@ fn build_reflected_cube_outward_failure_mesh() -> Mesh {
 }
 
 #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+fn build_collinear_single_triangle_pair_mesh() -> Mesh {
+    let vertices = vec![
+        RuntimePoint3::from_ints(0, 0, 0),
+        RuntimePoint3::from_ints(1, 0, 0),
+        RuntimePoint3::from_ints(2, 0, 0),
+    ];
+    let faces = vec![vec![0, 1, 2], vec![0, 2, 1]];
+    Mesh::from_face_cycles(vertices, &faces)
+        .expect("collinear-corner fixture should build")
+}
+
+#[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
 #[derive(Clone, Copy)]
 enum Phase4SharedEdgeSpecGapFailure {
+    CollinearCorner,
     NonCoplanar,
     NonConvex,
     ForbiddenIntersection,
@@ -415,6 +428,35 @@ fn assert_phase4_shared_edge_spec_characterization_gap(
     );
 
     match expected_failure {
+        Phase4SharedEdgeSpecGapFailure::CollinearCorner => {
+            assert!(
+                mesh.check_no_zero_length_geometric_edges(),
+                "{label}: fixture should keep zero-length geometric-edge check passing"
+            );
+            assert!(
+                !mesh.check_face_corner_non_collinearity(),
+                "{label}: fixture should fail face-corner non-collinearity"
+            );
+            assert!(
+                matches!(
+                    diagnostic_failure,
+                    GeometricTopologicalConsistencyFailure::FaceCornerCollinear { .. }
+                ),
+                "{label}: first aggregate diagnostic failure should be face-corner collinearity"
+            );
+            assert!(
+                constructive.no_zero_length_geometric_edges_ok,
+                "{label}: constructive witness should retain zero-length geometric-edge pass"
+            );
+            assert!(
+                !constructive.face_corner_non_collinearity_ok,
+                "{label}: constructive witness should reject induced corner collinearity"
+            );
+            assert!(
+                !constructive.face_coplanarity_ok,
+                "{label}: constructive witness should reject induced coplanarity precondition failure"
+            );
+        },
         Phase4SharedEdgeSpecGapFailure::NonCoplanar => {
             assert!(
                 !mesh.check_face_coplanarity(),
@@ -4512,6 +4554,17 @@ fn diagnostic_witness_is_real_counterexample(
 
     #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
     #[test]
+    fn collinear_fixture_keeps_phase4_and_shared_edge_orientation_but_fails_aggregate_gate() {
+        let mesh = build_collinear_single_triangle_pair_mesh();
+        assert_phase4_shared_edge_spec_characterization_gap(
+            &mesh,
+            "collinear_triangle_pair",
+            Phase4SharedEdgeSpecGapFailure::CollinearCorner,
+        );
+    }
+
+    #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+    #[test]
     fn concave_fixture_keeps_phase4_and_shared_edge_orientation_but_fails_aggregate_gate() {
         let mesh = build_concave_single_face_pair_mesh();
         assert_phase4_shared_edge_spec_characterization_gap(
@@ -4604,6 +4657,11 @@ fn diagnostic_witness_is_real_counterexample(
         for case_id in 0..CASES {
             let lift_z = rng.next_i64_inclusive(1, 9);
             let base_fixtures = vec![
+                (
+                    "collinear",
+                    build_collinear_single_triangle_pair_mesh(),
+                    Phase4SharedEdgeSpecGapFailure::CollinearCorner,
+                ),
                 (
                     "noncoplanar",
                     build_noncoplanar_single_quad_double_face_mesh_with_lift(lift_z),
