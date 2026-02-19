@@ -195,6 +195,21 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.5 (`Proof: shared-edge and shared-vertex contacts are never misclassified as forbidden intersections`) with a generalized shared-boundary classifier-exclusion theorem increment in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
+  - added generalized theorem
+    `lemma_mesh_faces_shared_boundary_runtime_branch_classifier_not_non_adjacent_forbidden_relation`, proving that for any face pair already accepted by the runtime allowed-contact branch classifier, if the pair shares any boundary (`share_vertex || share_edge`) then it cannot satisfy `mesh_non_adjacent_face_pair_forbidden_intersection_relation_spec` for any `geometric_intersection_exists` flag;
+  - refactored
+    `lemma_mesh_faces_shared_boundary_allowed_contact_not_non_adjacent_forbidden_relation`
+    to route through the generalized theorem after discharging the shared-boundary premise from the exact-one-shared-vertex / exact-one-shared-edge branches.
+  - outcome: the shared-boundary non-misclassification proof surface now includes an explicit branch-classifier-level exclusion theorem reusable by future checker-soundness work; the broader P5.5 checker soundness/completeness checklist items remain open.
+- 2026-02-19: Failed attempts in this P5.5 shared-boundary classifier-exclusion pass: none.
+- 2026-02-19: Revalidated after the P5.5 shared-boundary classifier-exclusion increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (60 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (74 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (291 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (328 verified, 0 errors)
 - 2026-02-19: Worked P5.5 (`Proof: shared-edge and shared-vertex contacts are never misclassified as forbidden intersections`) with a spec-level non-adjacent-forbidden exclusion theorem increment in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
   - added helper lemmas:
     - `lemma_mesh_faces_share_exactly_one_vertex_implies_share_vertex`;
