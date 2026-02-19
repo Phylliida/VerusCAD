@@ -18,6 +18,7 @@ use crate::runtime_halfedge_mesh_refinement::{
     runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_sound_bridge,
     runtime_check_face_convexity_triangle_projected_turn_sound_bridge,
     runtime_check_geometric_topological_consistency_sound_bridge,
+    runtime_check_phase4_valid_and_kernel_shared_edge_local_orientation_imply_geometric_topological_consistency_spec,
     runtime_check_phase4_valid_and_shared_edge_local_orientation_imply_geometric_topological_consistency_spec,
 };
 #[cfg(feature = "geometry-checks")]
@@ -445,6 +446,18 @@ fn build_noncoplanar_single_pentagon_double_face_mesh_with_lift(lift_z: i64) -> 
 }
 
 #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+fn build_zero_length_single_triangle_pair_mesh() -> Mesh {
+    let vertices = vec![
+        RuntimePoint3::from_ints(0, 0, 0),
+        RuntimePoint3::from_ints(0, 0, 0),
+        RuntimePoint3::from_ints(1, 0, 0),
+    ];
+    let faces = vec![vec![0, 1, 2], vec![0, 2, 1]];
+    Mesh::from_face_cycles(vertices, &faces)
+        .expect("closed opposite-orientation zero-length-edge triangle pair should build")
+}
+
+#[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
 #[derive(Clone, Copy)]
 enum Phase4SharedEdgeSpecGapFailure {
     CollinearCorner,
@@ -659,6 +672,60 @@ fn assert_phase4_shared_edge_spec_characterization_gap(
             );
         },
     }
+}
+
+#[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+fn assert_phase4_kernel_shared_edge_spec_zero_length_gap(mesh: &Mesh, label: &str) {
+    assert!(mesh.is_valid(), "{label}: fixture should satisfy Phase 4 validity");
+    assert!(
+        !mesh.check_no_zero_length_geometric_edges(),
+        "{label}: fixture should fail zero-length geometric-edge check"
+    );
+    assert!(
+        !mesh.check_shared_edge_local_orientation_consistency(),
+        "{label}: runtime shared-edge local orientation checker should fail due geometry preconditions"
+    );
+    assert!(
+        runtime_check_phase4_valid_and_kernel_shared_edge_local_orientation_imply_geometric_topological_consistency_spec(mesh),
+        "{label}: aggregate model spec should still characterize phase4 + kernel shared-edge local orientation"
+    );
+    assert!(
+        !mesh.check_geometric_topological_consistency(),
+        "{label}: runtime aggregate checker should reject zero-length-edge fixture"
+    );
+    let diagnostic_failure = mesh
+        .check_geometric_topological_consistency_diagnostic()
+        .expect_err("diagnostic checker should reject zero-length-edge fixture");
+    assert!(
+        matches!(
+            diagnostic_failure,
+            GeometricTopologicalConsistencyFailure::ZeroLengthGeometricEdge { .. }
+        ),
+        "{label}: first aggregate diagnostic failure should be zero-length geometric edge"
+    );
+    assert!(
+        !runtime_check_geometric_topological_consistency_sound_bridge(mesh),
+        "{label}: aggregate sound bridge should reject zero-length-edge fixture"
+    );
+
+    let constructive = check_geometric_topological_consistency_constructive(mesh)
+        .expect("constructive geometric gate should produce a witness");
+    assert!(
+        constructive.phase4_valid_ok,
+        "{label}: constructive witness should retain phase4 validity"
+    );
+    assert!(
+        !constructive.no_zero_length_geometric_edges_ok,
+        "{label}: constructive witness should reject zero-length geometric edges"
+    );
+    assert!(
+        !constructive.shared_edge_local_orientation_ok,
+        "{label}: constructive witness should reject runtime shared-edge local orientation"
+    );
+    assert!(
+        !constructive.api_ok,
+        "{label}: constructive aggregate witness should remain false"
+    );
 }
 
 #[cfg(feature = "geometry-checks")]
@@ -4977,6 +5044,55 @@ fn diagnostic_witness_is_real_counterexample(
             "reflected_cube_outward_failure",
             Phase4SharedEdgeSpecGapFailure::InwardOrDegenerate,
         );
+    }
+
+    #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+    #[test]
+    fn zero_length_fixture_keeps_phase4_and_kernel_shared_edge_spec_but_fails_aggregate_gate() {
+        let mesh = build_zero_length_single_triangle_pair_mesh();
+        assert_phase4_kernel_shared_edge_spec_zero_length_gap(&mesh, "zero_length_triangle_pair");
+    }
+
+    #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+    #[test]
+    fn differential_randomized_zero_length_phase4_kernel_shared_edge_spec_gap_harness() {
+        const CASES: usize = 40;
+        let mut rng = DeterministicRng::new(0x3A29_41D8_C5E0_72BF);
+
+        for case_id in 0..CASES {
+            let base_mesh = build_zero_length_single_triangle_pair_mesh();
+            assert_phase4_kernel_shared_edge_spec_zero_length_gap(
+                &base_mesh,
+                &format!("zero_length_gap_case_{case_id}_base"),
+            );
+
+            let quarter_turns = rng.next_u64() % 4;
+            let tx = rng.next_i64_inclusive(-30, 30);
+            let ty = rng.next_i64_inclusive(-30, 30);
+            let tz = rng.next_i64_inclusive(-30, 30);
+            let rigid_mesh = transform_mesh_positions(&base_mesh, |point| {
+                rigid_rotate_z_quarter_turns_then_translate(point, quarter_turns, tx, ty, tz)
+            });
+            assert_phase4_kernel_shared_edge_spec_zero_length_gap(
+                &rigid_mesh,
+                &format!("zero_length_gap_case_{case_id}_rigid"),
+            );
+
+            let reflected_mesh = transform_mesh_positions(&base_mesh, |point| {
+                let mirrored = reflect_point3_across_yz_plane(point);
+                rigid_rotate_z_quarter_turns_then_translate(
+                    &mirrored,
+                    quarter_turns,
+                    tx,
+                    ty,
+                    tz,
+                )
+            });
+            assert_phase4_kernel_shared_edge_spec_zero_length_gap(
+                &reflected_mesh,
+                &format!("zero_length_gap_case_{case_id}_reflected"),
+            );
+        }
     }
 
     #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]

@@ -2333,6 +2333,46 @@ pub fn runtime_check_phase4_valid_and_shared_edge_local_orientation_imply_geomet
 
 #[cfg(feature = "geometry-checks")]
 #[allow(dead_code)]
+pub fn runtime_check_phase4_valid_and_kernel_shared_edge_local_orientation_imply_geometric_topological_consistency_spec(
+    m: &Mesh,
+) -> (out: bool)
+    ensures
+        out ==> mesh_valid_spec(m@),
+        out ==> mesh_shared_edge_local_orientation_consistency_spec(m@),
+        out ==> mesh_geometric_topological_consistency_spec(m@),
+{
+    let validity_w = match is_valid_constructive(m) {
+        Option::Some(w) => w,
+        Option::None => return false,
+    };
+    if !validity_w.api_ok {
+        return false;
+    }
+
+    let shared_edge_local_orientation_bridge_ok =
+        runtime_check_shared_edge_local_orientation_kernel_bridge(m);
+    if !shared_edge_local_orientation_bridge_ok {
+        return false;
+    }
+
+    proof {
+        assert(validity_gate_witness_spec(validity_w));
+        assert(validity_gate_model_link_spec(m@, validity_w));
+        lemma_validity_gate_witness_api_ok_implies_mesh_valid(m@, validity_w);
+        assert(mesh_valid_spec(m@));
+        assert(shared_edge_local_orientation_bridge_ok);
+        assert(mesh_shared_edge_local_orientation_consistency_spec(m@));
+        lemma_mesh_valid_and_shared_edge_local_orientation_implies_mesh_geometric_topological_consistency(
+            m@,
+        );
+        assert(mesh_geometric_topological_consistency_spec(m@));
+    }
+
+    true
+}
+
+#[cfg(feature = "geometry-checks")]
+#[allow(dead_code)]
 pub fn runtime_check_geometric_topological_consistency_sound_bridge(m: &Mesh) -> (out: bool)
     ensures
         out ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m),

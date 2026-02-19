@@ -195,6 +195,39 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with a kernel-shared-edge characterization-gap lock increment for zero-length-edge fixtures in:
+  - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
+  - `src/halfedge_mesh/tests.rs`.
+  - added a new constructive bridge entry point:
+    - `runtime_check_phase4_valid_and_kernel_shared_edge_local_orientation_imply_geometric_topological_consistency_spec`.
+  - this bridge proves aggregate model-spec admission from:
+    - Phase 4 validity witness (`is_valid_constructive`);
+    - kernel shared-edge local-orientation bridge witness (`runtime_check_shared_edge_local_orientation_kernel_bridge`);
+    - without requiring the runtime shared-edge checker precondition path.
+  - added zero-length aggregate-spec gap lock coverage:
+    - helper fixture `build_zero_length_single_triangle_pair_mesh`;
+    - helper assertion `assert_phase4_kernel_shared_edge_spec_zero_length_gap`;
+    - deterministic regression:
+      - `zero_length_fixture_keeps_phase4_and_kernel_shared_edge_spec_but_fails_aggregate_gate`;
+    - randomized differential harness:
+      - `differential_randomized_zero_length_phase4_kernel_shared_edge_spec_gap_harness` (base + rigid transform + reflected variants).
+  - outcome:
+    - P5.7 gap coverage now explicitly includes the previously blocked zero-length class via kernel shared-edge characterization, showing:
+      - aggregate model spec still admits the fixture under Phase4+kernel-shared-edge assumptions;
+      - runtime aggregate gate deterministically rejects it at `ZeroLengthGeometricEdge`.
+    - this tightens blocker visibility for aggregate checker/spec equivalence without changing the current open status of the P5.7 proof item.
+- 2026-02-19: Failed attempts in this P5.7 kernel-shared-edge zero-length gap pass:
+  - first pass left `build_zero_length_single_triangle_pair_mesh` behind `#[cfg(feature = "geometry-checks")]`, producing a dead-code warning in geometry-only test builds;
+  - resolved by tightening the helper gate to `#[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]`.
+- 2026-02-19: Revalidated after the P5.7 kernel-shared-edge zero-length gap increment:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" phase4_kernel_shared_edge_spec` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" zero_length_fixture_keeps_phase4_and_kernel_shared_edge_spec_but_fails_aggregate_gate` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (62 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (85 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (331 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (368 verified, 0 errors)
 - 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) with a high-arity (`k >= 5`) coplanarity parity-lock increment in:
   - `src/halfedge_mesh/tests.rs`.
   - added reusable high-arity closed-face fixtures:
