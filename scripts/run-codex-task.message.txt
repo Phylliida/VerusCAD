@@ -1,1 +1,1 @@
-Completed a P5.1 full-coplanarity preconditioned coplanarity runtime-parity bridge increment in vcad-topology with new parity tests, full verification reruns, and burndown updates, and 8 Phase 5 checklist tasks remain.
+Completed a P5.3 triangle projected-turn convexity runtime-with-geometry+non-zero-edge sound+complete parity bridge increment in vcad-topology with new parity tests, full verification reruns, and burndown updates, and 8 Phase 5 checklist tasks remain.

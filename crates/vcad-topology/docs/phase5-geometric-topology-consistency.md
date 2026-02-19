@@ -195,6 +195,28 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.3 (`Proof: runtime checker correctness vs convexity spec`) with a triangle projected-turn runtime-with-geometry+non-zero-edge sound+complete parity wrapper increment in:
+  - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
+  - `src/halfedge_mesh/tests.rs`.
+  - added a new sound+complete convexity wrapper under existing preconditions:
+    - `runtime_check_face_convexity_triangle_projected_turn_complete_from_runtime_with_geometry_and_non_zero_edges_sound_complete_bridge`;
+    - preconditions: `mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec` and triangle-face cycles;
+    - guarantees direct runtime parity (`out == m.check_face_convexity()`) while preserving the runtime-with-geometry/non-zero-edge projected-turn consequences and the triangle projected-turn/non-collinearity equivalence.
+  - strengthened parity lock coverage:
+    - new helper `assert_face_convexity_triangle_projected_turn_runtime_with_geometry_and_non_zero_edges_sound_complete_bridge_parity`;
+    - new regression `face_convexity_triangle_projected_turn_runtime_with_geometry_and_non_zero_edges_sound_complete_bridge_matches_runtime_checker`;
+    - integrated this new parity assertion into the existing constructive Phase 5 gate parity helper path.
+  - outcome:
+    - triangle projected-turn convexity now has an explicit sound+complete runtime parity wrapper for the runtime-with-geometry+non-zero-edge preconditioned path (in addition to existing sound/completeness bridge wrappers), reducing remaining P5.3 closure plumbing while checklist status remains unchanged.
+- 2026-02-19: Failed attempts in this P5.3 triangle runtime-with-geometry+non-zero-edge sound+complete parity pass: none.
+- 2026-02-19: Revalidated after this P5.3 triangle runtime-with-geometry+non-zero-edge sound+complete parity increment:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" face_convexity_triangle_projected_turn_runtime_with_geometry_and_non_zero_edges_sound_complete_bridge_matches_runtime_checker` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (95 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (383 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (420 verified, 0 errors)
 - 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) with a full-coplanarity preconditioned runtime-parity bridge increment in:
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
   - `src/halfedge_mesh/tests.rs`.
