@@ -13,6 +13,8 @@ use crate::runtime_halfedge_mesh_refinement::{
     runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_and_triangle_face_preconditions,
     runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_preconditions,
     runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_phase5_runtime_bundle_sound_bridge,
+    runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_runtime_with_geometry_and_triangle_or_quad_face_preconditions,
+    runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_runtime_with_geometry_preconditions,
     runtime_check_face_coplanarity_seed0_fixed_witness_sound_bridge,
     runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_sound_complete_bridge,
     runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_sound_bridge,
@@ -196,6 +198,48 @@ fn assert_face_coplanarity_seed0_phase5_runtime_bundle_completeness_bridge_parit
 }
 
 #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+fn assert_face_coplanarity_seed0_runtime_with_geometry_completeness_bridge_parity(
+    mesh: &Mesh,
+    label: &str,
+) {
+    let geometric_sound_bridge_ok = runtime_check_geometric_topological_consistency_sound_bridge(mesh);
+    let runtime_with_geometry_complete_ok = if geometric_sound_bridge_ok {
+        runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_runtime_with_geometry_preconditions(
+            mesh,
+        )
+    } else {
+        false
+    };
+    assert_eq!(
+        runtime_with_geometry_complete_ok, geometric_sound_bridge_ok,
+        "seed0 coplanarity runtime-with-geometry completeness parity failed for {label}"
+    );
+}
+
+#[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+fn assert_face_coplanarity_seed0_runtime_with_geometry_triangle_or_quad_completeness_bridge_parity(
+    mesh: &Mesh,
+    label: &str,
+) {
+    assert!(
+        mesh_all_faces_are_triangles_or_quads(mesh),
+        "triangle/quad runtime-with-geometry completeness parity requires triangle/quad faces in {label}"
+    );
+    let geometric_sound_bridge_ok = runtime_check_geometric_topological_consistency_sound_bridge(mesh);
+    let runtime_with_geometry_triangle_or_quad_complete_ok = if geometric_sound_bridge_ok {
+        runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_runtime_with_geometry_and_triangle_or_quad_face_preconditions(
+            mesh,
+        )
+    } else {
+        false
+    };
+    assert_eq!(
+        runtime_with_geometry_triangle_or_quad_complete_ok, geometric_sound_bridge_ok,
+        "seed0 coplanarity runtime-with-geometry triangle/quad completeness parity failed for {label}"
+    );
+}
+
+#[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
 fn assert_face_coplanarity_seed0_oriented_plane_completeness_bridge_parity(
     mesh: &Mesh,
     label: &str,
@@ -293,9 +337,14 @@ fn assert_constructive_phase5_gate_parity(mesh: &Mesh, label: &str) {
     if mesh_all_faces_are_triangles_or_quads(mesh) {
         assert_face_coplanarity_runtime_seed0_triangle_or_quad_sound_bridge_parity(mesh, label);
         assert_face_coplanarity_seed0_triangle_or_quad_sound_complete_bridge_parity(mesh, label);
+        assert_face_coplanarity_seed0_runtime_with_geometry_triangle_or_quad_completeness_bridge_parity(
+            mesh,
+            label,
+        );
     }
     assert_face_coplanarity_seed0_oriented_plane_completeness_bridge_parity(mesh, label);
     assert_face_coplanarity_seed0_phase5_runtime_bundle_completeness_bridge_parity(mesh, label);
+    assert_face_coplanarity_seed0_runtime_with_geometry_completeness_bridge_parity(mesh, label);
 
     let geometric_runtime = mesh.check_geometric_topological_consistency();
     let geometric_sound_bridge = runtime_check_geometric_topological_consistency_sound_bridge(mesh);

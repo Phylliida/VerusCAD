@@ -195,6 +195,24 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) and P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with a runtime-with-geometry coplanarity-completeness bridge increment in:
+  - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
+  - `src/halfedge_mesh/tests.rs`.
+  - added new completeness bridge wrappers:
+    - `runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_runtime_with_geometry_preconditions`;
+    - `runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_runtime_with_geometry_and_triangle_or_quad_face_preconditions`.
+  - added parity lock coverage (via `assert_constructive_phase5_gate_parity`) for:
+    - runtime-with-geometry completeness bridge parity;
+    - runtime-with-geometry + triangle/quad completeness bridge parity.
+  - outcome:
+    - aggregate runtime-with-geometry assumptions now have direct constructive completeness wiring into the existing coplanarity completion path (including the triangle/quad full-coplanarity specialization), reducing remaining P5.1/P5.7 checker/spec-equivalence plumbing while keeping checklist status unchanged.
+- 2026-02-19: Failed attempts in this P5.1/P5.7 runtime-with-geometry coplanarity-completeness pass: none.
+- 2026-02-19: Revalidated after the P5.1/P5.7 runtime-with-geometry coplanarity-completeness increment:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (86 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" geometric_consistency_constructive_gate_matches_runtime_boolean_gate` (1 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (371 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (408 verified, 0 errors)
 - 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with global table-spec normalization and an explicit iff bridge in:
   - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`.
   - added new all-face-pairs table-level spec surfaces:
