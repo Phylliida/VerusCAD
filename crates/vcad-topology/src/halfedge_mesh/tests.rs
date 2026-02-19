@@ -126,14 +126,45 @@ fn assert_constructive_phase5_gate_parity(mesh: &Mesh, label: &str) {
         mesh.is_valid(),
         "constructive phase4 witness mismatch for {label}"
     );
-    assert!(
-        !geometric_constructive.face_coplanarity_ok || mesh.check_face_coplanarity(),
-        "constructive coplanarity witness should not exceed runtime checker for {label}"
+    assert_eq!(
+        geometric_constructive.no_zero_length_geometric_edges_ok,
+        mesh.check_no_zero_length_geometric_edges(),
+        "constructive zero-length-edge witness mismatch for {label}"
     );
-    assert!(
-        !geometric_constructive.shared_edge_local_orientation_ok
-            || mesh.check_shared_edge_local_orientation_consistency(),
-        "constructive shared-edge witness should not exceed runtime checker for {label}"
+    assert_eq!(
+        geometric_constructive.face_corner_non_collinearity_ok,
+        mesh.check_face_corner_non_collinearity(),
+        "constructive face-corner non-collinearity witness mismatch for {label}"
+    );
+    assert_eq!(
+        geometric_constructive.face_coplanarity_ok,
+        mesh.check_face_coplanarity(),
+        "constructive coplanarity witness mismatch for {label}"
+    );
+    assert_eq!(
+        geometric_constructive.face_convexity_ok,
+        mesh.check_face_convexity(),
+        "constructive convexity witness mismatch for {label}"
+    );
+    assert_eq!(
+        geometric_constructive.face_plane_consistency_ok,
+        mesh.check_face_plane_consistency(),
+        "constructive face-plane-consistency witness mismatch for {label}"
+    );
+    assert_eq!(
+        geometric_constructive.shared_edge_local_orientation_ok,
+        mesh.check_shared_edge_local_orientation_consistency(),
+        "constructive shared-edge-orientation witness mismatch for {label}"
+    );
+    assert_eq!(
+        geometric_constructive.no_forbidden_face_face_intersections_ok,
+        mesh.check_no_forbidden_face_face_intersections(),
+        "constructive forbidden-face-intersection witness mismatch for {label}"
+    );
+    assert_eq!(
+        geometric_constructive.outward_face_normals_ok,
+        mesh.check_outward_face_normals(),
+        "constructive outward-face-normal witness mismatch for {label}"
     );
 
     let with_geometry_runtime = mesh.is_valid_with_geometry();

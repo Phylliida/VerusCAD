@@ -195,6 +195,33 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.7 aggregate-checker-equivalence witness-bit parity increment in
+  `src/halfedge_mesh/tests.rs`:
+  - strengthened `assert_constructive_phase5_gate_parity` so
+    `check_geometric_topological_consistency_constructive(..)` witness fields are now asserted
+    equal to their corresponding runtime checkers (not only aggregate parity + one-way implications):
+    - `no_zero_length_geometric_edges_ok` ↔ `check_no_zero_length_geometric_edges()`;
+    - `face_corner_non_collinearity_ok` ↔ `check_face_corner_non_collinearity()`;
+    - `face_coplanarity_ok` ↔ `check_face_coplanarity()`;
+    - `face_convexity_ok` ↔ `check_face_convexity()`;
+    - `face_plane_consistency_ok` ↔ `check_face_plane_consistency()`;
+    - `shared_edge_local_orientation_ok` ↔ `check_shared_edge_local_orientation_consistency()`;
+    - `no_forbidden_face_face_intersections_ok` ↔
+      `check_no_forbidden_face_face_intersections()`;
+    - `outward_face_normals_ok` ↔ `check_outward_face_normals()`.
+  - because this helper is reused by both deterministic and seeded-randomized constructive/runtime
+    parity tests, the stronger per-bit parity assertions now lock broader aggregate-gate behavior
+    against drift while the formal P5.7 aggregate checker/spec equivalence theorem remains open.
+- 2026-02-19: Failed attempts in this P5.7 witness-bit parity pass: none.
+- 2026-02-19: Revalidated after the P5.7 witness-bit parity additions:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" geometric_consistency_constructive_gate_matches_runtime_boolean_gate`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" differential_randomized_constructive_geometric_gate_parity_harness`
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (286 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (323 verified, 0 errors)
 - 2026-02-19: Completed a P5.1 runtime-checker-correctness completeness-precondition-lift increment in
   `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`:
   - added two new proof-side wrappers that reuse the existing full-coplanarity completeness bridge

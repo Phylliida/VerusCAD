@@ -1,1 +1,1 @@
-Added two P5.1 coplanarity completeness wrappers that lift preconditions from mesh validity and the Phase-5 runtime seed-0 bundle into the existing full-coplanarity bridge, and 10 Phase 5 checklist tasks remain.
+Strengthened P5.7 constructive/runtime aggregate-gate parity tests to enforce exact per-check witness bit equality across deterministic and randomized harnesses, and 10 Phase 5 checklist tasks remain.
