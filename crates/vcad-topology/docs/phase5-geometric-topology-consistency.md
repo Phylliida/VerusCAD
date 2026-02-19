@@ -193,6 +193,38 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.1 runtime-soundness reverse-bridge characterization increment in
+  `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
+  - added face-level reverse lemmas from oriented seed-0 plane witnesses:
+    - `lemma_mesh_face_oriented_seed0_plane_implies_seed0_plane_contains_vertices`;
+    - `lemma_mesh_face_oriented_seed0_plane_implies_seed0_non_collinear`;
+    - `lemma_mesh_face_oriented_seed0_plane_implies_seed0_fixed_witness`.
+  - added all-faces reverse lemmas:
+    - `lemma_mesh_all_faces_oriented_seed0_planes_imply_all_faces_seed0_fixed_witness`;
+    - `lemma_mesh_all_faces_oriented_seed0_planes_and_index_bounds_and_face_cycles_imply_all_faces_seed0_corner_non_collinear`.
+  - added runtime-alias reverse lemmas and a guarded iff characterization:
+    - `lemma_mesh_runtime_all_faces_oriented_seed0_planes_imply_all_faces_seed0_fixed_witness`;
+    - `lemma_mesh_runtime_all_faces_oriented_seed0_planes_and_index_bounds_and_face_cycles_imply_all_faces_seed0_corner_non_collinear`;
+    - `lemma_mesh_runtime_all_faces_oriented_seed0_planes_and_index_bounds_and_face_cycles_iff_seed0_fixed_witness_and_seed0_non_collinear`.
+  - outcome: the seed-0 oriented-plane consequence exported by the constructive/runtime coplanarity
+    bridge is now machine-checkably reversible (under explicit index-bounds/face-cycle preconditions)
+    back into seed-0 fixed coplanarity witness and seed-0 non-collinearity obligations.
+  - this advances the unchecked P5.1 checker-correctness item by reducing one-way proof plumbing in
+    the runtime seed-0 bundle and making oriented-plane witnesses usable as bidirectional
+    intermediate proof artifacts.
+- 2026-02-19: Failed attempt in this P5.1 oriented-seed0 reverse-characterization pass:
+  - the first revision used a nested existential assertion with manual trigger annotations in
+    `lemma_mesh_face_oriented_seed0_plane_implies_seed0_non_collinear`, which failed trigger
+    inference (`Could not automatically infer triggers for this quantifier`);
+  - fixed by replacing that step with a direct multi-binder `choose|k: int, seed_i: int| ...`
+    witness extraction, matching established patterns used elsewhere in the codebase.
+- 2026-02-19: Revalidated after the P5.1 oriented-seed0 reverse-characterization additions:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (268 verified, 0 errors)
+  - `cargo test -p vcad-topology`
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology.sh` (305 verified, 0 errors)
 - 2026-02-19: Completed an Exit-Criteria trust-surface hardening pass for
   `No trusted assumptions remain for Phase 5 APIs` in `src/halfedge_mesh/tests.rs`:
   - strengthened `topology_sources_contain_no_trusted_verification_boundaries` to additionally
