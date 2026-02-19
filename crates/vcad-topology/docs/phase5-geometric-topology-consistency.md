@@ -195,6 +195,28 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) by
+  tightening the existing non-coplanar spec/runtime gap harness in
+  `src/halfedge_mesh/tests.rs`:
+  - extended `assert_phase4_shared_edge_spec_characterization_gap` to assert the aggregate
+    diagnostic first-failure witness stays
+    `GeometricTopologicalConsistencyFailure::FaceNonCoplanar { .. }`, pinning the mismatch to the
+    expected coplanarity stage instead of later checks;
+  - expanded
+    `differential_randomized_noncoplanar_phase4_shared_edge_spec_gap_harness`
+    with reflected variants (across the YZ plane, then rigid Z-quarter-turn + translation), in
+    addition to the existing lifted and rigid cases.
+  - outcome: stronger regression lock on the precise P5.7 blocker boundary
+    (model-level Phase4+shared-edge characterization stays true while runtime aggregate Phase 5
+    gate fails specifically at coplanarity), with the formal equivalence proof item still open.
+- 2026-02-19: Failed attempts in this P5.7 harness-tightening pass: none.
+- 2026-02-19: Revalidated after the P5.7 harness-tightening increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (58 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (67 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (286 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (323 verified, 0 errors)
 - 2026-02-19: Worked P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) by codifying the current model/runtime mismatch boundary in `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs` and `src/halfedge_mesh/tests.rs`:
   - added verified bridge helper
     `runtime_check_phase4_valid_and_shared_edge_local_orientation_imply_geometric_topological_consistency_spec`;

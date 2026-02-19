@@ -248,6 +248,16 @@ fn assert_phase4_shared_edge_spec_characterization_gap(mesh: &Mesh, label: &str)
         !mesh.check_geometric_topological_consistency(),
         "{label}: runtime aggregate checker should reject non-coplanar fixture"
     );
+    let diagnostic_failure = mesh
+        .check_geometric_topological_consistency_diagnostic()
+        .expect_err("{label}: diagnostic checker should reject non-coplanar fixture");
+    assert!(
+        matches!(
+            diagnostic_failure,
+            GeometricTopologicalConsistencyFailure::FaceNonCoplanar { .. }
+        ),
+        "{label}: first aggregate diagnostic failure should stay coplanarity-specific"
+    );
     assert!(
         !runtime_check_face_coplanarity_seed0_fixed_witness_sound_bridge(mesh),
         "{label}: coplanarity sound bridge should reject non-coplanar fixture"
@@ -2914,6 +2924,21 @@ fn diagnostic_witness_is_real_counterexample(
             assert_phase4_shared_edge_spec_characterization_gap(
                 &rigid_mesh,
                 &format!("noncoplanar_lift_case_{case_id}_rigid"),
+            );
+
+            let reflected_mesh = transform_mesh_positions(&base_mesh, |point| {
+                let mirrored = reflect_point3_across_yz_plane(point);
+                rigid_rotate_z_quarter_turns_then_translate(
+                    &mirrored,
+                    quarter_turns,
+                    tx,
+                    ty,
+                    tz,
+                )
+            });
+            assert_phase4_shared_edge_spec_characterization_gap(
+                &reflected_mesh,
+                &format!("noncoplanar_lift_case_{case_id}_reflected"),
             );
         }
     }
