@@ -81,7 +81,7 @@ pub open spec fn shape_contained_in_aabb3_spec(
     min: Point3,
     max: Point3,
 ) -> bool {
-    forall|p: Point3| shape(p) ==> point_in_aabb3_spec(p, min, max)
+    forall|p: Point3| #[trigger] shape(p) ==> point_in_aabb3_spec(p, min, max)
 }
 
 proof fn lemma_scalar_le_transitive(a: Scalar, b: Scalar, c: Scalar)
@@ -171,12 +171,24 @@ proof fn lemma_nonnegative_weights_summing_to_one_implies_some_positive(
     assert(w0.num >= 0);
     assert(w1.num >= 0);
 
-    assert(sum_w.eqv_spec(one) == (sum_w.num * one.denom() == one.num * sum_w.denom()));
-    assert(sum_w.num == sum_w.denom());
-    assert(sum_w.denom_nat() > 0);
-    assert((sum_w.denom_nat() as int) > 0) by (nonlinear_arith);
-    assert(sum_w.denom() == sum_w.denom_nat() as int);
-    assert(sum_w.denom() > 0);
+    assert(sum_w.eqv_spec(one));
+    Scalar::lemma_eqv_signum(sum_w, one);
+    assert(one.num == 1);
+    assert(one.signum() == 1);
+    assert(sum_w.signum() == one.signum());
+    if !(sum_w.num > 0) {
+        if sum_w.num < 0 {
+            assert(sum_w.signum() == -1);
+            assert(sum_w.signum() == 1);
+            assert(false);
+        }
+        assert(!(sum_w.num < 0));
+        assert((!(sum_w.num > 0) && !(sum_w.num < 0)) ==> (sum_w.num == 0)) by (nonlinear_arith);
+        assert(sum_w.num == 0);
+        assert(sum_w.signum() == 0);
+        assert(sum_w.signum() == 1);
+        assert(false);
+    }
     assert(sum_w.num > 0);
 
     if !(z.lt_spec(w0) || z.lt_spec(w1)) {
@@ -186,11 +198,17 @@ proof fn lemma_nonnegative_weights_summing_to_one_implies_some_positive(
         assert(!z.lt_spec(w1));
         assert(!(w0.num > 0));
         assert(!(w1.num > 0));
-        assert(w0.num == 0) by (nonlinear_arith);
-        assert(w1.num == 0) by (nonlinear_arith);
+        assert((!(w0.num > 0) && w0.num >= 0) ==> (w0.num == 0)) by (nonlinear_arith);
+        assert((!(w1.num > 0) && w1.num >= 0) ==> (w1.num == 0)) by (nonlinear_arith);
+        assert(w0.num == 0);
+        assert(w1.num == 0);
 
         assert(sum_w.num == w0.num * w1.denom() + w1.num * w0.denom());
-        assert(sum_w.num == 0) by (nonlinear_arith);
+        assert(sum_w.num == 0 * w1.denom() + 0 * w0.denom());
+        assert(0 * w1.denom() == 0) by (nonlinear_arith);
+        assert(0 * w0.denom() == 0) by (nonlinear_arith);
+        assert(sum_w.num == 0 + 0);
+        assert(sum_w.num == 0);
         assert(false);
     }
 }
@@ -232,24 +250,44 @@ proof fn lemma_nonnegative_three_weights_summing_to_one_implies_some_positive(
         assert(!(w0.num > 0));
         assert(!(w1.num > 0));
         assert(!(w2.num > 0));
-        assert(w0.num == 0) by (nonlinear_arith);
-        assert(w1.num == 0) by (nonlinear_arith);
-        assert(w2.num == 0) by (nonlinear_arith);
+        assert((!(w0.num > 0) && w0.num >= 0) ==> (w0.num == 0)) by (nonlinear_arith);
+        assert((!(w1.num > 0) && w1.num >= 0) ==> (w1.num == 0)) by (nonlinear_arith);
+        assert((!(w2.num > 0) && w2.num >= 0) ==> (w2.num == 0)) by (nonlinear_arith);
+        assert(w0.num == 0);
+        assert(w1.num == 0);
+        assert(w2.num == 0);
 
         assert(sum01.num == w0.num * w1.denom() + w1.num * w0.denom());
-        assert(sum01.num == 0) by (nonlinear_arith);
+        assert(sum01.num == 0 * w1.denom() + 0 * w0.denom());
+        assert(0 * w1.denom() == 0) by (nonlinear_arith);
+        assert(0 * w0.denom() == 0) by (nonlinear_arith);
+        assert(sum01.num == 0 + 0);
+        assert(sum01.num == 0);
         assert(sum.num == sum01.num * w2.denom() + w2.num * sum01.denom());
-        assert(sum.num == 0) by (nonlinear_arith);
+        assert(sum.num == 0 * w2.denom() + 0 * sum01.denom());
+        assert(0 * w2.denom() == 0) by (nonlinear_arith);
+        assert(0 * sum01.denom() == 0) by (nonlinear_arith);
+        assert(sum.num == 0 + 0);
+        assert(sum.num == 0);
 
         assert(sum.eqv_spec(one));
+        Scalar::lemma_eqv_signum(sum, one);
         assert(one.num == 1);
-        assert(one.denom() == 1);
-        assert(sum.eqv_spec(one) == (sum.num * one.denom() == one.num * sum.denom()));
-        assert(sum.num == sum.denom()) by (nonlinear_arith);
-        assert(sum.denom_nat() > 0);
-        assert((sum.denom_nat() as int) > 0) by (nonlinear_arith);
-        assert(sum.denom() == sum.denom_nat() as int);
-        assert(sum.denom() > 0);
+        assert(one.signum() == 1);
+        assert(sum.signum() == one.signum());
+        if !(sum.num > 0) {
+            if sum.num < 0 {
+                assert(sum.signum() == -1);
+                assert(sum.signum() == 1);
+                assert(false);
+            }
+            assert(!(sum.num < 0));
+            assert((!(sum.num > 0) && !(sum.num < 0)) ==> (sum.num == 0)) by (nonlinear_arith);
+            assert(sum.num == 0);
+            assert(sum.signum() == 0);
+            assert(sum.signum() == 1);
+            assert(false);
+        }
         assert(sum.num > 0);
         assert(false);
     }
@@ -270,7 +308,9 @@ proof fn lemma_scalar_mul_of_nonnegative_and_positive_is_nonnegative(a: Scalar, 
     assert(a.num >= 0);
     assert(b.num > 0);
     assert(out.num == a.num * b.num);
-    assert(out.num >= 0) by (nonlinear_arith);
+    assert((a.num >= 0 && b.num > 0) ==> (a.num * b.num >= 0)) by (nonlinear_arith);
+    assert(a.num * b.num >= 0);
+    assert(out.num >= 0);
     lemma_scalar_zero_le_iff_num_nonnegative(out);
     assert(z.le_spec(out));
 }
@@ -290,7 +330,9 @@ proof fn lemma_scalar_mul_of_positive_and_positive_is_positive(a: Scalar, b: Sca
     assert(a.num > 0);
     assert(b.num > 0);
     assert(out.num == a.num * b.num);
-    assert(out.num > 0) by (nonlinear_arith);
+    assert((a.num > 0 && b.num > 0) ==> (a.num * b.num > 0)) by (nonlinear_arith);
+    assert(a.num * b.num > 0);
+    assert(out.num > 0);
     lemma_scalar_zero_lt_iff_num_positive(out);
     assert(z.lt_spec(out));
 }
@@ -310,7 +352,10 @@ proof fn lemma_scalar_add_of_nonnegative_and_nonnegative_is_nonnegative(a: Scala
     assert(a.num >= 0);
     assert(b.num >= 0);
     assert(out.num == a.num * b.denom() + b.num * a.denom());
-    assert(out.num >= 0) by (nonlinear_arith);
+    assert((a.num >= 0 && b.num >= 0 && a.denom() > 0 && b.denom() > 0)
+        ==> (a.num * b.denom() + b.num * a.denom() >= 0)) by (nonlinear_arith);
+    assert(a.num * b.denom() + b.num * a.denom() >= 0);
+    assert(out.num >= 0);
     lemma_scalar_zero_le_iff_num_nonnegative(out);
     assert(z.le_spec(out));
 }
@@ -337,10 +382,15 @@ proof fn lemma_scalar_add_of_positive_and_nonnegative_is_positive(pos: Scalar, n
     assert((pos.denom_nat() as int) > 0) by (nonlinear_arith);
     assert(pos.denom() == pos.denom_nat() as int);
     assert(pos.denom() > 0);
-    assert(pos.num * nonneg.denom() > 0) by (nonlinear_arith);
-    assert(nonneg.num * pos.denom() >= 0) by (nonlinear_arith);
+    assert((pos.num > 0 && nonneg.denom() > 0) ==> (pos.num * nonneg.denom() > 0)) by (nonlinear_arith);
+    assert(pos.num * nonneg.denom() > 0);
+    assert((nonneg.num >= 0 && pos.denom() > 0) ==> (nonneg.num * pos.denom() >= 0)) by (nonlinear_arith);
+    assert(nonneg.num * pos.denom() >= 0);
     assert(out.num == pos.num * nonneg.denom() + nonneg.num * pos.denom());
-    assert(out.num > 0) by (nonlinear_arith);
+    assert((pos.num * nonneg.denom() > 0 && nonneg.num * pos.denom() >= 0)
+        ==> (pos.num * nonneg.denom() + nonneg.num * pos.denom() > 0)) by (nonlinear_arith);
+    assert(pos.num * nonneg.denom() + nonneg.num * pos.denom() > 0);
+    assert(out.num > 0);
     lemma_scalar_zero_lt_iff_num_positive(out);
     assert(z.lt_spec(out));
 }
@@ -367,10 +417,15 @@ proof fn lemma_scalar_add_of_nonnegative_and_positive_is_positive(nonneg: Scalar
     assert((nonneg.denom_nat() as int) > 0) by (nonlinear_arith);
     assert(nonneg.denom() == nonneg.denom_nat() as int);
     assert(nonneg.denom() > 0);
-    assert(nonneg.num * pos.denom() >= 0) by (nonlinear_arith);
-    assert(pos.num * nonneg.denom() > 0) by (nonlinear_arith);
+    assert((nonneg.num >= 0 && pos.denom() > 0) ==> (nonneg.num * pos.denom() >= 0)) by (nonlinear_arith);
+    assert(nonneg.num * pos.denom() >= 0);
+    assert((pos.num > 0 && nonneg.denom() > 0) ==> (pos.num * nonneg.denom() > 0)) by (nonlinear_arith);
+    assert(pos.num * nonneg.denom() > 0);
     assert(out.num == nonneg.num * pos.denom() + pos.num * nonneg.denom());
-    assert(out.num > 0) by (nonlinear_arith);
+    assert((nonneg.num * pos.denom() >= 0 && pos.num * nonneg.denom() > 0)
+        ==> (nonneg.num * pos.denom() + pos.num * nonneg.denom() > 0)) by (nonlinear_arith);
+    assert(nonneg.num * pos.denom() + pos.num * nonneg.denom() > 0);
+    assert(out.num > 0);
     lemma_scalar_zero_lt_iff_num_positive(out);
     assert(z.lt_spec(out));
 }
@@ -406,8 +461,12 @@ pub proof fn lemma_binary_convex_combination_of_positive_values_is_positive(
 
     assert(t0.num == w0.num * x0.num);
     assert(t1.num == w1.num * x1.num);
-    assert(t0.num >= 0) by (nonlinear_arith);
-    assert(t1.num >= 0) by (nonlinear_arith);
+    assert((w0.num >= 0 && x0.num > 0) ==> (w0.num * x0.num >= 0)) by (nonlinear_arith);
+    assert((w1.num >= 0 && x1.num > 0) ==> (w1.num * x1.num >= 0)) by (nonlinear_arith);
+    assert(w0.num * x0.num >= 0);
+    assert(w1.num * x1.num >= 0);
+    assert(t0.num >= 0);
+    assert(t1.num >= 0);
 
     assert(t0.denom_nat() > 0);
     assert((t0.denom_nat() as int) > 0) by (nonlinear_arith);
@@ -422,20 +481,34 @@ pub proof fn lemma_binary_convex_combination_of_positive_values_is_positive(
     if z.lt_spec(w0) {
         lemma_scalar_zero_lt_iff_num_positive(w0);
         assert(w0.num > 0);
-        assert(t0.num > 0) by (nonlinear_arith);
-        assert(t0.num * t1.denom() > 0) by (nonlinear_arith);
-        assert(t1.num * t0.denom() >= 0) by (nonlinear_arith);
+        assert((w0.num > 0 && x0.num > 0) ==> (w0.num * x0.num > 0)) by (nonlinear_arith);
+        assert(w0.num * x0.num > 0);
+        assert(t0.num > 0);
+        assert((t0.num > 0 && t1.denom() > 0) ==> (t0.num * t1.denom() > 0)) by (nonlinear_arith);
+        assert(t0.num * t1.denom() > 0);
+        assert((t1.num >= 0 && t0.denom() > 0) ==> (t1.num * t0.denom() >= 0)) by (nonlinear_arith);
+        assert(t1.num * t0.denom() >= 0);
         assert(out.num == t0.num * t1.denom() + t1.num * t0.denom());
-        assert(out.num > 0) by (nonlinear_arith);
+        assert((t0.num * t1.denom() > 0 && t1.num * t0.denom() >= 0)
+            ==> (t0.num * t1.denom() + t1.num * t0.denom() > 0)) by (nonlinear_arith);
+        assert(t0.num * t1.denom() + t1.num * t0.denom() > 0);
+        assert(out.num > 0);
     } else {
         assert(z.lt_spec(w1));
         lemma_scalar_zero_lt_iff_num_positive(w1);
         assert(w1.num > 0);
-        assert(t1.num > 0) by (nonlinear_arith);
-        assert(t0.num * t1.denom() >= 0) by (nonlinear_arith);
-        assert(t1.num * t0.denom() > 0) by (nonlinear_arith);
+        assert((w1.num > 0 && x1.num > 0) ==> (w1.num * x1.num > 0)) by (nonlinear_arith);
+        assert(w1.num * x1.num > 0);
+        assert(t1.num > 0);
+        assert((t0.num >= 0 && t1.denom() > 0) ==> (t0.num * t1.denom() >= 0)) by (nonlinear_arith);
+        assert(t0.num * t1.denom() >= 0);
+        assert((t1.num > 0 && t0.denom() > 0) ==> (t1.num * t0.denom() > 0)) by (nonlinear_arith);
+        assert(t1.num * t0.denom() > 0);
         assert(out.num == t0.num * t1.denom() + t1.num * t0.denom());
-        assert(out.num > 0) by (nonlinear_arith);
+        assert((t0.num * t1.denom() >= 0 && t1.num * t0.denom() > 0)
+            ==> (t0.num * t1.denom() + t1.num * t0.denom() > 0)) by (nonlinear_arith);
+        assert(t0.num * t1.denom() + t1.num * t0.denom() > 0);
+        assert(out.num > 0);
     }
 
     lemma_scalar_zero_lt_iff_num_positive(out);
@@ -588,9 +661,9 @@ pub proof fn lemma_aabb_separation_and_containment_implies_disjoint_sets(
         shape_contained_in_aabb3_spec(shape_a, min_a, max_a),
         shape_contained_in_aabb3_spec(shape_b, min_b, max_b),
     ensures
-        forall|p: Point3| !(shape_a(p) && shape_b(p)),
+        forall|p: Point3| #[trigger] shape_a(p) ==> !shape_b(p),
 {
-    assert forall|p: Point3| !(shape_a(p) && shape_b(p)) by {
+    assert forall|p: Point3| #[trigger] shape_a(p) ==> !shape_b(p) by {
         if shape_a(p) && shape_b(p) {
             assert(shape_contained_in_aabb3_spec(shape_a, min_a, max_a));
             assert(shape_contained_in_aabb3_spec(shape_b, min_b, max_b));

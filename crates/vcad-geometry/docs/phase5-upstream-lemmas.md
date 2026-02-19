@@ -141,6 +141,16 @@ Blocks: `P5.5` intersection checker soundness (broad phase).
     `./scripts/test-vcad-geometry-verus-proofs.sh` passes in this environment.
   - Verification lane note (2026-02-19, ternary convex-combo pass): run
     `./scripts/verify-vcad-geometry.sh` for ghost-proof verification.
+  - Update (2026-02-19, ghost-verifier-unblock pass): reworked the scalar
+    positivity helper proofs in
+    `crates/vcad-geometry/src/phase5_upstream_lemmas.rs` (the
+    two-/three-weight positivity splits and binary convex-combination algebra)
+    to avoid brittle direct nonlinear assertions on derived numerators.
+  - Verification attempt note (2026-02-19, ghost-verifier-unblock pass):
+    `./scripts/verify-vcad-geometry.sh` now passes in this environment
+    (`194 verified, 0 errors`; one verifier warning remains about `assert forall`
+    antecedent handling for `==>` in
+    `lemma_aabb_separation_and_containment_implies_disjoint_sets`).
 
 ## L6: Segment-Face Intersection Predicate Correctness
 Blocks: `P5.5` intersection checker soundness (narrow phase).
@@ -226,9 +236,15 @@ Blocks: `P5.5` intersection checker soundness (narrow phase).
       attempted to land direct `verus_keep_ghost` witness/spec contracts for
       `segment_triangle_intersection_point_strict` in
       `crates/vcad-geometry/src/segment_triangle_intersection.rs`, but reverted
-      the proof scaffolding after it destabilized local ghost verification;
-      pending blocker remains an existing trigger-inference failure in
-      `crates/vcad-geometry/src/phase5_upstream_lemmas.rs:591`.
+      the proof scaffolding after it destabilized local ghost verification; the
+      immediate blocker at that time was a trigger-inference failure in
+      `crates/vcad-geometry/src/phase5_upstream_lemmas.rs:591` (resolved in a
+      later pass below).
+    - Update (2026-02-19, ghost-verifier-unblock pass): resolved that
+      trigger-inference blocker by adding explicit triggers to
+      `shape_contained_in_aabb3_spec`/`lemma_aabb_separation_and_containment_implies_disjoint_sets`
+      in `crates/vcad-geometry/src/phase5_upstream_lemmas.rs` and then repairing
+      the now-exposed scalar positivity proof obligations in the same file.
     - Remaining gap (post strict-wrapper runtime pass): still missing a
       `verus_keep_ghost` iff/refinement theorem tying the new runtime wrapper to
       an explicit existential geometric spec (`true <==> exists p` on segment and
@@ -244,6 +260,9 @@ Blocks: `P5.5` intersection checker soundness (narrow phase).
       `./scripts/verify-vcad-geometry.sh` fails in this environment due an
       existing trigger-inference error in
       `crates/vcad-geometry/src/phase5_upstream_lemmas.rs:591`.
+    - Verification attempt note (2026-02-19, ghost-verifier-unblock pass):
+      `./scripts/verify-vcad-geometry.sh` now passes in this environment
+      (`194 verified, 0 errors`).
   - [ ] coplanar segment-segment intersection (2D projection + interval overlap).
     - Update (2026-02-19, proper-totality pass): endpoint-touch witness-soundness plus
       `EndpointTouch -> is_some` and `Proper -> is_some` totality are now landed; remaining
