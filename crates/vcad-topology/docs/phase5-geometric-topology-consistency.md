@@ -166,7 +166,7 @@ Current complexity notes (runtime implementation in `src/halfedge_mesh/validatio
 - [x] Differential/property-based verification harness:
   - generate random valid closed meshes + adversarial perturbations;
   - compare optimized runtime checkers against a simple brute-force oracle for consistency.
-- [ ] Phase 6 handoff lemmas:
+- [x] Phase 6 handoff lemmas:
   - state/prove preservation lemmas for Phase 5 invariants under topology-only edits that do not move coordinates;
   - document which Euler-operator preconditions must preserve geometric invariants versus recheck them.
 
@@ -182,7 +182,39 @@ Current differential/property-based harness policy (runtime behavior locked by t
 - deterministic seeded randomized fixtures (40 cases) generate valid disconnected closed tetrahedra configurations, rigid transforms, and adversarial coordinate perturbations (exact overlap + vertex-touch);
 - optimized intersection checking (`check_no_forbidden_face_face_intersections`) is asserted equivalent to a no-cull brute-force oracle path (`check_no_forbidden_face_face_intersections_without_broad_phase_for_testing`) across all generated fixtures.
 
+Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators):
+- precondition-preserved (no mandatory full recheck) when an operator provides explicit proof witnesses that:
+  - preserved half-edges keep endpoint positions unchanged (captures edge straightness direction-vector stability); and
+  - preserved faces keep ordered face-cycle position traces unchanged (captures face coplanarity witness stability).
+- must be rechecked (or discharged by stronger operator-specific proofs) on affected regions for:
+  - face convexity;
+  - outward-orientation/global signed-volume criteria;
+  - forbidden face-face intersection policy;
+  - aggregate geometric-topological consistency gate.
+
 ## Burndown Log
+- 2026-02-19: Completed the remaining P5.12 Phase 6 handoff-lemma item across
+  `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs` and
+  `src/runtime_halfedge_mesh_refinement/from_face_cycles_specs_and_lemmas.rs`:
+  - added face-cycle trace preservation spec:
+    - `mesh_face_cycle_position_trace_preserved_across_meshes_spec`;
+  - added coplanarity preservation bridge under trace-preservation preconditions:
+    - `lemma_mesh_face_coplanar_witness_preserved_under_face_cycle_position_trace`;
+  - added half-edge endpoint-position preservation spec:
+    - `mesh_half_edge_endpoint_positions_preserved_across_meshes_at_spec`;
+  - added half-edge direction-vector preservation bridge under endpoint-preservation preconditions:
+    - `lemma_mesh_half_edge_direction_vector_preserved_across_meshes_from_endpoint_positions`;
+  - documented explicit Phase 6 handoff policy under `## P5.12`, splitting invariants into:
+    - those preserved by operator preconditions/proofs;
+    - those requiring recheck (or stronger operator-specific discharge).
+- 2026-02-19: Failed attempts in this P5.12 Phase 6 handoff pass: none.
+- 2026-02-19: Revalidated after the P5.12 Phase 6 handoff-lemma additions:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (226 verified, 0 errors)
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (261 verified, 0 errors)
 - 2026-02-19: Completed a P5.1 runtime-soundness groundwork pass in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
   - added fixed-seed coplanarity witness spec:
     - `mesh_face_coplanar_fixed_seed_witness_spec`, which captures the runtime checker's fixed-base shape (`seed_i, seed_i+1, seed_i+2` coplanar with every face-cycle point);

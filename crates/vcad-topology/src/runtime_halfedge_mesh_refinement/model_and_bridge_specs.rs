@@ -685,6 +685,38 @@ pub open spec fn mesh_all_faces_coplanar_spec(
 }
 
 #[cfg(verus_keep_ghost)]
+pub open spec fn mesh_face_cycle_position_trace_preserved_across_meshes_spec(
+    m_before: MeshModel,
+    vertex_positions_before: Seq<vcad_math::point3::Point3>,
+    f_before: int,
+    m_after: MeshModel,
+    vertex_positions_after: Seq<vcad_math::point3::Point3>,
+    f_after: int,
+    k: int,
+) -> bool {
+    &&& mesh_index_bounds_spec(m_before)
+    &&& mesh_index_bounds_spec(m_after)
+    &&& mesh_geometry_input_spec(m_before, vertex_positions_before)
+    &&& mesh_geometry_input_spec(m_after, vertex_positions_after)
+    &&& 0 <= f_before < mesh_face_count_spec(m_before)
+    &&& 0 <= f_after < mesh_face_count_spec(m_after)
+    &&& #[trigger] mesh_face_cycle_witness_spec(m_before, f_before, k)
+    &&& #[trigger] mesh_face_cycle_witness_spec(m_after, f_after, k)
+    &&& forall|i: int|
+        0 <= i < k ==> #[trigger] mesh_face_cycle_vertex_position_or_default_at_int_spec(
+            m_before,
+            vertex_positions_before,
+            f_before,
+            i,
+        ) == mesh_face_cycle_vertex_position_or_default_at_int_spec(
+            m_after,
+            vertex_positions_after,
+            f_after,
+            i,
+        )
+}
+
+#[cfg(verus_keep_ghost)]
 pub open spec fn mesh_face_projection_axis_from_normal_spec(
     normal: vcad_math::vec3::Vec3,
 ) -> int {
@@ -1190,6 +1222,122 @@ pub proof fn lemma_mesh_face_coplanar_witness_stable_under_cyclic_reindexing(
         assert(0 <= sl < k);
         assert(0 <= sd < k);
     };
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_face_coplanar_witness_preserved_under_face_cycle_position_trace(
+    m_before: MeshModel,
+    vertex_positions_before: Seq<vcad_math::point3::Point3>,
+    f_before: int,
+    m_after: MeshModel,
+    vertex_positions_after: Seq<vcad_math::point3::Point3>,
+    f_after: int,
+    k: int,
+)
+    requires
+        mesh_face_cycle_position_trace_preserved_across_meshes_spec(
+            m_before,
+            vertex_positions_before,
+            f_before,
+            m_after,
+            vertex_positions_after,
+            f_after,
+            k,
+        ),
+        mesh_face_coplanar_witness_spec(m_before, vertex_positions_before, f_before, k),
+    ensures
+        mesh_face_coplanar_witness_spec(m_after, vertex_positions_after, f_after, k),
+{
+    assert(mesh_index_bounds_spec(m_after));
+    assert(mesh_geometry_input_spec(m_after, vertex_positions_after));
+    assert(0 <= f_after < mesh_face_count_spec(m_after));
+    assert(mesh_face_cycle_witness_spec(m_after, f_after, k));
+
+    assert forall|i: int, j: int, l: int, d: int|
+        0 <= i < k && 0 <= j < k && 0 <= l < k && 0 <= d < k implies #[trigger]
+            vcad_math::orientation3::is_coplanar(
+                mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                    m_after,
+                    vertex_positions_after,
+                    f_after,
+                    i,
+                ),
+                mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                    m_after,
+                    vertex_positions_after,
+                    f_after,
+                    j,
+                ),
+                mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                    m_after,
+                    vertex_positions_after,
+                    f_after,
+                    l,
+                ),
+                mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                    m_after,
+                    vertex_positions_after,
+                    f_after,
+                    d,
+                ),
+            ) by {
+        let bi = mesh_face_cycle_vertex_position_or_default_at_int_spec(
+            m_before,
+            vertex_positions_before,
+            f_before,
+            i,
+        );
+        let bj = mesh_face_cycle_vertex_position_or_default_at_int_spec(
+            m_before,
+            vertex_positions_before,
+            f_before,
+            j,
+        );
+        let bl = mesh_face_cycle_vertex_position_or_default_at_int_spec(
+            m_before,
+            vertex_positions_before,
+            f_before,
+            l,
+        );
+        let bd = mesh_face_cycle_vertex_position_or_default_at_int_spec(
+            m_before,
+            vertex_positions_before,
+            f_before,
+            d,
+        );
+
+        let ai = mesh_face_cycle_vertex_position_or_default_at_int_spec(
+            m_after,
+            vertex_positions_after,
+            f_after,
+            i,
+        );
+        let aj = mesh_face_cycle_vertex_position_or_default_at_int_spec(
+            m_after,
+            vertex_positions_after,
+            f_after,
+            j,
+        );
+        let al = mesh_face_cycle_vertex_position_or_default_at_int_spec(
+            m_after,
+            vertex_positions_after,
+            f_after,
+            l,
+        );
+        let ad = mesh_face_cycle_vertex_position_or_default_at_int_spec(
+            m_after,
+            vertex_positions_after,
+            f_after,
+            d,
+        );
+
+        assert(ai == bi);
+        assert(aj == bj);
+        assert(al == bl);
+        assert(ad == bd);
+        assert(vcad_math::orientation3::is_coplanar(bi, bj, bl, bd));
+    };
+    assert(mesh_face_coplanar_witness_spec(m_after, vertex_positions_after, f_after, k));
 }
 
 #[cfg(verus_keep_ghost)]

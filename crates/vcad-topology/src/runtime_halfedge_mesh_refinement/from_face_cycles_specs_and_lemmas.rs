@@ -847,6 +847,62 @@ pub open spec fn mesh_half_edge_direction_vector_spec(
 }
 
 #[cfg(verus_keep_ghost)]
+pub open spec fn mesh_half_edge_endpoint_positions_preserved_across_meshes_at_spec(
+    m_before: MeshModel,
+    vertex_positions_before: Seq<vcad_math::point3::Point3>,
+    h_before: int,
+    m_after: MeshModel,
+    vertex_positions_after: Seq<vcad_math::point3::Point3>,
+    h_after: int,
+) -> bool {
+    &&& mesh_index_bounds_spec(m_before)
+    &&& mesh_geometry_input_spec(m_before, vertex_positions_before)
+    &&& mesh_index_bounds_spec(m_after)
+    &&& mesh_geometry_input_spec(m_after, vertex_positions_after)
+    &&& 0 <= h_before < mesh_half_edge_count_spec(m_before)
+    &&& 0 <= h_after < mesh_half_edge_count_spec(m_after)
+    &&& mesh_half_edge_from_position_spec(m_before, vertex_positions_before, h_before)
+        == mesh_half_edge_from_position_spec(m_after, vertex_positions_after, h_after)
+    &&& mesh_half_edge_to_position_spec(m_before, vertex_positions_before, h_before)
+        == mesh_half_edge_to_position_spec(m_after, vertex_positions_after, h_after)
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_half_edge_direction_vector_preserved_across_meshes_from_endpoint_positions(
+    m_before: MeshModel,
+    vertex_positions_before: Seq<vcad_math::point3::Point3>,
+    h_before: int,
+    m_after: MeshModel,
+    vertex_positions_after: Seq<vcad_math::point3::Point3>,
+    h_after: int,
+)
+    requires
+        mesh_half_edge_endpoint_positions_preserved_across_meshes_at_spec(
+            m_before,
+            vertex_positions_before,
+            h_before,
+            m_after,
+            vertex_positions_after,
+            h_after,
+        ),
+    ensures
+        mesh_half_edge_direction_vector_spec(m_before, vertex_positions_before, h_before)
+            == mesh_half_edge_direction_vector_spec(m_after, vertex_positions_after, h_after),
+{
+    let from_before = mesh_half_edge_from_position_spec(m_before, vertex_positions_before, h_before);
+    let to_before = mesh_half_edge_to_position_spec(m_before, vertex_positions_before, h_before);
+    let from_after = mesh_half_edge_from_position_spec(m_after, vertex_positions_after, h_after);
+    let to_after = mesh_half_edge_to_position_spec(m_after, vertex_positions_after, h_after);
+
+    assert(from_before == from_after);
+    assert(to_before == to_after);
+    assert(mesh_half_edge_direction_vector_spec(m_before, vertex_positions_before, h_before)
+        == to_before.sub_spec(from_before));
+    assert(mesh_half_edge_direction_vector_spec(m_after, vertex_positions_after, h_after)
+        == to_after.sub_spec(from_after));
+}
+
+#[cfg(verus_keep_ghost)]
 pub open spec fn mesh_twin_half_edges_opposite_direction_vectors_at_spec(
     m: MeshModel,
     vertex_positions: Seq<vcad_math::point3::Point3>,
