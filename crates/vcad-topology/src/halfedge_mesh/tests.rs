@@ -16,6 +16,7 @@ use crate::runtime_halfedge_mesh_refinement::{
     runtime_check_face_coplanarity_seed0_fixed_witness_sound_bridge,
     runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_sound_complete_bridge,
     runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_sound_bridge,
+    runtime_check_face_seed0_corner_non_collinearity_bridge,
     runtime_check_face_convexity_triangle_projected_turn_sound_bridge,
     runtime_check_geometric_topological_consistency_sound_bridge,
     runtime_check_phase4_valid_and_kernel_shared_edge_local_orientation_imply_geometric_topological_consistency_spec,
@@ -321,7 +322,8 @@ fn assert_constructive_phase5_gate_parity(mesh: &Mesh, label: &str) {
     );
     assert_eq!(
         geometric_constructive.face_corner_non_collinearity_ok,
-        mesh.check_face_corner_non_collinearity(),
+        mesh.check_face_corner_non_collinearity()
+            && runtime_check_face_seed0_corner_non_collinearity_bridge(mesh),
         "constructive face-corner non-collinearity witness mismatch for {label}"
     );
     assert_eq!(

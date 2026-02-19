@@ -195,6 +195,30 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with a face-corner seed0 non-collinearity bridge wiring increment in:
+  - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
+  - `src/runtime_halfedge_mesh_refinement/components_and_validity_specs.rs`;
+  - `src/halfedge_mesh/tests.rs`.
+  - tightened constructive witness plumbing:
+    - `check_geometric_topological_consistency_constructive` now computes
+      `face_corner_non_collinearity_ok` as
+      `check_face_corner_non_collinearity && runtime_check_face_seed0_corner_non_collinearity_bridge`;
+    - strengthened constructive postconditions with
+      `w.face_corner_non_collinearity_ok ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m)`.
+  - strengthened geometry-model link surface:
+    - `geometric_topological_consistency_gate_geometry_model_link_spec` now explicitly carries
+      `w.face_corner_non_collinearity_ok ==> mesh_all_faces_seed0_corner_non_collinear_spec(...)`;
+    - updated runtime-with-geometry characterization lemmas to discharge the new implication branch.
+  - updated parity lock:
+    - constructive witness parity now checks the strengthened face-corner witness formula
+      (`runtime corner check && seed0-corner bridge`) instead of the raw runtime corner check alone.
+  - outcome:
+    - the aggregate constructive gate now carries an explicit bridge-backed face-corner witness implication into the model seed0 non-collinearity surface, reducing remaining P5.7 checker/spec-equivalence plumbing without changing checklist status.
+- 2026-02-19: Failed attempts in this P5.7 face-corner seed0 bridge wiring pass: none.
+- 2026-02-19: Revalidated after the P5.7 face-corner seed0 bridge wiring increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (86 passed, 0 failed)
 - 2026-02-19: Worked P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with a no-zero-length geometric-edge bridge strengthening increment in:
   - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`;
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`.

@@ -1,1 +1,1 @@
-Added a verified no-zero-length geometric-edge bridge and threaded it into the P5.7 aggregate constructive witness guarantees, then revalidated vcad-topology proofs/tests; 8 Phase 5 tasks remain.
+Wired the constructive Phase 5 gate face-corner witness to the seed0 non-collinearity bridge and updated geometric model-link proofs/tests, then revalidated vcad-topology; 8 Phase 5 tasks remain.

@@ -2306,6 +2306,8 @@ pub fn check_geometric_topological_consistency_constructive(
                 && (w.phase4_valid_ok ==> mesh_valid_spec(m@))
                 && (w.no_zero_length_geometric_edges_ok
                     ==> mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m))
+                && (w.face_corner_non_collinearity_ok
+                    ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m))
                 && (w.face_coplanarity_ok ==> mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m))
                 && (w.face_coplanarity_ok ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m))
                 && (w.face_coplanarity_ok ==> mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m))
@@ -2330,7 +2332,11 @@ pub fn check_geometric_topological_consistency_constructive(
         runtime_check_no_zero_length_geometric_edges_sound_bridge(m);
     let no_zero_length_geometric_edges_ok = no_zero_length_geometric_edges_runtime_ok
         && no_zero_length_geometric_edges_bridge_ok;
-    let face_corner_non_collinearity_ok = m.check_face_corner_non_collinearity();
+    let face_corner_non_collinearity_runtime_ok = m.check_face_corner_non_collinearity();
+    let face_corner_non_collinearity_bridge_ok =
+        runtime_check_face_seed0_corner_non_collinearity_bridge(m);
+    let face_corner_non_collinearity_ok = face_corner_non_collinearity_runtime_ok
+        && face_corner_non_collinearity_bridge_ok;
     let face_coplanarity_runtime_ok = m.check_face_coplanarity();
     let face_coplanarity_bridge_ok = runtime_check_face_coplanarity_seed0_fixed_witness_bridge(m);
     let face_coplanarity_ok = face_coplanarity_runtime_ok && face_coplanarity_bridge_ok;
@@ -2374,6 +2380,9 @@ pub fn check_geometric_topological_consistency_constructive(
         assert(w.no_zero_length_geometric_edges_ok == no_zero_length_geometric_edges_ok);
         assert(no_zero_length_geometric_edges_ok
             == (no_zero_length_geometric_edges_runtime_ok && no_zero_length_geometric_edges_bridge_ok));
+        assert(w.face_corner_non_collinearity_ok == face_corner_non_collinearity_ok);
+        assert(face_corner_non_collinearity_ok
+            == (face_corner_non_collinearity_runtime_ok && face_corner_non_collinearity_bridge_ok));
         assert(w.face_coplanarity_ok == face_coplanarity_ok);
         assert(face_coplanarity_ok == (face_coplanarity_runtime_ok && face_coplanarity_bridge_ok));
         if w.phase4_valid_ok {
@@ -2383,6 +2392,10 @@ pub fn check_geometric_topological_consistency_constructive(
         if w.no_zero_length_geometric_edges_ok {
             assert(no_zero_length_geometric_edges_bridge_ok);
             assert(mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m));
+        }
+        if w.face_corner_non_collinearity_ok {
+            assert(face_corner_non_collinearity_bridge_ok);
+            assert(mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m));
         }
         if w.face_coplanarity_ok {
             assert(face_coplanarity_bridge_ok);
@@ -2415,6 +2428,15 @@ pub fn check_geometric_topological_consistency_constructive(
             if w.no_zero_length_geometric_edges_ok {
                 assert(no_zero_length_geometric_edges_bridge_ok);
                 assert(mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m));
+            }
+        };
+        assert(
+            w.face_corner_non_collinearity_ok
+                ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m)
+        ) by {
+            if w.face_corner_non_collinearity_ok {
+                assert(face_corner_non_collinearity_bridge_ok);
+                assert(mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m));
             }
         };
         assert(
