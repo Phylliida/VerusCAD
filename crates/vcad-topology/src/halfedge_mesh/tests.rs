@@ -1935,6 +1935,84 @@ fn diagnostic_witness_is_real_counterexample(
 
     #[cfg(feature = "geometry-checks")]
     #[test]
+    fn differential_randomized_shared_boundary_contact_non_misclassification_harness() {
+        const CASES: usize = 40;
+        let mut rng = DeterministicRng::new(0x5EED_B00A_DA7A);
+
+        let shared_edge_bases = vec![
+            ("tetrahedron", Mesh::tetrahedron()),
+            ("cube", Mesh::cube()),
+            ("triangular_prism", Mesh::triangular_prism()),
+        ];
+        let shared_vertex_bases = vec![("octahedron", build_octahedron_mesh())];
+
+        for case_idx in 0..CASES {
+            let edge_quarter_turns = rng.next_u64() % 4;
+            let edge_tx = rng.next_i64_inclusive(-30, 30);
+            let edge_ty = rng.next_i64_inclusive(-30, 30);
+            let edge_tz = rng.next_i64_inclusive(-30, 30);
+
+            for (label, base_mesh) in &shared_edge_bases {
+                let transformed = transform_mesh_positions(base_mesh, |point| {
+                    rigid_rotate_z_quarter_turns_then_translate(
+                        point,
+                        edge_quarter_turns,
+                        edge_tx,
+                        edge_ty,
+                        edge_tz,
+                    )
+                });
+                assert!(
+                    transformed.is_valid(),
+                    "rigidly transformed shared-edge fixture should satisfy Phase 4 validity"
+                );
+                assert!(
+                    transformed.check_no_forbidden_face_face_intersections(),
+                    "shared-edge fixture should remain intersection-free in randomized case {case_idx}"
+                );
+
+                let case_label = format!("{label}_random_case_{case_idx}");
+                assert_shared_edge_contacts_not_misclassified_as_forbidden_intersections(
+                    &transformed,
+                    &case_label,
+                );
+            }
+
+            let vertex_quarter_turns = rng.next_u64() % 4;
+            let vertex_tx = rng.next_i64_inclusive(-30, 30);
+            let vertex_ty = rng.next_i64_inclusive(-30, 30);
+            let vertex_tz = rng.next_i64_inclusive(-30, 30);
+
+            for (label, base_mesh) in &shared_vertex_bases {
+                let transformed = transform_mesh_positions(base_mesh, |point| {
+                    rigid_rotate_z_quarter_turns_then_translate(
+                        point,
+                        vertex_quarter_turns,
+                        vertex_tx,
+                        vertex_ty,
+                        vertex_tz,
+                    )
+                });
+                assert!(
+                    transformed.is_valid(),
+                    "rigidly transformed shared-vertex fixture should satisfy Phase 4 validity"
+                );
+                assert!(
+                    transformed.check_no_forbidden_face_face_intersections(),
+                    "shared-vertex fixture should remain intersection-free in randomized case {case_idx}"
+                );
+
+                let case_label = format!("{label}_random_case_{case_idx}");
+                assert_shared_vertex_only_contacts_not_misclassified_as_forbidden_intersections(
+                    &transformed,
+                    &case_label,
+                );
+            }
+        }
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
     fn face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle() {
         let noncoplanar_vertices = vec![
             RuntimePoint3::from_ints(0, 0, 0),

@@ -195,6 +195,28 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.5 shared-boundary non-misclassification randomized-harness
+  increment in `src/halfedge_mesh/tests.rs`:
+  - added a seeded randomized regression harness that stress-checks allowed shared-boundary
+    contacts under rigid transforms:
+    - `differential_randomized_shared_boundary_contact_non_misclassification_harness`.
+  - harness coverage now repeatedly validates both contact classes against the pair-level
+    forbidden-intersection hook (with broad-phase/no-cull parity locked by existing helpers):
+    - shared-edge adjacent face pairs on `tetrahedron`, `cube`, and `triangular_prism`;
+    - shared-vertex-only adjacent face pairs on `octahedron`;
+    - randomized per-case quarter-turn `z` rotations + integer translations.
+  - outcome: P5.5 `shared-edge/shared-vertex non-misclassification` behavior is now additionally
+    regression-locked under deterministic randomized rigid-transform variation, reducing drift risk
+    while the formal proof checkbox remains open.
+- 2026-02-19: Failed attempts in this P5.5 randomized non-misclassification pass: none.
+- 2026-02-19: Revalidated after the P5.5 randomized non-misclassification harness additions:
+  - `cargo test -p vcad-topology --features geometry-checks differential_randomized_shared_boundary_contact_non_misclassification_harness`
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (282 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (319 verified, 0 errors)
 - 2026-02-19: Completed a P5.1 runtime-checker-correctness proof-plumbing increment in
   `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
   - added a face-cycle witness length uniqueness lemma:
