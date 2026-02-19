@@ -195,6 +195,21 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with table-indexed global allowed-contact/equivalence corollaries in:
+  - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`.
+  - added new global proof hooks:
+    - `lemma_mesh_all_face_pairs_not_runtime_forbidden_policy_table_implies_allowed_contact_relation`;
+    - `lemma_mesh_all_face_pairs_allowed_contact_relation_table_imply_runtime_forbidden_policy_iff_non_adjacent_forbidden_relation`.
+  - outcome:
+    - the P5.5 proof layer now has quantified all-face-pairs bridges from table-mode assumptions into:
+      - global allowed-contact topology admission (`!runtime_forbidden => allowed_contact_relation`); and
+      - global runtime-policy/non-adjacent-forbidden equivalence under allowed-contact assumptions.
+    - this reduces per-pair branch expansion in remaining checker soundness/completeness work.
+- 2026-02-19: Failed attempts in this P5.5 table-indexed global allowed-contact/equivalence pass: none.
+- 2026-02-19: Revalidated after the P5.5 table-indexed global allowed-contact/equivalence increment:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (86 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (366 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
 - 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with table-indexed global forbidden-policy corollaries in:
   - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`.
   - added new proof/model hooks:

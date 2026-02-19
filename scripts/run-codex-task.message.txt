@@ -1,1 +1,1 @@
-Added P5.5 table-indexed global forbidden-policy corollaries for pairwise soundness/completeness scaffolding with full vcad-topology revalidation; 8 Phase 5 tasks remain.
+Added P5.5 table-indexed global allowed-contact and runtime-policy/non-adjacent-equivalence corollaries for all face pairs with vcad-topology revalidation; 8 Phase 5 tasks remain.
