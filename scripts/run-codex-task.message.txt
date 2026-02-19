@@ -1,1 +1,1 @@
-Added P5.5 table-indexed global allowed-contact and runtime-policy/non-adjacent-equivalence corollaries for all face pairs with vcad-topology revalidation; 8 Phase 5 tasks remain.
+Added P5.5 table-indexed global implication/iff consolidation corollaries plus a quad-coplanarity proof-instability fix in runtime_halfedge refinement, with full vcad-topology revalidation passing; 8 Phase 5 tasks remain.

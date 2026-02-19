@@ -195,6 +195,29 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with table-indexed global implication/iff consolidation corollaries in:
+  - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`.
+  - added new global proof hooks:
+    - `lemma_mesh_all_face_pairs_not_runtime_forbidden_policy_table_imply_allowed_contact_and_runtime_forbidden_policy_iff_non_adjacent_forbidden_relation`;
+    - `lemma_mesh_all_face_pairs_allowed_contact_relation_and_no_non_adjacent_forbidden_relation_table_imply_not_runtime_forbidden_policy`.
+  - also stabilized a fragile existing quad-coplanarity assertion in:
+    - `lemma_mesh_face_seed0_fixed_witness_and_quad_cycle_imply_face_coplanar_spec` (`model_and_bridge_specs.rs`) by switching to direct witness-term instantiation.
+  - outcome:
+    - P5.5 now has a direct all-face-pairs bridge from global `!runtime_forbidden_policy` table assumptions into both:
+      - global allowed-contact admission; and
+      - global runtime-policy/non-adjacent-forbidden equivalence.
+    - P5.5 also now has the reverse all-face-pairs corollary under explicit allowed-contact + no-non-adjacent-forbidden assumptions (`!non_adjacent_forbidden => !runtime_forbidden`).
+    - this reduces quantified implication boilerplate for remaining checker soundness/completeness closure work.
+- 2026-02-19: Failed attempt in this P5.5 table-indexed implication/iff consolidation pass:
+  - first verifier run failed at a pre-existing fragile assertion in `lemma_mesh_face_seed0_fixed_witness_and_quad_cycle_imply_face_coplanar_spec` (trigger/instantiation instability around the `p3` seed witness coplanarity step);
+  - resolved by replacing the fragile assertion form with direct witness-term instantiation in that lemma.
+- 2026-02-19: Revalidated after the P5.5 table-indexed implication/iff consolidation increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (86 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (368 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (405 verified, 0 errors)
 - 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with table-indexed global allowed-contact/equivalence corollaries in:
   - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`.
   - added new global proof hooks:
