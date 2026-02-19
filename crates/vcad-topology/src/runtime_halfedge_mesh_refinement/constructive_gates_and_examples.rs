@@ -860,19 +860,14 @@ pub fn runtime_check_no_zero_length_geometric_edges_sound_bridge(
 
             assert(m@.half_edges[hi].vertex == he.vertex as int);
             assert(m@.half_edges[hi].next == he.next as int);
-            assert(
-                m@.half_edges[m@.half_edges[hi].next].vertex
-                    == m.half_edges[m.half_edges[h].next].vertex as int
-            );
-
             assert(mesh_half_edge_from_position_spec(m@, vertex_positions, hi) == a@);
             assert(mesh_half_edge_to_position_spec(m@, vertex_positions, hi) == b@);
 
             assert((d2_sign is Zero) == (d2@.signum() == 0));
             assert(d2@.signum() != 0);
-            Scalar::lemma_signum_zero_iff(d2@);
             assert(!d2@.eqv_spec(Scalar::from_int_spec(0))) by {
                 if d2@.eqv_spec(Scalar::from_int_spec(0)) {
+                    Scalar::lemma_eqv_signum(d2@, Scalar::from_int_spec(0));
                     assert(d2@.signum() == 0);
                     assert(false);
                 }
@@ -1240,7 +1235,6 @@ pub fn runtime_check_face_coplanarity_seed0_fixed_witness_bridge(m: &Mesh) -> (o
                 let hp = mesh_next_iter_spec(m@, start, steps as nat);
                 assert(h as int == hp);
                 assert(0 <= hp < mesh_half_edge_count_spec(m@));
-                assert(m@.half_edges[hp].vertex == m.half_edges[h].vertex as int);
                 assert(0 <= m@.half_edges[hp].vertex < mesh_vertex_count_spec(m@));
                 assert(mesh_face_cycle_vertex_index_or_default_spec(m@, fi, steps as nat)
                     == m@.half_edges[hp].vertex);
@@ -1842,7 +1836,7 @@ pub fn runtime_check_face_convexity_triangle_projected_turn_complete_from_phase5
         assert(mesh_runtime_geometric_topological_consistency_with_geometry_spec(m));
         assert(mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(m));
         assert(mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m));
-        assert(complete_ok);
+        assert(_complete_ok);
         assert(mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m));
         assert(mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m));
         assert(mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m));
@@ -2044,7 +2038,6 @@ pub fn runtime_check_face_coplanarity_seed0_fixed_witness_complete_under_precond
                 let hp = mesh_next_iter_spec(m@, start, steps as nat);
                 assert(h as int == hp);
                 assert(0 <= hp < mesh_half_edge_count_spec(m@));
-                assert(m@.half_edges[hp].vertex == m.half_edges[h].vertex as int);
                 assert(0 <= m@.half_edges[hp].vertex < mesh_vertex_count_spec(m@));
                 assert(mesh_face_cycle_vertex_index_or_default_spec(m@, fi, steps as nat)
                     == m@.half_edges[hp].vertex);

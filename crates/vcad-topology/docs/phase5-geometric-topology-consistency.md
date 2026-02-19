@@ -195,6 +195,23 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.3 (`Proof: runtime checker correctness vs convexity spec`) with geometry-check proof-branch compile-hygiene fixes in:
+  - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`.
+  - fixed a proof-block binding typo in `runtime_check_face_convexity_triangle_projected_turn_complete_from_phase5_runtime_bundle_sound_bridge`:
+    - use `_complete_ok` consistently in the proof block (instead of an out-of-scope `complete_ok` identifier).
+  - replaced one crate-private scalar-sign lemma call with a public equivalence-signum lemma path:
+    - swapped `Scalar::lemma_signum_zero_iff` usage for `Scalar::lemma_eqv_signum`-based contradiction plumbing.
+  - removed three redundant mixed exec/spec-index equalities (`usize` vs `int`) that are not needed for the enclosing obligations and can fail under stricter dual-feature Verus type-checking.
+  - outcome:
+    - runtime/proof bridge code is cleaner and the targeted convexity sound-bridge path no longer contains the out-of-scope proof identifier; checklist status remains unchanged.
+- 2026-02-19: Failed attempts in this P5.3 geometry-check proof-branch compile-hygiene pass:
+  - targeted dual-feature Verus probing (`geometry-checks,verus-proofs`) still hits additional pre-existing blockers outside this narrow fix set;
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` and `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` currently fail when module filters are forwarded to dependency verification (`vcad-math`), with module-name mismatch before `vcad-topology` module checking begins.
+- 2026-02-19: Revalidated after this P5.3 geometry-check proof-branch compile-hygiene increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (93 passed, 0 failed)
+  - `./scripts/verify-vcad-topology.sh` (419 verified, 0 errors)
 - 2026-02-19: Worked P5.3 (`Proof: runtime checker correctness vs convexity spec`) and P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with aggregate-sound-bridge parity contract strengthening for triangle/triangle-or-quad completion wrappers in:
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`.
   - strengthened bridge contracts now expose exact parity with the aggregate sound bridge:
