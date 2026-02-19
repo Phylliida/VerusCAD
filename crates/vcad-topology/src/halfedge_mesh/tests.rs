@@ -253,6 +253,19 @@ fn assert_face_convexity_triangle_projected_turn_phase5_runtime_bundle_completen
     );
     if triangle_projected_turn_phase5_bundle_complete_ok {
         assert!(
+            mesh.check_face_convexity(),
+            "triangle convexity phase5-bundle completeness sound bridge should imply runtime convexity for {label}"
+        );
+        assert!(
+            mesh.check_face_corner_non_collinearity(),
+            "triangle convexity phase5-bundle completeness sound bridge should imply runtime seed0 corner non-collinearity for {label}"
+        );
+        assert_eq!(
+            mesh.check_face_convexity(),
+            mesh.check_face_corner_non_collinearity(),
+            "triangle convexity phase5-bundle completeness sound bridge should preserve convexity/non-collinearity parity for {label}"
+        );
+        assert!(
             mesh.check_no_zero_length_geometric_edges(),
             "triangle convexity phase5-bundle completeness sound bridge should imply non-zero geometric edges for {label}"
         );
@@ -275,6 +288,16 @@ fn assert_geometric_consistency_triangle_projected_turn_sound_bridge_parity(
         triangle_projected_turn_geometric_sound_bridge_ok, runtime_geometric_ok,
         "triangle geometric-consistency projected-turn sound bridge parity failed for {label}"
     );
+    if triangle_projected_turn_geometric_sound_bridge_ok {
+        assert!(
+            mesh.check_face_convexity(),
+            "triangle geometric-consistency projected-turn sound bridge should imply runtime convexity for {label}"
+        );
+        assert!(
+            mesh.check_face_corner_non_collinearity(),
+            "triangle geometric-consistency projected-turn sound bridge should imply runtime seed0 corner non-collinearity for {label}"
+        );
+    }
 }
 
 #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]

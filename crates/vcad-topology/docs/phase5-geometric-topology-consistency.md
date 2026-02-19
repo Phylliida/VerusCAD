@@ -195,6 +195,36 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.3 (`Proof: runtime checker correctness vs convexity spec`) and P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with a triangle projected-turn characterization carry-through strengthening in:
+  - `src/runtime_halfedge_mesh_refinement/components_and_validity_specs.rs`;
+  - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
+  - `src/halfedge_mesh/tests.rs`.
+  - added new strengthened triangle projected-turn lemmas under the runtime-with-geometry+non-zero-edge bundle:
+    - `lemma_mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_and_triangle_cycles_imply_all_faces_projected_turn_sign_consistency`;
+    - `lemma_mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_and_triangle_cycles_projected_turn_sign_consistency_iff_seed0_corner_non_collinear`.
+  - strengthened bridge guarantees:
+    - `runtime_check_face_convexity_triangle_projected_turn_complete_from_phase5_runtime_bundle_sound_bridge` now additionally proves:
+      - `out ==> (mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m) == mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m))`.
+    - `runtime_check_geometric_topological_consistency_sound_bridge` now additionally proves:
+      - `out && mesh_runtime_all_faces_triangle_cycles_spec(m) ==> mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m)`.
+    - `runtime_check_geometric_topological_consistency_triangle_projected_turn_sound_bridge` now additionally proves:
+      - `out ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m)`;
+      - `out ==> (mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m) == mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m))`.
+  - strengthened parity lock coverage:
+    - `assert_face_convexity_triangle_projected_turn_phase5_runtime_bundle_completeness_bridge_parity` now explicitly checks that successful bridge runs imply runtime convexity and seed0 corner non-collinearity, and preserve convexity/non-collinearity parity on triangle fixtures;
+    - `assert_geometric_consistency_triangle_projected_turn_sound_bridge_parity` now explicitly checks runtime convexity and seed0 corner non-collinearity when the sound bridge succeeds.
+  - outcome:
+    - triangle projected-turn sound paths now carry an explicit non-zero-edge-aware `projected_turn <=> seed0_non_collinear` characterization across both convexity and aggregate bridges, reducing remaining P5.3/P5.7 closure plumbing while checklist status remains unchanged.
+- 2026-02-19: Failed attempts in this P5.3/P5.7 triangle projected-turn carry-through strengthening pass: none.
+- 2026-02-19: Revalidated after the P5.3/P5.7 triangle projected-turn carry-through strengthening:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (92 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" geometric_consistency_triangle_projected_turn_sound_bridge_matches_runtime_checker` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" face_convexity_triangle_projected_turn_phase5_runtime_bundle_completeness_bridge_matches_geometric_sound_bridge` (1 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (382 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (419 verified, 0 errors)
 - 2026-02-19: Worked P5.3 (`Proof: runtime checker correctness vs convexity spec`) and P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with a triangle projected-turn/non-collinearity characterization strengthening increment in:
   - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`;
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;

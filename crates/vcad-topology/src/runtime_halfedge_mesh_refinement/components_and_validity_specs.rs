@@ -1734,6 +1734,62 @@ pub proof fn lemma_mesh_runtime_geometric_topological_consistency_with_geometry_
     assert(mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m));
 }
 
+pub proof fn lemma_mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_and_triangle_cycles_imply_all_faces_projected_turn_sign_consistency(
+    m: &Mesh,
+)
+    requires
+        mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(m),
+        mesh_runtime_all_faces_triangle_cycles_spec(m),
+    ensures
+        mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m),
+{
+    lemma_mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_characterization(
+        m,
+    );
+    assert(
+        mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(m)
+            == (
+                mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m)
+                    && mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m)
+            )
+    );
+    assert(mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(m));
+    assert(mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
+    lemma_mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_implies_mesh_geometric_topological_consistency_with_geometry(
+        m,
+    );
+    assert(mesh_runtime_geometric_topological_consistency_with_geometry_spec(m));
+    assert(mesh_runtime_all_faces_triangle_cycles_spec(m));
+    lemma_mesh_runtime_geometric_topological_consistency_with_geometry_and_triangle_cycles_imply_all_faces_projected_turn_sign_consistency(
+        m,
+    );
+    assert(mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m));
+}
+
+pub proof fn lemma_mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_and_triangle_cycles_projected_turn_sign_consistency_iff_seed0_corner_non_collinear(
+    m: &Mesh,
+)
+    requires
+        mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(m),
+        mesh_runtime_all_faces_triangle_cycles_spec(m),
+    ensures
+        mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m)
+            == mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m),
+{
+    lemma_mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_and_triangle_cycles_imply_all_faces_projected_turn_sign_consistency(
+        m,
+    );
+    assert(mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m));
+    assert(mesh_runtime_all_faces_triangle_cycles_spec(m));
+    lemma_mesh_runtime_all_faces_triangle_cycles_projected_turn_sign_consistency_iff_seed0_corner_non_collinear(
+        m,
+    );
+    assert(
+        mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m)
+            == mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m)
+    );
+}
+
 pub proof fn lemma_mesh_geometric_topological_consistency_implies_mesh_valid_and_shared_edge_local_orientation(
     m: MeshModel,
 )
