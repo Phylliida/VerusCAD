@@ -195,6 +195,26 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with table-indexed global forbidden-policy corollaries in:
+  - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`.
+  - added new proof/model hooks:
+    - `mesh_face_pair_bool_table_wf_spec`;
+    - `lemma_mesh_all_face_pairs_not_runtime_forbidden_policy_table_implies_no_non_adjacent_forbidden_relation`;
+    - `lemma_mesh_disjoint_boundary_pairs_not_runtime_forbidden_policy_table_imply_no_intersection`.
+  - outcome:
+    - P5.5 now has reusable global (all-face-pairs) corollaries over a face-pair boolean table model, not only per-pair decomposition lemmas;
+    - this gives a direct quantified bridge from pairwise runtime-policy non-forbidden assumptions to:
+      - absence of non-adjacent forbidden relations; and
+      - disjoint-boundary no-intersection consequences,
+      reducing quantifier boilerplate for remaining checker soundness/completeness work.
+- 2026-02-19: Failed attempts in this P5.5 table-indexed global corollary pass: none.
+- 2026-02-19: Revalidated after the P5.5 table-indexed global corollary increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (86 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (364 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (401 verified, 0 errors)
 - 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with direct runtime-policy/non-adjacent-forbidden corollaries in:
   - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`.
   - added new direct proof hooks:
