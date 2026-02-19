@@ -1,1 +1,1 @@
-Strengthened vcad-topology P5.7 aggregate/component parity by adding a runtime component-conjunction parity bridge plus parity-lock test updates and full proof/test revalidation, and 8 Phase 5 checklist tasks remain.
+Strengthened vcad-topology P5.1 triangle/quad coplanarity proof packaging with new oriented-seed0-plane <-> coplanarity/non-collinearity equivalence lemmas and propagated contract strengthening across constructive bridges, and 8 Phase 5 checklist tasks remain.

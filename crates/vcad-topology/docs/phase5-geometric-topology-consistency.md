@@ -195,6 +195,29 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec`) with triangle/quad oriented-plane equivalence strengthening in:
+  - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`;
+  - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`.
+  - added model/runtime equivalence lemmas:
+    - `lemma_mesh_all_faces_oriented_seed0_planes_and_index_bounds_and_face_cycles_and_triangle_or_quad_cycles_iff_all_faces_coplanar_and_seed0_non_collinear_and_triangle_or_quad_cycles`;
+    - `lemma_mesh_runtime_all_faces_oriented_seed0_planes_and_index_bounds_and_face_cycles_and_triangle_or_quad_cycles_iff_all_faces_coplanar_and_seed0_non_collinear_and_triangle_or_quad_cycles`.
+  - strengthened triangle/quad oriented-plane completion contracts to export the new biconditional packaging:
+    - `runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_and_triangle_or_quad_face_preconditions`;
+    - `runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_runtime_with_geometry_and_triangle_or_quad_face_preconditions`;
+    - `runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_complete_from_phase5_runtime_bundle_sound_bridge`.
+  - outcome:
+    - the triangle/quad coplanarity path now exports an explicit equivalence between:
+      - `(all faces oriented seed0 planes && triangle/quad face cycles)`;
+      - `(all faces full coplanarity spec && seed0 corner non-collinearity && triangle/quad face cycles)`;
+    - this tightens the existing P5.1 proof surface without changing checklist status (full unrestricted checker/spec equivalence remains open).
+- 2026-02-19: Failed attempts in this P5.1 triangle/quad oriented-plane equivalence pass: none.
+- 2026-02-19: Revalidated after this P5.1 triangle/quad oriented-plane equivalence strengthening:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (96 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (388 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (425 verified, 0 errors)
 - 2026-02-19: Worked P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with aggregate/component-conjunction parity bridge strengthening in:
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
   - `src/halfedge_mesh/tests.rs`.
