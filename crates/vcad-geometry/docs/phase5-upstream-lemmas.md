@@ -24,6 +24,7 @@ Blocks: `P5.1` coplanarity checker correctness for `k > 4`.
 - [ ] Intermediate lemma: if three vectors are all orthogonal to one nonzero vector, they are linearly dependent (equivalently `det3 == 0`).
   - Partial (2026-02-19): proved `lemma_three_vectors_orthogonal_to_aligned_nonzero_normal_implies_det_zero` with extra precondition `normal == u x v`.
   - Failed attempt note: did not finish the fully general `normal != 0` orthogonality-to-determinant proof (without the alignment precondition). Remaining gap is the generic 3D subspace/dimension argument or equivalent algebraic elimination.
+  - Failed attempt note (2026-02-19, later pass): explored a component-elimination proof path (derive `normal.x * det == 0`/`normal.y * det == 0`/`normal.z * det == 0` from orthogonality constraints, then cancel nonzero component), but did not land a clean reusable proof script yet.
 
 ## L2: Orient3d / Orient2d Projection Factoring
 Blocks: `P5.3` convexity checker correctness.
@@ -41,7 +42,12 @@ Blocks: `P5.3` convexity checker correctness.
 ## L3: Determinant Trilinearity / Linearity in Origin
 Blocks: `P5.4` signed-volume origin independence.
 
-- [ ] Prove linearity in each determinant argument, e.g. `det3(a + t, b, c) = det3(a, b, c) + det3(t, b, c)`.
+- [x] Prove linearity in each determinant argument, e.g. `det3(a + t, b, c) = det3(a, b, c) + det3(t, b, c)`.
+  - Landed (2026-02-19): added `det3_spec` plus
+    `lemma_det3_linear_first_argument`,
+    `lemma_det3_linear_second_argument`,
+    `lemma_det3_linear_third_argument`
+    in `crates/vcad-geometry/src/phase5_upstream_lemmas.rs`.
 - [ ] Prove:
   - for a closed oriented surface mesh with opposite-direction twin edge usage,
   - `sum_faces det3(v0 - O', v1 - O', v2 - O') = sum_faces det3(v0 - O, v1 - O, v2 - O)`.

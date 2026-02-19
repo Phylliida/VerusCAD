@@ -1,1 +1,1 @@
-Added Phase 5 L1 common-plane specs and aligned-normal orient3d-zero lemmas in vcad-geometry, and 25 Phase 5 upstream-lemma tasks remain.
+Added verified L3 det3 trilinearity lemmas for all three arguments and documented the latest L1 general-proof attempt in vcad-geometry, and 24 Phase 5 upstream-lemma tasks remain.

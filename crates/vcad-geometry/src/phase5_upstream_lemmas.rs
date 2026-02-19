@@ -38,6 +38,81 @@ pub open spec fn points_on_common_plane_spec(
     &&& plane_dot_spec(normal, d).eqv_spec(offset)
 }
 
+pub open spec fn det3_spec(u: Vec3, v: Vec3, w: Vec3) -> Scalar {
+    u.dot_spec(v.cross_spec(w))
+}
+
+pub proof fn lemma_det3_linear_first_argument(u: Vec3, t: Vec3, v: Vec3, w: Vec3)
+    ensures
+        det3_spec(u.add_spec(t), v, w).eqv_spec(det3_spec(u, v, w).add_spec(det3_spec(t, v, w))),
+{
+    let lhs = det3_spec(u.add_spec(t), v, w);
+    let uvw = det3_spec(u, v, w);
+    let tvw = det3_spec(t, v, w);
+    let c = v.cross_spec(w);
+
+    Vec3::lemma_dot_linear_left(u, t, c);
+    assert(u.add_spec(t).dot_spec(c).eqv_spec(u.dot_spec(c).add_spec(t.dot_spec(c))));
+    assert(lhs == u.add_spec(t).dot_spec(c));
+    assert(uvw == u.dot_spec(c));
+    assert(tvw == t.dot_spec(c));
+    assert(lhs.eqv_spec(uvw.add_spec(tvw)));
+}
+
+pub proof fn lemma_det3_linear_second_argument(u: Vec3, v: Vec3, t: Vec3, w: Vec3)
+    ensures
+        det3_spec(u, v.add_spec(t), w).eqv_spec(det3_spec(u, v, w).add_spec(det3_spec(u, t, w))),
+{
+    let lhs = det3_spec(u, v.add_spec(t), w);
+    let uvw = det3_spec(u, v, w);
+    let utw = det3_spec(u, t, w);
+    let c = v.add_spec(t).cross_spec(w);
+    let c_split = v.cross_spec(w).add_spec(t.cross_spec(w));
+
+    Vec3::lemma_cross_linear_left(v, t, w);
+    assert(c.eqv_spec(c_split));
+    Vec3::lemma_dot_eqv_congruence(u, u, c, c_split);
+    assert(u.dot_spec(c).eqv_spec(u.dot_spec(c_split)));
+    Vec3::lemma_dot_linear_right(u, v.cross_spec(w), t.cross_spec(w));
+    assert(u.dot_spec(c_split).eqv_spec(u.dot_spec(v.cross_spec(w)).add_spec(u.dot_spec(t.cross_spec(w)))));
+    assert(lhs == u.dot_spec(c));
+    assert(uvw == u.dot_spec(v.cross_spec(w)));
+    assert(utw == u.dot_spec(t.cross_spec(w)));
+    Scalar::lemma_eqv_transitive(
+        lhs,
+        u.dot_spec(c_split),
+        u.dot_spec(v.cross_spec(w)).add_spec(u.dot_spec(t.cross_spec(w))),
+    );
+    assert(lhs.eqv_spec(uvw.add_spec(utw)));
+}
+
+pub proof fn lemma_det3_linear_third_argument(u: Vec3, v: Vec3, w: Vec3, t: Vec3)
+    ensures
+        det3_spec(u, v, w.add_spec(t)).eqv_spec(det3_spec(u, v, w).add_spec(det3_spec(u, v, t))),
+{
+    let lhs = det3_spec(u, v, w.add_spec(t));
+    let uvw = det3_spec(u, v, w);
+    let uvt = det3_spec(u, v, t);
+    let c = v.cross_spec(w.add_spec(t));
+    let c_split = v.cross_spec(w).add_spec(v.cross_spec(t));
+
+    Vec3::lemma_cross_linear_right(v, w, t);
+    assert(c.eqv_spec(c_split));
+    Vec3::lemma_dot_eqv_congruence(u, u, c, c_split);
+    assert(u.dot_spec(c).eqv_spec(u.dot_spec(c_split)));
+    Vec3::lemma_dot_linear_right(u, v.cross_spec(w), v.cross_spec(t));
+    assert(u.dot_spec(c_split).eqv_spec(u.dot_spec(v.cross_spec(w)).add_spec(u.dot_spec(v.cross_spec(t)))));
+    assert(lhs == u.dot_spec(c));
+    assert(uvw == u.dot_spec(v.cross_spec(w)));
+    assert(uvt == u.dot_spec(v.cross_spec(t)));
+    Scalar::lemma_eqv_transitive(
+        lhs,
+        u.dot_spec(c_split),
+        u.dot_spec(v.cross_spec(w)).add_spec(u.dot_spec(v.cross_spec(t))),
+    );
+    assert(lhs.eqv_spec(uvw.add_spec(uvt)));
+}
+
 proof fn lemma_point3_as_vec_sub_spec(p: Point3, q: Point3)
     ensures
         point3_as_vec_spec(p).sub_spec(point3_as_vec_spec(q)) == p.sub_spec(q),
