@@ -2600,23 +2600,19 @@ pub fn runtime_check_geometric_topological_consistency_triangle_or_quad_coplanar
         return false;
     }
 
-    let coplanarity_complete_ok =
-        runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_complete_from_phase5_runtime_bundle_sound_bridge(
-            m,
-        );
-    if !coplanarity_complete_ok {
-        return false;
-    }
-
     proof {
         assert(
             geometric_sound_ok
                 ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m)
         );
         assert(geometric_sound_ok ==> mesh_runtime_geometric_topological_consistency_with_geometry_spec(m));
+        assert(
+            geometric_sound_ok
+                && mesh_runtime_all_faces_triangle_or_quad_cycles_spec(m)
+                ==> mesh_runtime_all_faces_coplanar_spec(m)
+        );
         assert(mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
         assert(mesh_runtime_geometric_topological_consistency_with_geometry_spec(m));
-        assert(coplanarity_complete_ok ==> mesh_runtime_all_faces_coplanar_spec(m));
         assert(mesh_runtime_all_faces_coplanar_spec(m));
     }
 
@@ -2653,6 +2649,9 @@ pub fn check_geometric_topological_consistency_constructive(
                 && (w.api_ok
                     && mesh_runtime_all_faces_triangle_cycles_spec(m)
                     ==> mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m))
+                && (w.api_ok
+                    && mesh_runtime_all_faces_triangle_or_quad_cycles_spec(m)
+                    ==> mesh_runtime_all_faces_coplanar_spec(m))
                 && (w.api_ok ==> mesh_geometric_topological_consistency_spec(m@)),
             Option::None => true,
         },
@@ -2875,6 +2874,24 @@ pub fn check_geometric_topological_consistency_constructive(
                 assert(mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m));
             }
         };
+        assert(
+            w.api_ok
+                && mesh_runtime_all_faces_triangle_or_quad_cycles_spec(m)
+                ==> mesh_runtime_all_faces_coplanar_spec(m)
+        ) by {
+            if w.api_ok && mesh_runtime_all_faces_triangle_or_quad_cycles_spec(m) {
+                assert(mesh_runtime_geometric_topological_consistency_with_geometry_spec(m));
+                lemma_mesh_runtime_geometric_topological_consistency_with_geometry_implies_mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle(
+                    m,
+                );
+                assert(mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
+                assert(mesh_runtime_all_faces_oriented_seed0_planes_spec(m));
+                lemma_mesh_runtime_all_faces_oriented_seed0_planes_and_triangle_or_quad_cycles_imply_all_faces_coplanar(
+                    m,
+                );
+                assert(mesh_runtime_all_faces_coplanar_spec(m));
+            }
+        };
         assert(w.api_ok ==> mesh_geometric_topological_consistency_spec(m@)) by {
             if w.api_ok {
                 assert(mesh_geometric_topological_consistency_spec(m@));
@@ -2976,6 +2993,8 @@ pub fn runtime_check_geometric_topological_consistency_sound_bridge(m: &Mesh) ->
         out ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m),
         out ==> mesh_runtime_geometric_topological_consistency_with_geometry_spec(m),
         out ==> mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(m),
+        out && mesh_runtime_all_faces_triangle_or_quad_cycles_spec(m)
+            ==> mesh_runtime_all_faces_coplanar_spec(m),
         out ==> mesh_geometric_topological_consistency_spec(m@),
         out ==> mesh_valid_spec(m@),
         out ==> mesh_shared_edge_local_orientation_consistency_spec(m@),
@@ -3007,12 +3026,25 @@ pub fn runtime_check_geometric_topological_consistency_sound_bridge(m: &Mesh) ->
                     m,
                 )
         );
+        assert(
+            constructive_w.api_ok
+                && mesh_runtime_all_faces_triangle_or_quad_cycles_spec(m)
+                ==> mesh_runtime_all_faces_coplanar_spec(m)
+        );
         assert(mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
         assert(mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(m));
         lemma_mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_implies_mesh_geometric_topological_consistency_with_geometry(
             m,
         );
         assert(mesh_runtime_geometric_topological_consistency_with_geometry_spec(m));
+        assert(
+            mesh_runtime_all_faces_triangle_or_quad_cycles_spec(m)
+                ==> mesh_runtime_all_faces_coplanar_spec(m)
+        ) by {
+            if mesh_runtime_all_faces_triangle_or_quad_cycles_spec(m) {
+                assert(mesh_runtime_all_faces_coplanar_spec(m));
+            }
+        };
         assert(mesh_geometric_topological_consistency_spec(m@));
         lemma_mesh_geometric_topological_consistency_implies_mesh_valid_and_shared_edge_local_orientation(
             m@,

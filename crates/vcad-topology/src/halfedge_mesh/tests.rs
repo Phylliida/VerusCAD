@@ -523,6 +523,12 @@ fn assert_constructive_phase5_gate_parity(mesh: &Mesh, label: &str) {
             mesh.check_no_zero_length_geometric_edges(),
             "geometric sound bridge should imply non-zero geometric edges for {label}"
         );
+        if mesh_all_faces_are_triangles_or_quads(mesh) {
+            assert!(
+                mesh.check_face_coplanarity(),
+                "geometric sound bridge should imply runtime coplanarity for triangle/quad faces in {label}"
+            );
+        }
     }
 
     let geometric_constructive = check_geometric_topological_consistency_constructive(mesh)

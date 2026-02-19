@@ -195,6 +195,30 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) and P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with a triangle/quad aggregate-sound-bridge coplanarity carry-through strengthening in:
+  - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
+  - `src/halfedge_mesh/tests.rs`.
+  - strengthened aggregate constructive witness guarantees:
+    - `check_geometric_topological_consistency_constructive` now additionally proves:
+      - `(w.api_ok && mesh_runtime_all_faces_triangle_or_quad_cycles_spec(m)) ==> mesh_runtime_all_faces_coplanar_spec(m)`.
+  - strengthened base aggregate runtime sound bridge guarantees:
+    - `runtime_check_geometric_topological_consistency_sound_bridge` now additionally proves:
+      - `(out && mesh_runtime_all_faces_triangle_or_quad_cycles_spec(m)) ==> mesh_runtime_all_faces_coplanar_spec(m)`.
+  - simplified triangle/quad aggregate coplanarity wrapper:
+    - `runtime_check_geometric_topological_consistency_triangle_or_quad_coplanarity_sound_bridge` now relies on the strengthened base aggregate sound bridge implication instead of re-running an extra triangle/quad coplanarity completion wrapper.
+  - strengthened parity lock coverage:
+    - `assert_constructive_phase5_gate_parity` now explicitly checks that a passing base aggregate sound bridge implies runtime coplanarity whenever all faces are triangles or quads.
+  - outcome:
+    - the base aggregate sound bridge now carries an explicit triangle/quad full-coplanarity consequence (`check_geometric_topological_consistency` sound path -> `mesh_runtime_all_faces_coplanar_spec` under the triangle/quad face-cycle precondition), reducing P5.1/P5.7 closure boilerplate while checklist status remains unchanged.
+- 2026-02-19: Failed attempts in this P5.1/P5.7 triangle/quad aggregate-sound-bridge coplanarity carry-through pass: none.
+- 2026-02-19: Revalidated after the P5.1/P5.7 triangle/quad aggregate-sound-bridge coplanarity carry-through strengthening:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (92 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" geometric_consistency_triangle_or_quad_coplanarity_sound_bridge_matches_runtime_checker` (1 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (375 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (412 verified, 0 errors)
 - 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) and P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with a triangle/quad aggregate-soundness-to-full-coplanarity bridge increment in:
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
   - `src/halfedge_mesh/tests.rs`.

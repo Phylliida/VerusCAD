@@ -1,1 +1,1 @@
-Added a triangle/quad aggregate-soundness-to-full-coplanarity bridge with parity coverage, revalidated the vcad-topology test and verification matrix, and 8 burndown tasks remain.
+Strengthened the aggregate geometric-consistency sound bridge to carry triangle/quad full-coplanarity (plus constructive/parity wiring), revalidated the vcad-topology test and verification matrix, and 8 burndown tasks remain.
