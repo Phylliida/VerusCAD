@@ -4,6 +4,7 @@ pub mod orientation_predicates;
 pub mod phase5_upstream_lemmas;
 pub mod segment_intersection;
 pub mod segment_polygon_overlap;
+pub mod segment_triangle_intersection;
 pub mod sidedness;
 
 #[cfg(all(feature = "verus-proofs", verus_keep_ghost))]

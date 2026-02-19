@@ -216,6 +216,27 @@ Blocks: `P5.5` intersection checker soundness (narrow phase).
   - [ ] segment-triangle intersection (`ray/segment-plane parameter` + barycentric containment).
     - Audit note (2026-02-19): topology currently composes plane crossing/intersection with a local
       in-face boundary test; upstream still needs a unified iff wrapper at the geometry boundary.
+    - Update (2026-02-19, strict-wrapper runtime pass): added
+      `crates/vcad-geometry/src/segment_triangle_intersection.rs` with:
+      - `segment_triangle_intersection_point_strict`:
+        strict segment-plane witness (`segment_plane_intersection_point_strict`) +
+        projected triangle boundary-inclusive containment check.
+      - `segment_triangle_intersects_strict` boolean wrapper.
+      - runtime regression tests for inside-hit, outside-hit, endpoint-on-plane
+        (non-strict reject), coplanar segment reject, and degenerate-triangle reject.
+    - Remaining gap (post strict-wrapper runtime pass): still missing a
+      `verus_keep_ghost` iff/refinement theorem tying the new runtime wrapper to
+      an explicit existential geometric spec (`true <==> exists p` on segment and
+      in triangle on the support plane).
+    - Verification attempt note (2026-02-19, strict-wrapper runtime pass):
+      `cargo test -p vcad-geometry` passes in this environment.
+    - Verification attempt note (2026-02-19, strict-wrapper runtime pass):
+      `cargo test -p vcad-geometry --features verus-proofs` passes in this
+      environment.
+    - Verification attempt note (2026-02-19, strict-wrapper runtime pass):
+      `RUSTFLAGS='--cfg verus_keep_ghost' cargo test -p vcad-geometry --features verus-proofs`
+      fails on stable in this environment because Verus macro crates require
+      nightly-only `#![feature(...)]`.
   - [ ] coplanar segment-segment intersection (2D projection + interval overlap).
     - Update (2026-02-19, proper-totality pass): endpoint-touch witness-soundness plus
       `EndpointTouch -> is_some` and `Proper -> is_some` totality are now landed; remaining
