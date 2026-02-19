@@ -195,6 +195,23 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.11 scalability constant-factor cleanup in
+  `src/halfedge_mesh/validation.rs`:
+  - removed redundant `check_face_corner_non_collinearity()` pre-gates from Phase 5 checkers
+    that already require `check_face_coplanarity()`:
+    - `check_face_convexity`;
+    - `check_face_plane_consistency`;
+    - `check_outward_face_normals_relative_to_reference_impl`;
+    - `check_no_forbidden_face_face_intersections_impl`;
+    - `face_pair_has_forbidden_intersection_for_testing`.
+  - rationale: `check_face_coplanarity()` already rejects seed-0 collinear faces, so these extra
+    pre-gates were duplicate full-face passes with no behavioral effect; this keeps checker outputs
+    unchanged while reducing repeated O(H) traversals in coplanarity-dependent paths.
+- 2026-02-19: Failed attempts in this P5.11 constant-factor cleanup pass: none.
+- 2026-02-19: Revalidated after the P5.11 constant-factor cleanup:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
 - 2026-02-19: Completed a P5.1 runtime-checker-correctness completeness-precondition tightening
   increment across
   `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs` and

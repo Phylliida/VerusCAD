@@ -187,7 +187,7 @@ impl Mesh {
         if !self.check_index_bounds() || !self.check_face_cycles() {
             return false;
         }
-        if !self.check_face_coplanarity() || !self.check_face_corner_non_collinearity() {
+        if !self.check_face_coplanarity() {
             return false;
         }
 
@@ -363,7 +363,7 @@ impl Mesh {
         if !self.check_index_bounds() || !self.check_face_cycles() {
             return false;
         }
-        if !self.check_face_coplanarity() || !self.check_face_corner_non_collinearity() {
+        if !self.check_face_coplanarity() {
             return false;
         }
 
@@ -450,7 +450,7 @@ impl Mesh {
         if !self.check_index_bounds() || !self.check_face_cycles() {
             return false;
         }
-        if !self.check_face_coplanarity() || !self.check_face_corner_non_collinearity() {
+        if !self.check_face_coplanarity() {
             return false;
         }
 
@@ -1101,7 +1101,7 @@ impl Mesh {
         if !self.check_no_zero_length_geometric_edges() {
             return false;
         }
-        if !self.check_face_coplanarity() || !self.check_face_corner_non_collinearity() {
+        if !self.check_face_coplanarity() {
             return false;
         }
         if !self.check_face_convexity() {
@@ -1194,7 +1194,7 @@ impl Mesh {
         if !self.check_no_zero_length_geometric_edges() {
             return None;
         }
-        if !self.check_face_coplanarity() || !self.check_face_corner_non_collinearity() {
+        if !self.check_face_coplanarity() {
             return None;
         }
         if !self.check_face_convexity() {
