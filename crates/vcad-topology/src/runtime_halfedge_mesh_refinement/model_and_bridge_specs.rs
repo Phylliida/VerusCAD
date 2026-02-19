@@ -1021,6 +1021,14 @@ pub open spec fn mesh_all_faces_triangle_cycles_spec(m: MeshModel) -> bool {
 }
 
 #[cfg(verus_keep_ghost)]
+pub open spec fn mesh_all_faces_quad_cycles_spec(m: MeshModel) -> bool {
+    &&& mesh_index_bounds_spec(m)
+    &&& mesh_face_next_cycles_spec(m)
+    &&& forall|f: int|
+        0 <= f < mesh_face_count_spec(m) ==> #[trigger] mesh_face_cycle_witness_spec(m, f, 4)
+}
+
+#[cfg(verus_keep_ghost)]
 pub open spec fn mesh_all_faces_seed0_corner_non_collinear_spec(
     m: MeshModel,
     vertex_positions: Seq<vcad_math::point3::Point3>,
@@ -1869,6 +1877,379 @@ proof fn lemma_mesh_indices_in_0_1_2(i: int)
 }
 
 #[cfg(verus_keep_ghost)]
+pub open spec fn mesh_quad_point_at_index_spec(
+    idx: int,
+    p0: vcad_math::point3::Point3,
+    p1: vcad_math::point3::Point3,
+    p2: vcad_math::point3::Point3,
+    p3: vcad_math::point3::Point3,
+) -> vcad_math::point3::Point3 {
+    if idx == 0 {
+        p0
+    } else if idx == 1 {
+        p1
+    } else if idx == 2 {
+        p2
+    } else {
+        p3
+    }
+}
+
+#[cfg(verus_keep_ghost)]
+proof fn lemma_mesh_indices_in_0_1_2_3(i: int)
+    requires
+        0 <= i < 4,
+    ensures
+        i == 0 || i == 1 || i == 2 || i == 3,
+{
+    if i <= 0 {
+        assert(0 <= i);
+        assert(i == 0);
+    } else if i <= 1 {
+        assert(i > 0);
+        assert(i >= 1) by {
+            if i >= 1 {
+            } else {
+                assert(i < 1);
+                assert(i <= 0);
+                assert(false);
+            }
+        };
+        assert(i == 1);
+    } else if i <= 2 {
+        assert(i > 1);
+        assert(i >= 2) by {
+            if i >= 2 {
+            } else {
+                assert(i < 2);
+                assert(i <= 1);
+                assert(false);
+            }
+        };
+        assert(i <= 2);
+        assert(i == 2);
+    } else {
+        assert(i > 2);
+        assert(i < 4);
+        assert(i >= 3) by {
+            if i >= 3 {
+            } else {
+                assert(i < 3);
+                assert(i <= 2);
+                assert(false);
+            }
+        };
+        assert(i <= 3) by {
+            if i <= 3 {
+            } else {
+                assert(i > 3);
+                assert(i >= 4);
+                assert(false);
+            }
+        };
+        assert(i == 3);
+    }
+}
+
+#[cfg(verus_keep_ghost)]
+proof fn lemma_mesh_three_pairwise_distinct_indices_in_0_1_2_cover_all(i: int, j: int, l: int)
+    requires
+        0 <= i < 3,
+        0 <= j < 3,
+        0 <= l < 3,
+        i != j,
+        i != l,
+        j != l,
+    ensures
+        (i == 0 || j == 0 || l == 0),
+        (i == 1 || j == 1 || l == 1),
+        (i == 2 || j == 2 || l == 2),
+{
+    lemma_mesh_indices_in_0_1_2(i);
+    lemma_mesh_indices_in_0_1_2(j);
+    lemma_mesh_indices_in_0_1_2(l);
+
+    if i == 0 {
+        assert(j == 1 || j == 2) by {
+            assert(j == 0 || j == 1 || j == 2);
+            if j == 0 {
+                assert(i != j);
+                assert(false);
+            }
+        };
+        if j == 1 {
+            assert(l == 2) by {
+                assert(l == 0 || l == 1 || l == 2);
+                if l == 0 {
+                    assert(i == 0);
+                    assert(i != l);
+                    assert(false);
+                } else if l == 1 {
+                    assert(j == 1);
+                    assert(j != l);
+                    assert(false);
+                }
+            };
+        } else {
+            assert(j == 2);
+            assert(l == 1) by {
+                assert(l == 0 || l == 1 || l == 2);
+                if l == 0 {
+                    assert(i == 0);
+                    assert(i != l);
+                    assert(false);
+                } else if l == 2 {
+                    assert(j == 2);
+                    assert(j != l);
+                    assert(false);
+                }
+            };
+        }
+    } else if i == 1 {
+        assert(j == 0 || j == 2) by {
+            assert(j == 0 || j == 1 || j == 2);
+            if j == 1 {
+                assert(i != j);
+                assert(false);
+            }
+        };
+        if j == 0 {
+            assert(l == 2) by {
+                assert(l == 0 || l == 1 || l == 2);
+                if l == 0 {
+                    assert(j == 0);
+                    assert(j != l);
+                    assert(false);
+                } else if l == 1 {
+                    assert(i == 1);
+                    assert(i != l);
+                    assert(false);
+                }
+            };
+        } else {
+            assert(j == 2);
+            assert(l == 0) by {
+                assert(l == 0 || l == 1 || l == 2);
+                if l == 1 {
+                    assert(i == 1);
+                    assert(i != l);
+                    assert(false);
+                } else if l == 2 {
+                    assert(j == 2);
+                    assert(j != l);
+                    assert(false);
+                }
+            };
+        }
+    } else {
+        assert(i == 2);
+        assert(j == 0 || j == 1) by {
+            assert(j == 0 || j == 1 || j == 2);
+            if j == 2 {
+                assert(i != j);
+                assert(false);
+            }
+        };
+        if j == 0 {
+            assert(l == 1) by {
+                assert(l == 0 || l == 1 || l == 2);
+                if l == 0 {
+                    assert(j == 0);
+                    assert(j != l);
+                    assert(false);
+                } else if l == 2 {
+                    assert(i == 2);
+                    assert(i != l);
+                    assert(false);
+                }
+            };
+        } else {
+            assert(j == 1);
+            assert(l == 0) by {
+                assert(l == 0 || l == 1 || l == 2);
+                if l == 1 {
+                    assert(j == 1);
+                    assert(j != l);
+                    assert(false);
+                } else if l == 2 {
+                    assert(i == 2);
+                    assert(i != l);
+                    assert(false);
+                }
+            };
+        }
+    }
+
+    assert(i == 0 || j == 0 || l == 0);
+    assert(i == 1 || j == 1 || l == 1);
+    assert(i == 2 || j == 2 || l == 2);
+}
+
+#[cfg(verus_keep_ghost)]
+proof fn lemma_mesh_four_pairwise_distinct_indices_in_0_1_2_impossible(
+    i: int,
+    j: int,
+    l: int,
+    d: int,
+)
+    requires
+        0 <= i < 3,
+        0 <= j < 3,
+        0 <= l < 3,
+        0 <= d < 3,
+        i != j,
+        i != l,
+        i != d,
+        j != l,
+        j != d,
+        l != d,
+    ensures
+        false,
+{
+    lemma_mesh_three_pairwise_distinct_indices_in_0_1_2_cover_all(i, j, l);
+    lemma_mesh_indices_in_0_1_2(d);
+    if d == 0 {
+        assert(i == 0 || j == 0 || l == 0);
+        if i == 0 {
+            assert(i == d);
+            assert(i != d);
+            assert(false);
+        } else if j == 0 {
+            assert(j == d);
+            assert(j != d);
+            assert(false);
+        } else {
+            assert(l == 0);
+            assert(l == d);
+            assert(l != d);
+            assert(false);
+        }
+    } else if d == 1 {
+        assert(i == 1 || j == 1 || l == 1);
+        if i == 1 {
+            assert(i == d);
+            assert(i != d);
+            assert(false);
+        } else if j == 1 {
+            assert(j == d);
+            assert(j != d);
+            assert(false);
+        } else {
+            assert(l == 1);
+            assert(l == d);
+            assert(l != d);
+            assert(false);
+        }
+    } else {
+        assert(d == 2);
+        assert(i == 2 || j == 2 || l == 2);
+        if i == 2 {
+            assert(i == d);
+            assert(i != d);
+            assert(false);
+        } else if j == 2 {
+            assert(j == d);
+            assert(j != d);
+            assert(false);
+        } else {
+            assert(l == 2);
+            assert(l == d);
+            assert(l != d);
+            assert(false);
+        }
+    }
+}
+
+#[cfg(verus_keep_ghost)]
+proof fn lemma_mesh_quad_indices_pairwise_distinct_and_in_range_imply_contains_3(
+    i: int,
+    j: int,
+    l: int,
+    d: int,
+)
+    requires
+        0 <= i < 4,
+        0 <= j < 4,
+        0 <= l < 4,
+        0 <= d < 4,
+        i != j,
+        i != l,
+        i != d,
+        j != l,
+        j != d,
+        l != d,
+    ensures
+        i == 3 || j == 3 || l == 3 || d == 3,
+{
+    if !(i == 3 || j == 3 || l == 3 || d == 3) {
+        lemma_mesh_indices_in_0_1_2_3(i);
+        lemma_mesh_indices_in_0_1_2_3(j);
+        lemma_mesh_indices_in_0_1_2_3(l);
+        lemma_mesh_indices_in_0_1_2_3(d);
+
+        assert(i == 0 || i == 1 || i == 2) by {
+            assert(i == 0 || i == 1 || i == 2 || i == 3);
+            assert(!(i == 3 || j == 3 || l == 3 || d == 3));
+            assert(i != 3);
+            if i == 3 {
+                assert(false);
+            }
+        };
+        assert(j == 0 || j == 1 || j == 2) by {
+            assert(j == 0 || j == 1 || j == 2 || j == 3);
+            assert(!(i == 3 || j == 3 || l == 3 || d == 3));
+            assert(j != 3);
+            if j == 3 {
+                assert(false);
+            }
+        };
+        assert(l == 0 || l == 1 || l == 2) by {
+            assert(l == 0 || l == 1 || l == 2 || l == 3);
+            assert(!(i == 3 || j == 3 || l == 3 || d == 3));
+            assert(l != 3);
+            if l == 3 {
+                assert(false);
+            }
+        };
+        assert(d == 0 || d == 1 || d == 2) by {
+            assert(d == 0 || d == 1 || d == 2 || d == 3);
+            assert(!(i == 3 || j == 3 || l == 3 || d == 3));
+            assert(d != 3);
+            if d == 3 {
+                assert(false);
+            }
+        };
+
+        assert(0 <= i < 3) by {
+            assert(0 <= i);
+            if i == 0 || i == 1 || i == 2 {
+                assert(i < 3);
+            }
+        };
+        assert(0 <= j < 3) by {
+            assert(0 <= j);
+            if j == 0 || j == 1 || j == 2 {
+                assert(j < 3);
+            }
+        };
+        assert(0 <= l < 3) by {
+            assert(0 <= l);
+            if l == 0 || l == 1 || l == 2 {
+                assert(l < 3);
+            }
+        };
+        assert(0 <= d < 3) by {
+            assert(0 <= d);
+            if d == 0 || d == 1 || d == 2 {
+                assert(d < 3);
+            }
+        };
+
+        lemma_mesh_four_pairwise_distinct_indices_in_0_1_2_impossible(i, j, l, d);
+    }
+}
+
+#[cfg(verus_keep_ghost)]
 proof fn lemma_mesh_orient3d_first_three_repeated_implies_coplanar(
     a: vcad_math::point3::Point3,
     b: vcad_math::point3::Point3,
@@ -2343,6 +2724,460 @@ pub proof fn lemma_mesh_all_faces_coplanar_seed0_fixed_witness_and_triangle_cycl
         assert(mesh_face_coplanar_seed0_fixed_witness_spec(m, vertex_positions, f));
         assert(mesh_face_cycle_witness_spec(m, f, 3));
         lemma_mesh_face_seed0_fixed_witness_and_triangle_cycle_imply_face_coplanar_spec(
+            m,
+            vertex_positions,
+            f,
+        );
+        assert(mesh_face_coplanar_spec(m, vertex_positions, f));
+    };
+    assert(mesh_all_faces_coplanar_spec(m, vertex_positions));
+}
+
+#[cfg(verus_keep_ghost)]
+proof fn lemma_mesh_quad_permutation_of_base_coplanar(
+    i: int,
+    j: int,
+    l: int,
+    d: int,
+    p0: vcad_math::point3::Point3,
+    p1: vcad_math::point3::Point3,
+    p2: vcad_math::point3::Point3,
+    p3: vcad_math::point3::Point3,
+)
+    requires
+        0 <= i < 4,
+        0 <= j < 4,
+        0 <= l < 4,
+        0 <= d < 4,
+        i != j,
+        i != l,
+        i != d,
+        j != l,
+        j != d,
+        l != d,
+        vcad_math::orientation3::is_coplanar(p0, p1, p2, p3),
+    ensures
+        vcad_math::orientation3::is_coplanar(
+            mesh_quad_point_at_index_spec(i, p0, p1, p2, p3),
+            mesh_quad_point_at_index_spec(j, p0, p1, p2, p3),
+            mesh_quad_point_at_index_spec(l, p0, p1, p2, p3),
+            mesh_quad_point_at_index_spec(d, p0, p1, p2, p3),
+        ),
+{
+    let target = vcad_math::orientation3::is_coplanar(
+        mesh_quad_point_at_index_spec(i, p0, p1, p2, p3),
+        mesh_quad_point_at_index_spec(j, p0, p1, p2, p3),
+        mesh_quad_point_at_index_spec(l, p0, p1, p2, p3),
+        mesh_quad_point_at_index_spec(d, p0, p1, p2, p3),
+    );
+
+    let mut ia = i;
+    let mut ib = j;
+    let mut ic = l;
+    let mut id = d;
+    let mut a = mesh_quad_point_at_index_spec(ia, p0, p1, p2, p3);
+    let mut b = mesh_quad_point_at_index_spec(ib, p0, p1, p2, p3);
+    let mut c = mesh_quad_point_at_index_spec(ic, p0, p1, p2, p3);
+    let mut dp = mesh_quad_point_at_index_spec(id, p0, p1, p2, p3);
+
+    assert(target == vcad_math::orientation3::is_coplanar(a, b, c, dp));
+    assert(a == mesh_quad_point_at_index_spec(ia, p0, p1, p2, p3));
+    assert(b == mesh_quad_point_at_index_spec(ib, p0, p1, p2, p3));
+    assert(c == mesh_quad_point_at_index_spec(ic, p0, p1, p2, p3));
+    assert(dp == mesh_quad_point_at_index_spec(id, p0, p1, p2, p3));
+
+    lemma_mesh_quad_indices_pairwise_distinct_and_in_range_imply_contains_3(i, j, l, d);
+    if id != 3 {
+        if ia == 3 {
+            let oa = a;
+            let ob = b;
+            let oc = c;
+            let od = dp;
+            let oid = id;
+
+            lemma_mesh_orient3d_coplanar_invariant_under_swap_ad(oa, ob, oc, od);
+            assert(vcad_math::orientation3::is_coplanar(oa, ob, oc, od)
+                == vcad_math::orientation3::is_coplanar(od, ob, oc, oa));
+            assert(target == vcad_math::orientation3::is_coplanar(oa, ob, oc, od));
+            assert(target == vcad_math::orientation3::is_coplanar(od, ob, oc, oa));
+
+            a = od;
+            b = ob;
+            c = oc;
+            dp = oa;
+
+            ia = oid;
+            id = 3;
+
+            assert(a == mesh_quad_point_at_index_spec(ia, p0, p1, p2, p3));
+            assert(b == mesh_quad_point_at_index_spec(ib, p0, p1, p2, p3));
+            assert(c == mesh_quad_point_at_index_spec(ic, p0, p1, p2, p3));
+            assert(dp == mesh_quad_point_at_index_spec(id, p0, p1, p2, p3));
+        } else if ib == 3 {
+            let oa = a;
+            let ob = b;
+            let oc = c;
+            let od = dp;
+            let oid = id;
+
+            lemma_mesh_orient3d_coplanar_invariant_under_swap_bd(oa, ob, oc, od);
+            assert(vcad_math::orientation3::is_coplanar(oa, ob, oc, od)
+                == vcad_math::orientation3::is_coplanar(oa, od, oc, ob));
+            assert(target == vcad_math::orientation3::is_coplanar(oa, ob, oc, od));
+            assert(target == vcad_math::orientation3::is_coplanar(oa, od, oc, ob));
+
+            a = oa;
+            b = od;
+            c = oc;
+            dp = ob;
+
+            ib = oid;
+            id = 3;
+
+            assert(a == mesh_quad_point_at_index_spec(ia, p0, p1, p2, p3));
+            assert(b == mesh_quad_point_at_index_spec(ib, p0, p1, p2, p3));
+            assert(c == mesh_quad_point_at_index_spec(ic, p0, p1, p2, p3));
+            assert(dp == mesh_quad_point_at_index_spec(id, p0, p1, p2, p3));
+        } else {
+            assert(ic == 3) by {
+                assert(i == 3 || j == 3 || l == 3 || d == 3);
+                assert(ia != 3);
+                assert(ib != 3);
+                assert(id != 3);
+            };
+            let oa = a;
+            let ob = b;
+            let oc = c;
+            let od = dp;
+            let oid = id;
+
+            lemma_mesh_orient3d_coplanar_invariant_under_swap_cd(oa, ob, oc, od);
+            assert(vcad_math::orientation3::is_coplanar(oa, ob, oc, od)
+                == vcad_math::orientation3::is_coplanar(oa, ob, od, oc));
+            assert(target == vcad_math::orientation3::is_coplanar(oa, ob, oc, od));
+            assert(target == vcad_math::orientation3::is_coplanar(oa, ob, od, oc));
+
+            a = oa;
+            b = ob;
+            c = od;
+            dp = oc;
+
+            ic = oid;
+            id = 3;
+
+            assert(a == mesh_quad_point_at_index_spec(ia, p0, p1, p2, p3));
+            assert(b == mesh_quad_point_at_index_spec(ib, p0, p1, p2, p3));
+            assert(c == mesh_quad_point_at_index_spec(ic, p0, p1, p2, p3));
+            assert(dp == mesh_quad_point_at_index_spec(id, p0, p1, p2, p3));
+        }
+    }
+    assert(id == 3);
+    assert(target == vcad_math::orientation3::is_coplanar(a, b, c, dp));
+    assert(ia != ib && ia != ic && ia != id && ib != ic && ib != id && ic != id);
+    assert(0 <= ia < 4 && 0 <= ib < 4 && 0 <= ic < 4 && 0 <= id < 4);
+    assert(ia != 3 && ib != 3 && ic != 3);
+
+    lemma_mesh_indices_in_0_1_2_3(ia);
+    lemma_mesh_indices_in_0_1_2_3(ib);
+    lemma_mesh_indices_in_0_1_2_3(ic);
+    assert(ia == 0 || ia == 1 || ia == 2) by {
+        assert(ia == 0 || ia == 1 || ia == 2 || ia == 3);
+        assert(ia != 3);
+        if ia == 3 {
+            assert(false);
+        }
+    };
+    assert(ib == 0 || ib == 1 || ib == 2) by {
+        assert(ib == 0 || ib == 1 || ib == 2 || ib == 3);
+        assert(ib != 3);
+        if ib == 3 {
+            assert(false);
+        }
+    };
+    assert(ic == 0 || ic == 1 || ic == 2) by {
+        assert(ic == 0 || ic == 1 || ic == 2 || ic == 3);
+        assert(ic != 3);
+        if ic == 3 {
+            assert(false);
+        }
+    };
+    assert(0 <= ia < 3);
+    assert(0 <= ib < 3);
+    assert(0 <= ic < 3);
+
+    lemma_mesh_three_pairwise_distinct_indices_in_0_1_2_cover_all(ia, ib, ic);
+    assert(ia == 2 || ib == 2 || ic == 2);
+
+    if ic != 2 {
+        if ia == 2 {
+            let oa = a;
+            let ob = b;
+            let oc = c;
+            let od = dp;
+            let oic = ic;
+
+            lemma_mesh_orient3d_coplanar_invariant_under_swap_ac(oa, ob, oc, od);
+            assert(vcad_math::orientation3::is_coplanar(oa, ob, oc, od)
+                == vcad_math::orientation3::is_coplanar(oc, ob, oa, od));
+            assert(target == vcad_math::orientation3::is_coplanar(oa, ob, oc, od));
+            assert(target == vcad_math::orientation3::is_coplanar(oc, ob, oa, od));
+
+            a = oc;
+            b = ob;
+            c = oa;
+            dp = od;
+
+            ia = oic;
+            ic = 2;
+        } else if ib == 2 {
+            let oa = a;
+            let ob = b;
+            let oc = c;
+            let od = dp;
+            let oic = ic;
+
+            lemma_mesh_orient3d_coplanar_invariant_under_swap_bc(oa, ob, oc, od);
+            assert(vcad_math::orientation3::is_coplanar(oa, ob, oc, od)
+                == vcad_math::orientation3::is_coplanar(oa, oc, ob, od));
+            assert(target == vcad_math::orientation3::is_coplanar(oa, ob, oc, od));
+            assert(target == vcad_math::orientation3::is_coplanar(oa, oc, ob, od));
+
+            a = oa;
+            b = oc;
+            c = ob;
+            dp = od;
+
+            ib = oic;
+            ic = 2;
+        } else {
+            assert(ic == 2);
+            assert(false);
+        }
+    }
+    assert(ic == 2);
+    assert(target == vcad_math::orientation3::is_coplanar(a, b, c, dp));
+    assert(ia != ib && ia != ic && ia != id && ib != ic && ib != id && ic != id);
+
+    lemma_mesh_indices_in_0_1_2(ia);
+    lemma_mesh_indices_in_0_1_2(ib);
+    assert(ia == 0 || ia == 1) by {
+        assert(ia == 0 || ia == 1 || ia == 2);
+        assert(ia != 2);
+        if ia == 2 {
+            assert(false);
+        }
+    };
+    assert(ib == 0 || ib == 1) by {
+        assert(ib == 0 || ib == 1 || ib == 2);
+        assert(ib != 2);
+        if ib == 2 {
+            assert(false);
+        }
+    };
+
+    if ib != 1 {
+        assert(ib == 0) by {
+            assert(ib == 0 || ib == 1);
+            assert(ib != 1);
+            if ib == 1 {
+                assert(false);
+            }
+        };
+        assert(ia == 1) by {
+            assert(ia == 0 || ia == 1);
+            assert(ia != ib);
+            if ia == 0 {
+                assert(ib == 0);
+                assert(false);
+            }
+        };
+
+        let oa = a;
+        let ob = b;
+        let oc = c;
+        let od = dp;
+
+        lemma_mesh_orient3d_coplanar_invariant_under_swap_ab(oa, ob, oc, od);
+        assert(vcad_math::orientation3::is_coplanar(oa, ob, oc, od)
+            == vcad_math::orientation3::is_coplanar(ob, oa, oc, od));
+        assert(target == vcad_math::orientation3::is_coplanar(oa, ob, oc, od));
+        assert(target == vcad_math::orientation3::is_coplanar(ob, oa, oc, od));
+
+        a = ob;
+        b = oa;
+        c = oc;
+        dp = od;
+
+        ia = 0;
+        ib = 1;
+    }
+    assert(ib == 1);
+    assert(ia == 0) by {
+        assert(ia == 0 || ia == 1);
+        assert(ia != ib);
+        if ia == 1 {
+            assert(ib == 1);
+            assert(false);
+        }
+    };
+    assert(ic == 2);
+    assert(id == 3);
+
+    assert(a == mesh_quad_point_at_index_spec(ia, p0, p1, p2, p3));
+    assert(b == mesh_quad_point_at_index_spec(ib, p0, p1, p2, p3));
+    assert(c == mesh_quad_point_at_index_spec(ic, p0, p1, p2, p3));
+    assert(dp == mesh_quad_point_at_index_spec(id, p0, p1, p2, p3));
+    assert(a == p0);
+    assert(b == p1);
+    assert(c == p2);
+    assert(dp == p3);
+    assert(vcad_math::orientation3::is_coplanar(a, b, c, dp));
+    assert(target == vcad_math::orientation3::is_coplanar(a, b, c, dp));
+    assert(target);
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_face_seed0_fixed_witness_and_quad_cycle_imply_face_coplanar_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+)
+    requires
+        mesh_face_coplanar_seed0_fixed_witness_spec(m, vertex_positions, f),
+        mesh_face_cycle_witness_spec(m, f, 4),
+    ensures
+        mesh_face_coplanar_spec(m, vertex_positions, f),
+{
+    assert(0 <= f < mesh_face_count_spec(m));
+    lemma_mesh_face_coplanar_seed0_fixed_witness_and_face_cycle_witness_imply_fixed_witness_at_cycle_len(
+        m,
+        vertex_positions,
+        f,
+        4,
+    );
+    assert(mesh_face_coplanar_fixed_seed_witness_spec(m, vertex_positions, f, 4, 0));
+
+    let p0 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 0);
+    let p1 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 1);
+    let p2 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 2);
+    let p3 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 3);
+
+    assert(vcad_math::orientation3::is_coplanar(p0, p1, p2, p3)) by {
+        assert(forall|d: int|
+            0 <= d < 4 ==> #[trigger] vcad_math::orientation3::is_coplanar(
+                p0,
+                p1,
+                p2,
+                mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, d),
+            ));
+        assert(0 <= 3 < 4);
+    };
+
+    assert forall|i: int, j: int, l: int, d: int|
+        0 <= i < 4 && 0 <= j < 4 && 0 <= l < 4 && 0 <= d < 4 implies #[trigger]
+            vcad_math::orientation3::is_coplanar(
+                mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, i),
+                mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, j),
+                mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, l),
+                mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, d),
+            ) by {
+        let pi = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, i);
+        let pj = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, j);
+        let pl = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, l);
+        let pd = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, d);
+
+        if i == j || i == l || i == d || j == l || j == d || l == d {
+            lemma_mesh_orient3d_any_repeated_implies_coplanar(pi, pj, pl, pd);
+            assert(vcad_math::orientation3::is_coplanar(pi, pj, pl, pd));
+        } else {
+            assert(i != j && i != l && i != d && j != l && j != d && l != d);
+
+            lemma_mesh_indices_in_0_1_2_3(i);
+            lemma_mesh_indices_in_0_1_2_3(j);
+            lemma_mesh_indices_in_0_1_2_3(l);
+            lemma_mesh_indices_in_0_1_2_3(d);
+
+            if i == 0 {
+                assert(pi == p0);
+            } else if i == 1 {
+                assert(pi == p1);
+            } else if i == 2 {
+                assert(pi == p2);
+            } else {
+                assert(i == 3);
+                assert(pi == p3);
+            }
+            if j == 0 {
+                assert(pj == p0);
+            } else if j == 1 {
+                assert(pj == p1);
+            } else if j == 2 {
+                assert(pj == p2);
+            } else {
+                assert(j == 3);
+                assert(pj == p3);
+            }
+            if l == 0 {
+                assert(pl == p0);
+            } else if l == 1 {
+                assert(pl == p1);
+            } else if l == 2 {
+                assert(pl == p2);
+            } else {
+                assert(l == 3);
+                assert(pl == p3);
+            }
+            if d == 0 {
+                assert(pd == p0);
+            } else if d == 1 {
+                assert(pd == p1);
+            } else if d == 2 {
+                assert(pd == p2);
+            } else {
+                assert(d == 3);
+                assert(pd == p3);
+            }
+
+            lemma_mesh_quad_permutation_of_base_coplanar(i, j, l, d, p0, p1, p2, p3);
+            assert(vcad_math::orientation3::is_coplanar(
+                mesh_quad_point_at_index_spec(i, p0, p1, p2, p3),
+                mesh_quad_point_at_index_spec(j, p0, p1, p2, p3),
+                mesh_quad_point_at_index_spec(l, p0, p1, p2, p3),
+                mesh_quad_point_at_index_spec(d, p0, p1, p2, p3),
+            ));
+            assert(vcad_math::orientation3::is_coplanar(pi, pj, pl, pd));
+        }
+    };
+
+    assert(mesh_face_coplanar_witness_spec(m, vertex_positions, f, 4));
+    assert(exists|k: int| #[trigger] mesh_face_coplanar_witness_spec(m, vertex_positions, f, k)) by {
+        let k = 4;
+        assert(mesh_face_coplanar_witness_spec(m, vertex_positions, f, k));
+    };
+    assert(mesh_face_coplanar_spec(m, vertex_positions, f));
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_all_faces_coplanar_seed0_fixed_witness_and_quad_cycles_imply_all_faces_coplanar(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+)
+    requires
+        mesh_all_faces_coplanar_seed0_fixed_witness_spec(m, vertex_positions),
+        mesh_all_faces_quad_cycles_spec(m),
+    ensures
+        mesh_all_faces_coplanar_spec(m, vertex_positions),
+{
+    assert(mesh_geometry_input_spec(m, vertex_positions));
+    assert forall|f: int|
+        0 <= f < mesh_face_count_spec(m) implies #[trigger] mesh_face_coplanar_spec(
+            m,
+            vertex_positions,
+            f,
+        ) by {
+        assert(mesh_face_coplanar_seed0_fixed_witness_spec(m, vertex_positions, f));
+        assert(mesh_face_cycle_witness_spec(m, f, 4));
+        lemma_mesh_face_seed0_fixed_witness_and_quad_cycle_imply_face_coplanar_spec(
             m,
             vertex_positions,
             f,
@@ -4460,6 +5295,11 @@ pub open spec fn mesh_runtime_all_faces_triangle_cycles_spec(m: &Mesh) -> bool {
 }
 
 #[cfg(verus_keep_ghost)]
+pub open spec fn mesh_runtime_all_faces_quad_cycles_spec(m: &Mesh) -> bool {
+    mesh_all_faces_quad_cycles_spec(m@)
+}
+
+#[cfg(verus_keep_ghost)]
 pub open spec fn mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m: &Mesh) -> bool {
     mesh_all_faces_seed0_corner_non_collinear_spec(m@, mesh_runtime_vertex_positions_spec(m))
 }
@@ -4574,6 +5414,22 @@ pub proof fn lemma_mesh_runtime_all_faces_coplanar_seed0_fixed_witness_and_trian
 }
 
 #[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_runtime_all_faces_coplanar_seed0_fixed_witness_and_quad_cycles_imply_all_faces_coplanar(
+    m: &Mesh,
+)
+    requires
+        mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m),
+        mesh_runtime_all_faces_quad_cycles_spec(m),
+    ensures
+        mesh_runtime_all_faces_coplanar_spec(m),
+{
+    lemma_mesh_all_faces_coplanar_seed0_fixed_witness_and_quad_cycles_imply_all_faces_coplanar(
+        m@,
+        mesh_runtime_vertex_positions_spec(m),
+    );
+}
+
+#[cfg(verus_keep_ghost)]
 pub proof fn lemma_mesh_runtime_all_faces_oriented_seed0_planes_and_triangle_cycles_imply_all_faces_coplanar(
     m: &Mesh,
 )
@@ -4586,6 +5442,23 @@ pub proof fn lemma_mesh_runtime_all_faces_oriented_seed0_planes_and_triangle_cyc
     lemma_mesh_runtime_all_faces_oriented_seed0_planes_imply_all_faces_seed0_fixed_witness(m);
     assert(mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m));
     lemma_mesh_runtime_all_faces_coplanar_seed0_fixed_witness_and_triangle_cycles_imply_all_faces_coplanar(
+        m,
+    );
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_runtime_all_faces_oriented_seed0_planes_and_quad_cycles_imply_all_faces_coplanar(
+    m: &Mesh,
+)
+    requires
+        mesh_runtime_all_faces_oriented_seed0_planes_spec(m),
+        mesh_runtime_all_faces_quad_cycles_spec(m),
+    ensures
+        mesh_runtime_all_faces_coplanar_spec(m),
+{
+    lemma_mesh_runtime_all_faces_oriented_seed0_planes_imply_all_faces_seed0_fixed_witness(m);
+    assert(mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m));
+    lemma_mesh_runtime_all_faces_coplanar_seed0_fixed_witness_and_quad_cycles_imply_all_faces_coplanar(
         m,
     );
 }

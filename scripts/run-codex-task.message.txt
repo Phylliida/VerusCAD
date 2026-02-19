@@ -1,1 +1,1 @@
-Added explicit P5.5 proof corollaries that shared-vertex-only and shared-exactly-one-edge face contacts cannot be classified as forbidden non-adjacent intersections, revalidated vcad-topology proofs/tests, and 8 Phase 5 tasks remain in vcad-topology.
+Added a P5.1 oriented-seed-plane plus quad-cycle coplanarity completeness bridge (proof/model lemmas, constructive wrapper, and parity tests), revalidated vcad-topology, and 8 Phase 5 tasks remain in vcad-topology.

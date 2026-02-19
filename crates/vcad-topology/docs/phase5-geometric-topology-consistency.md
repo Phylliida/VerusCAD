@@ -195,6 +195,44 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) with a quad-cycle completeness bridge increment in:
+  - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`;
+  - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
+  - `src/halfedge_mesh/tests.rs`.
+  - added quad-cycle proof/model surface:
+    - `mesh_all_faces_quad_cycles_spec`;
+    - `mesh_runtime_all_faces_quad_cycles_spec`;
+    - `mesh_quad_point_at_index_spec`;
+    - index-combinatorics lemmas for `{0,1,2,3}` permutation reasoning:
+      - `lemma_mesh_indices_in_0_1_2_3`;
+      - `lemma_mesh_three_pairwise_distinct_indices_in_0_1_2_cover_all`;
+      - `lemma_mesh_four_pairwise_distinct_indices_in_0_1_2_impossible`;
+      - `lemma_mesh_quad_indices_pairwise_distinct_and_in_range_imply_contains_3`;
+    - coplanarity bridge lemmas:
+      - `lemma_mesh_quad_permutation_of_base_coplanar`;
+      - `lemma_mesh_face_seed0_fixed_witness_and_quad_cycle_imply_face_coplanar_spec`;
+      - `lemma_mesh_all_faces_coplanar_seed0_fixed_witness_and_quad_cycles_imply_all_faces_coplanar`;
+      - `lemma_mesh_runtime_all_faces_coplanar_seed0_fixed_witness_and_quad_cycles_imply_all_faces_coplanar`;
+      - `lemma_mesh_runtime_all_faces_oriented_seed0_planes_and_quad_cycles_imply_all_faces_coplanar`.
+  - added constructive wrapper:
+    - `runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_and_quad_face_preconditions`.
+  - added regression parity coverage:
+    - helper `assert_face_coplanarity_seed0_oriented_plane_quad_completeness_bridge_parity`;
+    - helper `mesh_all_faces_are_quads`;
+    - test `face_coplanarity_seed0_oriented_plane_quad_completeness_bridge_matches_geometric_sound_bridge` (quad-only passing/failing fixtures: cube, reflected-cube outward failure, noncoplanar single-quad double-face lift).
+  - outcome: the P5.1 completeness surface now includes a direct oriented-seed-plane route to full coplanarity on quad-only meshes; the remaining non-triangle completeness gap is now concentrated on higher-arity faces (`k > 4`).
+- 2026-02-19: Failed attempt in this P5.1 quad-cycle completeness pass:
+  - initial proof body used `assert forall ... ==> ... by { ... }` in
+    `lemma_mesh_face_seed0_fixed_witness_and_quad_cycle_imply_face_coplanar_spec`, which does not assume the antecedent inside `assert forall` and caused failed preconditions for `lemma_mesh_indices_in_0_1_2_3` during full Verus verification;
+  - resolved by switching the quantified assertion to `implies`, so range hypotheses are available in the quantified body.
+- 2026-02-19: Revalidated after the P5.1 quad-cycle completeness increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (60 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (76 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" face_coplanarity_seed0_oriented_plane_quad_completeness_bridge_matches_geometric_sound_bridge` (1 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (317 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (354 verified, 0 errors)
 - 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) with an oriented-seed-plane + triangle-cycle completeness bridge increment in:
   - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`;
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
