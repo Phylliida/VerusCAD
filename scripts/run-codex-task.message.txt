@@ -1,1 +1,1 @@
-Added a P5.7 aggregate geometric-consistency soundness bridge plus a 40-case randomized constructive/runtime parity harness with full revalidation; 10 Phase 5 checklist tasks remain.
+Strengthened the P5.7 aggregate sound bridge to export explicit phase-4/shared-edge guarantees and added a noncoplanar strictness-gap regression with full test+verification revalidation; 9 Phase 5 checklist tasks remain.

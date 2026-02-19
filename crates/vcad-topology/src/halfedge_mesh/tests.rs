@@ -2356,6 +2356,32 @@ fn diagnostic_witness_is_real_counterexample(
 
     #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
     #[test]
+    fn noncoplanar_fixture_keeps_phase4_and_shared_edge_orientation_but_fails_aggregate_gate() {
+        let noncoplanar_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(1, 1, 1),
+            RuntimePoint3::from_ints(0, 1, 0),
+        ];
+        let noncoplanar_faces = vec![vec![0, 1, 2, 3], vec![0, 3, 2, 1]];
+        let mesh = Mesh::from_face_cycles(noncoplanar_vertices, &noncoplanar_faces)
+            .expect("noncoplanar quad fixture should build");
+
+        assert!(mesh.is_valid(), "fixture should satisfy Phase 4 validity");
+        assert!(
+            mesh.check_shared_edge_local_orientation_consistency(),
+            "fixture should satisfy shared-edge local orientation consistency"
+        );
+        assert!(
+            !mesh.check_face_coplanarity(),
+            "fixture should fail coplanarity and therefore aggregate Phase 5"
+        );
+        assert!(!mesh.check_geometric_topological_consistency());
+        assert!(!runtime_check_geometric_topological_consistency_sound_bridge(&mesh));
+    }
+
+    #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+    #[test]
     fn differential_randomized_constructive_geometric_gate_parity_harness() {
         const CASES: usize = 40;
         let mut rng = DeterministicRng::new(0x8C95_DA41_2B7E_4F11);

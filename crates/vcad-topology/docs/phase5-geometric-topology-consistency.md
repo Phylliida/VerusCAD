@@ -195,6 +195,38 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.7 aggregate-checker-equivalence proof-decomposition + strictness-gap
+  regression increment across
+  `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs` and
+  `src/halfedge_mesh/tests.rs`:
+  - strengthened `runtime_check_geometric_topological_consistency_sound_bridge` postconditions to
+    expose the currently-proved aggregate consequences directly:
+    - `out ==> mesh_valid_spec(m@)`;
+    - `out ==> mesh_shared_edge_local_orientation_consistency_spec(m@)`;
+    - retained existing ensures for runtime seed-0 coplanarity bundle + aggregate spec witness.
+  - added a focused `geometry-checks + verus-proofs` regression that locks a concrete noncoplanar
+    fixture where:
+    - `is_valid()` and `check_shared_edge_local_orientation_consistency()` both pass;
+    - `check_face_coplanarity()` and aggregate `check_geometric_topological_consistency()` fail:
+      - `noncoplanar_fixture_keeps_phase4_and_shared_edge_orientation_but_fails_aggregate_gate`.
+  - outcome: P5.7 soundness output now exports explicit phase-4/shared-edge facts at the bridge API
+    boundary, and the current runtime-vs-aggregate-spec strictness gap is regression-locked to
+    prevent accidental drift while full equivalence remains open.
+- 2026-02-19: Failed attempt in this P5.7 proof-decomposition/equivalence pass:
+  - attempted to close the full aggregate checker equivalence checklist item directly, but the
+    current aggregate spec characterization still only guarantees
+    `(mesh_valid_spec && mesh_shared_edge_local_orientation_consistency_spec)` and does not yet
+    encode the full geometric checker family (coplanarity/convexity/intersection/outwardness);
+    this pass therefore landed explicit decomposition + gap-lock regression instead of a final
+    equivalence theorem.
+- 2026-02-19: Revalidated after the P5.7 proof-decomposition + strictness-gap additions:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" noncoplanar_fixture_keeps_phase4_and_shared_edge_orientation_but_fails_aggregate_gate`
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (286 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (323 verified, 0 errors)
 - 2026-02-19: Completed a P5.7 aggregate-checker soundness/parity increment across
   `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs` and
   `src/halfedge_mesh/tests.rs`:
