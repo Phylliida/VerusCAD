@@ -195,6 +195,30 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with a lower-cost symmetry-precondition normalization increment in:
+  - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`.
+  - added a new classifier symmetry bridge under an explicit two-vertex relation symmetry assumption:
+    - `lemma_mesh_faces_allowed_contact_runtime_branch_classifier_spec_symmetric_under_two_vertex_symmetry`.
+  - narrowed the policy-symmetry lemma precondition from full classifier parity to relation-level parity:
+    - `lemma_mesh_face_pair_runtime_forbidden_intersection_policy_spec_symmetric` now requires
+      `mesh_faces_share_exactly_two_vertices_spec(m, f1, f2) == mesh_faces_share_exactly_two_vertices_spec(m, f2, f1)`,
+      and derives classifier parity internally via the new helper.
+  - also stabilized an unrelated proof hotspot hit during this pass by switching a fragile trigger-heavy quad-coplanarity assertion to local aliases (`p0`, `p1`, `p2`, `p3`) in:
+    - `lemma_mesh_face_seed0_fixed_witness_and_quad_cycle_imply_face_coplanar_spec`.
+  - outcome:
+    - P5.5 symmetry plumbing is now stated at a lower-level relation assumption (exactly-two-vertex symmetry) instead of requiring full classifier parity as an external precondition;
+    - runtime-halfedge refinement verification count increased by one verified item in this pass.
+- 2026-02-19: Failed attempt in this P5.5 symmetry-precondition normalization pass:
+  - attempted to reintroduce full quantified symmetry for `mesh_faces_share_exactly_two_vertices_spec` and then remove all symmetry assumptions from classifier/policy symmetry lemmas;
+  - Verus again hit an rlimit blow-up on the quantified two-vertex symmetry proof;
+  - resolved by rolling back the high-cost unconditional symmetry approach and landing the lower-cost precondition-normalization helper above.
+- 2026-02-19: Revalidated after the P5.5 symmetry-precondition normalization increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (86 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (348 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (385 verified, 0 errors)
 - 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with a low-cost forbidden-policy pair-order symmetry bridge increment in:
   - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`.
   - added a new policy-level symmetry lemma with an explicit classifier-symmetry assumption:

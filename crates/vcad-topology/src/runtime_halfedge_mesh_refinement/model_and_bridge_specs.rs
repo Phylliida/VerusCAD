@@ -815,6 +815,24 @@ pub proof fn lemma_mesh_faces_share_zero_or_one_vertices_spec_symmetric(
 }
 
 #[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_faces_allowed_contact_runtime_branch_classifier_spec_symmetric_under_two_vertex_symmetry(
+    m: MeshModel,
+    f1: int,
+    f2: int,
+)
+    requires
+        mesh_faces_share_exactly_two_vertices_spec(m, f1, f2)
+            == mesh_faces_share_exactly_two_vertices_spec(m, f2, f1),
+    ensures
+        mesh_faces_allowed_contact_runtime_branch_classifier_spec(m, f1, f2)
+            == mesh_faces_allowed_contact_runtime_branch_classifier_spec(m, f2, f1),
+{
+    lemma_mesh_faces_share_edge_spec_symmetric(m, f1, f2);
+    lemma_mesh_faces_share_zero_or_one_vertices_spec_symmetric(m, f1, f2);
+    lemma_mesh_faces_share_exactly_one_edge_spec_symmetric(m, f1, f2);
+}
+
+#[cfg(verus_keep_ghost)]
 pub proof fn lemma_mesh_faces_share_exactly_one_vertex_implies_share_vertex(
     m: MeshModel,
     f1: int,
@@ -1142,8 +1160,8 @@ pub proof fn lemma_mesh_face_pair_runtime_forbidden_intersection_policy_spec_sym
     geometric_intersection_exists: bool,
 )
     requires
-        mesh_faces_allowed_contact_runtime_branch_classifier_spec(m, f1, f2)
-            == mesh_faces_allowed_contact_runtime_branch_classifier_spec(m, f2, f1),
+        mesh_faces_share_exactly_two_vertices_spec(m, f1, f2)
+            == mesh_faces_share_exactly_two_vertices_spec(m, f2, f1),
     ensures
         mesh_face_pair_runtime_forbidden_intersection_policy_spec(
             m,
@@ -1157,6 +1175,11 @@ pub proof fn lemma_mesh_face_pair_runtime_forbidden_intersection_policy_spec_sym
             geometric_intersection_exists,
         ),
 {
+    lemma_mesh_faces_allowed_contact_runtime_branch_classifier_spec_symmetric_under_two_vertex_symmetry(
+        m,
+        f1,
+        f2,
+    );
     lemma_mesh_non_adjacent_face_pair_forbidden_intersection_relation_spec_symmetric(
         m,
         f1,
@@ -4298,16 +4321,10 @@ pub proof fn lemma_mesh_face_seed0_fixed_witness_and_quad_cycle_imply_face_copla
 
     assert(mesh_face_coplanar_fixed_seed_witness_spec(m, vertex_positions, f, 4, 0));
     assert(0 <= 3 < 4);
-    assert(vcad_math::orientation3::is_coplanar(
-        mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 0),
-        mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 1),
-        mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 2),
-        mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 3),
-    )) by {
+    assert(vcad_math::orientation3::is_coplanar(p0, p1, p2, p3)) by {
         assert(mesh_face_coplanar_fixed_seed_witness_spec(m, vertex_positions, f, 4, 0));
         assert(0 <= 3 < 4);
     };
-    assert(vcad_math::orientation3::is_coplanar(p0, p1, p2, p3));
 
     assert forall|i: int, j: int, l: int, d: int|
         0 <= i < 4 && 0 <= j < 4 && 0 <= l < 4 && 0 <= d < 4 implies #[trigger]
