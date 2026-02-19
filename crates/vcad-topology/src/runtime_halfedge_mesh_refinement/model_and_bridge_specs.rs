@@ -1029,6 +1029,18 @@ pub open spec fn mesh_all_faces_quad_cycles_spec(m: MeshModel) -> bool {
 }
 
 #[cfg(verus_keep_ghost)]
+pub open spec fn mesh_all_faces_triangle_or_quad_cycles_spec(m: MeshModel) -> bool {
+    &&& mesh_index_bounds_spec(m)
+    &&& mesh_face_next_cycles_spec(m)
+    &&& forall|f: int|
+        0 <= f < mesh_face_count_spec(m)
+            ==> (
+                #[trigger] mesh_face_cycle_witness_spec(m, f, 3)
+                    || mesh_face_cycle_witness_spec(m, f, 4)
+            )
+}
+
+#[cfg(verus_keep_ghost)]
 pub open spec fn mesh_all_faces_seed0_corner_non_collinear_spec(
     m: MeshModel,
     vertex_positions: Seq<vcad_math::point3::Point3>,
@@ -3063,13 +3075,7 @@ pub proof fn lemma_mesh_face_seed0_fixed_witness_and_quad_cycle_imply_face_copla
     let p3 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 3);
 
     assert(vcad_math::orientation3::is_coplanar(p0, p1, p2, p3)) by {
-        assert(forall|d: int|
-            0 <= d < 4 ==> #[trigger] vcad_math::orientation3::is_coplanar(
-                p0,
-                p1,
-                p2,
-                mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, d),
-            ));
+        assert(mesh_face_coplanar_fixed_seed_witness_spec(m, vertex_positions, f, 4, 0));
         assert(0 <= 3 < 4);
     };
 
@@ -3182,6 +3188,48 @@ pub proof fn lemma_mesh_all_faces_coplanar_seed0_fixed_witness_and_quad_cycles_i
             vertex_positions,
             f,
         );
+        assert(mesh_face_coplanar_spec(m, vertex_positions, f));
+    };
+    assert(mesh_all_faces_coplanar_spec(m, vertex_positions));
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_all_faces_coplanar_seed0_fixed_witness_and_triangle_or_quad_cycles_imply_all_faces_coplanar(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+)
+    requires
+        mesh_all_faces_coplanar_seed0_fixed_witness_spec(m, vertex_positions),
+        mesh_all_faces_triangle_or_quad_cycles_spec(m),
+    ensures
+        mesh_all_faces_coplanar_spec(m, vertex_positions),
+{
+    assert(mesh_geometry_input_spec(m, vertex_positions));
+    assert forall|f: int|
+        0 <= f < mesh_face_count_spec(m) implies #[trigger] mesh_face_coplanar_spec(
+            m,
+            vertex_positions,
+            f,
+        ) by {
+        assert(mesh_face_coplanar_seed0_fixed_witness_spec(m, vertex_positions, f));
+        assert(
+            mesh_face_cycle_witness_spec(m, f, 3)
+                || mesh_face_cycle_witness_spec(m, f, 4)
+        );
+        if mesh_face_cycle_witness_spec(m, f, 3) {
+            lemma_mesh_face_seed0_fixed_witness_and_triangle_cycle_imply_face_coplanar_spec(
+                m,
+                vertex_positions,
+                f,
+            );
+        } else {
+            assert(mesh_face_cycle_witness_spec(m, f, 4));
+            lemma_mesh_face_seed0_fixed_witness_and_quad_cycle_imply_face_coplanar_spec(
+                m,
+                vertex_positions,
+                f,
+            );
+        }
         assert(mesh_face_coplanar_spec(m, vertex_positions, f));
     };
     assert(mesh_all_faces_coplanar_spec(m, vertex_positions));
@@ -5300,6 +5348,11 @@ pub open spec fn mesh_runtime_all_faces_quad_cycles_spec(m: &Mesh) -> bool {
 }
 
 #[cfg(verus_keep_ghost)]
+pub open spec fn mesh_runtime_all_faces_triangle_or_quad_cycles_spec(m: &Mesh) -> bool {
+    mesh_all_faces_triangle_or_quad_cycles_spec(m@)
+}
+
+#[cfg(verus_keep_ghost)]
 pub open spec fn mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m: &Mesh) -> bool {
     mesh_all_faces_seed0_corner_non_collinear_spec(m@, mesh_runtime_vertex_positions_spec(m))
 }
@@ -5430,6 +5483,22 @@ pub proof fn lemma_mesh_runtime_all_faces_coplanar_seed0_fixed_witness_and_quad_
 }
 
 #[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_runtime_all_faces_coplanar_seed0_fixed_witness_and_triangle_or_quad_cycles_imply_all_faces_coplanar(
+    m: &Mesh,
+)
+    requires
+        mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m),
+        mesh_runtime_all_faces_triangle_or_quad_cycles_spec(m),
+    ensures
+        mesh_runtime_all_faces_coplanar_spec(m),
+{
+    lemma_mesh_all_faces_coplanar_seed0_fixed_witness_and_triangle_or_quad_cycles_imply_all_faces_coplanar(
+        m@,
+        mesh_runtime_vertex_positions_spec(m),
+    );
+}
+
+#[cfg(verus_keep_ghost)]
 pub proof fn lemma_mesh_runtime_all_faces_oriented_seed0_planes_and_triangle_cycles_imply_all_faces_coplanar(
     m: &Mesh,
 )
@@ -5459,6 +5528,23 @@ pub proof fn lemma_mesh_runtime_all_faces_oriented_seed0_planes_and_quad_cycles_
     lemma_mesh_runtime_all_faces_oriented_seed0_planes_imply_all_faces_seed0_fixed_witness(m);
     assert(mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m));
     lemma_mesh_runtime_all_faces_coplanar_seed0_fixed_witness_and_quad_cycles_imply_all_faces_coplanar(
+        m,
+    );
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_runtime_all_faces_oriented_seed0_planes_and_triangle_or_quad_cycles_imply_all_faces_coplanar(
+    m: &Mesh,
+)
+    requires
+        mesh_runtime_all_faces_oriented_seed0_planes_spec(m),
+        mesh_runtime_all_faces_triangle_or_quad_cycles_spec(m),
+    ensures
+        mesh_runtime_all_faces_coplanar_spec(m),
+{
+    lemma_mesh_runtime_all_faces_oriented_seed0_planes_imply_all_faces_seed0_fixed_witness(m);
+    assert(mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m));
+    lemma_mesh_runtime_all_faces_coplanar_seed0_fixed_witness_and_triangle_or_quad_cycles_imply_all_faces_coplanar(
         m,
     );
 }

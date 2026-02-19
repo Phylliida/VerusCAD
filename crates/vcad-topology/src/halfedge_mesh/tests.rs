@@ -9,6 +9,7 @@ use crate::runtime_halfedge_mesh_refinement::{
     is_valid_with_geometry_constructive,
     runtime_check_face_coplanarity_seed0_fixed_witness_bridge,
     runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_and_quad_face_preconditions,
+    runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_and_triangle_or_quad_face_preconditions,
     runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_and_triangle_face_preconditions,
     runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_preconditions,
     runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_phase5_runtime_bundle_sound_bridge,
@@ -198,6 +199,29 @@ fn assert_face_coplanarity_seed0_oriented_plane_quad_completeness_bridge_parity(
     assert_eq!(
         oriented_plane_quad_complete_ok, geometric_sound_bridge_ok,
         "seed0 coplanarity oriented-plane quad completeness parity failed for {label}"
+    );
+}
+
+#[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+fn assert_face_coplanarity_seed0_oriented_plane_triangle_or_quad_completeness_bridge_parity(
+    mesh: &Mesh,
+    label: &str,
+) {
+    assert!(
+        mesh_all_faces_are_triangles_or_quads(mesh),
+        "triangle/quad-only oriented-plane completeness parity requires triangle/quad faces in {label}"
+    );
+    let geometric_sound_bridge_ok = runtime_check_geometric_topological_consistency_sound_bridge(mesh);
+    let oriented_plane_triangle_or_quad_complete_ok = if geometric_sound_bridge_ok {
+        runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_and_triangle_or_quad_face_preconditions(
+            mesh,
+        )
+    } else {
+        false
+    };
+    assert_eq!(
+        oriented_plane_triangle_or_quad_complete_ok, geometric_sound_bridge_ok,
+        "seed0 coplanarity oriented-plane triangle/quad completeness parity failed for {label}"
     );
 }
 
@@ -576,6 +600,19 @@ fn mesh_all_faces_are_quads(mesh: &Mesh) -> bool {
             return false;
         };
         if cycle.len() != 4 {
+            return false;
+        }
+    }
+    true
+}
+
+#[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+fn mesh_all_faces_are_triangles_or_quads(mesh: &Mesh) -> bool {
+    for face_id in 0..mesh.faces.len() {
+        let Some(cycle) = ordered_face_vertex_cycle_indices(mesh, face_id) else {
+            return false;
+        };
+        if cycle.len() != 3 && cycle.len() != 4 {
             return false;
         }
     }
@@ -4335,6 +4372,36 @@ fn diagnostic_witness_is_real_counterexample(
         for (label, mesh) in fixtures {
             assert!(mesh_all_faces_are_quads(&mesh));
             assert_face_coplanarity_seed0_oriented_plane_quad_completeness_bridge_parity(
+                &mesh, label,
+            );
+        }
+    }
+
+    #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+    #[test]
+    fn face_coplanarity_seed0_oriented_plane_triangle_or_quad_completeness_bridge_matches_geometric_sound_bridge(
+    ) {
+        let fixtures = vec![
+            ("tetrahedron", Mesh::tetrahedron()),
+            ("cube", Mesh::cube()),
+            ("triangular_prism", Mesh::triangular_prism()),
+            (
+                "overlapping_disconnected_tetrahedra",
+                build_overlapping_tetrahedra_mesh(),
+            ),
+            (
+                "reflected_cube_outward_failure",
+                build_reflected_cube_outward_failure_mesh(),
+            ),
+            (
+                "noncoplanar_single_quad_double_face_lift1",
+                build_noncoplanar_single_quad_double_face_mesh_with_lift(1),
+            ),
+        ];
+
+        for (label, mesh) in fixtures {
+            assert!(mesh_all_faces_are_triangles_or_quads(&mesh));
+            assert_face_coplanarity_seed0_oriented_plane_triangle_or_quad_completeness_bridge_parity(
                 &mesh, label,
             );
         }

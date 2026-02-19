@@ -1,1 +1,1 @@
-Added a P5.1 oriented-seed-plane plus quad-cycle coplanarity completeness bridge (proof/model lemmas, constructive wrapper, and parity tests), revalidated vcad-topology, and 8 Phase 5 tasks remain in vcad-topology.
+Added a P5.1 oriented-seed-plane coplanarity completeness bridge for mixed triangle/quad meshes (spec/lemmas, constructive wrapper, and parity tests), revalidated vcad-topology, and 8 Phase 5 tasks remain in vcad-topology.
