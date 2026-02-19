@@ -1,1 +1,1 @@
-Strengthened P5.7 constructive/runtime aggregate-gate parity tests to enforce exact per-check witness bit equality across deterministic and randomized harnesses, and 10 Phase 5 checklist tasks remain.
+Added a P5.1 runtime coplanarity sound-bridge API with parity regressions against Mesh::check_face_coplanarity and full revalidation, and 10 Phase 5 checklist tasks remain.

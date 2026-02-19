@@ -195,6 +195,41 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.1 runtime-checker-correctness sound-bridge API increment across
+  `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs` and
+  `src/halfedge_mesh/tests.rs`:
+  - added a dedicated runtime coplanarity sound bridge:
+    - `runtime_check_face_coplanarity_seed0_fixed_witness_sound_bridge`;
+    - bridge shape now explicitly routes through `Mesh::check_face_coplanarity()` first, then
+      requires the verified seed-0 witness bridge to succeed before returning `true`;
+    - proof postconditions export the full currently-proved seed-0 coplanarity bundle:
+      - `mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec`;
+      - `mesh_runtime_all_faces_seed0_corner_non_collinear_spec`;
+      - `mesh_runtime_all_faces_seed0_plane_contains_vertices_spec`;
+      - `mesh_runtime_all_faces_oriented_seed0_planes_spec`.
+  - expanded `geometry-checks + verus-proofs` parity coverage for the new API:
+    - added helper `assert_face_coplanarity_runtime_seed0_sound_bridge_parity`;
+    - wired that helper into `assert_constructive_phase5_gate_parity`;
+    - added focused regression
+      `face_coplanarity_seed0_sound_bridge_matches_runtime_checker`;
+    - strengthened
+      `noncoplanar_fixture_keeps_phase4_and_shared_edge_orientation_but_fails_aggregate_gate`
+      to assert the new sound bridge returns `false` on the noncoplanar counterexample.
+  - outcome: P5.1 now has an explicit runtime-facing coplanarity sound-bridge entrypoint (mirroring
+    the existing aggregate-gate sound bridge pattern) with deterministic and randomized parity locks
+    against runtime checker behavior while the full checker/spec equivalence theorem remains open.
+- 2026-02-19: Failed attempts in this P5.1 sound-bridge API pass: none.
+- 2026-02-19: Revalidated after the P5.1 sound-bridge API additions:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" face_coplanarity_seed0_sound_bridge_matches_runtime_checker`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" face_coplanarity_seed0_bridge_matches_runtime_checker`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" geometric_consistency_constructive_gate_matches_runtime_boolean_gate`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" differential_randomized_constructive_geometric_gate_parity_harness`
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (286 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (323 verified, 0 errors)
 - 2026-02-19: Completed a P5.7 aggregate-checker-equivalence witness-bit parity increment in
   `src/halfedge_mesh/tests.rs`:
   - strengthened `assert_constructive_phase5_gate_parity` so
