@@ -576,6 +576,159 @@ pub proof fn lemma_ternary_convex_combination_of_positive_values_is_positive(
     }
 }
 
+pub proof fn lemma_quaternary_convex_combination_of_positive_values_is_positive(
+    w0: Scalar,
+    w1: Scalar,
+    w2: Scalar,
+    w3: Scalar,
+    x0: Scalar,
+    x1: Scalar,
+    x2: Scalar,
+    x3: Scalar,
+)
+    requires
+        Scalar::from_int_spec(0).le_spec(w0),
+        Scalar::from_int_spec(0).le_spec(w1),
+        Scalar::from_int_spec(0).le_spec(w2),
+        Scalar::from_int_spec(0).le_spec(w3),
+        w0.add_spec(w1).add_spec(w2).add_spec(w3).eqv_spec(Scalar::from_int_spec(1)),
+        Scalar::from_int_spec(0).lt_spec(x0),
+        Scalar::from_int_spec(0).lt_spec(x1),
+        Scalar::from_int_spec(0).lt_spec(x2),
+        Scalar::from_int_spec(0).lt_spec(x3),
+    ensures
+        Scalar::from_int_spec(0).lt_spec(
+            w0.mul_spec(x0).add_spec(w1.mul_spec(x1)).add_spec(w2.mul_spec(x2)).add_spec(w3.mul_spec(x3)),
+        ),
+{
+    let z = Scalar::from_int_spec(0);
+    let one = Scalar::from_int_spec(1);
+    let t0 = w0.mul_spec(x0);
+    let t1 = w1.mul_spec(x1);
+    let t2 = w2.mul_spec(x2);
+    let t3 = w3.mul_spec(x3);
+    let s01 = t0.add_spec(t1);
+    let s012 = s01.add_spec(t2);
+    let out = s012.add_spec(t3);
+
+    lemma_scalar_mul_of_nonnegative_and_positive_is_nonnegative(w0, x0);
+    lemma_scalar_mul_of_nonnegative_and_positive_is_nonnegative(w1, x1);
+    lemma_scalar_mul_of_nonnegative_and_positive_is_nonnegative(w2, x2);
+    lemma_scalar_mul_of_nonnegative_and_positive_is_nonnegative(w3, x3);
+    assert(z.le_spec(t0));
+    assert(z.le_spec(t1));
+    assert(z.le_spec(t2));
+    assert(z.le_spec(t3));
+
+    if z.lt_spec(w3) {
+        lemma_scalar_mul_of_positive_and_positive_is_positive(w3, x3);
+        assert(z.lt_spec(t3));
+
+        lemma_scalar_add_of_nonnegative_and_nonnegative_is_nonnegative(t0, t1);
+        assert(z.le_spec(s01));
+        lemma_scalar_add_of_nonnegative_and_nonnegative_is_nonnegative(s01, t2);
+        assert(z.le_spec(s012));
+        lemma_scalar_add_of_nonnegative_and_positive_is_positive(s012, t3);
+        assert(z.lt_spec(out));
+    } else {
+        let wsum = w0.add_spec(w1).add_spec(w2).add_spec(w3);
+        assert(wsum.eqv_spec(one));
+
+        lemma_scalar_zero_le_iff_num_nonnegative(w3);
+        lemma_scalar_zero_lt_iff_num_positive(w3);
+        assert(w3.num >= 0);
+        assert(!z.lt_spec(w3));
+        assert(!(w3.num > 0));
+        assert((w3.num >= 0 && !(w3.num > 0)) ==> (w3.num == 0)) by (nonlinear_arith);
+        assert(w3.num == 0);
+
+        if z.lt_spec(w0) {
+            lemma_scalar_mul_of_positive_and_positive_is_positive(w0, x0);
+            assert(z.lt_spec(t0));
+            lemma_scalar_add_of_positive_and_nonnegative_is_positive(t0, t1);
+            assert(z.lt_spec(s01));
+            lemma_scalar_add_of_positive_and_nonnegative_is_positive(s01, t2);
+            assert(z.lt_spec(s012));
+        } else if z.lt_spec(w1) {
+            lemma_scalar_mul_of_positive_and_positive_is_positive(w1, x1);
+            assert(z.lt_spec(t1));
+            lemma_scalar_add_of_nonnegative_and_positive_is_positive(t0, t1);
+            assert(z.lt_spec(s01));
+            lemma_scalar_add_of_positive_and_nonnegative_is_positive(s01, t2);
+            assert(z.lt_spec(s012));
+        } else {
+            if !z.lt_spec(w2) {
+                let sum01 = w0.add_spec(w1);
+                let sum012 = sum01.add_spec(w2);
+                let sum = sum012.add_spec(w3);
+
+                lemma_scalar_zero_le_iff_num_nonnegative(w0);
+                lemma_scalar_zero_le_iff_num_nonnegative(w1);
+                lemma_scalar_zero_le_iff_num_nonnegative(w2);
+                lemma_scalar_zero_lt_iff_num_positive(w0);
+                lemma_scalar_zero_lt_iff_num_positive(w1);
+                lemma_scalar_zero_lt_iff_num_positive(w2);
+                assert(w0.num >= 0);
+                assert(w1.num >= 0);
+                assert(w2.num >= 0);
+                assert(!z.lt_spec(w0));
+                assert(!z.lt_spec(w1));
+                assert(!z.lt_spec(w2));
+                assert(!(w0.num > 0));
+                assert(!(w1.num > 0));
+                assert(!(w2.num > 0));
+                assert((w0.num >= 0 && !(w0.num > 0)) ==> (w0.num == 0)) by (nonlinear_arith);
+                assert((w1.num >= 0 && !(w1.num > 0)) ==> (w1.num == 0)) by (nonlinear_arith);
+                assert((w2.num >= 0 && !(w2.num > 0)) ==> (w2.num == 0)) by (nonlinear_arith);
+                assert(w0.num == 0);
+                assert(w1.num == 0);
+                assert(w2.num == 0);
+                assert(w3.num == 0);
+
+                assert(sum01.num == w0.num * w1.denom() + w1.num * w0.denom());
+                assert(sum01.num == 0 * w1.denom() + 0 * w0.denom());
+                assert(0 * w1.denom() == 0) by (nonlinear_arith);
+                assert(0 * w0.denom() == 0) by (nonlinear_arith);
+                assert(sum01.num == 0 + 0);
+                assert(sum01.num == 0);
+
+                assert(sum012.num == sum01.num * w2.denom() + w2.num * sum01.denom());
+                assert(sum012.num == 0 * w2.denom() + 0 * sum01.denom());
+                assert(0 * w2.denom() == 0) by (nonlinear_arith);
+                assert(0 * sum01.denom() == 0) by (nonlinear_arith);
+                assert(sum012.num == 0 + 0);
+                assert(sum012.num == 0);
+
+                assert(sum.num == sum012.num * w3.denom() + w3.num * sum012.denom());
+                assert(sum.num == 0 * w3.denom() + 0 * sum012.denom());
+                assert(0 * w3.denom() == 0) by (nonlinear_arith);
+                assert(0 * sum012.denom() == 0) by (nonlinear_arith);
+                assert(sum.num == 0 + 0);
+                assert(sum.num == 0);
+
+                assert(sum.eqv_spec(one));
+                Scalar::lemma_eqv_signum(sum, one);
+                assert(one.num == 1);
+                assert(one.signum() == 1);
+                assert(sum.signum() == one.signum());
+                assert(sum.signum() == 1);
+                assert(sum.signum() == 0);
+                assert(false);
+            }
+            assert(z.lt_spec(w2));
+            lemma_scalar_mul_of_positive_and_positive_is_positive(w2, x2);
+            assert(z.lt_spec(t2));
+            lemma_scalar_add_of_nonnegative_and_nonnegative_is_nonnegative(t0, t1);
+            assert(z.le_spec(s01));
+            lemma_scalar_add_of_nonnegative_and_positive_is_positive(s01, t2);
+            assert(z.lt_spec(s012));
+        }
+
+        lemma_scalar_add_of_positive_and_nonnegative_is_positive(s012, t3);
+        assert(z.lt_spec(out));
+    }
+}
+
 pub proof fn lemma_aabb_separation_implies_no_common_point(
     p: Point3,
     min_a: Point3,

@@ -126,7 +126,14 @@ Blocks: `P5.5` intersection checker soundness (broad phase).
     helpers and
     `lemma_ternary_convex_combination_of_positive_values_is_positive`
     (`w0*x0 + w1*x1 + w2*x2` with nonnegative weights summing to `1`).
-  - Remaining gap: proof surface now covers binary and ternary convex
+  - Partial (2026-02-19, quaternary convex-combo pass): extended
+    `crates/vcad-geometry/src/phase5_upstream_lemmas.rs` with
+    `lemma_quaternary_convex_combination_of_positive_values_is_positive`
+    (`w0*x0 + w1*x1 + w2*x2 + w3*x3` with nonnegative weights summing to `1`).
+    Proof note: avoided crate-private scalar lemmas and discharged the
+    `w3 == 0` branch via numerator reasoning plus `sum == 1` contradiction when
+    all first-three weights are non-positive.
+  - Remaining gap: proof surface now covers binary/ternary/quaternary convex
     combinations; still need an n-ary/general convex-combination wrapper for
     full face-plane separation composition.
   - Verification attempt note (2026-02-19, convex-combo positivity pass):
@@ -141,6 +148,13 @@ Blocks: `P5.5` intersection checker soundness (broad phase).
     `./scripts/test-vcad-geometry-verus-proofs.sh` passes in this environment.
   - Verification lane note (2026-02-19, ternary convex-combo pass): run
     `./scripts/verify-vcad-geometry.sh` for ghost-proof verification.
+  - Verification attempt note (2026-02-19, quaternary convex-combo pass):
+    `./scripts/test-vcad-geometry-verus-proofs.sh` passes in this environment.
+  - Verification attempt note (2026-02-19, quaternary convex-combo pass):
+    `./scripts/verify-vcad-geometry.sh` passes in this environment
+    (`205 verified, 0 errors`; one existing verifier warning remains about
+    `assert forall` antecedent handling for `==>` in
+    `lemma_aabb_separation_and_containment_implies_disjoint_sets`).
   - Update (2026-02-19, ghost-verifier-unblock pass): reworked the scalar
     positivity helper proofs in
     `crates/vcad-geometry/src/phase5_upstream_lemmas.rs` (the
