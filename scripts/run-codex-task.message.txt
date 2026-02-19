@@ -1,1 +1,1 @@
-Added a verified triangle-face convexity projected-turn sound bridge (lemmas, constructive wrapper, and parity regression) and documented the failed private-lemma proof attempt in the burndown log; 8 Phase 5 tasks remain in vcad-topology.
+Consolidated the P5.1 triangle/quad coplanarity bridge with explicit Phase-4-validity soundness and a new sound+complete parity-locked wrapper, and documented full revalidation in the burndown log; 8 Phase 5 tasks remain in vcad-topology.

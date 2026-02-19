@@ -195,6 +195,34 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) with a triangle/quad sound+complete bridge consolidation increment in:
+  - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
+  - `src/halfedge_mesh/tests.rs`.
+  - strengthened the base seed-0 coplanarity sound bridge:
+    - `runtime_check_face_coplanarity_seed0_fixed_witness_sound_bridge` now additionally proves `out ==> mesh_valid_spec(m@)` by threading a constructive Phase-4 witness (`is_valid_constructive`) through `lemma_validity_gate_witness_api_ok_implies_mesh_valid`;
+    - propagated the same `out ==> mesh_valid_spec(m@)` guarantee through `runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_sound_bridge`.
+  - added a composed triangle/quad bridge:
+    - `runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_sound_complete_bridge`;
+    - this wrapper composes:
+      - triangle/quad soundness (`runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_sound_bridge`);
+      - triangle/quad oriented-seed-plane completeness (`runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_and_triangle_or_quad_face_preconditions`);
+    - and exposes both `mesh_valid_spec(m@)` and full triangle/quad coplanarity/spec bridge outputs on success.
+  - extended regression/parity coverage:
+    - helper `assert_face_coplanarity_seed0_triangle_or_quad_sound_complete_bridge_parity`;
+    - test `face_coplanarity_seed0_triangle_or_quad_sound_complete_bridge_matches_runtime_checker`;
+    - integrated the new parity assertion into `assert_constructive_phase5_gate_parity` for all triangle/quad fixtures.
+  - outcome:
+    - the P5.1 triangle/quad path now carries explicit Phase-4 validity in its soundness output and has a dedicated composed sound+complete bridge locked against runtime parity;
+    - the remaining open P5.1 work is unchanged: full unrestricted (`k > 4`) checker/spec equivalence.
+- 2026-02-19: Failed attempts in this P5.1 triangle/quad sound+complete consolidation pass: none.
+- 2026-02-19: Revalidated after the P5.1 triangle/quad sound+complete consolidation increment:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" face_coplanarity_seed0_triangle_or_quad_sound_complete_bridge_matches_runtime_checker` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (61 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (82 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (323 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (360 verified, 0 errors)
 - 2026-02-19: Worked P5.3 (`Proof: runtime checker correctness vs convexity spec`) with a triangle-face projected-turn soundness increment in:
   - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`;
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
