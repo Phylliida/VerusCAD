@@ -195,6 +195,22 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) with a triangle-face full-coplanarity bridge increment in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
+  - added helper lemmas:
+    - `lemma_mesh_indices_in_0_1_2`;
+    - `lemma_mesh_orient3d_first_three_repeated_implies_coplanar`.
+  - added theorem:
+    - `lemma_mesh_face_seed0_fixed_witness_implies_coplanar_witness_for_triangle_face`, proving that for `k = 3` faces, seed0 fixed-witness coplanarity is sufficient to recover the full face-coplanarity witness (`mesh_face_coplanar_witness_spec`), including all first-triple permutation cases.
+  - outcome: the remaining P5.1 full-spec completeness gap is now reduced to non-triangle faces (`k > 3`), where a reusable proof that seed0-plane membership implies arbitrary-triple coplanarity is still missing.
+- 2026-02-19: Failed attempt in this P5.1 pass:
+  - attempted to generalize seed0-fixed-witness-to-full-coplanarity from triangles to arbitrary polygon face cycles in one theorem; this stalled on the missing intermediate lemma for `k > 3` that lifts shared seed-plane membership to arbitrary first-triple `orient3d = 0` across all quadruples.
+- 2026-02-19: Revalidated after the P5.1 triangle-face bridge increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (60 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (74 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (294 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (331 verified, 0 errors)
 - 2026-02-19: Worked P5.5 (`Proof: shared-edge and shared-vertex contacts are never misclassified as forbidden intersections`) with a generalized shared-boundary classifier-exclusion theorem increment in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
   - added generalized theorem
     `lemma_mesh_faces_shared_boundary_runtime_branch_classifier_not_non_adjacent_forbidden_relation`, proving that for any face pair already accepted by the runtime allowed-contact branch classifier, if the pair shares any boundary (`share_vertex || share_edge`) then it cannot satisfy `mesh_non_adjacent_face_pair_forbidden_intersection_relation_spec` for any `geometric_intersection_exists` flag;

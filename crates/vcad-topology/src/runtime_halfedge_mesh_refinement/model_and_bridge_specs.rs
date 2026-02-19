@@ -1755,6 +1755,253 @@ pub proof fn lemma_mesh_face_coplanar_witness_implies_fixed_seed_witness(
 }
 
 #[cfg(verus_keep_ghost)]
+proof fn lemma_mesh_indices_in_0_1_2(i: int)
+    requires
+        0 <= i < 3,
+    ensures
+        i == 0 || i == 1 || i == 2,
+{
+    if i <= 0 {
+        assert(0 <= i);
+        assert(i == 0);
+    } else if i <= 1 {
+        assert(i > 0);
+        assert(i >= 1) by {
+            if i >= 1 {
+            } else {
+                assert(i < 1);
+                assert(i <= 0);
+                assert(false);
+            }
+        };
+        assert(i == 1);
+    } else {
+        assert(i > 1);
+        assert(i < 3);
+        assert(i >= 2) by {
+            if i >= 2 {
+            } else {
+                assert(i < 2);
+                assert(i <= 1);
+                assert(false);
+            }
+        };
+        assert(i <= 2) by {
+            if i <= 2 {
+            } else {
+                assert(i > 2);
+                assert(i >= 3);
+                assert(false);
+            }
+        };
+        assert(i == 2);
+    }
+}
+
+#[cfg(verus_keep_ghost)]
+proof fn lemma_mesh_orient3d_first_three_repeated_implies_coplanar(
+    a: vcad_math::point3::Point3,
+    b: vcad_math::point3::Point3,
+    c: vcad_math::point3::Point3,
+    d: vcad_math::point3::Point3,
+)
+    ensures
+        (a == b || a == c || b == c) ==> vcad_math::orientation3::is_coplanar(a, b, c, d),
+{
+    let o = vcad_math::orientation3::orient3d_spec(a, b, c, d);
+    let z = vcad_math::scalar::Scalar::from_int_spec(0);
+
+    if a == b {
+        vcad_math::orientation3::lemma_orient3d_degenerate_repeated_points(a, c, d);
+        assert(vcad_math::orientation3::orient3d_spec(a, a, c, d).signum() == 0);
+        assert(vcad_math::orientation3::orient3d_spec(a, b, c, d).signum() == 0);
+        assert(vcad_math::orientation3::is_coplanar(a, b, c, d));
+    } else if b == c {
+        let ba = b.sub_spec(a);
+        let da = d.sub_spec(a);
+        let obb = vcad_math::orientation3::orient3d_spec(a, b, b, d);
+
+        vcad_math::vec3::Vec3::lemma_dot_cross_left_orthogonal(ba, da);
+        assert(obb == ba.dot_spec(ba.cross_spec(da)));
+        assert(ba.dot_spec(ba.cross_spec(da)).eqv_spec(z));
+        vcad_math::scalar::Scalar::lemma_eqv_signum(obb, z);
+        assert(z.signum() == 0);
+        assert(obb.signum() == 0);
+        assert(vcad_math::orientation3::is_coplanar(a, b, b, d));
+
+        assert(o == obb);
+        assert(o.signum() == 0);
+        assert(vcad_math::orientation3::is_coplanar(a, b, c, d));
+    } else if a == c {
+        let os = vcad_math::orientation3::orient3d_spec(a, c, b, d);
+        vcad_math::orientation3::lemma_orient3d_swap_bc_eqv_neg(a, b, c, d);
+        assert(os.eqv_spec(o.neg_spec()));
+        assert(os == vcad_math::orientation3::orient3d_spec(a, a, b, d));
+
+        vcad_math::orientation3::lemma_orient3d_degenerate_repeated_points(a, b, d);
+        assert(vcad_math::orientation3::orient3d_spec(a, a, b, d).signum() == 0);
+        assert(os.signum() == 0);
+
+        vcad_math::scalar::Scalar::lemma_eqv_signum(os, o.neg_spec());
+        assert(o.neg_spec().signum() == 0);
+        vcad_math::scalar::Scalar::lemma_signum_negate(o);
+        assert(o.neg_spec().signum() == -o.signum());
+        assert(-o.signum() == 0);
+        assert(o.signum() == 0);
+        assert(vcad_math::orientation3::is_coplanar(a, b, c, d));
+    }
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_face_seed0_fixed_witness_implies_coplanar_witness_for_triangle_face(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+)
+    requires
+        mesh_face_coplanar_fixed_seed_witness_spec(m, vertex_positions, f, 3, 0),
+    ensures
+        mesh_face_coplanar_witness_spec(m, vertex_positions, f, 3),
+{
+    let p0 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 0);
+    let p1 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 1);
+    let p2 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 2);
+
+    assert(mesh_index_bounds_spec(m));
+    assert(mesh_geometry_input_spec(m, vertex_positions));
+    assert(0 <= f < mesh_face_count_spec(m));
+    assert(mesh_face_cycle_witness_spec(m, f, 3));
+
+    assert forall|i: int, j: int, l: int, d: int|
+        0 <= i < 3 && 0 <= j < 3 && 0 <= l < 3 && 0 <= d < 3 implies #[trigger]
+            vcad_math::orientation3::is_coplanar(
+                mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, i),
+                mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, j),
+                mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, l),
+                mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, d),
+            ) by {
+        let pi = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, i);
+        let pj = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, j);
+        let pl = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, l);
+        let pd = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, d);
+        let base = vcad_math::orientation3::orient3d_spec(p0, p1, p2, pd);
+
+        assert(forall|dp: int| 0 <= dp < 3 ==> #[trigger] vcad_math::orientation3::is_coplanar(
+            p0,
+            p1,
+            p2,
+            mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, dp),
+        ));
+        assert(vcad_math::orientation3::is_coplanar(p0, p1, p2, pd));
+        assert(base.signum() == 0);
+
+        if i == j || i == l || j == l {
+            lemma_mesh_orient3d_first_three_repeated_implies_coplanar(pi, pj, pl, pd);
+            assert(vcad_math::orientation3::is_coplanar(pi, pj, pl, pd));
+        } else {
+            lemma_mesh_indices_in_0_1_2(i);
+            lemma_mesh_indices_in_0_1_2(j);
+            lemma_mesh_indices_in_0_1_2(l);
+
+            if i == 0 && j == 1 {
+                assert(l == 2);
+                assert(pi == p0);
+                assert(pj == p1);
+                assert(pl == p2);
+                assert(vcad_math::orientation3::is_coplanar(pi, pj, pl, pd));
+            } else if i == 0 && j == 2 {
+                assert(l == 1);
+                let os = vcad_math::orientation3::orient3d_spec(p0, p2, p1, pd);
+                vcad_math::orientation3::lemma_orient3d_swap_bc_eqv_neg(p0, p1, p2, pd);
+                assert(os.eqv_spec(base.neg_spec()));
+                vcad_math::scalar::Scalar::lemma_eqv_signum(os, base.neg_spec());
+                vcad_math::scalar::Scalar::lemma_signum_negate(base);
+                assert(base.neg_spec().signum() == 0);
+                assert(os.signum() == 0);
+                assert(vcad_math::orientation3::is_coplanar(p0, p2, p1, pd));
+                assert(pi == p0);
+                assert(pj == p2);
+                assert(pl == p1);
+                assert(vcad_math::orientation3::is_coplanar(pi, pj, pl, pd));
+            } else if i == 1 && j == 0 {
+                assert(l == 2);
+                let os = vcad_math::orientation3::orient3d_spec(p1, p0, p2, pd);
+                vcad_math::orientation3::lemma_orient3d_swap_ab_eqv_neg(p0, p1, p2, pd);
+                assert(os.eqv_spec(base.neg_spec()));
+                vcad_math::scalar::Scalar::lemma_eqv_signum(os, base.neg_spec());
+                vcad_math::scalar::Scalar::lemma_signum_negate(base);
+                assert(base.neg_spec().signum() == 0);
+                assert(os.signum() == 0);
+                assert(vcad_math::orientation3::is_coplanar(p1, p0, p2, pd));
+                assert(pi == p1);
+                assert(pj == p0);
+                assert(pl == p2);
+                assert(vcad_math::orientation3::is_coplanar(pi, pj, pl, pd));
+            } else if i == 1 && j == 2 {
+                assert(l == 0);
+                let o210 = vcad_math::orientation3::orient3d_spec(p2, p1, p0, pd);
+                let o120 = vcad_math::orientation3::orient3d_spec(p1, p2, p0, pd);
+                vcad_math::orientation3::lemma_orient3d_swap_ac_eqv_neg(p0, p1, p2, pd);
+                assert(o210.eqv_spec(base.neg_spec()));
+                vcad_math::orientation3::lemma_orient3d_swap_ab_eqv_neg(p2, p1, p0, pd);
+                assert(o120.eqv_spec(o210.neg_spec()));
+                vcad_math::scalar::Scalar::lemma_eqv_signum(o210, base.neg_spec());
+                vcad_math::scalar::Scalar::lemma_signum_negate(base);
+                assert(base.neg_spec().signum() == 0);
+                assert(o210.signum() == 0);
+                vcad_math::scalar::Scalar::lemma_eqv_signum(o120, o210.neg_spec());
+                vcad_math::scalar::Scalar::lemma_signum_negate(o210);
+                assert(o210.neg_spec().signum() == 0);
+                assert(o120.signum() == 0);
+                assert(vcad_math::orientation3::is_coplanar(p1, p2, p0, pd));
+                assert(pi == p1);
+                assert(pj == p2);
+                assert(pl == p0);
+                assert(vcad_math::orientation3::is_coplanar(pi, pj, pl, pd));
+            } else if i == 2 && j == 0 {
+                assert(l == 1);
+                let o021 = vcad_math::orientation3::orient3d_spec(p0, p2, p1, pd);
+                let o201 = vcad_math::orientation3::orient3d_spec(p2, p0, p1, pd);
+                vcad_math::orientation3::lemma_orient3d_swap_bc_eqv_neg(p0, p1, p2, pd);
+                assert(o021.eqv_spec(base.neg_spec()));
+                vcad_math::orientation3::lemma_orient3d_swap_ab_eqv_neg(p0, p2, p1, pd);
+                assert(o201.eqv_spec(o021.neg_spec()));
+                vcad_math::scalar::Scalar::lemma_eqv_signum(o021, base.neg_spec());
+                vcad_math::scalar::Scalar::lemma_signum_negate(base);
+                assert(base.neg_spec().signum() == 0);
+                assert(o021.signum() == 0);
+                vcad_math::scalar::Scalar::lemma_eqv_signum(o201, o021.neg_spec());
+                vcad_math::scalar::Scalar::lemma_signum_negate(o021);
+                assert(o021.neg_spec().signum() == 0);
+                assert(o201.signum() == 0);
+                assert(vcad_math::orientation3::is_coplanar(p2, p0, p1, pd));
+                assert(pi == p2);
+                assert(pj == p0);
+                assert(pl == p1);
+                assert(vcad_math::orientation3::is_coplanar(pi, pj, pl, pd));
+            } else {
+                assert(i == 2 && j == 1);
+                assert(l == 0);
+                let os = vcad_math::orientation3::orient3d_spec(p2, p1, p0, pd);
+                vcad_math::orientation3::lemma_orient3d_swap_ac_eqv_neg(p0, p1, p2, pd);
+                assert(os.eqv_spec(base.neg_spec()));
+                vcad_math::scalar::Scalar::lemma_eqv_signum(os, base.neg_spec());
+                vcad_math::scalar::Scalar::lemma_signum_negate(base);
+                assert(base.neg_spec().signum() == 0);
+                assert(os.signum() == 0);
+                assert(vcad_math::orientation3::is_coplanar(p2, p1, p0, pd));
+                assert(pi == p2);
+                assert(pj == p1);
+                assert(pl == p0);
+                assert(vcad_math::orientation3::is_coplanar(pi, pj, pl, pd));
+            }
+        }
+    };
+
+    assert(mesh_face_coplanar_witness_spec(m, vertex_positions, f, 3));
+}
+
+#[cfg(verus_keep_ghost)]
 pub proof fn lemma_mesh_face_cycle_witness_length_unique(
     m: MeshModel,
     f: int,

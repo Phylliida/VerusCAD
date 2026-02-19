@@ -1,1 +1,1 @@
-Generalized P5.5 shared-boundary classifier non-misclassification proof in the refinement model, revalidated full vcad-topology checks, and 9 Phase 5 tasks remain in vcad-topology.
+Added a P5.1 triangle-face seed0-fixed-witness-to-full-coplanarity proof bridge in the refinement model, revalidated the full vcad-topology matrix, and 9 Phase 5 tasks remain in vcad-topology.
