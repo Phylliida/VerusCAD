@@ -1680,6 +1680,39 @@ pub proof fn lemma_mesh_runtime_geometric_topological_consistency_with_geometry_
     );
 }
 
+pub proof fn lemma_mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_characterization(
+    m: &Mesh,
+)
+    ensures
+        mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(m)
+            == (
+                mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m)
+                    && mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m)
+            ),
+{
+    lemma_mesh_runtime_geometric_topological_consistency_with_geometry_seed0_coplanarity_bundle_characterization(
+        m,
+    );
+    assert(
+        mesh_runtime_geometric_topological_consistency_with_geometry_spec(m)
+            == mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m)
+    );
+    assert(
+        mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(m)
+            == (
+                mesh_runtime_geometric_topological_consistency_with_geometry_spec(m)
+                    && mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m)
+            )
+    );
+    assert(
+        mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(m)
+            == (
+                mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m)
+                    && mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m)
+            )
+    );
+}
+
 pub proof fn lemma_mesh_runtime_geometric_topological_consistency_with_geometry_and_triangle_cycles_imply_all_faces_projected_turn_sign_consistency(
     m: &Mesh,
 )

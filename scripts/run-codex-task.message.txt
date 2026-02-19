@@ -1,1 +1,1 @@
-Added triangle projected-turn convexity Phase5-bundle completeness/sound bridges with parity coverage, revalidated full vcad-topology tests/proofs, and 8 burndown tasks remain.
+Strengthened triangle convexity runtime-with-geometry+non-zero-edge proof bridges and parity locks, revalidated vcad-topology tests/verifications, and 8 burndown tasks remain.

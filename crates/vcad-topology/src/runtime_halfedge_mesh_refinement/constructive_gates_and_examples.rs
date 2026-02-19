@@ -1724,6 +1724,47 @@ pub fn runtime_check_face_convexity_triangle_projected_turn_complete_from_runtim
 
 #[cfg(feature = "geometry-checks")]
 #[allow(dead_code)]
+pub fn runtime_check_face_convexity_triangle_projected_turn_complete_from_runtime_with_geometry_and_non_zero_edges_preconditions(
+    m: &Mesh,
+) -> (out: bool)
+    requires
+        mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(m),
+        mesh_runtime_all_faces_triangle_cycles_spec(m),
+    ensures
+        out,
+        mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m),
+        mesh_runtime_geometric_topological_consistency_with_geometry_spec(m),
+        mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(m),
+        mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m),
+        mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m),
+        mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m),
+        mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m),
+        mesh_runtime_all_faces_oriented_seed0_planes_spec(m),
+        mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m),
+{
+    let out0 =
+        runtime_check_face_convexity_triangle_projected_turn_complete_from_runtime_with_geometry_preconditions(
+            m,
+        );
+
+    proof {
+        assert(out0);
+        assert(mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(m));
+        assert(mesh_runtime_geometric_topological_consistency_with_geometry_spec(m));
+        assert(mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m));
+        assert(mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
+        assert(mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m));
+        assert(mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m));
+        assert(mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m));
+        assert(mesh_runtime_all_faces_oriented_seed0_planes_spec(m));
+        assert(mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m));
+    }
+
+    out0
+}
+
+#[cfg(feature = "geometry-checks")]
+#[allow(dead_code)]
 pub fn runtime_check_face_convexity_triangle_projected_turn_complete_from_phase5_runtime_bundle_preconditions(
     m: &Mesh,
 ) -> (out: bool)
@@ -1761,6 +1802,8 @@ pub fn runtime_check_face_convexity_triangle_projected_turn_complete_from_phase5
     ensures
         out ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m),
         out ==> mesh_runtime_geometric_topological_consistency_with_geometry_spec(m),
+        out ==> mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(m),
+        out ==> mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m),
         out ==> mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m),
         out ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m),
         out ==> mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m),
@@ -1773,7 +1816,7 @@ pub fn runtime_check_face_convexity_triangle_projected_turn_complete_from_phase5
     }
 
     let complete_ok =
-        runtime_check_face_convexity_triangle_projected_turn_complete_from_phase5_runtime_bundle_preconditions(
+        runtime_check_face_convexity_triangle_projected_turn_complete_from_runtime_with_geometry_and_non_zero_edges_preconditions(
             m,
         );
     if !complete_ok {
@@ -1786,8 +1829,16 @@ pub fn runtime_check_face_convexity_triangle_projected_turn_complete_from_phase5
                 ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m)
         );
         assert(geometric_sound_ok ==> mesh_runtime_geometric_topological_consistency_with_geometry_spec(m));
+        assert(
+            geometric_sound_ok
+                ==> mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(
+                    m,
+                )
+        );
         assert(mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
         assert(mesh_runtime_geometric_topological_consistency_with_geometry_spec(m));
+        assert(mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(m));
+        assert(mesh_runtime_all_half_edges_non_zero_geometric_length_spec(m));
         assert(complete_ok);
         assert(mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m));
         assert(mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m));
