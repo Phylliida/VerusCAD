@@ -1,1 +1,1 @@
-Wired the constructive Phase 5 gate face-corner witness to the seed0 non-collinearity bridge and updated geometric model-link proofs/tests, then revalidated vcad-topology; 8 Phase 5 tasks remain.
+Added a P5.5 global table-level iff bridge between runtime-forbidden policy and allowed-contact/non-adjacent-forbidden relations, revalidated vcad-topology, and 8 burndown tasks remain.

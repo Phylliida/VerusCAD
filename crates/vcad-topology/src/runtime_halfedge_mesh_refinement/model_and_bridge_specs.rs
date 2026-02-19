@@ -2209,6 +2209,49 @@ pub open spec fn mesh_face_pair_bool_table_wf_spec(
 }
 
 #[cfg(verus_keep_ghost)]
+pub open spec fn mesh_all_face_pairs_not_runtime_forbidden_policy_table_spec(
+    m: MeshModel,
+    geometric_intersection_exists_table: Seq<Seq<bool>>,
+) -> bool {
+    forall|f1: int, f2: int|
+        0 <= f1 < mesh_face_count_spec(m)
+            && 0 <= f2 < mesh_face_count_spec(m)
+            && f1 != f2
+            ==> !#[trigger] mesh_face_pair_runtime_forbidden_intersection_policy_spec(
+                m,
+                f1,
+                f2,
+                geometric_intersection_exists_table[f1][f2],
+            )
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_all_face_pairs_allowed_contact_relation_spec(m: MeshModel) -> bool {
+    forall|f1: int, f2: int|
+        0 <= f1 < mesh_face_count_spec(m)
+            && 0 <= f2 < mesh_face_count_spec(m)
+            && f1 != f2
+            ==> #[trigger] mesh_faces_allowed_contact_relation_spec(m, f1, f2)
+}
+
+#[cfg(verus_keep_ghost)]
+pub open spec fn mesh_all_face_pairs_not_non_adjacent_forbidden_relation_table_spec(
+    m: MeshModel,
+    geometric_intersection_exists_table: Seq<Seq<bool>>,
+) -> bool {
+    forall|f1: int, f2: int|
+        0 <= f1 < mesh_face_count_spec(m)
+            && 0 <= f2 < mesh_face_count_spec(m)
+            && f1 != f2
+            ==> !#[trigger] mesh_non_adjacent_face_pair_forbidden_intersection_relation_spec(
+                m,
+                f1,
+                f2,
+                geometric_intersection_exists_table[f1][f2],
+            )
+}
+
+#[cfg(verus_keep_ghost)]
 pub proof fn lemma_mesh_all_face_pairs_not_runtime_forbidden_policy_table_implies_no_non_adjacent_forbidden_relation(
     m: MeshModel,
     geometric_intersection_exists_table: Seq<Seq<bool>>,
@@ -2527,6 +2570,101 @@ pub proof fn lemma_mesh_all_face_pairs_allowed_contact_relation_and_no_non_adjac
             assert(false);
         }
     };
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_all_face_pairs_not_runtime_forbidden_policy_table_iff_allowed_contact_relation_and_no_non_adjacent_forbidden_relation(
+    m: MeshModel,
+    geometric_intersection_exists_table: Seq<Seq<bool>>,
+)
+    requires
+        mesh_face_pair_bool_table_wf_spec(m, geometric_intersection_exists_table),
+    ensures
+        mesh_all_face_pairs_not_runtime_forbidden_policy_table_spec(
+            m,
+            geometric_intersection_exists_table,
+        ) == (
+            mesh_all_face_pairs_allowed_contact_relation_spec(m)
+                && mesh_all_face_pairs_not_non_adjacent_forbidden_relation_table_spec(
+                    m,
+                    geometric_intersection_exists_table,
+                )
+        ),
+{
+    assert(
+        mesh_all_face_pairs_not_runtime_forbidden_policy_table_spec(
+            m,
+            geometric_intersection_exists_table,
+        ) ==> (
+            mesh_all_face_pairs_allowed_contact_relation_spec(m)
+                && mesh_all_face_pairs_not_non_adjacent_forbidden_relation_table_spec(
+                    m,
+                    geometric_intersection_exists_table,
+                )
+        )
+    ) by {
+        if mesh_all_face_pairs_not_runtime_forbidden_policy_table_spec(
+            m,
+            geometric_intersection_exists_table,
+        ) {
+            lemma_mesh_all_face_pairs_not_runtime_forbidden_policy_table_implies_allowed_contact_relation(
+                m,
+                geometric_intersection_exists_table,
+            );
+            lemma_mesh_all_face_pairs_not_runtime_forbidden_policy_table_implies_no_non_adjacent_forbidden_relation(
+                m,
+                geometric_intersection_exists_table,
+            );
+            assert(mesh_all_face_pairs_allowed_contact_relation_spec(m));
+            assert(mesh_all_face_pairs_not_non_adjacent_forbidden_relation_table_spec(
+                m,
+                geometric_intersection_exists_table,
+            ));
+        }
+    };
+
+    assert(
+        (
+            mesh_all_face_pairs_allowed_contact_relation_spec(m)
+                && mesh_all_face_pairs_not_non_adjacent_forbidden_relation_table_spec(
+                    m,
+                    geometric_intersection_exists_table,
+                )
+        ) ==> mesh_all_face_pairs_not_runtime_forbidden_policy_table_spec(
+            m,
+            geometric_intersection_exists_table,
+        )
+    ) by {
+        if
+            mesh_all_face_pairs_allowed_contact_relation_spec(m)
+                && mesh_all_face_pairs_not_non_adjacent_forbidden_relation_table_spec(
+                    m,
+                    geometric_intersection_exists_table,
+                )
+        {
+            lemma_mesh_all_face_pairs_allowed_contact_relation_and_no_non_adjacent_forbidden_relation_table_imply_not_runtime_forbidden_policy(
+                m,
+                geometric_intersection_exists_table,
+            );
+            assert(mesh_all_face_pairs_not_runtime_forbidden_policy_table_spec(
+                m,
+                geometric_intersection_exists_table,
+            ));
+        }
+    };
+
+    assert(
+        mesh_all_face_pairs_not_runtime_forbidden_policy_table_spec(
+            m,
+            geometric_intersection_exists_table,
+        ) == (
+            mesh_all_face_pairs_allowed_contact_relation_spec(m)
+                && mesh_all_face_pairs_not_non_adjacent_forbidden_relation_table_spec(
+                    m,
+                    geometric_intersection_exists_table,
+                )
+        )
+    );
 }
 
 #[cfg(verus_keep_ghost)]

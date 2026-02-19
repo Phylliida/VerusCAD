@@ -195,6 +195,23 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with global table-spec normalization and an explicit iff bridge in:
+  - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`.
+  - added new all-face-pairs table-level spec surfaces:
+    - `mesh_all_face_pairs_not_runtime_forbidden_policy_table_spec`;
+    - `mesh_all_face_pairs_allowed_contact_relation_spec`;
+    - `mesh_all_face_pairs_not_non_adjacent_forbidden_relation_table_spec`.
+  - added a new quantified global iff corollary:
+    - `lemma_mesh_all_face_pairs_not_runtime_forbidden_policy_table_iff_allowed_contact_relation_and_no_non_adjacent_forbidden_relation`.
+  - outcome:
+    - P5.5 now has a single reusable equivalence statement tying global `!runtime_forbidden_policy` table assumptions directly to `(allowed_contact_relation && !non_adjacent_forbidden_relation)` over all face pairs;
+    - this removes repeated pairwise quantifier expansion at call sites and tightens proof-layer composition for the remaining checker soundness/completeness closure work without changing checklist status.
+- 2026-02-19: Failed attempts in this P5.5 global table-spec iff pass: none.
+- 2026-02-19: Revalidated after the P5.5 global table-spec iff increment:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (86 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (371 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (408 verified, 0 errors)
 - 2026-02-19: Worked P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with a face-corner seed0 non-collinearity bridge wiring increment in:
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
   - `src/runtime_halfedge_mesh_refinement/components_and_validity_specs.rs`;
