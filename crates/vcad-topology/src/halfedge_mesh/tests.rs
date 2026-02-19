@@ -25,6 +25,7 @@ use crate::runtime_halfedge_mesh_refinement::{
     runtime_check_face_convexity_triangle_projected_turn_complete_from_phase5_runtime_bundle_sound_bridge,
     runtime_check_face_convexity_triangle_projected_turn_sound_bridge,
     runtime_check_geometric_topological_consistency_sound_bridge,
+    runtime_check_geometric_topological_consistency_triangle_or_quad_coplanarity_sound_bridge,
     runtime_check_geometric_topological_consistency_triangle_projected_turn_sound_bridge,
     runtime_check_phase4_valid_and_kernel_shared_edge_local_orientation_imply_geometric_topological_consistency_spec,
     runtime_check_phase4_valid_and_shared_edge_local_orientation_imply_geometric_topological_consistency_spec,
@@ -277,6 +278,32 @@ fn assert_geometric_consistency_triangle_projected_turn_sound_bridge_parity(
 }
 
 #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+fn assert_geometric_consistency_triangle_or_quad_coplanarity_sound_bridge_parity(
+    mesh: &Mesh,
+    label: &str,
+) {
+    assert!(
+        mesh_all_faces_are_triangles_or_quads(mesh),
+        "triangle/quad geometric-consistency coplanarity sound bridge parity requires triangle/quad faces in {label}"
+    );
+    let runtime_geometric_ok = mesh.check_geometric_topological_consistency();
+    let triangle_or_quad_coplanarity_sound_bridge_ok =
+        runtime_check_geometric_topological_consistency_triangle_or_quad_coplanarity_sound_bridge(
+            mesh,
+        );
+    assert_eq!(
+        triangle_or_quad_coplanarity_sound_bridge_ok, runtime_geometric_ok,
+        "triangle/quad geometric-consistency coplanarity sound bridge parity failed for {label}"
+    );
+    if triangle_or_quad_coplanarity_sound_bridge_ok {
+        assert!(
+            mesh.check_face_coplanarity(),
+            "triangle/quad geometric-consistency coplanarity sound bridge should imply runtime coplanarity for {label}"
+        );
+    }
+}
+
+#[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
 fn assert_face_coplanarity_seed0_phase5_runtime_bundle_completeness_bridge_parity(
     mesh: &Mesh,
     label: &str,
@@ -475,6 +502,7 @@ fn assert_constructive_phase5_gate_parity(mesh: &Mesh, label: &str) {
             mesh,
             label,
         );
+        assert_geometric_consistency_triangle_or_quad_coplanarity_sound_bridge_parity(mesh, label);
         assert_face_coplanarity_seed0_runtime_with_geometry_triangle_or_quad_completeness_bridge_parity(
             mesh,
             label,
@@ -5381,6 +5409,39 @@ fn diagnostic_witness_is_real_counterexample(
         for (label, mesh) in fixtures {
             assert!(mesh_all_faces_are_triangles_or_quads(&mesh));
             assert_face_coplanarity_seed0_triangle_or_quad_phase5_runtime_bundle_completeness_bridge_parity(
+                &mesh, label,
+            );
+        }
+    }
+
+    #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+    #[test]
+    fn geometric_consistency_triangle_or_quad_coplanarity_sound_bridge_matches_runtime_checker() {
+        let noncoplanar_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(1, 1, 1),
+            RuntimePoint3::from_ints(0, 1, 0),
+        ];
+        let noncoplanar_faces = vec![vec![0, 1, 2, 3], vec![0, 3, 2, 1]];
+        let noncoplanar_mesh = Mesh::from_face_cycles(noncoplanar_vertices, &noncoplanar_faces)
+            .expect("noncoplanar face fixture should build");
+
+        let fixtures = vec![
+            ("tetrahedron", Mesh::tetrahedron()),
+            ("cube", Mesh::cube()),
+            ("triangular_prism", Mesh::triangular_prism()),
+            ("overlapping_disconnected_tetrahedra", build_overlapping_tetrahedra_mesh()),
+            (
+                "reflected_cube_outward_failure",
+                build_reflected_cube_outward_failure_mesh(),
+            ),
+            ("noncoplanar_face", noncoplanar_mesh),
+        ];
+
+        for (label, mesh) in fixtures {
+            assert!(mesh_all_faces_are_triangles_or_quads(&mesh));
+            assert_geometric_consistency_triangle_or_quad_coplanarity_sound_bridge_parity(
                 &mesh, label,
             );
         }

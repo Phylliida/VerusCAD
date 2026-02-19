@@ -1,1 +1,1 @@
-Added a triangle/quad phase5-bundle seed0 coplanarity completeness bridge with parity tests, revalidated the vcad-topology test and verification matrix, and 8 burndown tasks remain.
+Added a triangle/quad aggregate-soundness-to-full-coplanarity bridge with parity coverage, revalidated the vcad-topology test and verification matrix, and 8 burndown tasks remain.

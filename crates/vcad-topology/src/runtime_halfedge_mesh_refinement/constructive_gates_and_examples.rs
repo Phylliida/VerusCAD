@@ -2585,6 +2585,46 @@ pub fn runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_compl
 
 #[cfg(feature = "geometry-checks")]
 #[allow(dead_code)]
+pub fn runtime_check_geometric_topological_consistency_triangle_or_quad_coplanarity_sound_bridge(
+    m: &Mesh,
+) -> (out: bool)
+    requires
+        mesh_runtime_all_faces_triangle_or_quad_cycles_spec(m),
+    ensures
+        out ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m),
+        out ==> mesh_runtime_geometric_topological_consistency_with_geometry_spec(m),
+        out ==> mesh_runtime_all_faces_coplanar_spec(m),
+{
+    let geometric_sound_ok = runtime_check_geometric_topological_consistency_sound_bridge(m);
+    if !geometric_sound_ok {
+        return false;
+    }
+
+    let coplanarity_complete_ok =
+        runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_complete_from_phase5_runtime_bundle_sound_bridge(
+            m,
+        );
+    if !coplanarity_complete_ok {
+        return false;
+    }
+
+    proof {
+        assert(
+            geometric_sound_ok
+                ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m)
+        );
+        assert(geometric_sound_ok ==> mesh_runtime_geometric_topological_consistency_with_geometry_spec(m));
+        assert(mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
+        assert(mesh_runtime_geometric_topological_consistency_with_geometry_spec(m));
+        assert(coplanarity_complete_ok ==> mesh_runtime_all_faces_coplanar_spec(m));
+        assert(mesh_runtime_all_faces_coplanar_spec(m));
+    }
+
+    true
+}
+
+#[cfg(feature = "geometry-checks")]
+#[allow(dead_code)]
 pub fn check_geometric_topological_consistency_constructive(
     m: &Mesh,
 ) -> (out: Option<GeometricTopologicalConsistencyGateWitness>)
