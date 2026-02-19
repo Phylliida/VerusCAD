@@ -1,1 +1,1 @@
-Added P5.1 coplanarity seed-0 bridge parity regressions (deterministic and randomized via constructive harness coverage) and documented full revalidation; 10 Phase 5 checklist tasks remain.
+Added a P5.3 randomized convexity projected-orient2d oracle differential harness (plus labeled parity helper refactor), documented full revalidation, and 10 Phase 5 checklist tasks remain.
