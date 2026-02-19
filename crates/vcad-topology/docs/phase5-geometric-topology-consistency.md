@@ -193,6 +193,29 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.1 runtime-soundness groundwork increment in
+  `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
+  - added seed-0 fixed-witness face coplanarity specs:
+    - `mesh_face_coplanar_seed0_fixed_witness_spec`;
+    - `mesh_all_faces_coplanar_seed0_fixed_witness_spec`;
+  - added bridge lemmas from the existing full coplanarity spec to the new seed-0 witness layer:
+    - `lemma_mesh_face_coplanar_spec_implies_seed0_fixed_witness`;
+    - `lemma_mesh_all_faces_coplanar_spec_implies_all_faces_seed0_fixed_witness`;
+  - added runtime aliases + bridge lemma for the same seed-0 witness layer:
+    - `mesh_runtime_face_coplanar_seed0_fixed_witness_spec`;
+    - `mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec`;
+    - `lemma_mesh_runtime_all_faces_coplanar_spec_implies_all_faces_seed0_fixed_witness`;
+  - this advances the unchecked P5.1 checker-correctness item by exporting a reusable aggregate witness shape that matches the runtime checker's fixed-seed structure.
+- 2026-02-19: Failed attempt in this P5.1 groundwork increment:
+  - attempted to directly wire `face_coplanarity_ok` in the aggregate geometric gate to the new seed-0 witness layer;
+  - deferred because that still needs a dedicated verified runtime bridge from `Mesh::check_face_coplanarity()` (or an equivalent constructive checker) to the seed-0 witness aggregate spec.
+- 2026-02-19: Revalidated after the P5.1 seed-0 witness groundwork increment:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (229 verified, 0 errors)
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (264 verified, 0 errors)
 - 2026-02-19: Completed the remaining P5.12 Phase 6 handoff-lemma item across
   `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs` and
   `src/runtime_halfedge_mesh_refinement/from_face_cycles_specs_and_lemmas.rs`:

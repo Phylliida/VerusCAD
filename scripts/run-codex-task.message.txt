@@ -1,1 +1,1 @@
-Added a fixed-seed P5.1 coplanarity witness bridge and seed-plane containment lemma path in runtime refinement, documented the burndown progress/remaining gap, and revalidated vcad-topology (259 verified, 0 errors).
+Added P5.1 seed-0 fixed-witness coplanarity bridge specs/lemmas and documented the burndown increment with full revalidation (264 verified, 0 errors).
