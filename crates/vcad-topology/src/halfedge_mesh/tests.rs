@@ -21,6 +21,7 @@ use crate::runtime_halfedge_mesh_refinement::{
     runtime_check_face_seed0_corner_non_collinearity_bridge,
     runtime_check_face_convexity_triangle_projected_turn_sound_bridge,
     runtime_check_geometric_topological_consistency_sound_bridge,
+    runtime_check_geometric_topological_consistency_triangle_projected_turn_sound_bridge,
     runtime_check_phase4_valid_and_kernel_shared_edge_local_orientation_imply_geometric_topological_consistency_spec,
     runtime_check_phase4_valid_and_shared_edge_local_orientation_imply_geometric_topological_consistency_spec,
 };
@@ -182,6 +183,24 @@ fn assert_face_convexity_triangle_projected_turn_sound_bridge_parity(mesh: &Mesh
 }
 
 #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+fn assert_geometric_consistency_triangle_projected_turn_sound_bridge_parity(
+    mesh: &Mesh,
+    label: &str,
+) {
+    assert!(
+        mesh_all_faces_are_triangles(mesh),
+        "triangle geometric-consistency projected-turn sound bridge parity requires triangle faces in {label}"
+    );
+    let runtime_geometric_ok = mesh.check_geometric_topological_consistency();
+    let triangle_projected_turn_geometric_sound_bridge_ok =
+        runtime_check_geometric_topological_consistency_triangle_projected_turn_sound_bridge(mesh);
+    assert_eq!(
+        triangle_projected_turn_geometric_sound_bridge_ok, runtime_geometric_ok,
+        "triangle geometric-consistency projected-turn sound bridge parity failed for {label}"
+    );
+}
+
+#[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
 fn assert_face_coplanarity_seed0_phase5_runtime_bundle_completeness_bridge_parity(
     mesh: &Mesh,
     label: &str,
@@ -333,6 +352,7 @@ fn assert_constructive_phase5_gate_parity(mesh: &Mesh, label: &str) {
     assert_face_coplanarity_runtime_seed0_sound_bridge_parity(mesh, label);
     if mesh_all_faces_are_triangles(mesh) {
         assert_face_convexity_triangle_projected_turn_sound_bridge_parity(mesh, label);
+        assert_geometric_consistency_triangle_projected_turn_sound_bridge_parity(mesh, label);
     }
     if mesh_all_faces_are_triangles_or_quads(mesh) {
         assert_face_coplanarity_runtime_seed0_triangle_or_quad_sound_bridge_parity(mesh, label);
@@ -5086,6 +5106,33 @@ fn diagnostic_witness_is_real_counterexample(
         for (label, mesh) in fixtures {
             assert!(mesh_all_faces_are_triangles(&mesh));
             assert_face_convexity_triangle_projected_turn_sound_bridge_parity(&mesh, label);
+        }
+    }
+
+    #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+    #[test]
+    fn geometric_consistency_triangle_projected_turn_sound_bridge_matches_runtime_checker() {
+        let collinear_mesh = build_collinear_single_triangle_pair_mesh();
+
+        let zero_length_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+        ];
+        let zero_length_faces = vec![vec![0, 1, 2], vec![0, 2, 1]];
+        let zero_length_mesh = Mesh::from_face_cycles(zero_length_vertices, &zero_length_faces)
+            .expect("zero-length triangle fixture should build");
+
+        let fixtures = vec![
+            ("tetrahedron", Mesh::tetrahedron()),
+            ("overlapping_disconnected_tetrahedra", build_overlapping_tetrahedra_mesh()),
+            ("collinear_face", collinear_mesh),
+            ("zero_length_edge", zero_length_mesh),
+        ];
+
+        for (label, mesh) in fixtures {
+            assert!(mesh_all_faces_are_triangles(&mesh));
+            assert_geometric_consistency_triangle_projected_turn_sound_bridge_parity(&mesh, label);
         }
     }
 

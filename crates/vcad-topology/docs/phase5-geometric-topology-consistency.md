@@ -195,6 +195,33 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.3 (`Proof: runtime checker correctness vs convexity spec`) and P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with a triangle-face projected-turn aggregate-bridge increment in:
+  - `src/runtime_halfedge_mesh_refinement/components_and_validity_specs.rs`;
+  - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
+  - `src/halfedge_mesh/tests.rs`.
+  - strengthened geometry-aware aggregate model-linking for triangle meshes:
+    - `geometric_topological_consistency_gate_geometry_model_link_spec` now additionally requires:
+      - `(face_convexity_ok && all_faces_triangle_cycles) ==> all_faces_projected_turn_sign_consistency`.
+  - added new proof/runtime bridge hooks:
+    - `lemma_mesh_runtime_geometric_topological_consistency_with_geometry_and_triangle_cycles_imply_all_faces_projected_turn_sign_consistency`;
+    - `runtime_check_geometric_topological_consistency_triangle_projected_turn_sound_bridge`.
+  - tightened constructive witness guarantees:
+    - `check_geometric_topological_consistency_constructive` now additionally proves:
+      - `(api_ok && all_faces_triangle_cycles) ==> all_faces_projected_turn_sign_consistency`.
+  - added parity lock coverage:
+    - helper `assert_geometric_consistency_triangle_projected_turn_sound_bridge_parity`;
+    - test `geometric_consistency_triangle_projected_turn_sound_bridge_matches_runtime_checker`;
+    - integrated into the existing aggregate parity harness (`assert_constructive_phase5_gate_parity`) for triangle fixtures.
+  - outcome:
+    - the aggregate runtime gate now has an explicit triangle-specialized sound bridge into the convexity projected-turn spec layer, reducing remaining P5.3/P5.7 checker/spec-equivalence gap plumbing while keeping the checklist status unchanged.
+- 2026-02-19: Failed attempts in this P5.3/P5.7 triangle projected-turn aggregate-bridge pass: none.
+- 2026-02-19: Revalidated after the P5.3/P5.7 triangle projected-turn aggregate-bridge increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (87 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (374 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (411 verified, 0 errors)
 - 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with a disjoint-boundary/no-intersection table-normalization increment in:
   - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`.
   - added new all-face-pairs disjoint-boundary table surface:

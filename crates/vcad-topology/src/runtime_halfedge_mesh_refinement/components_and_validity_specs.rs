@@ -1004,6 +1004,8 @@ pub open spec fn geometric_topological_consistency_gate_geometry_model_link_spec
         m,
         vertex_positions,
     ))
+    &&& ((w.face_convexity_ok && mesh_all_faces_triangle_cycles_spec(m))
+        ==> mesh_all_faces_projected_turn_sign_consistency_spec(m, vertex_positions))
 }
 
 pub open spec fn mesh_geometric_topological_consistency_spec(m: MeshModel) -> bool {
@@ -1406,6 +1408,25 @@ pub proof fn lemma_mesh_runtime_geometric_topological_consistency_seed0_coplanar
         ) by {
             assert(mesh_runtime_all_faces_oriented_seed0_planes_spec(m));
         };
+        assert(
+            (gw.face_convexity_ok && mesh_all_faces_triangle_cycles_spec(m@))
+                ==> mesh_all_faces_projected_turn_sign_consistency_spec(
+                m@,
+                mesh_runtime_vertex_positions_spec(m),
+            )
+        ) by {
+            if gw.face_convexity_ok && mesh_all_faces_triangle_cycles_spec(m@) {
+                assert(mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m));
+                assert(mesh_runtime_all_faces_triangle_cycles_spec(m));
+                lemma_mesh_runtime_all_faces_seed0_corner_non_collinear_and_triangle_cycles_imply_all_faces_projected_turn_sign_consistency(
+                    m,
+                );
+                assert(mesh_all_faces_projected_turn_sign_consistency_spec(
+                    m@,
+                    mesh_runtime_vertex_positions_spec(m),
+                ));
+            }
+        };
     };
     assert(exists|gw0: GeometricTopologicalConsistencyGateWitness| {
         &&& geometric_topological_consistency_gate_witness_spec(gw0)
@@ -1650,6 +1671,27 @@ pub proof fn lemma_mesh_runtime_geometric_topological_consistency_with_geometry_
                 && mesh_shared_edge_local_orientation_consistency_spec(m@)
         )
     );
+}
+
+pub proof fn lemma_mesh_runtime_geometric_topological_consistency_with_geometry_and_triangle_cycles_imply_all_faces_projected_turn_sign_consistency(
+    m: &Mesh,
+)
+    requires
+        mesh_runtime_geometric_topological_consistency_with_geometry_spec(m),
+        mesh_runtime_all_faces_triangle_cycles_spec(m),
+    ensures
+        mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m),
+{
+    lemma_mesh_runtime_geometric_topological_consistency_with_geometry_implies_mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle(
+        m,
+    );
+    assert(mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
+    assert(mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m));
+    assert(mesh_runtime_all_faces_triangle_cycles_spec(m));
+    lemma_mesh_runtime_all_faces_seed0_corner_non_collinear_and_triangle_cycles_imply_all_faces_projected_turn_sign_consistency(
+        m,
+    );
+    assert(mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m));
 }
 
 pub proof fn lemma_mesh_geometric_topological_consistency_implies_mesh_valid_and_shared_edge_local_orientation(

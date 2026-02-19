@@ -2390,6 +2390,9 @@ pub fn check_geometric_topological_consistency_constructive(
                         m,
                     ))
                 && (w.api_ok ==> mesh_runtime_geometric_topological_consistency_with_geometry_spec(m))
+                && (w.api_ok
+                    && mesh_runtime_all_faces_triangle_cycles_spec(m)
+                    ==> mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m))
                 && (w.api_ok ==> mesh_geometric_topological_consistency_spec(m@)),
             Option::None => true,
         },
@@ -2569,6 +2572,19 @@ pub fn check_geometric_topological_consistency_constructive(
                 assert(mesh_runtime_geometric_topological_consistency_with_geometry_spec(m));
             }
         };
+        assert(
+            w.api_ok
+                && mesh_runtime_all_faces_triangle_cycles_spec(m)
+                ==> mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m)
+        ) by {
+            if w.api_ok && mesh_runtime_all_faces_triangle_cycles_spec(m) {
+                assert(mesh_runtime_geometric_topological_consistency_with_geometry_spec(m));
+                lemma_mesh_runtime_geometric_topological_consistency_with_geometry_and_triangle_cycles_imply_all_faces_projected_turn_sign_consistency(
+                    m,
+                );
+                assert(mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m));
+            }
+        };
         assert(w.api_ok ==> mesh_geometric_topological_consistency_spec(m@)) by {
             if w.api_ok {
                 assert(mesh_geometric_topological_consistency_spec(m@));
@@ -2705,6 +2721,42 @@ pub fn runtime_check_geometric_topological_consistency_sound_bridge(m: &Mesh) ->
         );
         assert(mesh_valid_spec(m@));
         assert(mesh_shared_edge_local_orientation_consistency_spec(m@));
+    }
+
+    true
+}
+
+#[cfg(feature = "geometry-checks")]
+#[allow(dead_code)]
+pub fn runtime_check_geometric_topological_consistency_triangle_projected_turn_sound_bridge(
+    m: &Mesh,
+) -> (out: bool)
+    requires
+        mesh_runtime_all_faces_triangle_cycles_spec(m),
+    ensures
+        out ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m),
+        out ==> mesh_runtime_geometric_topological_consistency_with_geometry_spec(m),
+        out ==> mesh_geometric_topological_consistency_spec(m@),
+        out ==> mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m),
+{
+    let geometric_sound_ok = runtime_check_geometric_topological_consistency_sound_bridge(m);
+    if !geometric_sound_ok {
+        return false;
+    }
+
+    proof {
+        assert(
+            geometric_sound_ok
+                ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m)
+        );
+        assert(geometric_sound_ok ==> mesh_runtime_geometric_topological_consistency_with_geometry_spec(m));
+        assert(geometric_sound_ok ==> mesh_geometric_topological_consistency_spec(m@));
+        assert(mesh_runtime_geometric_topological_consistency_with_geometry_spec(m));
+        assert(mesh_runtime_all_faces_triangle_cycles_spec(m));
+        lemma_mesh_runtime_geometric_topological_consistency_with_geometry_and_triangle_cycles_imply_all_faces_projected_turn_sign_consistency(
+            m,
+        );
+        assert(mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m));
     }
 
     true
