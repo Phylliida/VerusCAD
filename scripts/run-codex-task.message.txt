@@ -1,1 +1,1 @@
-Added the L2 witness-along-normal spec plus a witness-offset helper lemma in vcad-geometry, documented stable-toolchain ghost-check limitations in the Phase 5 burndown, and 22 Phase 5 upstream-lemma tasks remain.
+Completed the L6 narrow-phase predicate audit in vcad-geometry’s Phase 5 upstream-lemma burndown with concrete callsites and proof-gap mapping, and 24 Phase 5 upstream-lemma tasks remain.

@@ -95,11 +95,35 @@ Blocks: `P5.5` intersection checker soundness (broad phase).
 ## L6: Segment-Face Intersection Predicate Correctness
 Blocks: `P5.5` intersection checker soundness (narrow phase).
 
-- [ ] Audit which `vcad-geometry` segment/face predicates are used by `vcad-topology` narrow phase.
+- [x] Audit which `vcad-geometry` segment/face predicates are used by `vcad-topology` narrow phase.
+  - Landed (2026-02-19): audited `crates/vcad-topology/src/halfedge_mesh/validation.rs` narrow-phase path.
+  - Used predicates:
+    - `sidedness::segment_plane_intersection_point_strict` (non-coplanar segment-vs-face branch).
+    - `segment_intersection::segment_intersection_kind_2d` and
+      `segment_intersection::segment_intersection_point_2d` (coplanar projected segment-vs-edge branch).
+    - `convex_polygon::point_in_convex_polygon_2d` (coplanar branch endpoint-in-polygon checks).
+  - Current upstream proof surface status:
+    - `segment_plane_intersection_point_strict` already exports an iff/existence shape in
+      `crates/vcad-geometry/src/runtime_sidedness_refinement.rs`
+      (`is_some() <==> strict_opposite_sides_spec` and existential parameter witness).
+    - `segment_intersection_kind_2d` already exports exact classifier refinement and
+      kind-partition lemmas in `crates/vcad-geometry/src/runtime_segment_intersection_refinement.rs`.
+    - `point_in_convex_polygon_2d` already exports runtime/spec equality plus convex-geometric iff wrappers in
+      `crates/vcad-geometry/src/runtime_convex_polygon_refinement.rs`.
+    - Remaining gap from this audit: `segment_intersection_point_2d` has no `verus_keep_ghost`
+      contract tying returned witnesses to `point_on_both_segments_spec`, so the coplanar
+      segment-segment/polygon witness chain is not yet fully closed.
+  - Failed attempt note (2026-02-19): none (audit-only pass).
 - [ ] For each used predicate, ensure there is a proved iff-style spec (add missing proofs/specs as needed):
-  - [ ] segment-triangle intersection (`ray/segment-plane parameter` + barycentric containment);
-  - [ ] coplanar segment-segment intersection (2D projection + interval overlap);
+  - [ ] segment-triangle intersection (`ray/segment-plane parameter` + barycentric containment).
+    - Audit note (2026-02-19): topology currently composes plane crossing/intersection with a local
+      in-face boundary test; upstream still needs a unified iff wrapper at the geometry boundary.
+  - [ ] coplanar segment-segment intersection (2D projection + interval overlap).
+    - Audit note (2026-02-19): classifier iff is present, but point-witness iff for
+      `segment_intersection_point_2d` is still missing upstream.
   - [ ] coplanar segment-polygon overlap (dominant-axis projection + edge-crossing containment tests).
+    - Audit note (2026-02-19): ingredient predicates are present, but their composed
+      dominant-axis overlap witness proof is not yet packaged upstream.
 - [ ] Proof shape: predicate returns `true` iff a witness point exists satisfying all geometric constraints simultaneously.
 
 ## Suggested Landing Order
