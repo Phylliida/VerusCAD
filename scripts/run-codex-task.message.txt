@@ -1,1 +1,1 @@
-Strengthened the P5.7 aggregate sound bridge to export explicit phase-4/shared-edge guarantees and added a noncoplanar strictness-gap regression with full test+verification revalidation; 9 Phase 5 checklist tasks remain.
+Added P5.1 coplanarity seed-0 bridge parity regressions (deterministic and randomized via constructive harness coverage) and documented full revalidation; 10 Phase 5 checklist tasks remain.
