@@ -193,6 +193,27 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.1 full-coplanarity-to-oriented-seed0 bridge increment in
+  `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
+  - added a face-level bridge lemma from full coplanarity + seed-0 non-collinearity to oriented
+    seed-0 plane semantics:
+    - `lemma_mesh_face_coplanar_spec_and_seed0_non_collinear_imply_oriented_seed0_plane`;
+  - added an all-faces aggregate bridge lemma:
+    - `lemma_mesh_all_faces_coplanar_spec_and_seed0_non_collinear_imply_all_faces_oriented_seed0_planes`;
+  - added a runtime-alias aggregate bridge lemma:
+    - `lemma_mesh_runtime_all_faces_coplanar_spec_and_seed0_non_collinear_imply_all_faces_oriented_seed0_planes`.
+  - outcome: the proof stack now has a direct path from the roadmap-level full coplanarity spec
+    (under the explicit seed-0 non-collinearity precondition already enforced by the runtime
+    checker) into the oriented seed-0 plane bundle used by constructive/runtime bridges, reducing
+    intermediate conversion plumbing in the remaining P5.1 checker-correctness work.
+- 2026-02-19: Failed attempts in this P5.1 full-coplanarity-to-oriented-seed0 bridge pass: none.
+- 2026-02-19: Revalidated after the P5.1 full-coplanarity-to-oriented-seed0 bridge additions:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (271 verified, 0 errors)
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (308 verified, 0 errors)
 - 2026-02-19: Completed a P5.1 runtime-soundness reverse-bridge characterization increment in
   `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
   - added face-level reverse lemmas from oriented seed-0 plane witnesses:
