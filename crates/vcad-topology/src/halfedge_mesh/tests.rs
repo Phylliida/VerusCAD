@@ -480,6 +480,11 @@ fn assert_constructive_phase5_gate_parity(mesh: &Mesh, label: &str) {
     assert_face_coplanarity_runtime_seed0_bridge_parity(mesh, label);
     assert_face_coplanarity_runtime_seed0_sound_bridge_parity(mesh, label);
     if mesh_all_faces_are_triangles(mesh) {
+        assert_eq!(
+            mesh.check_face_convexity(),
+            mesh.check_face_corner_non_collinearity(),
+            "triangle-face convexity should match seed-corner non-collinearity for {label}"
+        );
         assert_face_convexity_triangle_projected_turn_sound_bridge_parity(mesh, label);
         assert_face_convexity_triangle_projected_turn_runtime_with_geometry_completeness_bridge_parity(
             mesh,

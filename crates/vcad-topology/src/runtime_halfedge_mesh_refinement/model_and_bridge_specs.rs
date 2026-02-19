@@ -4034,6 +4034,179 @@ pub proof fn lemma_mesh_runtime_all_faces_seed0_corner_non_collinear_and_triangl
 }
 
 #[cfg(verus_keep_ghost)]
+pub proof fn lemma_triangle_face_projected_turn_sign_consistency_implies_seed0_corner_non_collinear(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+)
+    requires
+        mesh_index_bounds_spec(m),
+        mesh_geometry_input_spec(m, vertex_positions),
+        0 <= f < mesh_face_count_spec(m),
+        mesh_face_cycle_witness_spec(m, f, 3),
+        mesh_face_projected_turn_sign_consistency_spec(m, vertex_positions, f),
+    ensures
+        !mesh_points_collinear3_spec(
+            mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 0),
+            mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 1),
+            mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 2),
+        ),
+{
+    let (k, seed_i, expected_sign) = choose|k: int, seed_i: int, expected_sign: int| #[trigger]
+        mesh_face_projected_turn_sign_consistency_witness_spec(
+            m,
+            vertex_positions,
+            f,
+            k,
+            seed_i,
+            expected_sign,
+        );
+    assert(mesh_face_projected_turn_sign_consistency_witness_spec(
+        m,
+        vertex_positions,
+        f,
+        k,
+        seed_i,
+        expected_sign,
+    ));
+
+    lemma_mesh_face_cycle_witness_length_unique(m, f, k, 3);
+    assert(k == 3);
+    assert(0 <= seed_i);
+    assert(seed_i + 2 < k);
+    assert(seed_i == 0) by {
+        if seed_i != 0 {
+            assert(seed_i > 0);
+            assert(seed_i >= 1);
+            assert(seed_i + 2 >= 3);
+            assert(seed_i + 2 >= k);
+            assert(false);
+        }
+    };
+
+    let p0 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 0);
+    let p1 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 1);
+    let p2 = mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 2);
+    assert(mesh_face_seed_plane_normal_spec(m, vertex_positions, f, seed_i).norm2_spec().signum() != 0);
+    assert(mesh_face_seed_plane_normal_spec(m, vertex_positions, f, 0).norm2_spec().signum() != 0);
+    assert(mesh_face_seed_plane_normal_spec(m, vertex_positions, f, 0)
+        == p1.sub_spec(p0).cross_spec(p2.sub_spec(p0)));
+
+    assert(!mesh_points_collinear3_spec(p0, p1, p2)) by {
+        if mesh_points_collinear3_spec(p0, p1, p2) {
+            assert(mesh_points_collinear3_spec(p0, p1, p2) == (
+                p1.sub_spec(p0).cross_spec(p2.sub_spec(p0)).norm2_spec().signum() == 0
+            ));
+            assert(p1.sub_spec(p0).cross_spec(p2.sub_spec(p0)).norm2_spec().signum() == 0);
+            assert(mesh_face_seed_plane_normal_spec(m, vertex_positions, f, 0).norm2_spec().signum() == 0);
+            assert(false);
+        }
+    };
+
+    assert(!mesh_points_collinear3_spec(
+        mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 0),
+        mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 1),
+        mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 2),
+    ));
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_all_faces_projected_turn_sign_consistency_and_triangle_cycles_imply_all_faces_seed0_corner_non_collinear(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+)
+    requires
+        mesh_all_faces_projected_turn_sign_consistency_spec(m, vertex_positions),
+        mesh_all_faces_triangle_cycles_spec(m),
+    ensures
+        mesh_all_faces_seed0_corner_non_collinear_spec(m, vertex_positions),
+{
+    assert(mesh_geometry_input_spec(m, vertex_positions));
+    assert(mesh_index_bounds_spec(m));
+    assert(mesh_face_next_cycles_spec(m));
+
+    assert forall|f: int|
+        0 <= f < mesh_face_count_spec(m)
+            implies !mesh_points_collinear3_spec(
+                mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 0),
+                mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 1),
+                mesh_face_cycle_vertex_position_or_default_at_int_spec(m, vertex_positions, f, 2),
+            ) by {
+        assert(mesh_face_cycle_witness_spec(m, f, 3));
+        assert(mesh_face_projected_turn_sign_consistency_spec(m, vertex_positions, f));
+        lemma_triangle_face_projected_turn_sign_consistency_implies_seed0_corner_non_collinear(
+            m,
+            vertex_positions,
+            f,
+        );
+    };
+    assert(mesh_all_faces_seed0_corner_non_collinear_spec(m, vertex_positions));
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_runtime_all_faces_projected_turn_sign_consistency_and_triangle_cycles_imply_all_faces_seed0_corner_non_collinear(
+    m: &Mesh,
+)
+    requires
+        mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m),
+        mesh_runtime_all_faces_triangle_cycles_spec(m),
+    ensures
+        mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m),
+{
+    lemma_mesh_all_faces_projected_turn_sign_consistency_and_triangle_cycles_imply_all_faces_seed0_corner_non_collinear(
+        m@,
+        mesh_runtime_vertex_positions_spec(m),
+    );
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_all_faces_triangle_cycles_projected_turn_sign_consistency_iff_seed0_corner_non_collinear(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+)
+    requires
+        mesh_all_faces_triangle_cycles_spec(m),
+    ensures
+        mesh_all_faces_projected_turn_sign_consistency_spec(m, vertex_positions)
+            == mesh_all_faces_seed0_corner_non_collinear_spec(m, vertex_positions),
+{
+    if mesh_all_faces_seed0_corner_non_collinear_spec(m, vertex_positions) {
+        lemma_mesh_all_faces_seed0_corner_non_collinear_and_triangle_cycles_imply_all_faces_projected_turn_sign_consistency(
+            m,
+            vertex_positions,
+        );
+        assert(mesh_all_faces_projected_turn_sign_consistency_spec(m, vertex_positions));
+    }
+    if mesh_all_faces_projected_turn_sign_consistency_spec(m, vertex_positions) {
+        lemma_mesh_all_faces_projected_turn_sign_consistency_and_triangle_cycles_imply_all_faces_seed0_corner_non_collinear(
+            m,
+            vertex_positions,
+        );
+        assert(mesh_all_faces_seed0_corner_non_collinear_spec(m, vertex_positions));
+    }
+    assert(
+        mesh_all_faces_projected_turn_sign_consistency_spec(m, vertex_positions)
+            == mesh_all_faces_seed0_corner_non_collinear_spec(m, vertex_positions)
+    );
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_runtime_all_faces_triangle_cycles_projected_turn_sign_consistency_iff_seed0_corner_non_collinear(
+    m: &Mesh,
+)
+    requires
+        mesh_runtime_all_faces_triangle_cycles_spec(m),
+    ensures
+        mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m)
+            == mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m),
+{
+    lemma_mesh_all_faces_triangle_cycles_projected_turn_sign_consistency_iff_seed0_corner_non_collinear(
+        m@,
+        mesh_runtime_vertex_positions_spec(m),
+    );
+}
+
+#[cfg(verus_keep_ghost)]
 pub open spec fn mesh_face_cycle_shift_index_spec(i: int, shift: int, k: int) -> int {
     if i + shift < k {
         i + shift

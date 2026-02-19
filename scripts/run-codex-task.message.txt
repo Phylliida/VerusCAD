@@ -1,1 +1,1 @@
-Strengthened the aggregate geometric-consistency sound bridge to carry triangle/quad full-coplanarity (plus constructive/parity wiring), revalidated the vcad-topology test and verification matrix, and 8 burndown tasks remain.
+Added triangle projected-turn/non-collinearity iff bridge lemmas and threaded the equivalence through aggregate geometric-consistency proof contracts with parity locks, revalidated vcad-topology, and 8 burndown tasks remain.

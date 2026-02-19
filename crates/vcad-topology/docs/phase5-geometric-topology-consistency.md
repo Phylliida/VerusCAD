@@ -195,6 +195,36 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.3 (`Proof: runtime checker correctness vs convexity spec`) and P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with a triangle projected-turn/non-collinearity characterization strengthening increment in:
+  - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`;
+  - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
+  - `src/halfedge_mesh/tests.rs`.
+  - added new triangle convexity characterization lemmas:
+    - `lemma_triangle_face_projected_turn_sign_consistency_implies_seed0_corner_non_collinear`;
+    - `lemma_mesh_all_faces_projected_turn_sign_consistency_and_triangle_cycles_imply_all_faces_seed0_corner_non_collinear`;
+    - `lemma_mesh_runtime_all_faces_projected_turn_sign_consistency_and_triangle_cycles_imply_all_faces_seed0_corner_non_collinear`;
+    - `lemma_mesh_all_faces_triangle_cycles_projected_turn_sign_consistency_iff_seed0_corner_non_collinear`;
+    - `lemma_mesh_runtime_all_faces_triangle_cycles_projected_turn_sign_consistency_iff_seed0_corner_non_collinear`.
+  - strengthened aggregate constructive/runtime sound bridge guarantees:
+    - `check_geometric_topological_consistency_constructive` now additionally proves:
+      - `(w.api_ok && mesh_runtime_all_faces_triangle_cycles_spec(m)) ==> (mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m) == mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m))`.
+    - `runtime_check_geometric_topological_consistency_sound_bridge` now additionally proves:
+      - `(out && mesh_runtime_all_faces_triangle_cycles_spec(m)) ==> (mesh_runtime_all_faces_projected_turn_sign_consistency_spec(m) == mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m))`.
+  - strengthened parity lock coverage:
+    - `assert_constructive_phase5_gate_parity` now explicitly checks that, on triangle-face fixtures, `check_face_convexity()` equals `check_face_corner_non_collinearity()`.
+  - outcome:
+    - the triangle convexity spec layer now carries an explicit runtime/model `iff` bridge to seed0 corner non-collinearity and the aggregate sound/constructive bridges now expose that equivalence under triangle-cycle assumptions, reducing remaining P5.3/P5.7 closure plumbing while checklist status remains unchanged.
+- 2026-02-19: Failed attempts in this P5.3/P5.7 triangle projected-turn characterization pass:
+  - initial witness extraction in `lemma_triangle_face_projected_turn_sign_consistency_implies_seed0_corner_non_collinear` used nested `choose` quantifiers and failed trigger inference (`Could not automatically infer triggers for this quantifier`);
+  - resolved by switching to a single `(k, seed_i, expected_sign)` witness extraction `choose` with a direct trigger on `mesh_face_projected_turn_sign_consistency_witness_spec`.
+- 2026-02-19: Revalidated after the P5.3/P5.7 triangle projected-turn characterization strengthening:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (92 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" geometric_consistency_constructive_gate_matches_runtime_boolean_gate` (1 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (380 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (417 verified, 0 errors)
 - 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) and P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with a triangle/quad aggregate-sound-bridge coplanarity carry-through strengthening in:
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
   - `src/halfedge_mesh/tests.rs`.
