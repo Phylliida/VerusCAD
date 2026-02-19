@@ -10,6 +10,8 @@ use vcad_math::runtime_wf as wf;
 #[cfg(verus_keep_ghost)]
 use vcad_math::scalar::Scalar;
 #[cfg(verus_keep_ghost)]
+use vcad_math::vec2::Vec2;
+#[cfg(verus_keep_ghost)]
 use vstd::prelude::*;
 
 /// Coarse intersection relation for two closed 2D segments `[ab]` and `[cd]`.
@@ -324,6 +326,126 @@ pub open spec fn point_on_both_segments_spec(
     d: Point2,
 ) -> bool {
     point_on_segment_inclusive_spec(p, a, b) && point_on_segment_inclusive_spec(p, c, d)
+}
+
+proof fn lemma_segment_intersection_kind_spec_proper_implies_straddling_signs(
+    a: Point2,
+    b: Point2,
+    c: Point2,
+    d: Point2,
+)
+    requires
+        segment_intersection_kind_spec(a, b, c, d) is Proper,
+    ensures
+        orient2d_spec(a, b, c).signum() != 0,
+        orient2d_spec(a, b, d).signum() != 0,
+        orient2d_spec(c, d, a).signum() != 0,
+        orient2d_spec(c, d, b).signum() != 0,
+        orient2d_spec(a, b, c).signum() != orient2d_spec(a, b, d).signum(),
+        orient2d_spec(c, d, a).signum() != orient2d_spec(c, d, b).signum(),
+{
+    let o1 = orient2d_spec(a, b, c).signum();
+    let o2 = orient2d_spec(a, b, d).signum();
+    let o3 = orient2d_spec(c, d, a).signum();
+    let o4 = orient2d_spec(c, d, b).signum();
+    let touch1 = point_on_both_segments_spec(c, a, b, c, d);
+    let touch2 = point_on_both_segments_spec(d, a, b, c, d);
+    let touch3 = point_on_both_segments_spec(a, a, b, c, d);
+    let touch4 = point_on_both_segments_spec(b, a, b, c, d);
+    let use_x = scalar_sign_spec(a.x, b.x) != 0 || scalar_sign_spec(c.x, d.x) != 0;
+    let overlap_kind = if use_x {
+        collinear_overlap_dimension_kind_spec(a.x, b.x, c.x, d.x)
+    } else {
+        collinear_overlap_dimension_kind_spec(a.y, b.y, c.y, d.y)
+    };
+    let k = segment_intersection_kind_spec(a, b, c, d);
+    assert(k is Proper);
+
+    if o1 == 0 && o2 == 0 && o3 == 0 && o4 == 0 {
+        if overlap_kind < 0 {
+            assert(k is Disjoint);
+        } else if overlap_kind == 0 && (touch1 || touch2 || touch3 || touch4) {
+            assert(k is EndpointTouch);
+        } else {
+            assert(k is CollinearOverlap);
+        }
+        lemma_segment_intersection_kind_spec_pairwise_disjoint(a, b, c, d);
+        assert(false);
+    } else if o1 != 0 && o2 != 0 && o3 != 0 && o4 != 0 && o1 != o2 && o3 != o4 {
+        assert(orient2d_spec(a, b, c).signum() != 0);
+        assert(orient2d_spec(a, b, d).signum() != 0);
+        assert(orient2d_spec(c, d, a).signum() != 0);
+        assert(orient2d_spec(c, d, b).signum() != 0);
+        assert(orient2d_spec(a, b, c).signum() != orient2d_spec(a, b, d).signum());
+        assert(orient2d_spec(c, d, a).signum() != orient2d_spec(c, d, b).signum());
+    } else if touch1 || touch2 || touch3 || touch4 {
+        assert(k is EndpointTouch);
+        lemma_segment_intersection_kind_spec_pairwise_disjoint(a, b, c, d);
+        assert(false);
+    } else {
+        assert(k is Disjoint);
+        lemma_segment_intersection_kind_spec_pairwise_disjoint(a, b, c, d);
+        assert(false);
+    }
+}
+
+proof fn lemma_proper_straddling_implies_nonzero_direction_cross(
+    a: Point2,
+    b: Point2,
+    c: Point2,
+    d: Point2,
+)
+    requires
+        orient2d_spec(a, b, c).signum() != 0,
+        orient2d_spec(a, b, d).signum() != 0,
+        orient2d_spec(a, b, c).signum() != orient2d_spec(a, b, d).signum(),
+    ensures
+        !b.sub_spec(a).cross_spec(d.sub_spec(c)).eqv_spec(Scalar::from_int_spec(0)),
+{
+    let ba = b.sub_spec(a);
+    let ca = c.sub_spec(a);
+    let da = d.sub_spec(a);
+    let dc = d.sub_spec(c);
+    let ac = a.sub_spec(c);
+    let den = ba.cross_spec(dc);
+    let o1 = orient2d_spec(a, b, c);
+    let o2 = orient2d_spec(a, b, d);
+    let z = Scalar::from_int_spec(0);
+
+    assert(o1 == ba.cross_spec(ca));
+    assert(o2 == ba.cross_spec(da));
+    Point2::lemma_sub_chain_eqv(d, a, c);
+    Point2::lemma_sub_antisymmetric(a, c);
+    assert(ac == ca.neg_spec());
+    Vec2::lemma_cross_eqv_congruence(ba, ba, dc, da.add_spec(ac));
+    assert(den.eqv_spec(ba.cross_spec(da.add_spec(ac))));
+    Vec2::lemma_cross_linear_right(ba, da, ac);
+    assert(ba.cross_spec(da.add_spec(ac)).eqv_spec(ba.cross_spec(da).add_spec(ba.cross_spec(ac))));
+    Scalar::lemma_eqv_transitive(
+        den,
+        ba.cross_spec(da.add_spec(ac)),
+        ba.cross_spec(da).add_spec(ba.cross_spec(ac)),
+    );
+    assert(den.eqv_spec(ba.cross_spec(da).add_spec(ba.cross_spec(ac))));
+    Vec2::lemma_cross_neg_right(ba, ca);
+    assert(ba.cross_spec(ac) == ba.cross_spec(ca).neg_spec());
+    assert(ba.cross_spec(da).add_spec(ba.cross_spec(ac)) == o2.add_spec(o1.neg_spec()));
+    Scalar::lemma_sub_is_add_neg(o2, o1);
+    assert(o2.sub_spec(o1) == o2.add_spec(o1.neg_spec()));
+    assert(den.eqv_spec(o2.sub_spec(o1)));
+
+    if den.eqv_spec(z) {
+        Scalar::lemma_eqv_symmetric(den, o2.sub_spec(o1));
+        assert(o2.sub_spec(o1).eqv_spec(den));
+        Scalar::lemma_eqv_transitive(o2.sub_spec(o1), den, z);
+        assert(o2.sub_spec(o1).eqv_spec(z));
+        Scalar::lemma_sub_eqv_zero_iff_eqv(o2, o1);
+        assert(o2.eqv_spec(o1));
+        Scalar::lemma_eqv_signum(o2, o1);
+        assert(o2.signum() == o1.signum());
+        assert(o1.signum() != o2.signum());
+        assert(false);
+    }
 }
 
 fn scalar_sign(a: &RuntimeScalar, b: &RuntimeScalar) -> (out: i8)
@@ -658,13 +780,34 @@ fn proper_intersection_point_runtime(
 ) -> (out: Option<RuntimePoint2>)
     requires
         wf::point2_wf4_spec(a, b, c, d),
+        !b@.sub_spec(a@).cross_spec(d@.sub_spec(c@)).eqv_spec(Scalar::from_int_spec(0)),
+    ensures
+        out.is_some(),
 {
     // Line-line intersection parameterization:
     // a + t (b-a), where t = cross(c-a, d-c) / cross(b-a, d-c).
     let r = b.sub(a);
     let s = d.sub(c);
     let den = r.cross(&s);
-    let inv = den.recip()?;
+    let inv_opt = den.recip();
+    proof {
+        assert(r@ == b@.sub_spec(a@));
+        assert(s@ == d@.sub_spec(c@));
+        assert(den@ == r@.cross_spec(s@));
+        assert(den@ == b@.sub_spec(a@).cross_spec(d@.sub_spec(c@)));
+        assert(inv_opt.is_none() == den@.eqv_spec(Scalar::from_int_spec(0)));
+        assert(!den@.eqv_spec(Scalar::from_int_spec(0)));
+        assert(!inv_opt.is_none());
+    }
+    let inv = match inv_opt {
+        Option::None => {
+            proof {
+                assert(false);
+            }
+            return Option::None;
+        }
+        Option::Some(inv) => inv,
+    };
     let cma = c.sub(a);
     let t = cma.cross(&s).mul(&inv);
     let step = r.scale(&t);
@@ -838,6 +981,7 @@ pub fn segment_intersection_point_2d(
     ensures
         (segment_intersection_kind_spec(a@, b@, c@, d@) is Disjoint) ==> out.is_none(),
         (segment_intersection_kind_spec(a@, b@, c@, d@) is CollinearOverlap) ==> out.is_none(),
+        (segment_intersection_kind_spec(a@, b@, c@, d@) is Proper) ==> out.is_some(),
         (segment_intersection_kind_spec(a@, b@, c@, d@) is EndpointTouch) ==> out.is_some(),
         (segment_intersection_kind_spec(a@, b@, c@, d@) is EndpointTouch) ==> match out {
             Option::None => true,
@@ -847,10 +991,16 @@ pub fn segment_intersection_point_2d(
     let kind = segment_intersection_kind_2d(a, b, c, d);
     match kind {
         SegmentIntersection2dKind::Proper => {
-            let out = proper_intersection_point_runtime(a, b, c, d);
             proof {
                 assert(kind@ is Proper);
                 assert(segment_intersection_kind_spec(a@, b@, c@, d@) is Proper);
+                lemma_segment_intersection_kind_spec_proper_implies_straddling_signs(a@, b@, c@, d@);
+                lemma_proper_straddling_implies_nonzero_direction_cross(a@, b@, c@, d@);
+                assert(!b@.sub_spec(a@).cross_spec(d@.sub_spec(c@)).eqv_spec(Scalar::from_int_spec(0)));
+            }
+            let out = proper_intersection_point_runtime(a, b, c, d);
+            proof {
+                assert(out.is_some());
             }
             out
         }

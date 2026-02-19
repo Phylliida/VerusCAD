@@ -122,9 +122,19 @@ Blocks: `P5.5` intersection checker soundness (narrow phase).
       `segment_intersection_point_2d` plus
       `runtime_segment_intersection_point_refines_spec` now prove
       `EndpointTouch -> out.is_some()`.
-    - Verification attempt note (2026-02-19, latest pass):
+    - Update (2026-02-19, proper-totality pass): `segment_intersection_point_2d` and
+      `runtime_segment_intersection_point_refines_spec` now also prove
+      `Proper -> out.is_some()` via new helpers
+      `lemma_segment_intersection_kind_spec_proper_implies_straddling_signs` and
+      `lemma_proper_straddling_implies_nonzero_direction_cross`, which establish the
+      proper-case straddling sign pattern and nonzero line-direction denominator.
+    - Verification attempt note (2026-02-19, proper-totality pass):
       `RUSTFLAGS='--cfg verus_keep_ghost' cargo test -p vcad-geometry --features verus-proofs`
       still fails on stable because Verus macro crates require nightly-only `#![feature(proc_macro_...)]`.
+    - Verification attempt note (2026-02-19, proper-totality pass): running
+      `cargo test -p vcad-geometry --features verus-proofs` without `--cfg verus_keep_ghost`
+      fails with unresolved ghost-module imports from `vcad-math`; the proof build needs both
+      the `verus_keep_ghost` cfg and a nightly-capable Verus toolchain.
     - Remaining gap from this audit: no `Proper`-case
       `Some(p) -> point_on_both_segments_spec` proof yet.
 - [x] Add `segment_intersection_point_2d` witness-soundness contracts for endpoint-touch outputs.
@@ -136,9 +146,9 @@ Blocks: `P5.5` intersection checker soundness (narrow phase).
     - Audit note (2026-02-19): topology currently composes plane crossing/intersection with a local
       in-face boundary test; upstream still needs a unified iff wrapper at the geometry boundary.
   - [ ] coplanar segment-segment intersection (2D projection + interval overlap).
-    - Update (2026-02-19, latest pass): endpoint-touch witness-soundness plus
-      `EndpointTouch -> is_some` totality are now landed; remaining open piece is the
-      `Proper`-case witness-on-both proof.
+    - Update (2026-02-19, proper-totality pass): endpoint-touch witness-soundness plus
+      `EndpointTouch -> is_some` and `Proper -> is_some` totality are now landed; remaining
+      open piece is the `Proper`-case witness-on-both proof.
   - [ ] coplanar segment-polygon overlap (dominant-axis projection + edge-crossing containment tests).
     - Audit note (2026-02-19): ingredient predicates are present, but their composed
       dominant-axis overlap witness proof is not yet packaged upstream.

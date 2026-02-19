@@ -1,1 +1,1 @@
-Landed L6 endpoint-touch totality (EndpointTouch -> out.is_some()) for segment_intersection_point_2d and its runtime refinement wrapper, and 21 Phase 5 upstream-lemma tasks remain.
+Landed L6 proper-case totality (Proper -> out.is_some()) for segment_intersection_point_2d and its runtime refinement wrapper, and 21 Phase 5 upstream-lemma tasks remain.
