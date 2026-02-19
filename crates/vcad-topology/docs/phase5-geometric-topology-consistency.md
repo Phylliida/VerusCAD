@@ -195,6 +195,34 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.7 aggregate-checker-equivalence staging increment in
+  `src/halfedge_mesh/tests.rs`:
+  - added `geometry-checks + verus-proofs` differential parity coverage between the runtime
+    aggregate gates and constructive witness gates:
+    - `geometric_consistency_constructive_gate_matches_runtime_boolean_gate`;
+  - added a reusable test helper to compare constructive and runtime outcomes for both
+    aggregate APIs:
+    - `assert_constructive_phase5_gate_parity`;
+  - parity assertions now lock:
+    - `check_geometric_topological_consistency_constructive(...).api_ok`
+      against `Mesh::check_geometric_topological_consistency()`;
+    - `is_valid_with_geometry_constructive(...).api_ok`
+      against `Mesh::is_valid_with_geometry()`;
+    - witness-field consistency for the phase-4 bit and constructive-vs-runtime implications on
+      coplanarity/shared-edge witness bits.
+  - fixture coverage includes representative passing and failing cases
+    (tetrahedron/cube/prism, overlapping disconnected tetrahedra, disconnected stress mesh,
+    noncoplanar quad), so runtime/constructive aggregate drift is now regression-locked while the
+    formal P5.7 equivalence theorem remains open.
+- 2026-02-19: Failed attempts in this P5.7 aggregate-checker-equivalence staging pass: none.
+- 2026-02-19: Revalidated after the P5.7 constructive/runtime parity additions:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" geometric_consistency_constructive_gate_matches_runtime_boolean_gate`
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (278 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (315 verified, 0 errors)
 - 2026-02-19: Completed a P5.1 runtime-checker-correctness differential-oracle increment in
   `src/halfedge_mesh/tests.rs`:
   - added a reusable face-cycle extraction helper for checker-oracle comparisons:

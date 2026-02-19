@@ -3,6 +3,11 @@ use std::fs;
 use std::path::{Path, PathBuf};
 #[cfg(feature = "verus-proofs")]
 use std::collections::BTreeSet;
+#[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+use crate::runtime_halfedge_mesh_refinement::{
+    check_geometric_topological_consistency_constructive,
+    is_valid_with_geometry_constructive,
+};
 #[cfg(feature = "geometry-checks")]
 use super::GeometricTopologicalConsistencyFailure;
 #[cfg(feature = "geometry-checks")]
@@ -83,6 +88,48 @@ fn phase5_checker_signature(mesh: &Mesh) -> [bool; 10] {
         mesh.check_geometric_topological_consistency(),
         mesh.is_valid_with_geometry(),
     ]
+}
+
+#[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+fn assert_constructive_phase5_gate_parity(mesh: &Mesh, label: &str) {
+    let geometric_runtime = mesh.check_geometric_topological_consistency();
+    let geometric_constructive = check_geometric_topological_consistency_constructive(mesh)
+        .expect("constructive geometric gate should produce a witness");
+    assert_eq!(
+        geometric_constructive.api_ok, geometric_runtime,
+        "constructive geometric gate parity failed for {label}"
+    );
+    assert_eq!(
+        geometric_constructive.phase4_valid_ok,
+        mesh.is_valid(),
+        "constructive phase4 witness mismatch for {label}"
+    );
+    assert!(
+        !geometric_constructive.face_coplanarity_ok || mesh.check_face_coplanarity(),
+        "constructive coplanarity witness should not exceed runtime checker for {label}"
+    );
+    assert!(
+        !geometric_constructive.shared_edge_local_orientation_ok
+            || mesh.check_shared_edge_local_orientation_consistency(),
+        "constructive shared-edge witness should not exceed runtime checker for {label}"
+    );
+
+    let with_geometry_runtime = mesh.is_valid_with_geometry();
+    let with_geometry_constructive = is_valid_with_geometry_constructive(mesh)
+        .expect("constructive valid-with-geometry gate should produce a witness");
+    assert_eq!(
+        with_geometry_constructive.api_ok, with_geometry_runtime,
+        "constructive valid-with-geometry gate parity failed for {label}"
+    );
+    assert_eq!(
+        with_geometry_constructive.phase4_validity_ok,
+        mesh.is_valid(),
+        "constructive valid-with-geometry phase4 witness mismatch for {label}"
+    );
+    assert_eq!(
+        with_geometry_constructive.geometric_topological_consistency_ok, geometric_runtime,
+        "constructive valid-with-geometry geometric witness mismatch for {label}"
+    );
 }
 
 #[cfg(feature = "geometry-checks")]
@@ -1483,6 +1530,43 @@ fn diagnostic_witness_is_real_counterexample(
                 .check_geometric_topological_consistency_diagnostic()
                 .is_ok()
         );
+    }
+
+    #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+    #[test]
+    fn geometric_consistency_constructive_gate_matches_runtime_boolean_gate() {
+        let passing_meshes = [Mesh::tetrahedron(), Mesh::cube(), Mesh::triangular_prism()];
+        for (idx, mesh) in passing_meshes.iter().enumerate() {
+            let label = format!("passing_fixture_{idx}");
+            assert_constructive_phase5_gate_parity(mesh, &label);
+        }
+
+        let intersecting_mesh = build_overlapping_tetrahedra_mesh();
+        assert_constructive_phase5_gate_parity(
+            &intersecting_mesh,
+            "overlapping_disconnected_tetrahedra",
+        );
+
+        let disconnected_stress =
+            build_disconnected_translated_tetrahedra_mesh(&[(0, 0, 0), (12, 0, 0), (0, 12, 0)]);
+        assert_constructive_phase5_gate_parity(
+            &disconnected_stress,
+            "disconnected_stress_fixture",
+        );
+
+        let noncoplanar_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(1, 1, 1),
+            RuntimePoint3::from_ints(0, 1, 0),
+        ];
+        let noncoplanar_faces = vec![
+            vec![0, 1, 2, 3],
+            vec![0, 3, 2, 1],
+        ];
+        let noncoplanar_mesh = Mesh::from_face_cycles(noncoplanar_vertices, &noncoplanar_faces)
+            .expect("noncoplanar quad fixture should build");
+        assert_constructive_phase5_gate_parity(&noncoplanar_mesh, "noncoplanar_quad_fixture");
     }
 
     #[cfg(feature = "geometry-checks")]
