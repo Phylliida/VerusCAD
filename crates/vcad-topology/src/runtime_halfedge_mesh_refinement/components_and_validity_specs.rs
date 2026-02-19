@@ -1166,6 +1166,129 @@ pub proof fn lemma_geometric_topological_consistency_gate_witness_api_ok_implies
     assert(mesh_geometric_topological_consistency_spec(m));
 }
 
+pub proof fn lemma_mesh_geometric_topological_consistency_implies_mesh_valid_and_shared_edge_local_orientation(
+    m: MeshModel,
+)
+    requires
+        mesh_geometric_topological_consistency_spec(m),
+    ensures
+        mesh_valid_spec(m),
+        mesh_shared_edge_local_orientation_consistency_spec(m),
+{
+    let gw = choose|gw: GeometricTopologicalConsistencyGateWitness| {
+        &&& geometric_topological_consistency_gate_witness_spec(gw)
+        &&& geometric_topological_consistency_gate_model_link_spec(m, gw)
+        &&& gw.api_ok
+    };
+    assert(geometric_topological_consistency_gate_witness_spec(gw));
+    assert(geometric_topological_consistency_gate_model_link_spec(m, gw));
+    assert(gw.api_ok);
+
+    assert(gw.api_ok == (
+        gw.phase4_valid_ok
+            && gw.no_zero_length_geometric_edges_ok
+            && gw.face_corner_non_collinearity_ok
+            && gw.face_coplanarity_ok
+            && gw.face_convexity_ok
+            && gw.face_plane_consistency_ok
+            && gw.shared_edge_local_orientation_ok
+            && gw.no_forbidden_face_face_intersections_ok
+            && gw.outward_face_normals_ok
+    ));
+    assert(
+        gw.phase4_valid_ok
+            && gw.no_zero_length_geometric_edges_ok
+            && gw.face_corner_non_collinearity_ok
+            && gw.face_coplanarity_ok
+            && gw.face_convexity_ok
+            && gw.face_plane_consistency_ok
+            && gw.shared_edge_local_orientation_ok
+            && gw.no_forbidden_face_face_intersections_ok
+            && gw.outward_face_normals_ok
+    );
+    assert(gw.phase4_valid_ok);
+    assert(gw.shared_edge_local_orientation_ok);
+
+    assert(gw.phase4_valid_ok ==> mesh_valid_spec(m));
+    assert(gw.shared_edge_local_orientation_ok ==> mesh_shared_edge_local_orientation_consistency_spec(m));
+    assert(mesh_valid_spec(m));
+    assert(mesh_shared_edge_local_orientation_consistency_spec(m));
+}
+
+pub proof fn lemma_mesh_valid_and_shared_edge_local_orientation_implies_mesh_geometric_topological_consistency(
+    m: MeshModel,
+)
+    requires
+        mesh_valid_spec(m),
+        mesh_shared_edge_local_orientation_consistency_spec(m),
+    ensures
+        mesh_geometric_topological_consistency_spec(m),
+{
+    let gw = GeometricTopologicalConsistencyGateWitness {
+        api_ok: true,
+        phase4_valid_ok: true,
+        no_zero_length_geometric_edges_ok: true,
+        face_corner_non_collinearity_ok: true,
+        face_coplanarity_ok: true,
+        face_convexity_ok: true,
+        face_plane_consistency_ok: true,
+        shared_edge_local_orientation_ok: true,
+        no_forbidden_face_face_intersections_ok: true,
+        outward_face_normals_ok: true,
+    };
+    assert(geometric_topological_consistency_gate_witness_spec(gw));
+    assert(geometric_topological_consistency_gate_model_link_spec(m, gw)) by {
+        assert(gw.phase4_valid_ok ==> mesh_valid_spec(m));
+        assert(gw.shared_edge_local_orientation_ok ==> mesh_shared_edge_local_orientation_consistency_spec(m));
+    };
+    assert(exists|gw0: GeometricTopologicalConsistencyGateWitness| {
+        &&& geometric_topological_consistency_gate_witness_spec(gw0)
+        &&& geometric_topological_consistency_gate_model_link_spec(m, gw0)
+        &&& gw0.api_ok
+    }) by {
+        let gw0 = gw;
+        assert(geometric_topological_consistency_gate_witness_spec(gw0));
+        assert(geometric_topological_consistency_gate_model_link_spec(m, gw0));
+        assert(gw0.api_ok);
+    };
+    assert(mesh_geometric_topological_consistency_spec(m));
+}
+
+pub proof fn lemma_mesh_geometric_topological_consistency_spec_characterization(
+    m: MeshModel,
+)
+    ensures
+        mesh_geometric_topological_consistency_spec(m)
+            == (mesh_valid_spec(m) && mesh_shared_edge_local_orientation_consistency_spec(m)),
+{
+    assert(
+        mesh_geometric_topological_consistency_spec(m)
+            ==> (mesh_valid_spec(m) && mesh_shared_edge_local_orientation_consistency_spec(m))
+    ) by {
+        if mesh_geometric_topological_consistency_spec(m) {
+            lemma_mesh_geometric_topological_consistency_implies_mesh_valid_and_shared_edge_local_orientation(
+                m,
+            );
+            assert(mesh_valid_spec(m) && mesh_shared_edge_local_orientation_consistency_spec(m));
+        }
+    };
+    assert(
+        (mesh_valid_spec(m) && mesh_shared_edge_local_orientation_consistency_spec(m))
+            ==> mesh_geometric_topological_consistency_spec(m)
+    ) by {
+        if mesh_valid_spec(m) && mesh_shared_edge_local_orientation_consistency_spec(m) {
+            lemma_mesh_valid_and_shared_edge_local_orientation_implies_mesh_geometric_topological_consistency(
+                m,
+            );
+            assert(mesh_geometric_topological_consistency_spec(m));
+        }
+    };
+    assert(
+        mesh_geometric_topological_consistency_spec(m)
+            == (mesh_valid_spec(m) && mesh_shared_edge_local_orientation_consistency_spec(m))
+    );
+}
+
 pub proof fn lemma_valid_with_geometry_gate_witness_api_ok_implies_mesh_valid(
     m: MeshModel,
     w: ValidWithGeometryGateWitness,

@@ -193,6 +193,32 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.7 aggregate-spec characterization increment in
+  `src/runtime_halfedge_mesh_refinement/components_and_validity_specs.rs`:
+  - added aggregate-spec consequence lemma:
+    - `lemma_mesh_geometric_topological_consistency_implies_mesh_valid_and_shared_edge_local_orientation`;
+  - added aggregate-spec reconstruction lemma:
+    - `lemma_mesh_valid_and_shared_edge_local_orientation_implies_mesh_geometric_topological_consistency`;
+  - added aggregate-spec iff characterization lemma:
+    - `lemma_mesh_geometric_topological_consistency_spec_characterization`;
+  - outcome: the current aggregate refinement target now has an explicit proved characterization:
+    `mesh_geometric_topological_consistency_spec(m)` is equivalent to
+    `(mesh_valid_spec(m) && mesh_shared_edge_local_orientation_consistency_spec(m))`;
+  - this advances the unchecked P5.7 aggregate-equivalence item by making the present proof boundary
+    explicit and machine-checked, so remaining equivalence work is now clearly localized to adding
+    model-link obligations for the other Phase 5 component checks and proving the concrete runtime
+    API path against those stronger links.
+- 2026-02-19: Failed attempt in this P5.7 aggregate-spec characterization pass:
+  - initial proof edit left trailing commas inside `assert(...)` implication expressions in
+    `components_and_validity_specs.rs`, causing a parse error; fixed by removing those trailing
+    commas and re-running verification.
+- 2026-02-19: Revalidated after the P5.7 aggregate-spec characterization additions:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (255 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology.sh` (292 verified, 0 errors)
 - 2026-02-19: Completed a P5.1 runtime-soundness groundwork increment in
   `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
   - added fixed-seed/non-collinear oriented-plane bridge lemma:

@@ -1,1 +1,1 @@
-Added P5.1 fixed-seed/non-collinear oriented-plane bridge lemmas, updated the Phase 5 burndown log, and revalidated vcad-topology proofs and tests.
+Added P5.7 aggregate-spec characterization lemmas for geometric-topological consistency, documented the incremental progress in the Phase 5 burndown, and revalidated vcad-topology proofs/tests.
