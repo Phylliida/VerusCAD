@@ -1,1 +1,1 @@
-Packaged coplanar projected segment-vs-convex-polygon overlap in vcad-geometry with new tests and burndown notes, and 21 Phase 5 upstream-lemma tasks remain.
+Added verus_keep_ghost composed-spec contracts and runtime refinement wrappers for coplanar segment-vs-convex-polygon overlap in vcad-geometry, documented verification attempts, and 21 Phase 5 upstream-lemma tasks remain.

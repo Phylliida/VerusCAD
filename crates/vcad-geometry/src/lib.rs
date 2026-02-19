@@ -10,4 +10,5 @@ mod runtime_collinearity_coplanarity_refinement;
 mod runtime_convex_polygon_refinement;
 mod runtime_orientation_predicates_refinement;
 mod runtime_segment_intersection_refinement;
+mod runtime_segment_polygon_overlap_refinement;
 mod runtime_sidedness_refinement;

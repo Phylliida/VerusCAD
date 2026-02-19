@@ -189,11 +189,35 @@ Blocks: `P5.5` intersection checker soundness (narrow phase).
       `crates/vcad-geometry/src/segment_polygon_overlap.rs` covering short
       polygon rejection, endpoint-inside, proper crossing, endpoint touch,
       collinear edge overlap, and disjoint cases.
-    - Remaining gap (post-packaging): still missing a `verus_keep_ghost`
-      witness-level iff contract (`true <==> exists witness point`) for this
-      composed predicate.
+    - Update (2026-02-19, composed-spec pass): upgraded
+      `crates/vcad-geometry/src/segment_polygon_overlap.rs` with a
+      `verus_keep_ghost` composed-spec contract
+      (`segment_overlaps_convex_polygon_composed_spec`) plus a proved
+      implementation of `segment_overlaps_convex_polygon_2d`:
+      `out == spec` (short-polygon reject, endpoint-inside shortcut, and
+      edge-hit scan all modeled/proved).
+    - Update (2026-02-19, composed-spec pass): added
+      `crates/vcad-geometry/src/runtime_segment_polygon_overlap_refinement.rs`
+      and wired it in `crates/vcad-geometry/src/lib.rs` so downstream proofs
+      can import an explicit runtime refinement wrapper:
+      `runtime_segment_overlaps_convex_polygon_refines_spec`.
+    - Remaining gap (post-composed-spec pass): still missing the stronger
+      point-witness-level iff (`true <==> exists witness point` satisfying all
+      geometric constraints simultaneously). Current upstream contract is a
+      structured disjunction witness (endpoint-in-polygon or non-disjoint
+      per-edge segment classifier witness).
     - Verification attempt note (2026-02-19, packaging pass):
       `cargo test -p vcad-geometry` passes in this environment.
+    - Verification attempt note (2026-02-19, composed-spec pass):
+      `cargo test -p vcad-geometry` passes in this environment.
+    - Verification attempt note (2026-02-19, composed-spec pass):
+      `cargo test -p vcad-geometry --features verus-proofs` still fails here
+      without `--cfg verus_keep_ghost` due unresolved ghost-module imports from
+      `vcad-math`.
+    - Verification attempt note (2026-02-19, composed-spec pass):
+      `RUSTFLAGS='--cfg verus_keep_ghost' cargo test -p vcad-geometry --features verus-proofs`
+      still fails on stable due Verus macro crates requiring nightly-only
+      `#![feature(proc_macro_...)]` and this environment has no `rustup`.
 - [ ] Proof shape: predicate returns `true` iff a witness point exists satisfying all geometric constraints simultaneously.
 
 ## Suggested Landing Order
