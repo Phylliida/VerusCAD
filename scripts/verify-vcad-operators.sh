@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/sanitize-rust-env.sh"
+
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 VERUS_ROOT="${VERUS_ROOT:-$ROOT_DIR/../verus}"
 VERUS_SOURCE="$VERUS_ROOT/source"
 TOOLCHAIN="${VERUS_TOOLCHAIN:-1.93.0-x86_64-unknown-linux-gnu}"

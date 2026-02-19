@@ -76,6 +76,32 @@ Resolve DNS/network access, then rerun `./scripts/setup-verus.sh`.
 `cargo-verus` is not yet built or not in `PATH`.
 Run `./scripts/setup-verus.sh` and then `./scripts/verify-vcad-math.sh`.
 
+### `error[E0554]: #![feature] may not be used on the stable release channel`
+This happens when `verus_keep_ghost` leaks into a normal stable `cargo` build
+(for example via `RUSTFLAGS='--cfg verus_keep_ghost'`).
+
+Use one of these supported paths instead:
+
+1. runtime tests (sanitized stable flow): `./scripts/test-vcad-geometry-verus-proofs.sh`
+2. proof verification: `./scripts/verify-vcad-geometry.sh` (or other `verify-*` scripts)
+
+If needed, clear leaked flags in your shell:
+
+```bash
+unset RUSTFLAGS
+unset CARGO_ENCODED_RUSTFLAGS
+```
+
+All Rust/Verus scripts under `scripts/` now apply this automatically via
+`scripts/lib/sanitize-rust-env.sh`.
+
+### `couldn't create a temp dir`
+If `TMPDIR` points to an ephemeral or deleted directory (common after leaving a
+Nix shell), Rust builds can fail with temp-dir errors.
+
+All Rust/Verus scripts under `scripts/` now normalize this automatically:
+`TMPDIR` is set to `/tmp` when the current value is missing or unwritable.
+
 ### `The verifier expects z3 version "4.12.5"`
 Use `VERUS_Z3_PATH=/home/bepis/Documents/verifycad/verus/source/z3`.
 The setup script installs and patches this exact binary.

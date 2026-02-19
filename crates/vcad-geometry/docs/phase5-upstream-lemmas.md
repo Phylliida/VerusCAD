@@ -115,6 +115,25 @@ Blocks: `P5.5` intersection checker soundness (broad phase).
   - Any intersection point on face `B` must satisfy plane value `0`.
   - A point cannot be both `> 0` and `= 0`, contradiction.
 - [ ] Intermediate lemma: convex combination of strictly positive values is strictly positive.
+  - Partial (2026-02-19, convex-combo positivity pass): added
+    `lemma_scalar_zero_le_iff_num_nonnegative`,
+    `lemma_scalar_zero_lt_iff_num_positive`,
+    `lemma_nonnegative_weights_summing_to_one_implies_some_positive`, and
+    `lemma_binary_convex_combination_of_positive_values_is_positive` in
+    `crates/vcad-geometry/src/phase5_upstream_lemmas.rs`.
+  - Remaining gap: current proof surface covers binary convex combinations
+    (`w0*x0 + w1*x1` with nonnegative weights summing to `1`); still need an
+    n-ary/general convex-combination wrapper for full face-plane separation
+    composition.
+  - Verification attempt note (2026-02-19, convex-combo positivity pass):
+    `cargo test -p vcad-geometry` passes in this environment.
+  - Verification attempt note (2026-02-19, convex-combo positivity pass):
+    `cargo test -p vcad-geometry --features verus-proofs` passes in this
+    environment (without `verus_keep_ghost`).
+  - Verification attempt note (2026-02-19, convex-combo positivity pass):
+    `RUSTFLAGS='--cfg verus_keep_ghost' cargo test -p vcad-geometry --features verus-proofs`
+    fails on stable in this environment because Verus macro crates require
+    nightly-only `#![feature(proc_macro_...)]`.
 
 ## L6: Segment-Face Intersection Predicate Correctness
 Blocks: `P5.5` intersection checker soundness (narrow phase).

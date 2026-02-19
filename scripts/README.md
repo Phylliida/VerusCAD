@@ -43,7 +43,12 @@ Helper scripts for local Verus workflows.
      verifies `vcad-operators` with `verus-proofs` and no module filter.
    - module: `./scripts/verify-vcad-operators-fast.sh <module>`
    - function: `./scripts/verify-vcad-operators-fast.sh <module> <function_pattern>`
-14. `run-codex-task.sh`: lightweight client that POSTs to the looper service (`http://127.0.0.1:3456/run` by default).
+14. `test-vcad-geometry-verus-proofs.sh`: stable cargo test wrapper for `vcad-geometry` with `verus-proofs`.
+   - clears `RUSTFLAGS`/`CARGO_ENCODED_RUSTFLAGS` to avoid accidental `verus_keep_ghost` leakage.
+   - normalizes `TMPDIR` to `/tmp` when the current value is missing/unwritable.
+   - default: `./scripts/test-vcad-geometry-verus-proofs.sh`
+   - passthrough args: `./scripts/test-vcad-geometry-verus-proofs.sh -- --nocapture`
+15. `run-codex-task.sh`: lightweight client that POSTs to the looper service (`http://127.0.0.1:3456/run` by default).
    - sends a `zulip_message` to looper; looper handles Zulip DM + VS Code restart/new Codex panel
    - message source file: `scripts/run-codex-task.message.txt`
    - default: `./scripts/run-codex-task.sh`
@@ -57,3 +62,10 @@ These scripts assume this repo layout:
 2. Verus checkout at `../verus`.
 
 Set `VERUS_ROOT` to override the Verus checkout location.
+
+Rust/Verus scripts in this folder source `scripts/lib/sanitize-rust-env.sh` before
+running toolchains. The sanitizer:
+1. clears `RUSTFLAGS` and `CARGO_ENCODED_RUSTFLAGS` to prevent accidental
+   `verus_keep_ghost` leakage into stable `cargo` flows (avoids `E0554`),
+2. repairs `TMPDIR` to `/tmp` when the current value is missing or unwritable,
+   which avoids transient `couldn't create a temp dir` failures.

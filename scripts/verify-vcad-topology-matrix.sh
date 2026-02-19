@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/sanitize-rust-env.sh"
+
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   cat <<'USAGE'
