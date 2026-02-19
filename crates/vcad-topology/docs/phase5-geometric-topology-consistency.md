@@ -195,6 +195,59 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.4 (`Proof: global outwardness criterion implies all faces point outward for each closed component`) with an independent per-face outwardness oracle increment in `src/halfedge_mesh/tests.rs`:
+  - added convex-component outwardness oracle helpers:
+    - `component_faces_and_vertices_from_start_half_edge`;
+    - `sum_mesh_vertex_positions`;
+    - `scale_point3_by_usize`;
+    - `assert_signed_volume_component_sign_matches_per_face_normal_alignment`.
+  - oracle strategy (exact arithmetic only):
+    - for each connected component, compute signed-volume sign with existing component traversal;
+    - compute each face normal via `compute_face_plane`;
+    - compare face-normal alignment against a scaled centroid-direction vector
+      (`|V_component| * face_vertex_sum - |V_face| * component_vertex_sum`) so no division is needed;
+    - assert per-face alignment sign matches the component signed-volume sign, and assert component sign is reference-origin invariant over a supplied reference set.
+  - added deterministic and seeded-randomized regressions:
+    - `outward_signed_volume_sign_matches_per_face_normal_alignment_for_convex_components`;
+    - `differential_randomized_outward_signed_volume_per_face_alignment_harness` (40 cases, including rigid transforms, reflections, and consistent vertex-index relabelings).
+  - outcome: stronger executable evidence that the current global signed-volume outwardness criterion tracks per-face outward orientation on convex closed components under orientation-preserving and orientation-flipping transforms, while the formal P5.4 theorem remains open.
+- 2026-02-19: Failed attempts in this P5.4 per-face outwardness-oracle pass: none.
+- 2026-02-19: Revalidated after the P5.4 per-face outwardness-oracle increment:
+  - `cargo test -p vcad-topology --features geometry-checks outward_signed_volume_sign_matches_per_face_normal_alignment_for_convex_components`
+  - `cargo test -p vcad-topology --features geometry-checks differential_randomized_outward_signed_volume_per_face_alignment_harness`
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (60 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (73 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (286 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (323 verified, 0 errors)
+- 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec`) with a reflection-and-relabeling differential-oracle increment in `src/halfedge_mesh/tests.rs`:
+  - strengthened deterministic coplanarity/oracle parity coverage in
+    `face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle` by adding:
+    - consistent vertex-index-relabeled variants for each existing fixture family;
+    - reflected variants for each fixture family;
+    - reflected+relabelled variants for each fixture family.
+  - extended
+    `differential_randomized_face_coplanarity_checker_exhaustive_quadruple_oracle_harness`
+    so each seeded case now validates coplanarity checker/oracle parity not only on base,
+    rigid, and perturbed fixtures, but also on:
+    - relabeled disjoint/rigid/perturbed variants;
+    - reflected disjoint/perturbed variants;
+    - reflected+relabelled disjoint/perturbed variants;
+    - relabeled transformed failing fixtures and reflected(+relabelled) transformed failing fixtures.
+  - outcome: tighter executable lock that `check_face_coplanarity()` remains equivalent to the
+    exhaustive face-quadruple oracle under orientation-flipping transforms and topology-preserving
+    index isomorphisms, while the formal P5.1 checker/spec theorem remains open.
+- 2026-02-19: Failed attempts in this P5.1 reflection-and-relabeling coplanarity harness pass: none.
+- 2026-02-19: Revalidated after the P5.1 reflection-and-relabeling coplanarity harness increment:
+  - `cargo test -p vcad-topology --features geometry-checks face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle`
+  - `cargo test -p vcad-topology --features geometry-checks differential_randomized_face_coplanarity_checker_exhaustive_quadruple_oracle_harness`
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (60 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (73 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (286 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (323 verified, 0 errors)
 - 2026-02-19: Worked P5.4 (`Proof: signed-volume outwardness criterion is independent of the chosen reference origin`) with relabeling-aware outwardness invariance harness increments in `src/halfedge_mesh/tests.rs`:
   - added helper `assert_component_signed_volume_reference_invariance_with_expected_sign` to lock both:
     - reference-origin invariance of per-component signed six-volume; and

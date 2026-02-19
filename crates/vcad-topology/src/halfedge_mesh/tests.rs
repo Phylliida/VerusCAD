@@ -1236,6 +1236,158 @@ fn component_start_half_edges(mesh: &Mesh) -> Vec<usize> {
 }
 
 #[cfg(feature = "geometry-checks")]
+fn component_faces_and_vertices_from_start_half_edge(
+    mesh: &Mesh,
+    start_half_edge: usize,
+) -> Option<(Vec<usize>, Vec<usize>)> {
+    if start_half_edge >= mesh.half_edges.len() {
+        return None;
+    }
+
+    let mut queue = std::collections::VecDeque::new();
+    let mut visited = vec![false; mesh.half_edges.len()];
+    let mut face_seen = vec![false; mesh.faces.len()];
+    let mut vertex_seen = vec![false; mesh.vertices.len()];
+    let mut faces = Vec::new();
+    let mut vertices = Vec::new();
+
+    queue.push_back(start_half_edge);
+    visited[start_half_edge] = true;
+
+    while let Some(h) = queue.pop_front() {
+        let he = mesh.half_edges.get(h)?;
+        if he.face >= mesh.faces.len() || he.vertex >= mesh.vertices.len() {
+            return None;
+        }
+
+        if !face_seen[he.face] {
+            face_seen[he.face] = true;
+            faces.push(he.face);
+        }
+        if !vertex_seen[he.vertex] {
+            vertex_seen[he.vertex] = true;
+            vertices.push(he.vertex);
+        }
+
+        for n in [he.twin, he.next, he.prev] {
+            if n >= mesh.half_edges.len() {
+                return None;
+            }
+            if !visited[n] {
+                visited[n] = true;
+                queue.push_back(n);
+            }
+        }
+    }
+
+    Some((faces, vertices))
+}
+
+#[cfg(feature = "geometry-checks")]
+fn sum_mesh_vertex_positions(mesh: &Mesh, vertex_indices: &[usize]) -> Option<RuntimePoint3> {
+    let mut sum_x = RuntimeScalar::from_int(0);
+    let mut sum_y = RuntimeScalar::from_int(0);
+    let mut sum_z = RuntimeScalar::from_int(0);
+
+    for &v in vertex_indices {
+        let point = &mesh.vertices.get(v)?.position;
+        sum_x = sum_x.add(point.x());
+        sum_y = sum_y.add(point.y());
+        sum_z = sum_z.add(point.z());
+    }
+
+    Some(RuntimePoint3::new(sum_x, sum_y, sum_z))
+}
+
+#[cfg(feature = "geometry-checks")]
+fn scale_point3_by_usize(point: &RuntimePoint3, factor: usize) -> RuntimePoint3 {
+    let factor_i64 = i64::try_from(factor).expect("point scaling factor should fit in i64");
+    let factor_scalar = RuntimeScalar::from_int(factor_i64);
+    RuntimePoint3::new(
+        point.x().mul(&factor_scalar),
+        point.y().mul(&factor_scalar),
+        point.z().mul(&factor_scalar),
+    )
+}
+
+#[cfg(feature = "geometry-checks")]
+fn assert_signed_volume_component_sign_matches_per_face_normal_alignment(
+    mesh: &Mesh,
+    references: &[RuntimePoint3],
+    label: &str,
+) {
+    assert!(!references.is_empty(), "at least one reference point is required");
+
+    let component_starts = component_start_half_edges(mesh);
+    assert!(
+        !component_starts.is_empty(),
+        "fixture {label} should expose at least one connected component"
+    );
+
+    for start_half_edge in component_starts {
+        let (component_faces, component_vertices) =
+            component_faces_and_vertices_from_start_half_edge(mesh, start_half_edge).expect(
+                "component face/vertex extraction should succeed for valid geometric fixtures",
+            );
+        assert!(
+            !component_faces.is_empty() && !component_vertices.is_empty(),
+            "component extraction produced an empty face/vertex set in {label}"
+        );
+
+        let component_vertex_sum = sum_mesh_vertex_positions(mesh, &component_vertices)
+            .expect("component vertex-index sums should be in bounds");
+        let mut component_signed_volume_sign = None;
+        for reference in references {
+            let sign = component_signed_volume_six_from_start_half_edge_relative_to_reference(
+                mesh,
+                start_half_edge,
+                reference,
+            )
+            .signum_i8();
+            assert_ne!(
+                sign, 0,
+                "component signed volume should be non-zero in {label} (start half-edge {start_half_edge})"
+            );
+            if let Some(expected) = component_signed_volume_sign {
+                assert_eq!(
+                    sign, expected,
+                    "component signed-volume sign changed under reference shift in {label} (start half-edge {start_half_edge})"
+                );
+            } else {
+                component_signed_volume_sign = Some(sign);
+            }
+        }
+        let component_sign = component_signed_volume_sign.expect(
+            "component signed-volume sign should be established from at least one reference point",
+        );
+
+        for face_id in component_faces {
+            let face_cycle = ordered_face_vertex_cycle_indices(mesh, face_id)
+                .expect("component face cycle should be available for valid geometric fixtures");
+            let face_vertex_sum = sum_mesh_vertex_positions(mesh, &face_cycle)
+                .expect("face vertex-index sums should be in bounds");
+            let scaled_face_sum = scale_point3_by_usize(&face_vertex_sum, component_vertices.len());
+            let scaled_component_sum =
+                scale_point3_by_usize(&component_vertex_sum, face_cycle.len());
+            let centroid_direction = scaled_face_sum.sub(&scaled_component_sum);
+
+            let (normal, _) = mesh.compute_face_plane(face_id).expect(
+                "face-plane computation should succeed for valid geometric fixtures in this oracle",
+            );
+            let alignment_sign = normal.dot(&centroid_direction).signum_i8();
+            assert_ne!(
+                alignment_sign, 0,
+                "per-face normal alignment should be non-zero in {label} (component start {start_half_edge}, face {face_id})"
+            );
+            assert_eq!(
+                alignment_sign, component_sign,
+                "per-face normal alignment diverged from component signed-volume sign in {label} (component start {start_half_edge}, face {face_id})"
+            );
+        }
+    }
+}
+
+#[cfg(feature = "geometry-checks")]
 fn assert_component_signed_volume_reference_invariance(
     mesh: &Mesh,
     references: &[RuntimePoint3],
@@ -2201,6 +2353,240 @@ fn diagnostic_witness_is_real_counterexample(
 
     #[cfg(feature = "geometry-checks")]
     #[test]
+    fn outward_signed_volume_sign_matches_per_face_normal_alignment_for_convex_components() {
+        let references = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(11, -7, 5),
+            RuntimePoint3::from_ints(-19, 13, -4),
+        ];
+
+        let passing_meshes = vec![
+            ("tetrahedron", Mesh::tetrahedron()),
+            ("cube", Mesh::cube()),
+            ("triangular_prism", Mesh::triangular_prism()),
+            (
+                "disconnected_tetrahedra",
+                build_disconnected_translated_tetrahedra_mesh(&[(0, 0, 0), (20, 0, 0), (-15, 7, 3)]),
+            ),
+        ];
+        for (label, mesh) in passing_meshes {
+            assert!(mesh.is_valid(), "{label}: fixture should remain Phase-4 valid");
+            assert!(
+                mesh.check_outward_face_normals(),
+                "{label}: fixture should satisfy outward-normal checker"
+            );
+            assert_signed_volume_component_sign_matches_per_face_normal_alignment(
+                &mesh,
+                &references,
+                label,
+            );
+
+            let relabel_permutation: Vec<usize> = (0..mesh.vertices.len()).rev().collect();
+            let relabeled_mesh = relabel_mesh_vertices_for_testing(&mesh, &relabel_permutation)
+                .expect("vertex-relabeled convex-component outwardness fixture should build");
+            assert!(
+                relabeled_mesh.is_valid(),
+                "{label}: relabeled fixture should remain Phase-4 valid"
+            );
+            assert!(
+                relabeled_mesh.check_outward_face_normals(),
+                "{label}: relabeled fixture should satisfy outward-normal checker"
+            );
+            assert_signed_volume_component_sign_matches_per_face_normal_alignment(
+                &relabeled_mesh,
+                &references,
+                &format!("{label}_relabeled"),
+            );
+        }
+
+        let reflected_meshes = vec![
+            (
+                "reflected_cube",
+                transform_mesh_positions(&Mesh::cube(), |point| {
+                    let mirrored = reflect_point3_across_yz_plane(point);
+                    translate_point3(&mirrored, 11, 3, -5)
+                }),
+            ),
+            (
+                "reflected_disconnected_tetrahedra",
+                transform_mesh_positions(
+                    &build_disconnected_translated_tetrahedra_mesh(&[(0, 0, 0), (20, 0, 0), (-15, 7, 3)]),
+                    |point| {
+                        let mirrored = reflect_point3_across_yz_plane(point);
+                        translate_point3(&mirrored, 11, 3, -5)
+                    },
+                ),
+            ),
+        ];
+        for (label, mesh) in reflected_meshes {
+            assert!(mesh.is_valid(), "{label}: reflected fixture should remain Phase-4 valid");
+            assert!(
+                !mesh.check_outward_face_normals(),
+                "{label}: reflected fixture should fail outward-normal checker"
+            );
+            assert_signed_volume_component_sign_matches_per_face_normal_alignment(
+                &mesh,
+                &references,
+                label,
+            );
+
+            let relabel_permutation: Vec<usize> = (0..mesh.vertices.len()).rev().collect();
+            let relabeled_mesh = relabel_mesh_vertices_for_testing(&mesh, &relabel_permutation)
+                .expect("vertex-relabeled reflected convex-component fixture should build");
+            assert!(
+                relabeled_mesh.is_valid(),
+                "{label}: relabeled reflected fixture should remain Phase-4 valid"
+            );
+            assert!(
+                !relabeled_mesh.check_outward_face_normals(),
+                "{label}: relabeled reflected fixture should fail outward-normal checker"
+            );
+            assert_signed_volume_component_sign_matches_per_face_normal_alignment(
+                &relabeled_mesh,
+                &references,
+                &format!("{label}_relabeled"),
+            );
+        }
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn differential_randomized_outward_signed_volume_per_face_alignment_harness() {
+        const CASES: usize = 40;
+        let mut rng = DeterministicRng::new(0x0D15_EA61);
+
+        for case_id in 0..CASES {
+            let component_count = rng.next_usize_inclusive(2, 7);
+            let disjoint_origins = random_well_separated_component_origins(&mut rng, component_count);
+            let disjoint_mesh = build_disconnected_translated_tetrahedra_mesh(&disjoint_origins);
+            assert!(
+                disjoint_mesh.is_valid(),
+                "random disjoint fixture should be Phase-4 valid in case {case_id}"
+            );
+            assert!(
+                disjoint_mesh.check_outward_face_normals(),
+                "random disjoint fixture should satisfy outward-normal checker in case {case_id}"
+            );
+
+            let references = vec![
+                RuntimePoint3::from_ints(0, 0, 0),
+                RuntimePoint3::from_ints(
+                    rng.next_i64_inclusive(-31, 31),
+                    rng.next_i64_inclusive(-31, 31),
+                    rng.next_i64_inclusive(-31, 31),
+                ),
+                RuntimePoint3::from_ints(
+                    rng.next_i64_inclusive(-31, 31),
+                    rng.next_i64_inclusive(-31, 31),
+                    rng.next_i64_inclusive(-31, 31),
+                ),
+                RuntimePoint3::from_ints(
+                    rng.next_i64_inclusive(-31, 31),
+                    rng.next_i64_inclusive(-31, 31),
+                    rng.next_i64_inclusive(-31, 31),
+                ),
+            ];
+
+            assert_signed_volume_component_sign_matches_per_face_normal_alignment(
+                &disjoint_mesh,
+                &references,
+                &format!("random_disjoint_per_face_alignment_case_{case_id}"),
+            );
+            let disjoint_permutation = random_permutation(&mut rng, disjoint_mesh.vertices.len());
+            let relabeled_disjoint =
+                relabel_mesh_vertices_for_testing(&disjoint_mesh, &disjoint_permutation)
+                    .expect("vertex-relabeled disjoint per-face-alignment fixture should build");
+            assert!(
+                relabeled_disjoint.is_valid(),
+                "vertex-relabeled disjoint fixture should remain valid in case {case_id}"
+            );
+            assert!(
+                relabeled_disjoint.check_outward_face_normals(),
+                "vertex-relabeled disjoint fixture should remain outward in case {case_id}"
+            );
+            assert_signed_volume_component_sign_matches_per_face_normal_alignment(
+                &relabeled_disjoint,
+                &references,
+                &format!("random_disjoint_per_face_alignment_relabeled_case_{case_id}"),
+            );
+
+            let quarter_turns = rng.next_u64() % 4;
+            let tx = rng.next_i64_inclusive(-25, 25);
+            let ty = rng.next_i64_inclusive(-25, 25);
+            let tz = rng.next_i64_inclusive(-25, 25);
+            let rigid_disjoint = transform_mesh_positions(&disjoint_mesh, |point| {
+                rigid_rotate_z_quarter_turns_then_translate(point, quarter_turns, tx, ty, tz)
+            });
+            assert!(
+                rigid_disjoint.is_valid(),
+                "rigid disjoint fixture should remain valid in case {case_id}"
+            );
+            assert!(
+                rigid_disjoint.check_outward_face_normals(),
+                "rigid disjoint fixture should remain outward in case {case_id}"
+            );
+            assert_signed_volume_component_sign_matches_per_face_normal_alignment(
+                &rigid_disjoint,
+                &references,
+                &format!("random_rigid_per_face_alignment_case_{case_id}"),
+            );
+            let rigid_permutation = random_permutation(&mut rng, rigid_disjoint.vertices.len());
+            let relabeled_rigid_disjoint =
+                relabel_mesh_vertices_for_testing(&rigid_disjoint, &rigid_permutation)
+                    .expect("vertex-relabeled rigid per-face-alignment fixture should build");
+            assert!(
+                relabeled_rigid_disjoint.is_valid(),
+                "vertex-relabeled rigid fixture should remain valid in case {case_id}"
+            );
+            assert!(
+                relabeled_rigid_disjoint.check_outward_face_normals(),
+                "vertex-relabeled rigid fixture should remain outward in case {case_id}"
+            );
+            assert_signed_volume_component_sign_matches_per_face_normal_alignment(
+                &relabeled_rigid_disjoint,
+                &references,
+                &format!("random_rigid_per_face_alignment_relabeled_case_{case_id}"),
+            );
+
+            let reflected_disjoint = transform_mesh_positions(&disjoint_mesh, |point| {
+                let mirrored = reflect_point3_across_yz_plane(point);
+                translate_point3(&mirrored, tx, ty, tz)
+            });
+            assert!(
+                reflected_disjoint.is_valid(),
+                "reflected disjoint fixture should remain valid in case {case_id}"
+            );
+            assert!(
+                !reflected_disjoint.check_outward_face_normals(),
+                "reflected disjoint fixture should fail outward checker in case {case_id}"
+            );
+            assert_signed_volume_component_sign_matches_per_face_normal_alignment(
+                &reflected_disjoint,
+                &references,
+                &format!("random_reflected_per_face_alignment_case_{case_id}"),
+            );
+            let reflected_permutation = random_permutation(&mut rng, reflected_disjoint.vertices.len());
+            let relabeled_reflected_disjoint =
+                relabel_mesh_vertices_for_testing(&reflected_disjoint, &reflected_permutation)
+                    .expect("vertex-relabeled reflected per-face-alignment fixture should build");
+            assert!(
+                relabeled_reflected_disjoint.is_valid(),
+                "vertex-relabeled reflected fixture should remain valid in case {case_id}"
+            );
+            assert!(
+                !relabeled_reflected_disjoint.check_outward_face_normals(),
+                "vertex-relabeled reflected fixture should fail outward checker in case {case_id}"
+            );
+            assert_signed_volume_component_sign_matches_per_face_normal_alignment(
+                &relabeled_reflected_disjoint,
+                &references,
+                &format!("random_reflected_per_face_alignment_relabeled_case_{case_id}"),
+            );
+        }
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
     fn reflection_flips_outward_orientation_sensitive_phase5_checks() {
         let cube = Mesh::cube();
         let reflected = transform_mesh_positions(&cube, |point| {
@@ -2793,6 +3179,37 @@ fn diagnostic_witness_is_real_counterexample(
 
         for (label, mesh) in fixtures {
             assert_face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle(&mesh, label);
+            let permutation: Vec<usize> = (0..mesh.vertices.len()).rev().collect();
+            let relabeled = relabel_mesh_vertices_for_testing(&mesh, &permutation)
+                .expect("vertex-relabeled coplanarity fixture should build");
+            assert!(
+                relabeled.is_valid(),
+                "vertex-relabeled coplanarity fixture should preserve Phase 4 validity for {label}"
+            );
+            assert_face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle(
+                &relabeled,
+                &format!("{label}_relabeled"),
+            );
+
+            let reflected = transform_mesh_positions(&mesh, reflect_point3_across_yz_plane);
+            assert!(
+                reflected.is_valid(),
+                "reflected coplanarity fixture should preserve Phase 4 validity for {label}"
+            );
+            assert_face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle(
+                &reflected,
+                &format!("{label}_reflected"),
+            );
+            let relabeled_reflected = relabel_mesh_vertices_for_testing(&reflected, &permutation)
+                .expect("vertex-relabeled reflected coplanarity fixture should build");
+            assert!(
+                relabeled_reflected.is_valid(),
+                "vertex-relabeled reflected coplanarity fixture should preserve Phase 4 validity for {label}"
+            );
+            assert_face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle(
+                &relabeled_reflected,
+                &format!("{label}_reflected_relabeled"),
+            );
         }
     }
 
@@ -2851,6 +3268,18 @@ fn diagnostic_witness_is_real_counterexample(
                 &disjoint_mesh,
                 &format!("disjoint_case_{case_id}"),
             );
+            let disjoint_permutation = random_permutation(&mut rng, disjoint_mesh.vertices.len());
+            let relabeled_disjoint =
+                relabel_mesh_vertices_for_testing(&disjoint_mesh, &disjoint_permutation)
+                    .expect("vertex-relabeled disjoint coplanarity fixture should build");
+            assert!(
+                relabeled_disjoint.is_valid(),
+                "vertex-relabeled disjoint coplanarity fixture should satisfy Phase 4 validity in case {case_id}"
+            );
+            assert_face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle(
+                &relabeled_disjoint,
+                &format!("disjoint_relabeled_case_{case_id}"),
+            );
 
             let quarter_turns = rng.next_u64() % 4;
             let tx = rng.next_i64_inclusive(-25, 25);
@@ -2866,6 +3295,46 @@ fn diagnostic_witness_is_real_counterexample(
             assert_face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle(
                 &rigid_disjoint,
                 &format!("disjoint_rigid_case_{case_id}"),
+            );
+            let rigid_permutation = random_permutation(&mut rng, rigid_disjoint.vertices.len());
+            let relabeled_rigid_disjoint =
+                relabel_mesh_vertices_for_testing(&rigid_disjoint, &rigid_permutation)
+                    .expect("vertex-relabeled rigid coplanarity fixture should build");
+            assert!(
+                relabeled_rigid_disjoint.is_valid(),
+                "vertex-relabeled rigid coplanarity fixture should satisfy Phase 4 validity in case {case_id}"
+            );
+            assert_face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle(
+                &relabeled_rigid_disjoint,
+                &format!("disjoint_rigid_relabeled_case_{case_id}"),
+            );
+
+            let reflected_disjoint = transform_mesh_positions(&disjoint_mesh, |point| {
+                let mirrored = reflect_point3_across_yz_plane(point);
+                translate_point3(&mirrored, tx, ty, tz)
+            });
+            assert!(
+                reflected_disjoint.is_valid(),
+                "reflected disjoint coplanarity fixture should satisfy Phase 4 validity in case {case_id}"
+            );
+            assert_face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle(
+                &reflected_disjoint,
+                &format!("disjoint_reflected_case_{case_id}"),
+            );
+            let reflected_disjoint_permutation =
+                random_permutation(&mut rng, reflected_disjoint.vertices.len());
+            let relabeled_reflected_disjoint = relabel_mesh_vertices_for_testing(
+                &reflected_disjoint,
+                &reflected_disjoint_permutation,
+            )
+            .expect("vertex-relabeled reflected disjoint coplanarity fixture should build");
+            assert!(
+                relabeled_reflected_disjoint.is_valid(),
+                "vertex-relabeled reflected disjoint coplanarity fixture should satisfy Phase 4 validity in case {case_id}"
+            );
+            assert_face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle(
+                &relabeled_reflected_disjoint,
+                &format!("disjoint_reflected_relabeled_case_{case_id}"),
             );
 
             let (source_component, perturbed_component) =
@@ -2891,6 +3360,46 @@ fn diagnostic_witness_is_real_counterexample(
                 &perturbed_mesh,
                 &format!("perturbed_case_{case_id}"),
             );
+            let perturbed_permutation = random_permutation(&mut rng, perturbed_mesh.vertices.len());
+            let relabeled_perturbed =
+                relabel_mesh_vertices_for_testing(&perturbed_mesh, &perturbed_permutation)
+                    .expect("vertex-relabeled perturbed coplanarity fixture should build");
+            assert!(
+                relabeled_perturbed.is_valid(),
+                "vertex-relabeled perturbed coplanarity fixture should satisfy Phase 4 validity in case {case_id}"
+            );
+            assert_face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle(
+                &relabeled_perturbed,
+                &format!("perturbed_relabeled_case_{case_id}"),
+            );
+
+            let reflected_perturbed = transform_mesh_positions(&perturbed_mesh, |point| {
+                let mirrored = reflect_point3_across_yz_plane(point);
+                translate_point3(&mirrored, tx, ty, tz)
+            });
+            assert!(
+                reflected_perturbed.is_valid(),
+                "reflected perturbed coplanarity fixture should satisfy Phase 4 validity in case {case_id}"
+            );
+            assert_face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle(
+                &reflected_perturbed,
+                &format!("perturbed_reflected_case_{case_id}"),
+            );
+            let reflected_perturbed_permutation =
+                random_permutation(&mut rng, reflected_perturbed.vertices.len());
+            let relabeled_reflected_perturbed = relabel_mesh_vertices_for_testing(
+                &reflected_perturbed,
+                &reflected_perturbed_permutation,
+            )
+            .expect("vertex-relabeled reflected perturbed coplanarity fixture should build");
+            assert!(
+                relabeled_reflected_perturbed.is_valid(),
+                "vertex-relabeled reflected perturbed coplanarity fixture should satisfy Phase 4 validity in case {case_id}"
+            );
+            assert_face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle(
+                &relabeled_reflected_perturbed,
+                &format!("perturbed_reflected_relabeled_case_{case_id}"),
+            );
 
             for (label, mesh) in &failing_fixtures {
                 let fail_turns = rng.next_u64() % 4;
@@ -2909,6 +3418,37 @@ fn diagnostic_witness_is_real_counterexample(
                 assert_face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle(
                     &transformed,
                     &format!("{label}_rigid_case_{case_id}"),
+                );
+                let transformed_permutation =
+                    random_permutation(&mut rng, transformed.vertices.len());
+                let relabeled_transformed =
+                    relabel_mesh_vertices_for_testing(&transformed, &transformed_permutation)
+                        .expect("vertex-relabeled transformed failing coplanarity fixture should build");
+                assert_face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle(
+                    &relabeled_transformed,
+                    &format!("{label}_rigid_relabeled_case_{case_id}"),
+                );
+
+                let reflected_transformed = transform_mesh_positions(&transformed, |point| {
+                    let mirrored = reflect_point3_across_yz_plane(point);
+                    translate_point3(&mirrored, fail_tx, fail_ty, fail_tz)
+                });
+                assert_face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle(
+                    &reflected_transformed,
+                    &format!("{label}_rigid_reflected_case_{case_id}"),
+                );
+                let reflected_transformed_permutation =
+                    random_permutation(&mut rng, reflected_transformed.vertices.len());
+                let relabeled_reflected_transformed = relabel_mesh_vertices_for_testing(
+                    &reflected_transformed,
+                    &reflected_transformed_permutation,
+                )
+                .expect(
+                    "vertex-relabeled reflected transformed failing coplanarity fixture should build",
+                );
+                assert_face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle(
+                    &relabeled_reflected_transformed,
+                    &format!("{label}_rigid_reflected_relabeled_case_{case_id}"),
                 );
             }
         }
