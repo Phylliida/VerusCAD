@@ -195,6 +195,28 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) with a full-coplanarity preconditioned runtime-parity bridge increment in:
+  - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
+  - `src/halfedge_mesh/tests.rs`.
+  - added a new sound+complete runtime-parity wrapper:
+    - `runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_full_coplanarity_sound_complete_bridge`;
+    - preconditions: `mesh_valid_spec`, `mesh_runtime_all_faces_coplanar_spec`, and `mesh_runtime_all_faces_seed0_corner_non_collinear_spec`;
+    - guarantees exact runtime parity (`out == m.check_face_coplanarity()`) while preserving the seed0 fixed-witness/plane-containment/oriented-plane completeness bundle under those preconditions.
+  - added test coverage for this bridge:
+    - new helper parity assertion `assert_face_coplanarity_seed0_full_coplanarity_sound_complete_bridge_parity`;
+    - new regression `face_coplanarity_seed0_full_coplanarity_sound_complete_bridge_matches_runtime_checker`;
+    - integrated parity checks into the existing constructive Phase 5 gate parity helper path.
+  - outcome:
+    - P5.1 now has an explicit full-coplanarity-preconditioned runtime parity bridge (beyond the oriented-seed0 preconditioned parity path), reducing checker/spec closure debt while checklist status remains unchanged.
+- 2026-02-19: Failed attempts in this P5.1 full-coplanarity runtime-parity pass: none.
+- 2026-02-19: Revalidated after this P5.1 full-coplanarity runtime-parity strengthening:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" face_coplanarity_seed0_full_coplanarity_sound_complete_bridge_matches_runtime_checker` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (94 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (383 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (420 verified, 0 errors)
 - 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) with a triangle/quad coplanarity sound+complete runtime-parity contract strengthening in:
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`.
   - strengthened `runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_sound_complete_bridge`:
