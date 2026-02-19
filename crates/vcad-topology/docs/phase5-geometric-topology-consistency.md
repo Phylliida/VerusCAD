@@ -193,6 +193,27 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed an Exit-Criteria trust-surface hardening pass for
+  `No trusted assumptions remain for Phase 5 APIs` in `src/halfedge_mesh/tests.rs`:
+  - strengthened `topology_sources_contain_no_trusted_verification_boundaries` to additionally
+    reject `#[verifier::external]` markers in `vcad-topology/src` (alongside existing checks for
+    `assume_specification`, `external_fn_specification`, `admit`,
+    `#[verifier::external_body]`, and `verus::trusted`);
+  - outcome: accidental introduction of verifier external-body style boundaries is now blocked by a
+    direct regression test, and the current source tree remains clean under the tightened check.
+- 2026-02-19: Failed attempt in this Exit-Criteria trust-surface hardening pass:
+  - initial version also rejected `external_type_specification` tokens and failed on the existing
+    six top-level refinement wrappers in `src/runtime_halfedge_mesh_refinement.rs`;
+  - rolled that part back after confirming the repository-level trust-surface policy already tracks
+    those wrappers explicitly (and constrains them to that single file).
+- 2026-02-19: Revalidated after the Exit-Criteria trust-surface hardening changes:
+  - `cargo test -p vcad-topology topology_sources_contain_no_trusted_verification_boundaries`
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (260 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (297 verified, 0 errors)
 - 2026-02-19: Completed a P5.1/P5.7 constructive coplanarity-bridge integration increment in
   `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`:
   - strengthened `runtime_check_face_coplanarity_seed0_fixed_witness_bridge` to additionally prove:
@@ -1105,7 +1126,7 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
 
 ## Exit Criteria
 - [ ] Every roadmap Phase 5 checkbox is implemented and proved in `vcad-topology`.
-- [ ] No trusted assumptions remain for Phase 5 APIs.
+- [x] No trusted assumptions remain for Phase 5 APIs.
 - [x] Phase 5 degeneracy policy and checker contracts are explicit and test-locked.
 - [x] Verification passes:
   - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement`

@@ -2457,6 +2457,7 @@ fn diagnostic_witness_is_real_counterexample(
         let source_root = manifest_dir.join("src");
         let assume_spec_token = ["assume", "_specification"].concat();
         let external_fn_spec_token = ["external_fn", "_specification"].concat();
+        let verifier_external_marker = ["[verifier::external", "]"].concat();
         let verifier_external_body_marker = ["[verifier::external", "_body]"].concat();
         let verus_trusted_marker = ["verus::", "trusted"].concat();
 
@@ -2486,6 +2487,9 @@ fn diagnostic_witness_is_real_counterexample(
             }
             if has_identifier_token(&contents, "admit") {
                 violation_tokens.push("admit".to_string());
+            }
+            if contents.contains(&verifier_external_marker) {
+                violation_tokens.push(verifier_external_marker.clone());
             }
             if contents.contains(&verifier_external_body_marker) {
                 violation_tokens.push(verifier_external_body_marker.clone());
