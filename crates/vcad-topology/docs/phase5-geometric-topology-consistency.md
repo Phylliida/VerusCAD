@@ -193,6 +193,40 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.1 runtime-soundness/oriented-seed-plane groundwork increment across
+  `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs` and
+  `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`:
+  - added aggregate seed-0 non-collinearity specs:
+    - `mesh_all_faces_seed0_corner_non_collinear_spec`;
+    - `mesh_runtime_all_faces_seed0_corner_non_collinear_spec`.
+  - added aggregate oriented seed-0 plane specs:
+    - `mesh_all_faces_oriented_seed0_planes_spec`;
+    - `mesh_runtime_all_faces_oriented_seed0_planes_spec`.
+  - added aggregate composition lemmas:
+    - `lemma_mesh_all_faces_coplanar_seed0_fixed_witness_and_seed0_non_collinear_imply_all_faces_oriented_seed0_planes`;
+    - `lemma_mesh_runtime_all_faces_coplanar_seed0_fixed_witness_and_seed0_non_collinear_imply_all_faces_oriented_seed0_planes`.
+  - added a dedicated constructive/runtime bridge:
+    - `runtime_check_face_seed0_corner_non_collinearity_bridge`, proving
+      `out ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m)`.
+  - strengthened the existing coplanarity constructive/runtime bridge:
+    - `runtime_check_face_coplanarity_seed0_fixed_witness_bridge` now additionally proves
+      `out ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m)` and
+      `out ==> mesh_runtime_all_faces_oriented_seed0_planes_spec(m)`.
+  - outcome: a successful executable coplanarity bridge pass now exports a stronger seed-0 proof bundle
+    (fixed-witness coplanarity + seed-0 non-collinearity + oriented seed-0 planes) for all faces, reducing
+    future checker/spec proof steps to the remaining conversion from this bundle into full
+    `mesh_runtime_all_faces_coplanar_spec`.
+  - this advances the unchecked P5.1 checker-correctness item by making the runtime-side seed-0
+    non-collinearity precondition explicit and machine-checked, and by wiring oriented-seed-plane
+    consequences directly from executable checker success.
+- 2026-02-19: Failed attempts in this P5.1 seed-0 non-collinearity/oriented-plane groundwork pass: none.
+- 2026-02-19: Revalidated after the P5.1 seed-0 non-collinearity/oriented-plane groundwork additions:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (260 verified, 0 errors)
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (297 verified, 0 errors)
 - 2026-02-19: Completed a P5.1 runtime-soundness bridge increment in
   `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`:
   - added a dedicated constructive/runtime bridge:

@@ -510,9 +510,286 @@ pub fn is_valid_constructive(
 #[cfg(feature = "geometry-checks")]
 #[verifier::exec_allows_no_decreases_clause]
 #[allow(dead_code)]
+pub fn runtime_check_face_seed0_corner_non_collinearity_bridge(m: &Mesh) -> (out: bool)
+    ensures
+        out ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m),
+{
+    if !m.is_valid() {
+        return false;
+    }
+
+    let index_bounds_ok = runtime_check_index_bounds(m);
+    if !index_bounds_ok {
+        return false;
+    }
+
+    let face_cycles_ok = runtime_check_face_cycles_kernel_bridge(m);
+    if !face_cycles_ok {
+        return false;
+    }
+
+    let fcnt = m.faces.len();
+
+    proof {
+        assert(mesh_index_bounds_spec(m@));
+        assert(mesh_face_next_cycles_spec(m@));
+        lemma_mesh_runtime_geometry_bridge_holds(m);
+        assert(mesh_runtime_geometry_bridge_spec(m));
+    }
+
+    let ghost face_cycle_lens = choose|face_cycle_lens: Seq<usize>| mesh_face_next_cycles_witness_spec(
+        m@,
+        face_cycle_lens,
+    );
+    let ghost vertex_positions = mesh_runtime_vertex_positions_spec(m);
+
+    proof {
+        assert(mesh_face_next_cycles_witness_spec(m@, face_cycle_lens));
+        assert(mesh_runtime_geometry_bridge_spec(m));
+        assert(mesh_geometry_input_spec(m@, vertex_positions));
+        assert(face_cycle_lens.len() == mesh_face_count_spec(m@));
+        assert(mesh_face_count_spec(m@) == m@.face_half_edges.len() as int);
+        assert(m@.face_half_edges.len() == m.faces@.len());
+        assert(m.faces@.len() == m.faces.len());
+        assert(face_cycle_lens.len() == fcnt as int);
+    }
+
+    let mut f: usize = 0;
+    while f < fcnt
+        invariant
+            fcnt == m.faces.len(),
+            face_cycle_lens.len() == fcnt as int,
+            f <= fcnt,
+            mesh_index_bounds_spec(m@),
+            mesh_face_next_cycles_witness_spec(m@, face_cycle_lens),
+            mesh_runtime_geometry_bridge_spec(m),
+            forall|fp: int|
+                0 <= fp < f as int ==> !mesh_points_collinear3_spec(
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                        m@,
+                        vertex_positions,
+                        fp,
+                        0,
+                    ),
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                        m@,
+                        vertex_positions,
+                        fp,
+                        1,
+                    ),
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                        m@,
+                        vertex_positions,
+                        fp,
+                        2,
+                    ),
+                ),
+    {
+        let h0 = m.faces[f].half_edge;
+        let h1 = m.half_edges[h0].next;
+        let h2 = m.half_edges[h1].next;
+
+        let a = &m.vertices[m.half_edges[h0].vertex].position;
+        let b = &m.vertices[m.half_edges[h1].vertex].position;
+        let c = &m.vertices[m.half_edges[h2].vertex].position;
+
+        let col = vcad_geometry::collinearity_coplanarity::collinear3d(a, b, c);
+        if col {
+            return false;
+        }
+
+        proof {
+            let fi = f as int;
+            let k = face_cycle_lens[fi] as int;
+            let start = m@.face_half_edges[fi];
+            let p0 = mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                m@,
+                vertex_positions,
+                fi,
+                0,
+            );
+            let p1 = mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                m@,
+                vertex_positions,
+                fi,
+                1,
+            );
+            let p2 = mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                m@,
+                vertex_positions,
+                fi,
+                2,
+            );
+
+            assert(0 <= fi < face_cycle_lens.len());
+            assert(mesh_face_cycle_witness_spec(m@, fi, k));
+            assert(3 <= k);
+            assert(start == h0 as int);
+            assert(0 <= start < mesh_half_edge_count_spec(m@));
+            assert(mesh_next_iter_spec(m@, start, 0) == start);
+            assert(mesh_next_iter_spec(m@, start, 1) == mesh_next_or_self_spec(m@, start));
+            assert(mesh_next_or_self_spec(m@, start) == m@.half_edges[start].next);
+            assert(m@.half_edges[start].next == h1 as int);
+            assert(mesh_next_iter_spec(m@, start, 1) == h1 as int);
+            assert(mesh_next_iter_spec(m@, start, 2) == mesh_next_or_self_spec(
+                m@,
+                mesh_next_iter_spec(m@, start, 1),
+            ));
+            assert(mesh_next_or_self_spec(m@, mesh_next_iter_spec(m@, start, 1))
+                == m@.half_edges[mesh_next_iter_spec(m@, start, 1)].next);
+            assert(mesh_next_iter_spec(m@, start, 2) == h2 as int);
+
+            assert(p0 == a@);
+            assert(p1 == b@);
+            assert(p2 == c@);
+
+            assert(col == mesh_points_collinear3_spec(a@, b@, c@));
+            assert(col == mesh_points_collinear3_spec(p0, p1, p2));
+            assert(!col);
+            assert(!mesh_points_collinear3_spec(p0, p1, p2));
+
+            assert(forall|fp: int|
+                0 <= fp < (f + 1) as int ==> !mesh_points_collinear3_spec(
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                        m@,
+                        vertex_positions,
+                        fp,
+                        0,
+                    ),
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                        m@,
+                        vertex_positions,
+                        fp,
+                        1,
+                    ),
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                        m@,
+                        vertex_positions,
+                        fp,
+                        2,
+                    ),
+                )) by {
+                assert forall|fp: int|
+                    0 <= fp < (f + 1) as int implies !mesh_points_collinear3_spec(
+                        mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                            m@,
+                            vertex_positions,
+                            fp,
+                            0,
+                        ),
+                        mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                            m@,
+                            vertex_positions,
+                            fp,
+                            1,
+                        ),
+                        mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                            m@,
+                            vertex_positions,
+                            fp,
+                            2,
+                        ),
+                    ) by {
+                    if fp < f as int {
+                    } else {
+                        assert(fp == fi);
+                        assert(!mesh_points_collinear3_spec(
+                            mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                                m@,
+                                vertex_positions,
+                                fi,
+                                0,
+                            ),
+                            mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                                m@,
+                                vertex_positions,
+                                fi,
+                                1,
+                            ),
+                            mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                                m@,
+                                vertex_positions,
+                                fi,
+                                2,
+                            ),
+                        ));
+                    }
+                };
+            };
+        }
+
+        f += 1;
+    }
+
+    proof {
+        lemma_usize_loop_exit_eq(f, fcnt);
+        assert(f == fcnt);
+        assert(mesh_index_bounds_spec(m@));
+        assert(mesh_face_next_cycles_spec(m@));
+        assert(mesh_runtime_geometry_bridge_spec(m));
+        assert(mesh_geometry_input_spec(m@, vertex_positions));
+        assert(face_cycle_lens.len() == fcnt as int);
+        assert(forall|fp: int|
+            0 <= fp < mesh_face_count_spec(m@) ==> !mesh_points_collinear3_spec(
+                mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                    m@,
+                    vertex_positions,
+                    fp,
+                    0,
+                ),
+                mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                    m@,
+                    vertex_positions,
+                    fp,
+                    1,
+                ),
+                mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                    m@,
+                    vertex_positions,
+                    fp,
+                    2,
+                ),
+            )) by {
+            assert forall|fp: int|
+                0 <= fp < mesh_face_count_spec(m@) implies !mesh_points_collinear3_spec(
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                        m@,
+                        vertex_positions,
+                        fp,
+                        0,
+                    ),
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                        m@,
+                        vertex_positions,
+                        fp,
+                        1,
+                    ),
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                        m@,
+                        vertex_positions,
+                        fp,
+                        2,
+                    ),
+                ) by {
+                assert(mesh_face_count_spec(m@) == face_cycle_lens.len());
+                assert(face_cycle_lens.len() == fcnt as int);
+                assert(0 <= fp < f as int);
+            };
+        };
+        assert(mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m));
+    }
+
+    true
+}
+
+#[cfg(feature = "geometry-checks")]
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
 pub fn runtime_check_face_coplanarity_seed0_fixed_witness_bridge(m: &Mesh) -> (out: bool)
     ensures
         out ==> mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m),
+        out ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m),
+        out ==> mesh_runtime_all_faces_oriented_seed0_planes_spec(m),
 {
     if !m.is_valid() {
         return false;
@@ -529,6 +806,12 @@ pub fn runtime_check_face_coplanarity_seed0_fixed_witness_bridge(m: &Mesh) -> (o
     }
 
     if !m.check_face_corner_non_collinearity() {
+        return false;
+    }
+    let seed0_corner_non_collinearity_ok = runtime_check_face_seed0_corner_non_collinearity_bridge(
+        m,
+    );
+    if !seed0_corner_non_collinearity_ok {
         return false;
     }
 
@@ -901,6 +1184,13 @@ pub fn runtime_check_face_coplanarity_seed0_fixed_witness_bridge(m: &Mesh) -> (o
             };
         };
         assert(mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m));
+        assert(seed0_corner_non_collinearity_ok);
+        assert(seed0_corner_non_collinearity_ok ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m));
+        assert(mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m));
+        lemma_mesh_runtime_all_faces_coplanar_seed0_fixed_witness_and_seed0_non_collinear_imply_all_faces_oriented_seed0_planes(
+            m,
+        );
+        assert(mesh_runtime_all_faces_oriented_seed0_planes_spec(m));
     }
 
     true
