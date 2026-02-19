@@ -1125,6 +1125,29 @@ impl Mesh {
         self.check_no_forbidden_face_face_intersections_impl(false)
     }
 
+    #[cfg(all(test, feature = "geometry-checks"))]
+    pub(crate) fn face_pair_has_allowed_contact_topology_for_testing(
+        &self,
+        face_a: usize,
+        face_b: usize,
+    ) -> Option<bool> {
+        if face_a >= self.faces.len() || face_b >= self.faces.len() || face_a == face_b {
+            return None;
+        }
+        if !self.check_index_bounds() || !self.check_face_cycles() {
+            return None;
+        }
+
+        let face_a_vertices = self.ordered_face_vertex_cycle(face_a)?;
+        let face_b_vertices = self.ordered_face_vertex_cycle(face_b)?;
+        let shared_vertices = Self::collect_shared_face_vertices(&face_a_vertices, &face_b_vertices);
+        let shared_edge_keys = Self::collect_shared_face_edge_keys(&face_a_vertices, &face_b_vertices);
+        Some(Self::face_pair_has_allowed_contact_topology(
+            &shared_vertices,
+            &shared_edge_keys,
+        ))
+    }
+
     #[cfg(feature = "geometry-checks")]
     fn first_zero_length_geometric_edge_failure(
         &self,

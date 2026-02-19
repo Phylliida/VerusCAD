@@ -184,6 +184,108 @@ fn ordered_face_vertex_cycle_indices(mesh: &Mesh, face_id: usize) -> Option<Vec<
 }
 
 #[cfg(feature = "geometry-checks")]
+fn ordered_face_boundary_vertices_and_edge_indices(
+    mesh: &Mesh,
+    face_id: usize,
+) -> Option<(Vec<usize>, Vec<usize>)> {
+    if face_id >= mesh.faces.len() {
+        return None;
+    }
+    let hcnt = mesh.half_edges.len();
+    if hcnt == 0 {
+        return None;
+    }
+
+    let start = mesh.faces[face_id].half_edge;
+    if start >= hcnt {
+        return None;
+    }
+    let mut h = start;
+    let mut steps = 0usize;
+    let mut vertices = Vec::new();
+    let mut edges = Vec::new();
+    loop {
+        let he = mesh.half_edges.get(h)?;
+        if he.face != face_id || he.vertex >= mesh.vertices.len() || he.edge >= mesh.edges.len() {
+            return None;
+        }
+        vertices.push(he.vertex);
+        if !edges.contains(&he.edge) {
+            edges.push(he.edge);
+        }
+
+        h = he.next;
+        steps += 1;
+        if h == start {
+            break;
+        }
+        if steps > hcnt {
+            return None;
+        }
+    }
+
+    if vertices.len() < 3 {
+        return None;
+    }
+    Some((vertices, edges))
+}
+
+#[cfg(feature = "geometry-checks")]
+fn face_pair_allowed_contact_topology_edge_index_oracle(
+    mesh: &Mesh,
+    face_a: usize,
+    face_b: usize,
+) -> Option<bool> {
+    if face_a >= mesh.faces.len() || face_b >= mesh.faces.len() || face_a == face_b {
+        return None;
+    }
+
+    let (face_a_vertices, face_a_edges) =
+        ordered_face_boundary_vertices_and_edge_indices(mesh, face_a)?;
+    let (face_b_vertices, face_b_edges) =
+        ordered_face_boundary_vertices_and_edge_indices(mesh, face_b)?;
+
+    let mut shared_vertices = Vec::new();
+    for vertex in face_a_vertices {
+        if face_b_vertices.contains(&vertex) && !shared_vertices.contains(&vertex) {
+            shared_vertices.push(vertex);
+        }
+    }
+
+    let mut shared_edges = Vec::new();
+    for edge in face_a_edges {
+        if face_b_edges.contains(&edge) && !shared_edges.contains(&edge) {
+            shared_edges.push(edge);
+        }
+    }
+
+    Some(if shared_edges.is_empty() {
+        shared_vertices.len() <= 1
+    } else {
+        shared_edges.len() == 1 && shared_vertices.len() == 2
+    })
+}
+
+#[cfg(feature = "geometry-checks")]
+fn assert_allowed_contact_topology_classifier_matches_edge_index_oracle(mesh: &Mesh) {
+    for face_a in 0..mesh.faces.len() {
+        for face_b in (face_a + 1)..mesh.faces.len() {
+            let runtime = mesh
+                .face_pair_has_allowed_contact_topology_for_testing(face_a, face_b)
+                .expect("pair classifier should produce an output for valid face ids");
+            let oracle = face_pair_allowed_contact_topology_edge_index_oracle(
+                mesh, face_a, face_b,
+            )
+            .expect("oracle should produce an output for valid face ids");
+            assert_eq!(
+                runtime, oracle,
+                "allowed-contact topology classifier mismatch on face pair ({face_a}, {face_b})"
+            );
+        }
+    }
+}
+
+#[cfg(feature = "geometry-checks")]
 fn check_face_coplanarity_exhaustive_face_quadruple_oracle(mesh: &Mesh) -> bool {
     if !mesh.is_valid() {
         return false;
@@ -1384,6 +1486,93 @@ fn diagnostic_witness_is_real_counterexample(
         for mesh in fixtures {
             assert!(mesh.is_valid(), "fixture must satisfy Phase 4 validity");
             assert_forbidden_face_face_checker_broad_phase_sound(&mesh);
+        }
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn allowed_contact_topology_classifier_matches_edge_index_oracle() {
+        let coincident_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 1),
+            RuntimePoint3::from_ints(1, 0, 1),
+            RuntimePoint3::from_ints(0, 1, 1),
+        ];
+        let coincident_faces = vec![vec![0, 1, 2], vec![0, 2, 1]];
+        let coincident_double_face_mesh = Mesh::from_face_cycles(coincident_vertices, &coincident_faces)
+            .expect("coincident double-face fixture should build");
+
+        let mut disjoint_origins = Vec::new();
+        for i in 0..8 {
+            disjoint_origins.push((i * 10, 0, 0));
+        }
+        let disjoint_stress = build_disconnected_translated_tetrahedra_mesh(&disjoint_origins);
+
+        let fixtures = vec![
+            Mesh::tetrahedron(),
+            Mesh::cube(),
+            Mesh::triangular_prism(),
+            build_overlapping_tetrahedra_mesh(),
+            coincident_double_face_mesh,
+            disjoint_stress,
+        ];
+
+        for mesh in fixtures {
+            assert!(mesh.is_valid(), "fixture must satisfy Phase 4 validity");
+            assert_allowed_contact_topology_classifier_matches_edge_index_oracle(&mesh);
+        }
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn differential_randomized_allowed_contact_topology_classifier_harness() {
+        const CASES: usize = 40;
+        let mut rng = DeterministicRng::new(0xA110_C0DE);
+
+        for _ in 0..CASES {
+            let component_count = rng.next_usize_inclusive(2, 7);
+            let disjoint_origins =
+                random_well_separated_component_origins(&mut rng, component_count);
+            let disjoint_mesh =
+                build_disconnected_translated_tetrahedra_mesh(&disjoint_origins);
+            assert!(
+                disjoint_mesh.is_valid(),
+                "generated disjoint fixture should satisfy Phase 4 validity"
+            );
+            assert_allowed_contact_topology_classifier_matches_edge_index_oracle(&disjoint_mesh);
+
+            let quarter_turns = rng.next_u64() % 4;
+            let tx = rng.next_i64_inclusive(-25, 25);
+            let ty = rng.next_i64_inclusive(-25, 25);
+            let tz = rng.next_i64_inclusive(-25, 25);
+            let rigid_disjoint = transform_mesh_positions(&disjoint_mesh, |point| {
+                rigid_rotate_z_quarter_turns_then_translate(point, quarter_turns, tx, ty, tz)
+            });
+            assert!(
+                rigid_disjoint.is_valid(),
+                "rigidly transformed fixture should preserve Phase 4 validity"
+            );
+            assert_allowed_contact_topology_classifier_matches_edge_index_oracle(&rigid_disjoint);
+
+            let (source_component, perturbed_component) =
+                pick_distinct_indices(&mut rng, component_count);
+            let mut perturbed_origins = disjoint_origins.clone();
+            let perturbation = match rng.next_u64() % 4 {
+                0 => (0, 0, 0),
+                1 => (1, 0, 0),
+                2 => (0, 1, 0),
+                _ => (0, 0, 1),
+            };
+            let (ox, oy, oz) = perturbed_origins[source_component];
+            perturbed_origins[perturbed_component] =
+                (ox + perturbation.0, oy + perturbation.1, oz + perturbation.2);
+
+            let perturbed_mesh =
+                build_disconnected_translated_tetrahedra_mesh(&perturbed_origins);
+            assert!(
+                perturbed_mesh.is_valid(),
+                "topology should remain valid under coordinate perturbations"
+            );
+            assert_allowed_contact_topology_classifier_matches_edge_index_oracle(&perturbed_mesh);
         }
     }
 

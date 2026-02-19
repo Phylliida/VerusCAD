@@ -195,6 +195,36 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.5 adjacency-exemption topology-classifier differential-oracle
+  increment across `src/halfedge_mesh/validation.rs` and `src/halfedge_mesh/tests.rs`:
+  - added a test-only runtime hook that exposes the checker’s per-face-pair allowed-contact
+    topology classifier without changing production behavior:
+    - `Mesh::face_pair_has_allowed_contact_topology_for_testing`.
+  - added an independent face-pair allowed-contact oracle in tests that derives shared-boundary
+    classification from face-cycle edge indices + vertex indices (not the checker’s internal
+    normalized vertex-pair edge-key helper):
+    - `ordered_face_boundary_vertices_and_edge_indices`;
+    - `face_pair_allowed_contact_topology_edge_index_oracle`;
+    - `assert_allowed_contact_topology_classifier_matches_edge_index_oracle`.
+  - added deterministic + randomized differential regressions that assert parity between the
+    runtime classifier and the independent oracle across representative valid fixtures and
+    randomized disconnected/rigidly transformed/perturbed tetrahedra configurations:
+    - `allowed_contact_topology_classifier_matches_edge_index_oracle`;
+    - `differential_randomized_allowed_contact_topology_classifier_harness`.
+  - outcome: adjacency-exemption topology behavior is now regression-locked against an
+    independently computed allowed-contact oracle, reducing drift risk for the remaining open
+    P5.5 proofs (`shared-edge/shared-vertex non-misclassification` and
+    `adjacency-exemption equivalence`).
+- 2026-02-19: Failed attempts in this P5.5 adjacency-exemption differential-oracle pass: none.
+- 2026-02-19: Revalidated after the P5.5 adjacency-exemption differential-oracle additions:
+  - `cargo test -p vcad-topology --features geometry-checks allowed_contact_topology_classifier_matches_edge_index_oracle`
+  - `cargo test -p vcad-topology --features geometry-checks differential_randomized_allowed_contact_topology_classifier_harness`
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (278 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (315 verified, 0 errors)
 - 2026-02-19: Completed a P5.3 runtime-checker-correctness differential-oracle increment in
   `src/halfedge_mesh/tests.rs`:
   - added deterministic projected-orientation helpers for convexity oracle comparisons:
