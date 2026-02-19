@@ -140,16 +140,18 @@ Current complexity notes (runtime implementation in `src/halfedge_mesh/validatio
 - Linear-time per-half-edge checks:
   - `check_no_zero_length_geometric_edges`, `check_face_corner_non_collinearity`, `check_face_coplanarity`, `check_face_convexity`, and `check_shared_edge_local_orientation_consistency` each run in `O(H)` time with `O(1)` auxiliary space (excluding input mesh storage).
 - Plane consistency:
-  - `check_face_plane_consistency` is `O(F * C_plane + H)`, where `C_plane` is one `compute_face_plane` call.
-  - In the current implementation, `compute_face_plane` re-runs global validity guards, so `C_plane` is effectively `O(H)` and the stage is `O(FH)` worst-case.
+  - public `compute_face_plane` remains a guard-checked API and is `O(H)` worst-case per call.
+  - internal prevalidated plane extraction (used by aggregate checker internals) runs in
+    `O(sum_f d_f) = O(H)` total for one full-face sweep.
+  - `check_face_plane_consistency` is now `O(H)` time with `O(1)` auxiliary space (excluding input storage).
 - Face-pair intersection path:
-  - `check_no_forbidden_face_face_intersections` performs per-face preprocessing plus all non-adjacent face pairs.
+  - `check_no_forbidden_face_face_intersections` performs `O(H)` per-face preprocessing plus all non-adjacent face pairs.
   - each pair first applies a broad-phase prefilter (`AABB` overlap + strict plane-side separation) in `O(d_a + d_b)` time; rejected pairs skip the narrow phase.
   - Pair cost is `O(d_a * d_b)` for faces `a, b` (segment-vs-face tests + shared-vertex screening).
   - Total pair cost is `O(sum_{a<b} d_a d_b)`, bounded by `O(F^2 * d_max^2)`; for bounded face degree this is `O(F^2)`.
   - Auxiliary space is `O(H)` for cached per-face vertex cycles and normals.
 - Aggregate Phase 5 gate:
-  - `check_geometric_topological_consistency_diagnostic` is dominated by plane/intersection stages and is currently `O(FH + F^2 * d_max^2)` worst-case.
+  - `check_geometric_topological_consistency_diagnostic` is dominated by face-pair intersection and is currently `O(H + F^2 * d_max^2)` worst-case.
 
 ## P5.12 Invariance, Policy, and Phase-6 Readiness
 - [x] Checker-result invariance:
@@ -193,6 +195,27 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.11 face-plane preprocessing refactor in
+  `src/halfedge_mesh/validation.rs`:
+  - added internal helper `Mesh::compute_face_plane_prevalidated(face_id)` for call paths where
+    phase-4 validity and index/cycle guards are already established;
+  - preserved public API behavior of `Mesh::compute_face_plane(face_id)` (still guard-checked);
+  - switched internal per-face plane consumers to the prevalidated helper:
+    - `check_face_plane_consistency`;
+    - `check_no_forbidden_face_face_intersections_impl`;
+    - `first_face_plane_inconsistent_failure`;
+    - `first_forbidden_face_face_intersection_failure`.
+  - outcome: internal face-plane preprocessing no longer repeats global
+    `is_valid`/index/cycle checks once per face, removing the prior hidden `O(FH)` term from
+    those internal paths while keeping external semantics unchanged.
+- 2026-02-19: Failed attempts in this P5.11 face-plane preprocessing refactor: none.
+- 2026-02-19: Revalidated after the P5.11 face-plane preprocessing refactor:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (273 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (310 verified, 0 errors)
 - 2026-02-19: Completed a P5.1 runtime-soundness bridge normalization increment in
   `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
   - added a model-level equivalence lemma:

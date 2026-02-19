@@ -286,19 +286,12 @@ impl Mesh {
     }
 
     #[cfg(feature = "geometry-checks")]
-    /// Optional geometric extension: compute a face plane `(normal, offset)`
-    /// in the equation `normal . p = offset`, using exact arithmetic.
-    ///
-    /// Plane seed selection is robust: this scans the face cycle and picks the
-    /// first non-collinear consecutive triple.
-    pub fn compute_face_plane(&self, face_id: usize) -> Option<(RuntimeVec3, RuntimeScalar)> {
-        if !self.is_valid() {
-            return None;
-        }
+    /// Compute a face plane once prevalidation has already established:
+    /// - phase-4 validity,
+    /// - index bounds,
+    /// - face-cycle integrity.
+    fn compute_face_plane_prevalidated(&self, face_id: usize) -> Option<(RuntimeVec3, RuntimeScalar)> {
         if face_id >= self.faces.len() {
-            return None;
-        }
-        if !self.check_index_bounds() || !self.check_face_cycles() {
             return None;
         }
 
@@ -336,6 +329,22 @@ impl Mesh {
     }
 
     #[cfg(feature = "geometry-checks")]
+    /// Optional geometric extension: compute a face plane `(normal, offset)`
+    /// in the equation `normal . p = offset`, using exact arithmetic.
+    ///
+    /// Plane seed selection is robust: this scans the face cycle and picks the
+    /// first non-collinear consecutive triple.
+    pub fn compute_face_plane(&self, face_id: usize) -> Option<(RuntimeVec3, RuntimeScalar)> {
+        if !self.is_valid() {
+            return None;
+        }
+        if !self.check_index_bounds() || !self.check_face_cycles() {
+            return None;
+        }
+        self.compute_face_plane_prevalidated(face_id)
+    }
+
+    #[cfg(feature = "geometry-checks")]
     /// Optional geometric extension: compute a canonicalized face plane.
     ///
     /// See `canonicalize_plane` for the normalization policy.
@@ -360,7 +369,7 @@ impl Mesh {
 
         let hcnt = self.half_edges.len();
         for face_id in 0..self.faces.len() {
-            let (normal, offset) = match self.compute_face_plane(face_id) {
+            let (normal, offset) = match self.compute_face_plane_prevalidated(face_id) {
                 Some(plane) => plane,
                 None => return false,
             };
@@ -1079,7 +1088,7 @@ impl Mesh {
                 Some(vs) => vs,
                 None => return false,
             };
-            let (normal, _) = match self.compute_face_plane(face_id) {
+            let (normal, _) = match self.compute_face_plane_prevalidated(face_id) {
                 Some(plane) => plane,
                 None => return false,
             };
@@ -1270,7 +1279,7 @@ impl Mesh {
     ) -> Option<GeometricTopologicalConsistencyFailure> {
         let hcnt = self.half_edges.len();
         for face_id in 0..self.faces.len() {
-            let (normal, offset) = match self.compute_face_plane(face_id) {
+            let (normal, offset) = match self.compute_face_plane_prevalidated(face_id) {
                 Some(plane) => plane,
                 None => {
                     return Some(GeometricTopologicalConsistencyFailure::FacePlaneInconsistent {
@@ -1349,7 +1358,7 @@ impl Mesh {
                 Some(vs) => vs,
                 None => return Some(GeometricTopologicalConsistencyFailure::InternalInconsistency),
             };
-            let (normal, _) = match self.compute_face_plane(face_id) {
+            let (normal, _) = match self.compute_face_plane_prevalidated(face_id) {
                 Some(plane) => plane,
                 None => return Some(GeometricTopologicalConsistencyFailure::InternalInconsistency),
             };
