@@ -3707,6 +3707,23 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
   - `./scripts/verify-vcad-topology.sh` (227 verified, 0 errors)
 - 2026-02-18: Failed attempts from the zero-length-edge/coplanarity pass: none (superseded by the later outward-sign convention attempt documented above).
+- 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec`) with model-layer coplanarity lifting scaffolding in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
+  - added model-level lemmas:
+    - `lemma_mesh_all_faces_oriented_seed0_planes_and_triangle_cycles_imply_all_faces_coplanar`;
+    - `lemma_mesh_all_faces_oriented_seed0_planes_and_quad_cycles_imply_all_faces_coplanar`;
+    - `lemma_mesh_all_faces_oriented_seed0_planes_and_triangle_or_quad_cycles_imply_all_faces_coplanar`.
+  - refactored existing runtime wrappers to delegate to the new model lemmas:
+    - `lemma_mesh_runtime_all_faces_oriented_seed0_planes_and_triangle_cycles_imply_all_faces_coplanar`;
+    - `lemma_mesh_runtime_all_faces_oriented_seed0_planes_and_quad_cycles_imply_all_faces_coplanar`;
+    - `lemma_mesh_runtime_all_faces_oriented_seed0_planes_and_triangle_or_quad_cycles_imply_all_faces_coplanar`.
+  - outcome:
+    - reduced runtime-layer proof duplication for the oriented-seed0-to-full-coplanarity path and established reusable model-level lift lemmas for future P5.1 sound/complete closure work;
+    - checklist status remains unchanged (full checker/spec equivalence proof still open).
+- 2026-02-19: Failed attempts in this P5.1 model-layer lifting pass: none.
+- 2026-02-19: Revalidated after this P5.1 model-layer lifting pass:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" face_coplanarity_seed0_oriented_plane_triangle_or_quad_completeness_bridge_matches_geometric_sound_bridge` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (96 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (386 verified, 0 errors)
 
 ## Suggested File Landing Zones
 - Runtime checks: `src/halfedge_mesh/validation.rs`

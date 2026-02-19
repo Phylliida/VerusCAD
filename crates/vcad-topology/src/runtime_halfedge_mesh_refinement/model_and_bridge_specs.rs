@@ -7821,6 +7821,75 @@ pub proof fn lemma_mesh_all_faces_oriented_seed0_planes_imply_all_faces_seed0_fi
 }
 
 #[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_all_faces_oriented_seed0_planes_and_triangle_cycles_imply_all_faces_coplanar(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+)
+    requires
+        mesh_all_faces_oriented_seed0_planes_spec(m, vertex_positions),
+        mesh_all_faces_triangle_cycles_spec(m),
+    ensures
+        mesh_all_faces_coplanar_spec(m, vertex_positions),
+{
+    lemma_mesh_all_faces_oriented_seed0_planes_imply_all_faces_seed0_fixed_witness(
+        m,
+        vertex_positions,
+    );
+    assert(mesh_all_faces_coplanar_seed0_fixed_witness_spec(m, vertex_positions));
+    lemma_mesh_all_faces_coplanar_seed0_fixed_witness_and_triangle_cycles_imply_all_faces_coplanar(
+        m,
+        vertex_positions,
+    );
+    assert(mesh_all_faces_coplanar_spec(m, vertex_positions));
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_all_faces_oriented_seed0_planes_and_quad_cycles_imply_all_faces_coplanar(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+)
+    requires
+        mesh_all_faces_oriented_seed0_planes_spec(m, vertex_positions),
+        mesh_all_faces_quad_cycles_spec(m),
+    ensures
+        mesh_all_faces_coplanar_spec(m, vertex_positions),
+{
+    lemma_mesh_all_faces_oriented_seed0_planes_imply_all_faces_seed0_fixed_witness(
+        m,
+        vertex_positions,
+    );
+    assert(mesh_all_faces_coplanar_seed0_fixed_witness_spec(m, vertex_positions));
+    lemma_mesh_all_faces_coplanar_seed0_fixed_witness_and_quad_cycles_imply_all_faces_coplanar(
+        m,
+        vertex_positions,
+    );
+    assert(mesh_all_faces_coplanar_spec(m, vertex_positions));
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_all_faces_oriented_seed0_planes_and_triangle_or_quad_cycles_imply_all_faces_coplanar(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+)
+    requires
+        mesh_all_faces_oriented_seed0_planes_spec(m, vertex_positions),
+        mesh_all_faces_triangle_or_quad_cycles_spec(m),
+    ensures
+        mesh_all_faces_coplanar_spec(m, vertex_positions),
+{
+    lemma_mesh_all_faces_oriented_seed0_planes_imply_all_faces_seed0_fixed_witness(
+        m,
+        vertex_positions,
+    );
+    assert(mesh_all_faces_coplanar_seed0_fixed_witness_spec(m, vertex_positions));
+    lemma_mesh_all_faces_coplanar_seed0_fixed_witness_and_triangle_or_quad_cycles_imply_all_faces_coplanar(
+        m,
+        vertex_positions,
+    );
+    assert(mesh_all_faces_coplanar_spec(m, vertex_positions));
+}
+
+#[cfg(verus_keep_ghost)]
 pub proof fn lemma_mesh_all_faces_oriented_seed0_planes_and_index_bounds_and_face_cycles_imply_all_faces_seed0_corner_non_collinear(
     m: MeshModel,
     vertex_positions: Seq<vcad_math::point3::Point3>,
@@ -8169,10 +8238,9 @@ pub proof fn lemma_mesh_runtime_all_faces_oriented_seed0_planes_and_triangle_cyc
     ensures
         mesh_runtime_all_faces_coplanar_spec(m),
 {
-    lemma_mesh_runtime_all_faces_oriented_seed0_planes_imply_all_faces_seed0_fixed_witness(m);
-    assert(mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m));
-    lemma_mesh_runtime_all_faces_coplanar_seed0_fixed_witness_and_triangle_cycles_imply_all_faces_coplanar(
-        m,
+    lemma_mesh_all_faces_oriented_seed0_planes_and_triangle_cycles_imply_all_faces_coplanar(
+        m@,
+        mesh_runtime_vertex_positions_spec(m),
     );
 }
 
@@ -8186,10 +8254,9 @@ pub proof fn lemma_mesh_runtime_all_faces_oriented_seed0_planes_and_quad_cycles_
     ensures
         mesh_runtime_all_faces_coplanar_spec(m),
 {
-    lemma_mesh_runtime_all_faces_oriented_seed0_planes_imply_all_faces_seed0_fixed_witness(m);
-    assert(mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m));
-    lemma_mesh_runtime_all_faces_coplanar_seed0_fixed_witness_and_quad_cycles_imply_all_faces_coplanar(
-        m,
+    lemma_mesh_all_faces_oriented_seed0_planes_and_quad_cycles_imply_all_faces_coplanar(
+        m@,
+        mesh_runtime_vertex_positions_spec(m),
     );
 }
 
@@ -8203,10 +8270,9 @@ pub proof fn lemma_mesh_runtime_all_faces_oriented_seed0_planes_and_triangle_or_
     ensures
         mesh_runtime_all_faces_coplanar_spec(m),
 {
-    lemma_mesh_runtime_all_faces_oriented_seed0_planes_imply_all_faces_seed0_fixed_witness(m);
-    assert(mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m));
-    lemma_mesh_runtime_all_faces_coplanar_seed0_fixed_witness_and_triangle_or_quad_cycles_imply_all_faces_coplanar(
-        m,
+    lemma_mesh_all_faces_oriented_seed0_planes_and_triangle_or_quad_cycles_imply_all_faces_coplanar(
+        m@,
+        mesh_runtime_vertex_positions_spec(m),
     );
 }
 
