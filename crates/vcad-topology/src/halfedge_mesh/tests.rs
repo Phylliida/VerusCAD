@@ -97,6 +97,78 @@ fn assert_forbidden_face_face_checker_broad_phase_sound(mesh: &Mesh) {
 }
 
 #[cfg(feature = "geometry-checks")]
+fn ordered_face_vertex_cycle_indices(mesh: &Mesh, face_id: usize) -> Option<Vec<usize>> {
+    if face_id >= mesh.faces.len() {
+        return None;
+    }
+    let hcnt = mesh.half_edges.len();
+    if hcnt == 0 {
+        return None;
+    }
+
+    let start = mesh.faces[face_id].half_edge;
+    if start >= hcnt {
+        return None;
+    }
+    let mut h = start;
+    let mut steps = 0usize;
+    let mut out = Vec::new();
+    loop {
+        let he = mesh.half_edges.get(h)?;
+        if he.vertex >= mesh.vertices.len() {
+            return None;
+        }
+        out.push(he.vertex);
+        h = he.next;
+        steps += 1;
+        if h == start {
+            break;
+        }
+        if steps > hcnt {
+            return None;
+        }
+    }
+    if out.len() < 3 {
+        return None;
+    }
+    Some(out)
+}
+
+#[cfg(feature = "geometry-checks")]
+fn check_face_coplanarity_exhaustive_face_quadruple_oracle(mesh: &Mesh) -> bool {
+    if !mesh.is_valid() {
+        return false;
+    }
+    if !mesh.check_face_corner_non_collinearity() {
+        return false;
+    }
+
+    for face_id in 0..mesh.faces.len() {
+        let cycle = match ordered_face_vertex_cycle_indices(mesh, face_id) {
+            Some(cycle) => cycle,
+            None => return false,
+        };
+        let k = cycle.len();
+        for i in 0..k {
+            let a = &mesh.vertices[cycle[i]].position;
+            for j in 0..k {
+                let b = &mesh.vertices[cycle[j]].position;
+                for l in 0..k {
+                    let c = &mesh.vertices[cycle[l]].position;
+                    for d in 0..k {
+                        let p = &mesh.vertices[cycle[d]].position;
+                        if !coplanar(a, b, c, p) {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    true
+}
+
+#[cfg(feature = "geometry-checks")]
 fn build_overlapping_tetrahedra_mesh() -> Mesh {
     let vertices = vec![
         RuntimePoint3::from_ints(0, 0, 0),
@@ -1183,6 +1255,67 @@ fn diagnostic_witness_is_real_counterexample(
         for mesh in fixtures {
             assert!(mesh.is_valid(), "fixture must satisfy Phase 4 validity");
             assert_forbidden_face_face_checker_broad_phase_sound(&mesh);
+        }
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle() {
+        let noncoplanar_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(0, 1, 0),
+            RuntimePoint3::from_ints(0, 0, 1),
+        ];
+        let noncoplanar_faces = vec![vec![0, 1, 2, 3], vec![0, 3, 2, 1]];
+        let noncoplanar_mesh = Mesh::from_face_cycles(noncoplanar_vertices, &noncoplanar_faces)
+            .expect("noncoplanar face fixture should build");
+
+        let collinear_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(2, 0, 0),
+        ];
+        let collinear_faces = vec![vec![0, 1, 2], vec![0, 2, 1]];
+        let collinear_mesh =
+            Mesh::from_face_cycles(collinear_vertices, &collinear_faces)
+                .expect("collinear face fixture should build");
+
+        let zero_length_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+        ];
+        let zero_length_faces = vec![vec![0, 1, 2], vec![0, 2, 1]];
+        let zero_length_mesh =
+            Mesh::from_face_cycles(zero_length_vertices, &zero_length_faces)
+                .expect("zero-length edge fixture should build");
+
+        let mut disjoint_origins = Vec::new();
+        for i in 0..8 {
+            disjoint_origins.push((i * 10, 0, 0));
+        }
+        let disjoint_stress = build_disconnected_translated_tetrahedra_mesh(&disjoint_origins);
+
+        let fixtures = vec![
+            Mesh::tetrahedron(),
+            Mesh::cube(),
+            Mesh::triangular_prism(),
+            build_overlapping_tetrahedra_mesh(),
+            disjoint_stress,
+            noncoplanar_mesh,
+            collinear_mesh,
+            zero_length_mesh,
+        ];
+
+        for mesh in fixtures {
+            let checker_result = mesh.check_face_coplanarity();
+            let oracle_result =
+                check_face_coplanarity_exhaustive_face_quadruple_oracle(&mesh);
+            assert_eq!(
+                checker_result, oracle_result,
+                "face coplanarity checker diverged from exhaustive face-quadruple oracle"
+            );
         }
     }
 

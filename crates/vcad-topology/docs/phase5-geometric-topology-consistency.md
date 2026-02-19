@@ -195,6 +195,30 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.1 runtime-checker-correctness differential-oracle increment in
+  `src/halfedge_mesh/tests.rs`:
+  - added a reusable face-cycle extraction helper for checker-oracle comparisons:
+    - `ordered_face_vertex_cycle_indices`;
+  - added an exhaustive face-quadruple coplanarity oracle that mirrors the documented
+    checker preconditions (`is_valid` + non-collinear face-corner gate):
+    - `check_face_coplanarity_exhaustive_face_quadruple_oracle`;
+  - added a differential regression that asserts parity between
+    `Mesh::check_face_coplanarity()` and the exhaustive oracle across representative
+    positive and negative fixtures (tetrahedron/cube/prism, overlapping disconnected tetrahedra,
+    disconnected stress mesh, noncoplanar quad faces, collinear faces, zero-length-edge faces):
+    - `face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle`.
+  - outcome: runtime coplanarity checker behavior is now test-locked against an explicit
+    exhaustive face-quadruple oracle across mixed valid/invalid geometric cases, reducing
+    regression risk while the formal P5.1 soundness/completeness theorem remains open.
+- 2026-02-19: Failed attempts in this P5.1 differential-oracle pass: none.
+- 2026-02-19: Revalidated after the P5.1 differential-oracle additions:
+  - `cargo test -p vcad-topology --features geometry-checks face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle`
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (278 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (315 verified, 0 errors)
 - 2026-02-19: Completed a P5.4 signed-volume-origin-independence runtime-test staging increment in
   `src/halfedge_mesh/tests.rs`:
   - generalized the existing test-side component signed-six-volume helper to accept an explicit
