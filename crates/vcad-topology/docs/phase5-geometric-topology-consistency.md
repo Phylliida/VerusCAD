@@ -197,6 +197,24 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
 ## Burndown Log
 - 2026-02-19: Completed a P5.11 scalability constant-factor cleanup in
   `src/halfedge_mesh/validation.rs`:
+  - removed redundant `check_no_zero_length_geometric_edges()` and
+    `check_face_coplanarity()` pre-gates from intersection-checker paths already gated by
+    `check_face_convexity()`:
+    - `check_no_forbidden_face_face_intersections_impl`;
+    - `face_pair_has_forbidden_intersection_for_testing`.
+  - rationale: `check_face_convexity()` already requires `is_valid()` and internally enforces
+    coplanarity/non-collinearity prerequisites, so these extra top-level pre-gates were duplicate
+    full-mesh traversals with no behavioral effect.
+- 2026-02-19: Failed attempts in this P5.11 intersection-precheck dedup pass: none.
+- 2026-02-19: Revalidated after the P5.11 intersection-precheck dedup cleanup:
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (286 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (323 verified, 0 errors)
+- 2026-02-19: Completed a P5.11 scalability constant-factor cleanup in
+  `src/halfedge_mesh/validation.rs`:
   - removed redundant `check_index_bounds()` / `check_face_cycles()` pre-gates from
     geometry-checker paths already gated by `is_valid()`:
     - `check_face_corner_non_collinearity`;

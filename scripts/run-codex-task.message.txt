@@ -1,1 +1,1 @@
-Deduplicated redundant phase-4-validity-derived index/cycle prechecks across vcad-topology geometry validation paths, revalidated with the full test/verification matrix, and 10 Phase 5 checklist tasks remain.
+Removed redundant zero-length/coplanarity pregates from convexity-gated forbidden-intersection paths in vcad-topology, revalidated with the full test/verification matrix, and 10 Phase 5 checklist tasks remain.

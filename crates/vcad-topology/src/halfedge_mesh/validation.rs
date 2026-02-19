@@ -1071,12 +1071,6 @@ impl Mesh {
         if !self.is_valid() {
             return false;
         }
-        if !self.check_no_zero_length_geometric_edges() {
-            return false;
-        }
-        if !self.check_face_coplanarity() {
-            return false;
-        }
         if !self.check_face_convexity() {
             return false;
         }
@@ -1159,12 +1153,6 @@ impl Mesh {
             return None;
         }
         if !self.is_valid() {
-            return None;
-        }
-        if !self.check_no_zero_length_geometric_edges() {
-            return None;
-        }
-        if !self.check_face_coplanarity() {
             return None;
         }
         if !self.check_face_convexity() {
