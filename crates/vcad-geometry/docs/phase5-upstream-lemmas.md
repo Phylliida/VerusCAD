@@ -135,6 +135,14 @@ Blocks: `P5.5` intersection checker soundness (narrow phase).
       `runtime_segment_intersection_point_refines_spec` with
       `Proper && Some(p) -> orient2d_spec(a, b, p).signum() == 0`
       (returned witness is proven collinear with segment `[a,b]`'s supporting line).
+    - Update (2026-02-19, dual-support-line pass): strengthened
+      `proper_intersection_point_runtime` and propagated contracts through
+      `segment_intersection_point_2d` plus
+      `runtime_segment_intersection_point_refines_spec` so `Proper && Some(p)` now also proves
+      `orient2d_spec(c, d, p).signum() == 0` (witness is collinear with both supporting lines).
+      Remaining formal gap is closed-segment bound inclusion on both segments.
+    - Verification attempt note (2026-02-19, dual-support-line pass): `cargo test -p vcad-geometry`
+      passes in this environment.
     - Verification attempt note (2026-02-19, proper-totality pass):
       `RUSTFLAGS='--cfg verus_keep_ghost' cargo test -p vcad-geometry --features verus-proofs`
       still fails on stable because Verus macro crates require nightly-only `#![feature(proc_macro_...)]`.
@@ -164,6 +172,10 @@ Blocks: `P5.5` intersection checker soundness (narrow phase).
     - Update (2026-02-19, support-line pass): formalized an intermediate `Proper` witness fact:
       the computed witness is collinear with `[a,b]`'s supporting line; remaining formal gap is
       proving collinearity with `[c,d]` and closed-segment bound inclusion to recover full
+      `point_on_both_segments_spec`.
+    - Update (2026-02-19, dual-support-line pass): upgraded the intermediate `Proper` witness fact
+      to collinearity with both supporting lines `[a,b]` and `[c,d]`; remaining formal gap is now
+      proving closed-segment bound inclusion for both segments to recover full
       `point_on_both_segments_spec`.
   - [ ] coplanar segment-polygon overlap (dominant-axis projection + edge-crossing containment tests).
     - Audit note (2026-02-19): ingredient predicates are present, but their composed

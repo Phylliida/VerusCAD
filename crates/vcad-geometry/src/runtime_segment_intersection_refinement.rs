@@ -195,6 +195,10 @@ pub fn runtime_segment_intersection_point_refines_spec(
             Option::None => true,
             Option::Some(p) => segment_intersection::point_on_segment_supporting_line_spec(p@, a@, b@),
         },
+        (segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is Proper) ==> match out {
+            Option::None => true,
+            Option::Some(p) => segment_intersection::point_on_segment_supporting_line_spec(p@, c@, d@),
+        },
         (segment_intersection::segment_intersection_kind_spec(a@, b@, c@, d@) is EndpointTouch) ==> match out {
             Option::None => true,
             Option::Some(p) => segment_intersection::point_on_both_segments_spec(p@, a@, b@, c@, d@),

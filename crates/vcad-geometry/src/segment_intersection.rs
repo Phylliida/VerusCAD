@@ -796,7 +796,10 @@ fn proper_intersection_point_runtime(
         out.is_some(),
         match out {
             Option::None => true,
-            Option::Some(p) => point_on_segment_supporting_line_spec(p@, a@, b@),
+            Option::Some(p) => {
+                &&& point_on_segment_supporting_line_spec(p@, a@, b@)
+                &&& point_on_segment_supporting_line_spec(p@, c@, d@)
+            },
         },
 {
     // Line-line intersection parameterization:
@@ -828,6 +831,7 @@ fn proper_intersection_point_runtime(
     let step = r.scale(&t);
     let p = a.add_vec(&step);
     proof {
+        let one = Scalar::from_int_spec(1);
         let z = Scalar::from_int_spec(0);
         let pa = p@.sub_spec(a@);
 
@@ -868,6 +872,136 @@ fn proper_intersection_point_runtime(
         assert(orient2d_spec(a@, b@, p@).signum() == z.signum());
         assert(z.signum() == 0);
         assert(point_on_segment_supporting_line_spec(p@, a@, b@));
+
+        assert(inv_opt == Option::Some(inv));
+        assert(match Option::Some(inv) {
+            Option::None => true,
+            Option::Some(rinv) => {
+                &&& den@.mul_spec(rinv@).eqv_spec(one)
+                &&& rinv@.mul_spec(den@).eqv_spec(one)
+            }
+        });
+        assert(den@.mul_spec(inv@).eqv_spec(one));
+        assert(inv@.mul_spec(den@).eqv_spec(one));
+
+        let cma_cross_s = cma@.cross_spec(s@);
+        assert(cma_cross_s.mul_spec(inv@).mul_spec(den@).eqv_spec(cma_cross_s.mul_spec(inv@.mul_spec(den@))))
+            by {
+                Scalar::lemma_mul_associative(cma_cross_s, inv@, den@);
+            };
+        assert(t@.mul_spec(den@) == cma_cross_s.mul_spec(inv@).mul_spec(den@));
+        assert(t@.mul_spec(den@).eqv_spec(cma_cross_s.mul_spec(inv@.mul_spec(den@))));
+        Scalar::lemma_eqv_mul_congruence_right(cma_cross_s, inv@.mul_spec(den@), one);
+        assert(cma_cross_s.mul_spec(inv@.mul_spec(den@)).eqv_spec(cma_cross_s.mul_spec(one)));
+        Scalar::lemma_mul_one_identity(cma_cross_s);
+        assert(cma_cross_s.mul_spec(one) == cma_cross_s);
+        Scalar::lemma_eqv_transitive(
+            t@.mul_spec(den@),
+            cma_cross_s.mul_spec(inv@.mul_spec(den@)),
+            cma_cross_s.mul_spec(one),
+        );
+        assert(t@.mul_spec(den@).eqv_spec(cma_cross_s));
+
+        let pc = p@.sub_spec(c@);
+        let ac = a@.sub_spec(c@);
+        let pc_rhs = step@.add_spec(cma@.neg_spec());
+
+        Point2::lemma_sub_chain_eqv(p@, a@, c@);
+        assert(pc.x.eqv_spec(pa.x.add_spec(ac.x)));
+        assert(pc.y.eqv_spec(pa.y.add_spec(ac.y)));
+        Point2::lemma_sub_antisymmetric(c@, a@);
+        assert(cma@ == ac.neg_spec());
+        assert(cma@.neg_spec() == ac.neg_spec().neg_spec());
+        Vec2::lemma_neg_involution(ac);
+        assert(ac.neg_spec().neg_spec() == ac);
+        assert(cma@.neg_spec() == ac);
+        assert(pa.eqv_spec(step@));
+        Scalar::lemma_eqv_add_congruence(pa.x, step@.x, ac.x, cma@.neg_spec().x);
+        Scalar::lemma_eqv_add_congruence(pa.y, step@.y, ac.y, cma@.neg_spec().y);
+        assert(pc.x.eqv_spec(step@.x.add_spec(cma@.neg_spec().x)));
+        assert(pc.y.eqv_spec(step@.y.add_spec(cma@.neg_spec().y)));
+        Vec2::lemma_eqv_from_components(pc, pc_rhs);
+        assert(pc.eqv_spec(pc_rhs));
+
+        let s_cross_pc = s@.cross_spec(pc);
+        let s_cross_pc_rhs = s@.cross_spec(pc_rhs);
+        Vec2::lemma_cross_eqv_congruence(s@, s@, pc, pc_rhs);
+        assert(s_cross_pc.eqv_spec(s_cross_pc_rhs));
+
+        Vec2::lemma_cross_linear_right(s@, step@, cma@.neg_spec());
+        assert(s_cross_pc_rhs.eqv_spec(s@.cross_spec(step@).add_spec(s@.cross_spec(cma@.neg_spec()))));
+        Vec2::lemma_cross_scale_extract_right(s@, r@, t@);
+        assert(s@.cross_spec(step@).eqv_spec(t@.mul_spec(s@.cross_spec(r@))));
+        Vec2::lemma_cross_antisymmetric(s@, r@);
+        assert(s@.cross_spec(r@) == r@.cross_spec(s@).neg_spec());
+        assert(s@.cross_spec(r@) == den@.neg_spec());
+        Scalar::lemma_eqv_mul_congruence_right(t@, s@.cross_spec(r@), den@.neg_spec());
+        assert(t@.mul_spec(s@.cross_spec(r@)).eqv_spec(t@.mul_spec(den@.neg_spec())));
+        Scalar::lemma_mul_neg_right(t@, den@);
+        assert(t@.mul_spec(den@.neg_spec()) == t@.mul_spec(den@).neg_spec());
+
+        Vec2::lemma_cross_neg_right(s@, cma@);
+        assert(s@.cross_spec(cma@.neg_spec()) == s@.cross_spec(cma@).neg_spec());
+        Vec2::lemma_cross_antisymmetric(cma@, s@);
+        assert(cma@.cross_spec(s@) == s@.cross_spec(cma@).neg_spec());
+        assert(s@.cross_spec(cma@.neg_spec()) == cma_cross_s);
+
+        Scalar::lemma_eqv_neg_congruence(t@.mul_spec(den@), cma_cross_s);
+        assert(t@.mul_spec(den@).neg_spec().eqv_spec(cma_cross_s.neg_spec()));
+        Scalar::lemma_eqv_add_congruence(
+            t@.mul_spec(den@).neg_spec(),
+            cma_cross_s.neg_spec(),
+            s@.cross_spec(cma@.neg_spec()),
+            cma_cross_s,
+        );
+        assert(
+            t@.mul_spec(den@).neg_spec().add_spec(s@.cross_spec(cma@.neg_spec()))
+                .eqv_spec(cma_cross_s.neg_spec().add_spec(cma_cross_s)),
+        );
+        Scalar::lemma_add_inverse(cma_cross_s);
+        assert(cma_cross_s.neg_spec().add_spec(cma_cross_s).eqv_spec(z));
+        Scalar::lemma_eqv_transitive(
+            t@.mul_spec(den@).neg_spec().add_spec(s@.cross_spec(cma@.neg_spec())),
+            cma_cross_s.neg_spec().add_spec(cma_cross_s),
+            z,
+        );
+        assert(t@.mul_spec(den@).neg_spec().add_spec(s@.cross_spec(cma@.neg_spec())).eqv_spec(z));
+        Scalar::lemma_eqv_add_congruence(
+            s@.cross_spec(step@),
+            t@.mul_spec(den@).neg_spec(),
+            s@.cross_spec(cma@.neg_spec()),
+            s@.cross_spec(cma@.neg_spec()),
+        );
+        assert(
+            s@.cross_spec(step@).add_spec(s@.cross_spec(cma@.neg_spec()))
+                .eqv_spec(t@.mul_spec(den@).neg_spec().add_spec(s@.cross_spec(cma@.neg_spec()))),
+        );
+        Scalar::lemma_eqv_transitive(
+            s@.cross_spec(step@).add_spec(s@.cross_spec(cma@.neg_spec())),
+            t@.mul_spec(den@).neg_spec().add_spec(s@.cross_spec(cma@.neg_spec())),
+            z,
+        );
+        assert(s@.cross_spec(step@).add_spec(s@.cross_spec(cma@.neg_spec())).eqv_spec(z));
+        Scalar::lemma_eqv_transitive(
+            s_cross_pc,
+            s_cross_pc_rhs,
+            s@.cross_spec(step@).add_spec(s@.cross_spec(cma@.neg_spec())),
+        );
+        Scalar::lemma_eqv_transitive(
+            s_cross_pc,
+            s@.cross_spec(step@).add_spec(s@.cross_spec(cma@.neg_spec())),
+            z,
+        );
+        assert(s_cross_pc.eqv_spec(z));
+
+        assert(orient2d_spec(c@, d@, p@) == d@.sub_spec(c@).cross_spec(p@.sub_spec(c@)));
+        assert(d@.sub_spec(c@) == s@);
+        assert(p@.sub_spec(c@) == pc);
+        assert(orient2d_spec(c@, d@, p@) == s_cross_pc);
+        assert(orient2d_spec(c@, d@, p@).eqv_spec(z));
+        Scalar::lemma_eqv_signum(orient2d_spec(c@, d@, p@), z);
+        assert(orient2d_spec(c@, d@, p@).signum() == z.signum());
+        assert(point_on_segment_supporting_line_spec(p@, c@, d@));
     }
     Option::Some(p)
 }
@@ -1045,6 +1179,10 @@ pub fn segment_intersection_point_2d(
             Option::None => true,
             Option::Some(p) => point_on_segment_supporting_line_spec(p@, a@, b@),
         },
+        (segment_intersection_kind_spec(a@, b@, c@, d@) is Proper) ==> match out {
+            Option::None => true,
+            Option::Some(p) => point_on_segment_supporting_line_spec(p@, c@, d@),
+        },
         (segment_intersection_kind_spec(a@, b@, c@, d@) is EndpointTouch) ==> match out {
             Option::None => true,
             Option::Some(p) => point_on_both_segments_spec(p@, a@, b@, c@, d@),
@@ -1067,6 +1205,7 @@ pub fn segment_intersection_point_2d(
                     Option::None => {}
                     Option::Some(p) => {
                         assert(point_on_segment_supporting_line_spec(p@, a@, b@));
+                        assert(point_on_segment_supporting_line_spec(p@, c@, d@));
                     }
                 }
             }
