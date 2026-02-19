@@ -1,1 +1,1 @@
-Added a P5.5 aggregate-vs-pairwise forbidden-intersection parity lock by introducing an explicit pairwise oracle in topology tests with full revalidation; 8 Phase 5 tasks remain in vcad-topology.
+Added k>=5 pentagon coplanarity parity locks across vcad-topology exhaustive-oracle and seed0-bridge harnesses; 8 Phase 5 tasks remain.

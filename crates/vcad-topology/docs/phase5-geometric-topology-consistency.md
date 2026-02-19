@@ -195,6 +195,34 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) with a high-arity (`k >= 5`) coplanarity parity-lock increment in:
+  - `src/halfedge_mesh/tests.rs`.
+  - added reusable high-arity closed-face fixtures:
+    - `build_single_pentagon_double_face_mesh_with_apex_lift`;
+    - `build_coplanar_single_pentagon_double_face_mesh`;
+    - `build_noncoplanar_single_pentagon_double_face_mesh_with_lift`.
+  - extended coplanarity checker/spec parity coverage to include pentagon-face (`k = 5`) closed fixtures:
+    - deterministic exhaustive-oracle parity now includes both:
+      - coplanar high-arity pentagon face-pair fixture;
+      - noncoplanar lifted high-arity pentagon face-pair fixture.
+    - randomized differential coplanarity harness now additionally:
+      - includes the noncoplanar high-arity pentagon in failing fixtures;
+      - exercises rigid-transform/relabel/reflection parity on the coplanar high-arity pentagon fixture.
+  - extended constructive/bridge parity surface with the same high-arity fixtures:
+    - `geometric_consistency_constructive_gate_matches_runtime_boolean_gate`;
+    - `face_coplanarity_seed0_bridge_matches_runtime_checker`;
+    - `face_coplanarity_seed0_sound_bridge_matches_runtime_checker`.
+  - outcome:
+    - the P5.1 high-arity path now has explicit `k = 5` runtime-vs-exhaustive-oracle and seed0-bridge parity locks (including transformed/relabelled variants), reducing regression risk on the remaining unrestricted-arity proof gap;
+    - full formal checker/spec equivalence proof for unrestricted face arity remains open.
+- 2026-02-19: Failed attempt in this P5.1 high-arity parity-lock pass:
+  - attempted to run formatter via `cargo fmt --all`, but `cargo fmt`/`rustfmt` are unavailable in this environment (`no such command: fmt`, `rustfmt: command not found`).
+- 2026-02-19: Revalidated after the P5.1 high-arity parity-lock increment:
+  - `cargo test -p vcad-topology --features geometry-checks` (62 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (83 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (331 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (368 verified, 0 errors)
 - 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with an aggregate/pairwise classification parity-lock increment in:
   - `src/halfedge_mesh/tests.rs`.
   - added a reusable explicit pairwise oracle:

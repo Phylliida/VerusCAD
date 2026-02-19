@@ -419,6 +419,31 @@ fn build_collinear_single_triangle_pair_mesh() -> Mesh {
         .expect("collinear-corner fixture should build")
 }
 
+#[cfg(feature = "geometry-checks")]
+fn build_single_pentagon_double_face_mesh_with_apex_lift(apex_lift_z: i64) -> Mesh {
+    let vertices = vec![
+        RuntimePoint3::from_ints(0, 0, 0),
+        RuntimePoint3::from_ints(3, 0, 0),
+        RuntimePoint3::from_ints(5, 2, apex_lift_z),
+        RuntimePoint3::from_ints(2, 5, 0),
+        RuntimePoint3::from_ints(-1, 2, 0),
+    ];
+    let faces = vec![vec![0, 1, 2, 3, 4], vec![0, 4, 3, 2, 1]];
+    Mesh::from_face_cycles(vertices, &faces)
+        .expect("single pentagon double-face fixture should build")
+}
+
+#[cfg(feature = "geometry-checks")]
+fn build_coplanar_single_pentagon_double_face_mesh() -> Mesh {
+    build_single_pentagon_double_face_mesh_with_apex_lift(0)
+}
+
+#[cfg(feature = "geometry-checks")]
+fn build_noncoplanar_single_pentagon_double_face_mesh_with_lift(lift_z: i64) -> Mesh {
+    assert!(lift_z != 0, "noncoplanar pentagon lift must be non-zero");
+    build_single_pentagon_double_face_mesh_with_apex_lift(lift_z)
+}
+
 #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
 #[derive(Clone, Copy)]
 enum Phase4SharedEdgeSpecGapFailure {
@@ -3517,6 +3542,10 @@ fn diagnostic_witness_is_real_counterexample(
             Mesh::from_face_cycles(zero_length_vertices, &zero_length_faces)
                 .expect("zero-length edge fixture should build");
 
+        let coplanar_pentagon_mesh = build_coplanar_single_pentagon_double_face_mesh();
+        let noncoplanar_pentagon_mesh =
+            build_noncoplanar_single_pentagon_double_face_mesh_with_lift(1);
+
         let mut disjoint_origins = Vec::new();
         for i in 0..8 {
             disjoint_origins.push((i * 10, 0, 0));
@@ -3532,6 +3561,14 @@ fn diagnostic_witness_is_real_counterexample(
                 build_overlapping_tetrahedra_mesh(),
             ),
             ("disconnected_stress", disjoint_stress),
+            (
+                "coplanar_high_arity_pentagon_face_pair",
+                coplanar_pentagon_mesh,
+            ),
+            (
+                "noncoplanar_high_arity_pentagon_face_pair",
+                noncoplanar_pentagon_mesh,
+            ),
             ("noncoplanar_face", noncoplanar_mesh),
             ("collinear_face", collinear_mesh),
             ("zero_length_edge", zero_length_mesh),
@@ -3627,14 +3664,27 @@ fn diagnostic_witness_is_real_counterexample(
         let zero_length_mesh = Mesh::from_face_cycles(zero_length_vertices, &zero_length_faces)
             .expect("zero-length edge fixture should build");
 
+        let coplanar_pentagon_mesh = build_coplanar_single_pentagon_double_face_mesh();
+        let noncoplanar_pentagon_mesh =
+            build_noncoplanar_single_pentagon_double_face_mesh_with_lift(1);
+
         let failing_fixtures = vec![
             ("noncoplanar_face", noncoplanar_mesh),
+            (
+                "noncoplanar_high_arity_pentagon_face_pair",
+                noncoplanar_pentagon_mesh,
+            ),
             ("collinear_face", collinear_mesh),
             ("zero_length_edge", zero_length_mesh),
         ];
         for (label, mesh) in &failing_fixtures {
             assert_face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle(mesh, label);
         }
+
+        assert_face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle(
+            &coplanar_pentagon_mesh,
+            "coplanar_high_arity_pentagon_face_pair",
+        );
 
         for case_id in 0..CASES {
             let component_count = rng.next_usize_inclusive(2, 7);
@@ -3715,6 +3765,74 @@ fn diagnostic_witness_is_real_counterexample(
             assert_face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle(
                 &relabeled_reflected_disjoint,
                 &format!("disjoint_reflected_relabeled_case_{case_id}"),
+            );
+
+            let pentagon_turns = rng.next_u64() % 4;
+            let pentagon_tx = rng.next_i64_inclusive(-25, 25);
+            let pentagon_ty = rng.next_i64_inclusive(-25, 25);
+            let pentagon_tz = rng.next_i64_inclusive(-25, 25);
+            let transformed_coplanar_pentagon = transform_mesh_positions(&coplanar_pentagon_mesh, |point| {
+                rigid_rotate_z_quarter_turns_then_translate(
+                    point,
+                    pentagon_turns,
+                    pentagon_tx,
+                    pentagon_ty,
+                    pentagon_tz,
+                )
+            });
+            assert!(
+                transformed_coplanar_pentagon.is_valid(),
+                "transformed coplanar high-arity pentagon fixture should satisfy Phase 4 validity in case {case_id}"
+            );
+            assert_face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle(
+                &transformed_coplanar_pentagon,
+                &format!("coplanar_high_arity_pentagon_rigid_case_{case_id}"),
+            );
+            let transformed_pentagon_permutation =
+                random_permutation(&mut rng, transformed_coplanar_pentagon.vertices.len());
+            let relabeled_transformed_coplanar_pentagon = relabel_mesh_vertices_for_testing(
+                &transformed_coplanar_pentagon,
+                &transformed_pentagon_permutation,
+            )
+            .expect("vertex-relabeled transformed coplanar high-arity pentagon fixture should build");
+            assert!(
+                relabeled_transformed_coplanar_pentagon.is_valid(),
+                "vertex-relabeled transformed coplanar high-arity pentagon fixture should satisfy Phase 4 validity in case {case_id}"
+            );
+            assert_face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle(
+                &relabeled_transformed_coplanar_pentagon,
+                &format!("coplanar_high_arity_pentagon_rigid_relabeled_case_{case_id}"),
+            );
+
+            let reflected_transformed_coplanar_pentagon =
+                transform_mesh_positions(&transformed_coplanar_pentagon, |point| {
+                    let mirrored = reflect_point3_across_yz_plane(point);
+                    translate_point3(&mirrored, pentagon_tx, pentagon_ty, pentagon_tz)
+                });
+            assert!(
+                reflected_transformed_coplanar_pentagon.is_valid(),
+                "reflected transformed coplanar high-arity pentagon fixture should satisfy Phase 4 validity in case {case_id}"
+            );
+            assert_face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle(
+                &reflected_transformed_coplanar_pentagon,
+                &format!("coplanar_high_arity_pentagon_rigid_reflected_case_{case_id}"),
+            );
+            let reflected_transformed_pentagon_permutation =
+                random_permutation(&mut rng, reflected_transformed_coplanar_pentagon.vertices.len());
+            let relabeled_reflected_transformed_coplanar_pentagon = relabel_mesh_vertices_for_testing(
+                &reflected_transformed_coplanar_pentagon,
+                &reflected_transformed_pentagon_permutation,
+            )
+            .expect(
+                "vertex-relabeled reflected transformed coplanar high-arity pentagon fixture should build",
+            );
+            assert!(
+                relabeled_reflected_transformed_coplanar_pentagon.is_valid(),
+                "vertex-relabeled reflected transformed coplanar high-arity pentagon fixture should satisfy Phase 4 validity in case {case_id}"
+            );
+            assert_face_coplanarity_checker_matches_exhaustive_face_quadruple_oracle(
+                &relabeled_reflected_transformed_coplanar_pentagon,
+                &format!("coplanar_high_arity_pentagon_rigid_reflected_relabeled_case_{case_id}"),
             );
 
             let (source_component, perturbed_component) =
@@ -4419,6 +4537,19 @@ fn diagnostic_witness_is_real_counterexample(
         let noncoplanar_mesh = Mesh::from_face_cycles(noncoplanar_vertices, &noncoplanar_faces)
             .expect("noncoplanar quad fixture should build");
         assert_constructive_phase5_gate_parity(&noncoplanar_mesh, "noncoplanar_quad_fixture");
+
+        let coplanar_pentagon = build_coplanar_single_pentagon_double_face_mesh();
+        assert_constructive_phase5_gate_parity(
+            &coplanar_pentagon,
+            "coplanar_high_arity_pentagon_fixture",
+        );
+
+        let noncoplanar_pentagon =
+            build_noncoplanar_single_pentagon_double_face_mesh_with_lift(1);
+        assert_constructive_phase5_gate_parity(
+            &noncoplanar_pentagon,
+            "noncoplanar_high_arity_pentagon_fixture",
+        );
     }
 
     #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
@@ -4452,11 +4583,17 @@ fn diagnostic_witness_is_real_counterexample(
         let zero_length_mesh = Mesh::from_face_cycles(zero_length_vertices, &zero_length_faces)
             .expect("zero-length edge fixture should build");
 
+        let coplanar_pentagon = build_coplanar_single_pentagon_double_face_mesh();
+        let noncoplanar_pentagon =
+            build_noncoplanar_single_pentagon_double_face_mesh_with_lift(1);
+
         let fixtures = vec![
             ("tetrahedron", Mesh::tetrahedron()),
             ("cube", Mesh::cube()),
             ("triangular_prism", Mesh::triangular_prism()),
             ("overlapping_disconnected_tetrahedra", build_overlapping_tetrahedra_mesh()),
+            ("coplanar_high_arity_pentagon", coplanar_pentagon),
+            ("noncoplanar_high_arity_pentagon", noncoplanar_pentagon),
             ("noncoplanar_face", noncoplanar_mesh),
             ("collinear_face", collinear_mesh),
             ("zero_length_edge", zero_length_mesh),
@@ -4498,11 +4635,17 @@ fn diagnostic_witness_is_real_counterexample(
         let zero_length_mesh = Mesh::from_face_cycles(zero_length_vertices, &zero_length_faces)
             .expect("zero-length edge fixture should build");
 
+        let coplanar_pentagon = build_coplanar_single_pentagon_double_face_mesh();
+        let noncoplanar_pentagon =
+            build_noncoplanar_single_pentagon_double_face_mesh_with_lift(1);
+
         let fixtures = vec![
             ("tetrahedron", Mesh::tetrahedron()),
             ("cube", Mesh::cube()),
             ("triangular_prism", Mesh::triangular_prism()),
             ("overlapping_disconnected_tetrahedra", build_overlapping_tetrahedra_mesh()),
+            ("coplanar_high_arity_pentagon", coplanar_pentagon),
+            ("noncoplanar_high_arity_pentagon", noncoplanar_pentagon),
             ("noncoplanar_face", noncoplanar_mesh),
             ("collinear_face", collinear_mesh),
             ("zero_length_edge", zero_length_mesh),
