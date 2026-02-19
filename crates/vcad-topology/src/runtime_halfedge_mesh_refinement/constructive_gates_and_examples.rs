@@ -3347,6 +3347,20 @@ pub fn runtime_check_geometric_topological_consistency_component_runtime_consequ
         out ==> m.check_shared_edge_local_orientation_consistency(),
         out ==> m.check_no_forbidden_face_face_intersections(),
         out ==> m.check_outward_face_normals(),
+        out ==> (
+            m.check_geometric_topological_consistency()
+                == (
+                    m.is_valid()
+                        && m.check_no_zero_length_geometric_edges()
+                        && m.check_face_corner_non_collinearity()
+                        && m.check_face_coplanarity()
+                        && m.check_face_convexity()
+                        && m.check_face_plane_consistency()
+                        && m.check_shared_edge_local_orientation_consistency()
+                        && m.check_no_forbidden_face_face_intersections()
+                        && m.check_outward_face_normals()
+                )
+        ),
 {
     let geometric_sound_ok = runtime_check_geometric_topological_consistency_sound_bridge(m);
     if !geometric_sound_ok {
@@ -3438,9 +3452,114 @@ pub fn runtime_check_geometric_topological_consistency_component_runtime_consequ
                 && no_forbidden_face_face_intersections_ok
                 && outward_face_normals_ok
         );
+        assert(
+            runtime_geometric_ok == (
+                phase4_ok
+                    && no_zero_ok
+                    && face_corner_non_collinearity_ok
+                    && face_coplanarity_ok
+                    && face_convexity_ok
+                    && face_plane_consistency_ok
+                    && shared_edge_local_orientation_ok
+                    && no_forbidden_face_face_intersections_ok
+                    && outward_face_normals_ok
+            )
+        );
     }
 
     true
+}
+
+#[cfg(feature = "geometry-checks")]
+#[allow(dead_code)]
+pub fn runtime_check_geometric_topological_consistency_component_runtime_conjunction_parity_bridge(
+    m: &Mesh,
+) -> (out: bool)
+    ensures
+        out == (
+            m.check_geometric_topological_consistency()
+                == (
+                    m.is_valid()
+                        && m.check_no_zero_length_geometric_edges()
+                        && m.check_face_corner_non_collinearity()
+                        && m.check_face_coplanarity()
+                        && m.check_face_convexity()
+                        && m.check_face_plane_consistency()
+                        && m.check_shared_edge_local_orientation_consistency()
+                        && m.check_no_forbidden_face_face_intersections()
+                        && m.check_outward_face_normals()
+                )
+        ),
+{
+    let runtime_geometric_ok = m.check_geometric_topological_consistency();
+    let phase4_ok = m.is_valid();
+    let no_zero_ok = m.check_no_zero_length_geometric_edges();
+    let face_corner_non_collinearity_ok = m.check_face_corner_non_collinearity();
+    let face_coplanarity_ok = m.check_face_coplanarity();
+    let face_convexity_ok = m.check_face_convexity();
+    let face_plane_consistency_ok = m.check_face_plane_consistency();
+    let shared_edge_local_orientation_ok = m.check_shared_edge_local_orientation_consistency();
+    let no_forbidden_face_face_intersections_ok = m.check_no_forbidden_face_face_intersections();
+    let outward_face_normals_ok = m.check_outward_face_normals();
+    let component_conjunction_ok = phase4_ok
+        && no_zero_ok
+        && face_corner_non_collinearity_ok
+        && face_coplanarity_ok
+        && face_convexity_ok
+        && face_plane_consistency_ok
+        && shared_edge_local_orientation_ok
+        && no_forbidden_face_face_intersections_ok
+        && outward_face_normals_ok;
+    let parity_ok = runtime_geometric_ok == component_conjunction_ok;
+
+    proof {
+        assert(runtime_geometric_ok == m.check_geometric_topological_consistency());
+        assert(phase4_ok == m.is_valid());
+        assert(no_zero_ok == m.check_no_zero_length_geometric_edges());
+        assert(face_corner_non_collinearity_ok == m.check_face_corner_non_collinearity());
+        assert(face_coplanarity_ok == m.check_face_coplanarity());
+        assert(face_convexity_ok == m.check_face_convexity());
+        assert(face_plane_consistency_ok == m.check_face_plane_consistency());
+        assert(
+            shared_edge_local_orientation_ok == m.check_shared_edge_local_orientation_consistency()
+        );
+        assert(
+            no_forbidden_face_face_intersections_ok
+                == m.check_no_forbidden_face_face_intersections()
+        );
+        assert(outward_face_normals_ok == m.check_outward_face_normals());
+        assert(
+            component_conjunction_ok == (
+                m.is_valid()
+                    && m.check_no_zero_length_geometric_edges()
+                    && m.check_face_corner_non_collinearity()
+                    && m.check_face_coplanarity()
+                    && m.check_face_convexity()
+                    && m.check_face_plane_consistency()
+                    && m.check_shared_edge_local_orientation_consistency()
+                    && m.check_no_forbidden_face_face_intersections()
+                    && m.check_outward_face_normals()
+            )
+        );
+        assert(
+            parity_ok == (
+                m.check_geometric_topological_consistency()
+                    == (
+                        m.is_valid()
+                            && m.check_no_zero_length_geometric_edges()
+                            && m.check_face_corner_non_collinearity()
+                            && m.check_face_coplanarity()
+                            && m.check_face_convexity()
+                            && m.check_face_plane_consistency()
+                            && m.check_shared_edge_local_orientation_consistency()
+                            && m.check_no_forbidden_face_face_intersections()
+                            && m.check_outward_face_normals()
+                    )
+            )
+        );
+    }
+
+    parity_ok
 }
 
 #[cfg(feature = "geometry-checks")]

@@ -27,6 +27,7 @@ use crate::runtime_halfedge_mesh_refinement::{
     runtime_check_face_convexity_triangle_projected_turn_complete_from_runtime_with_geometry_preconditions,
     runtime_check_face_convexity_triangle_projected_turn_complete_from_phase5_runtime_bundle_sound_bridge,
     runtime_check_face_convexity_triangle_projected_turn_sound_bridge,
+    runtime_check_geometric_topological_consistency_component_runtime_conjunction_parity_bridge,
     runtime_check_geometric_topological_consistency_component_runtime_consequences_sound_bridge,
     runtime_check_geometric_topological_consistency_sound_bridge,
     runtime_check_geometric_topological_consistency_triangle_or_quad_coplanarity_sound_bridge,
@@ -364,6 +365,29 @@ fn assert_geometric_consistency_component_runtime_consequences_sound_bridge_pari
     label: &str,
 ) {
     let runtime_geometric_ok = mesh.check_geometric_topological_consistency();
+    let runtime_component_conjunction = mesh.is_valid()
+        && mesh.check_no_zero_length_geometric_edges()
+        && mesh.check_face_corner_non_collinearity()
+        && mesh.check_face_coplanarity()
+        && mesh.check_face_convexity()
+        && mesh.check_face_plane_consistency()
+        && mesh.check_shared_edge_local_orientation_consistency()
+        && mesh.check_no_forbidden_face_face_intersections()
+        && mesh.check_outward_face_normals();
+    let component_runtime_conjunction_parity_bridge_ok =
+        runtime_check_geometric_topological_consistency_component_runtime_conjunction_parity_bridge(
+            mesh,
+        );
+    assert_eq!(
+        component_runtime_conjunction_parity_bridge_ok,
+        runtime_geometric_ok == runtime_component_conjunction,
+        "aggregate/component-runtime conjunction parity bridge boolean mismatch for {label}"
+    );
+    assert!(
+        component_runtime_conjunction_parity_bridge_ok,
+        "aggregate/component-runtime conjunction parity bridge failed for {label}"
+    );
+
     let component_runtime_consequences_sound_bridge_ok =
         runtime_check_geometric_topological_consistency_component_runtime_consequences_sound_bridge(
             mesh,
@@ -373,16 +397,6 @@ fn assert_geometric_consistency_component_runtime_consequences_sound_bridge_pari
         "aggregate component-runtime-consequences sound bridge parity failed for {label}"
     );
     if component_runtime_consequences_sound_bridge_ok {
-        let runtime_component_conjunction = mesh.check_geometric_topological_consistency()
-            && mesh.is_valid()
-            && mesh.check_no_zero_length_geometric_edges()
-            && mesh.check_face_corner_non_collinearity()
-            && mesh.check_face_coplanarity()
-            && mesh.check_face_convexity()
-            && mesh.check_face_plane_consistency()
-            && mesh.check_shared_edge_local_orientation_consistency()
-            && mesh.check_no_forbidden_face_face_intersections()
-            && mesh.check_outward_face_normals();
         assert!(
             runtime_component_conjunction,
             "aggregate component-runtime-consequences sound bridge should imply full runtime component conjunction for {label}"
