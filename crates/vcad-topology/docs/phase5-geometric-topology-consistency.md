@@ -195,6 +195,36 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.5 (`Proof: shared-edge and shared-vertex contacts are never misclassified as forbidden intersections`) with a relabeling-aware differential-harness increment in `src/halfedge_mesh/tests.rs`:
+  - extended
+    `differential_randomized_shared_boundary_contact_non_misclassification_harness`
+    so each randomized rigid and reflected shared-boundary fixture now also exercises a consistent random vertex-index relabeling;
+  - for each relabeled variant (shared-edge and shared-vertex families), added parity checks for:
+    - Phase 4 validity preservation;
+    - allowed-contact classifier/oracle equivalence via
+      `assert_allowed_contact_topology_classifier_matches_edge_index_oracle`;
+    - intersection-checker acceptance
+      (`check_no_forbidden_face_face_intersections()` remains `true`);
+    - shared-boundary non-misclassification via existing pair-level witness assertions.
+  - additionally extended
+    `face_convexity_checker_matches_projected_orient2d_sign_oracle`
+    to include reflected deterministic fixtures (for both passing and failing convexity cases), and
+    extended
+    `differential_randomized_face_convexity_checker_projected_orient2d_oracle_harness`
+    with reflected and consistent random vertex-index-relabeled variants across disjoint, rigidly
+    transformed, perturbed, and transformed-failing fixtures.
+  - outcome: broader regression lock that:
+    - shared-boundary adjacency exemptions remain stable under topology-preserving index
+      isomorphisms composed with rigid/reflection transforms (P5.5 evidence); and
+    - convexity checker/oracle parity remains stable under the same relabeling class (P5.3
+      evidence),
+    while the formal P5.5/P5.3 proof obligations remain open.
+- 2026-02-19: Failed attempts in this P5.5 relabeling-aware shared-boundary harness pass: none.
+- 2026-02-19: Revalidated after the P5.5 relabeling-aware shared-boundary harness increment:
+  - `cargo test -p vcad-topology --features geometry-checks differential_randomized_shared_boundary_contact_non_misclassification_harness`
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (58 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (71 passed, 0 failed)
 - 2026-02-19: Worked P5.5 (`Proof: adjacency-exemption implementation is equivalent to the allowed-contact spec`) with an index-relabeling differential-harness increment in `src/halfedge_mesh/tests.rs`:
   - added relabeling-oriented harness helpers:
     - `mesh_vertices_and_face_cycles_for_relabeling`;

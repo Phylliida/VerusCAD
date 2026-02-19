@@ -1,1 +1,1 @@
-Hardened the P5.5 shared-boundary non-misclassification burndown with reflected deterministic and randomized harness coverage plus allowed-contact classifier parity checks, updated the burndown log, revalidated vcad-topology test suites, and 10 Phase 5 checklist tasks remain.
+Extended randomized relabeling coverage in vcad-topology for P5.5 shared-boundary non-misclassification and P5.3 convexity checker-oracle parity (including rigid/reflected variants), updated the burndown log, revalidated test suites, and 10 Phase 5 checklist tasks remain.

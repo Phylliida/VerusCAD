@@ -2386,6 +2386,24 @@ fn diagnostic_witness_is_real_counterexample(
                     &transformed,
                     &case_label,
                 );
+                let relabel_permutation = random_permutation(&mut rng, transformed.vertices.len());
+                let relabeled =
+                    relabel_mesh_vertices_for_testing(&transformed, &relabel_permutation)
+                        .expect("vertex-relabeled shared-edge fixture should build");
+                assert!(
+                    relabeled.is_valid(),
+                    "vertex-relabeled shared-edge fixture should satisfy Phase 4 validity in randomized case {case_idx}"
+                );
+                assert_allowed_contact_topology_classifier_matches_edge_index_oracle(&relabeled);
+                assert!(
+                    relabeled.check_no_forbidden_face_face_intersections(),
+                    "vertex-relabeled shared-edge fixture should remain intersection-free in randomized case {case_idx}"
+                );
+                let relabeled_case_label = format!("{label}_random_case_{case_idx}_relabeled");
+                assert_shared_edge_contacts_not_misclassified_as_forbidden_intersections(
+                    &relabeled,
+                    &relabeled_case_label,
+                );
 
                 let reflected = transform_mesh_positions(&transformed, reflect_point3_across_yz_plane);
                 assert!(
@@ -2401,6 +2419,30 @@ fn diagnostic_witness_is_real_counterexample(
                 assert_shared_edge_contacts_not_misclassified_as_forbidden_intersections(
                     &reflected,
                     &reflected_case_label,
+                );
+                let reflected_relabel_permutation =
+                    random_permutation(&mut rng, reflected.vertices.len());
+                let reflected_relabeled = relabel_mesh_vertices_for_testing(
+                    &reflected,
+                    &reflected_relabel_permutation,
+                )
+                .expect("vertex-relabeled reflected shared-edge fixture should build");
+                assert!(
+                    reflected_relabeled.is_valid(),
+                    "vertex-relabeled reflected shared-edge fixture should satisfy Phase 4 validity in randomized case {case_idx}"
+                );
+                assert_allowed_contact_topology_classifier_matches_edge_index_oracle(
+                    &reflected_relabeled,
+                );
+                assert!(
+                    reflected_relabeled.check_no_forbidden_face_face_intersections(),
+                    "vertex-relabeled reflected shared-edge fixture should remain intersection-free in randomized case {case_idx}"
+                );
+                let reflected_relabeled_case_label =
+                    format!("{label}_random_case_{case_idx}_reflected_relabeled");
+                assert_shared_edge_contacts_not_misclassified_as_forbidden_intersections(
+                    &reflected_relabeled,
+                    &reflected_relabeled_case_label,
                 );
             }
 
@@ -2434,6 +2476,24 @@ fn diagnostic_witness_is_real_counterexample(
                     &transformed,
                     &case_label,
                 );
+                let relabel_permutation = random_permutation(&mut rng, transformed.vertices.len());
+                let relabeled =
+                    relabel_mesh_vertices_for_testing(&transformed, &relabel_permutation)
+                        .expect("vertex-relabeled shared-vertex fixture should build");
+                assert!(
+                    relabeled.is_valid(),
+                    "vertex-relabeled shared-vertex fixture should satisfy Phase 4 validity in randomized case {case_idx}"
+                );
+                assert_allowed_contact_topology_classifier_matches_edge_index_oracle(&relabeled);
+                assert!(
+                    relabeled.check_no_forbidden_face_face_intersections(),
+                    "vertex-relabeled shared-vertex fixture should remain intersection-free in randomized case {case_idx}"
+                );
+                let relabeled_case_label = format!("{label}_random_case_{case_idx}_relabeled");
+                assert_shared_vertex_only_contacts_not_misclassified_as_forbidden_intersections(
+                    &relabeled,
+                    &relabeled_case_label,
+                );
 
                 let reflected = transform_mesh_positions(&transformed, reflect_point3_across_yz_plane);
                 assert!(
@@ -2449,6 +2509,30 @@ fn diagnostic_witness_is_real_counterexample(
                 assert_shared_vertex_only_contacts_not_misclassified_as_forbidden_intersections(
                     &reflected,
                     &reflected_case_label,
+                );
+                let reflected_relabel_permutation =
+                    random_permutation(&mut rng, reflected.vertices.len());
+                let reflected_relabeled = relabel_mesh_vertices_for_testing(
+                    &reflected,
+                    &reflected_relabel_permutation,
+                )
+                .expect("vertex-relabeled reflected shared-vertex fixture should build");
+                assert!(
+                    reflected_relabeled.is_valid(),
+                    "vertex-relabeled reflected shared-vertex fixture should satisfy Phase 4 validity in randomized case {case_idx}"
+                );
+                assert_allowed_contact_topology_classifier_matches_edge_index_oracle(
+                    &reflected_relabeled,
+                );
+                assert!(
+                    reflected_relabeled.check_no_forbidden_face_face_intersections(),
+                    "vertex-relabeled reflected shared-vertex fixture should remain intersection-free in randomized case {case_idx}"
+                );
+                let reflected_relabeled_case_label =
+                    format!("{label}_random_case_{case_idx}_reflected_relabeled");
+                assert_shared_vertex_only_contacts_not_misclassified_as_forbidden_intersections(
+                    &reflected_relabeled,
+                    &reflected_relabeled_case_label,
                 );
             }
         }
@@ -2674,25 +2758,62 @@ fn diagnostic_witness_is_real_counterexample(
             Mesh::from_face_cycles(zero_length_vertices, &zero_length_faces)
                 .expect("zero-length edge fixture should build");
 
+        let tetrahedron = Mesh::tetrahedron();
+        let cube = Mesh::cube();
+        let triangular_prism = Mesh::triangular_prism();
+        let overlapping_disconnected_tetrahedra = build_overlapping_tetrahedra_mesh();
+
+        let reflected_tetrahedron =
+            transform_mesh_positions(&tetrahedron, reflect_point3_across_yz_plane);
+        let reflected_cube = transform_mesh_positions(&cube, reflect_point3_across_yz_plane);
+        let reflected_triangular_prism =
+            transform_mesh_positions(&triangular_prism, reflect_point3_across_yz_plane);
+        let reflected_overlapping_disconnected_tetrahedra = transform_mesh_positions(
+            &overlapping_disconnected_tetrahedra,
+            reflect_point3_across_yz_plane,
+        );
+        let reflected_concave_mesh =
+            transform_mesh_positions(&concave_mesh, reflect_point3_across_yz_plane);
+        let reflected_noncoplanar_mesh =
+            transform_mesh_positions(&noncoplanar_mesh, reflect_point3_across_yz_plane);
+        let reflected_collinear_mesh =
+            transform_mesh_positions(&collinear_mesh, reflect_point3_across_yz_plane);
+        let reflected_zero_length_mesh =
+            transform_mesh_positions(&zero_length_mesh, reflect_point3_across_yz_plane);
+
         let mut disjoint_origins = Vec::new();
         for i in 0..8 {
             disjoint_origins.push((i * 10, 0, 0));
         }
         let disjoint_stress = build_disconnected_translated_tetrahedra_mesh(&disjoint_origins);
+        let reflected_disjoint_stress =
+            transform_mesh_positions(&disjoint_stress, reflect_point3_across_yz_plane);
 
         let fixtures = vec![
-            ("tetrahedron", Mesh::tetrahedron()),
-            ("cube", Mesh::cube()),
-            ("triangular_prism", Mesh::triangular_prism()),
+            ("tetrahedron", tetrahedron),
+            ("reflected_tetrahedron", reflected_tetrahedron),
+            ("cube", cube),
+            ("reflected_cube", reflected_cube),
+            ("triangular_prism", triangular_prism),
+            ("reflected_triangular_prism", reflected_triangular_prism),
             (
                 "overlapping_disconnected_tetrahedra",
-                build_overlapping_tetrahedra_mesh(),
+                overlapping_disconnected_tetrahedra,
+            ),
+            (
+                "reflected_overlapping_disconnected_tetrahedra",
+                reflected_overlapping_disconnected_tetrahedra,
             ),
             ("disconnected_stress", disjoint_stress),
+            ("reflected_disconnected_stress", reflected_disjoint_stress),
             ("concave_face", concave_mesh),
+            ("reflected_concave_face", reflected_concave_mesh),
             ("noncoplanar_face", noncoplanar_mesh),
+            ("reflected_noncoplanar_face", reflected_noncoplanar_mesh),
             ("collinear_face", collinear_mesh),
+            ("reflected_collinear_face", reflected_collinear_mesh),
             ("zero_length_edge", zero_length_mesh),
+            ("reflected_zero_length_edge", reflected_zero_length_mesh),
         ];
 
         for (label, mesh) in fixtures {
@@ -2767,6 +2888,41 @@ fn diagnostic_witness_is_real_counterexample(
                 &disjoint_mesh,
                 &format!("disjoint_case_{case_id}"),
             );
+            let disjoint_permutation = random_permutation(&mut rng, disjoint_mesh.vertices.len());
+            let relabeled_disjoint =
+                relabel_mesh_vertices_for_testing(&disjoint_mesh, &disjoint_permutation)
+                    .expect("vertex-relabeled disjoint convexity fixture should build");
+            assert!(
+                relabeled_disjoint.is_valid(),
+                "vertex-relabeled disjoint convexity fixture should satisfy Phase 4 validity in case {case_id}"
+            );
+            assert_face_convexity_checker_matches_projected_orient2d_oracle(
+                &relabeled_disjoint,
+                &format!("disjoint_relabeled_case_{case_id}"),
+            );
+            let reflected_disjoint =
+                transform_mesh_positions(&disjoint_mesh, reflect_point3_across_yz_plane);
+            assert!(
+                reflected_disjoint.is_valid(),
+                "reflected disjoint convexity fixture should satisfy Phase 4 validity in case {case_id}"
+            );
+            assert_face_convexity_checker_matches_projected_orient2d_oracle(
+                &reflected_disjoint,
+                &format!("disjoint_reflected_case_{case_id}"),
+            );
+            let reflected_disjoint_permutation =
+                random_permutation(&mut rng, reflected_disjoint.vertices.len());
+            let relabeled_reflected_disjoint =
+                relabel_mesh_vertices_for_testing(&reflected_disjoint, &reflected_disjoint_permutation)
+                    .expect("vertex-relabeled reflected disjoint convexity fixture should build");
+            assert!(
+                relabeled_reflected_disjoint.is_valid(),
+                "vertex-relabeled reflected disjoint convexity fixture should satisfy Phase 4 validity in case {case_id}"
+            );
+            assert_face_convexity_checker_matches_projected_orient2d_oracle(
+                &relabeled_reflected_disjoint,
+                &format!("disjoint_reflected_relabeled_case_{case_id}"),
+            );
 
             let quarter_turns = rng.next_u64() % 4;
             let tx = rng.next_i64_inclusive(-25, 25);
@@ -2782,6 +2938,43 @@ fn diagnostic_witness_is_real_counterexample(
             assert_face_convexity_checker_matches_projected_orient2d_oracle(
                 &rigid_disjoint,
                 &format!("disjoint_rigid_case_{case_id}"),
+            );
+            let rigid_permutation = random_permutation(&mut rng, rigid_disjoint.vertices.len());
+            let relabeled_rigid_disjoint =
+                relabel_mesh_vertices_for_testing(&rigid_disjoint, &rigid_permutation)
+                    .expect("vertex-relabeled rigid convexity fixture should build");
+            assert!(
+                relabeled_rigid_disjoint.is_valid(),
+                "vertex-relabeled rigid convexity fixture should satisfy Phase 4 validity in case {case_id}"
+            );
+            assert_face_convexity_checker_matches_projected_orient2d_oracle(
+                &relabeled_rigid_disjoint,
+                &format!("disjoint_rigid_relabeled_case_{case_id}"),
+            );
+            let reflected_rigid_disjoint =
+                transform_mesh_positions(&rigid_disjoint, reflect_point3_across_yz_plane);
+            assert!(
+                reflected_rigid_disjoint.is_valid(),
+                "reflected rigid convexity fixture should satisfy Phase 4 validity in case {case_id}"
+            );
+            assert_face_convexity_checker_matches_projected_orient2d_oracle(
+                &reflected_rigid_disjoint,
+                &format!("disjoint_rigid_reflected_case_{case_id}"),
+            );
+            let reflected_rigid_permutation =
+                random_permutation(&mut rng, reflected_rigid_disjoint.vertices.len());
+            let relabeled_reflected_rigid_disjoint = relabel_mesh_vertices_for_testing(
+                &reflected_rigid_disjoint,
+                &reflected_rigid_permutation,
+            )
+            .expect("vertex-relabeled reflected rigid convexity fixture should build");
+            assert!(
+                relabeled_reflected_rigid_disjoint.is_valid(),
+                "vertex-relabeled reflected rigid convexity fixture should satisfy Phase 4 validity in case {case_id}"
+            );
+            assert_face_convexity_checker_matches_projected_orient2d_oracle(
+                &relabeled_reflected_rigid_disjoint,
+                &format!("disjoint_rigid_reflected_relabeled_case_{case_id}"),
             );
 
             let (source_component, perturbed_component) =
@@ -2807,6 +3000,41 @@ fn diagnostic_witness_is_real_counterexample(
                 &perturbed_mesh,
                 &format!("perturbed_case_{case_id}"),
             );
+            let perturbed_permutation = random_permutation(&mut rng, perturbed_mesh.vertices.len());
+            let relabeled_perturbed =
+                relabel_mesh_vertices_for_testing(&perturbed_mesh, &perturbed_permutation)
+                    .expect("vertex-relabeled perturbed convexity fixture should build");
+            assert!(
+                relabeled_perturbed.is_valid(),
+                "vertex-relabeled perturbed convexity fixture should satisfy Phase 4 validity in case {case_id}"
+            );
+            assert_face_convexity_checker_matches_projected_orient2d_oracle(
+                &relabeled_perturbed,
+                &format!("perturbed_relabeled_case_{case_id}"),
+            );
+            let reflected_perturbed =
+                transform_mesh_positions(&perturbed_mesh, reflect_point3_across_yz_plane);
+            assert!(
+                reflected_perturbed.is_valid(),
+                "reflected perturbed convexity fixture should satisfy Phase 4 validity in case {case_id}"
+            );
+            assert_face_convexity_checker_matches_projected_orient2d_oracle(
+                &reflected_perturbed,
+                &format!("perturbed_reflected_case_{case_id}"),
+            );
+            let reflected_perturbed_permutation =
+                random_permutation(&mut rng, reflected_perturbed.vertices.len());
+            let relabeled_reflected_perturbed =
+                relabel_mesh_vertices_for_testing(&reflected_perturbed, &reflected_perturbed_permutation)
+                    .expect("vertex-relabeled reflected perturbed convexity fixture should build");
+            assert!(
+                relabeled_reflected_perturbed.is_valid(),
+                "vertex-relabeled reflected perturbed convexity fixture should satisfy Phase 4 validity in case {case_id}"
+            );
+            assert_face_convexity_checker_matches_projected_orient2d_oracle(
+                &relabeled_reflected_perturbed,
+                &format!("perturbed_reflected_relabeled_case_{case_id}"),
+            );
 
             for (label, mesh) in &failing_fixtures {
                 let fail_turns = rng.next_u64() % 4;
@@ -2825,6 +3053,34 @@ fn diagnostic_witness_is_real_counterexample(
                 assert_face_convexity_checker_matches_projected_orient2d_oracle(
                     &transformed,
                     &format!("{label}_rigid_case_{case_id}"),
+                );
+                let transformed_permutation =
+                    random_permutation(&mut rng, transformed.vertices.len());
+                let relabeled_transformed =
+                    relabel_mesh_vertices_for_testing(&transformed, &transformed_permutation)
+                        .expect("vertex-relabeled transformed failing convexity fixture should build");
+                assert_face_convexity_checker_matches_projected_orient2d_oracle(
+                    &relabeled_transformed,
+                    &format!("{label}_rigid_relabeled_case_{case_id}"),
+                );
+                let reflected_transformed =
+                    transform_mesh_positions(&transformed, reflect_point3_across_yz_plane);
+                assert_face_convexity_checker_matches_projected_orient2d_oracle(
+                    &reflected_transformed,
+                    &format!("{label}_rigid_reflected_case_{case_id}"),
+                );
+                let reflected_transformed_permutation =
+                    random_permutation(&mut rng, reflected_transformed.vertices.len());
+                let relabeled_reflected_transformed = relabel_mesh_vertices_for_testing(
+                    &reflected_transformed,
+                    &reflected_transformed_permutation,
+                )
+                .expect(
+                    "vertex-relabeled reflected transformed failing convexity fixture should build",
+                );
+                assert_face_convexity_checker_matches_projected_orient2d_oracle(
+                    &relabeled_reflected_transformed,
+                    &format!("{label}_rigid_reflected_relabeled_case_{case_id}"),
                 );
             }
         }
