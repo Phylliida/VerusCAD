@@ -180,6 +180,20 @@ Blocks: `P5.5` intersection checker soundness (narrow phase).
   - [ ] coplanar segment-polygon overlap (dominant-axis projection + edge-crossing containment tests).
     - Audit note (2026-02-19): ingredient predicates are present, but their composed
       dominant-axis overlap witness proof is not yet packaged upstream.
+    - Update (2026-02-19, packaging pass): added
+      `segment_overlaps_convex_polygon_2d` in
+      `crates/vcad-geometry/src/segment_polygon_overlap.rs`, packaging the
+      coplanar projected overlap composition already used downstream:
+      endpoint-in-polygon checks plus per-edge segment intersection-kind scan.
+    - Update (2026-02-19, packaging pass): added runtime regression tests in
+      `crates/vcad-geometry/src/segment_polygon_overlap.rs` covering short
+      polygon rejection, endpoint-inside, proper crossing, endpoint touch,
+      collinear edge overlap, and disjoint cases.
+    - Remaining gap (post-packaging): still missing a `verus_keep_ghost`
+      witness-level iff contract (`true <==> exists witness point`) for this
+      composed predicate.
+    - Verification attempt note (2026-02-19, packaging pass):
+      `cargo test -p vcad-geometry` passes in this environment.
 - [ ] Proof shape: predicate returns `true` iff a witness point exists satisfying all geometric constraints simultaneously.
 
 ## Suggested Landing Order

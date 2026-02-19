@@ -3,6 +3,7 @@ pub mod convex_polygon;
 pub mod orientation_predicates;
 pub mod phase5_upstream_lemmas;
 pub mod segment_intersection;
+pub mod segment_polygon_overlap;
 pub mod sidedness;
 
 mod runtime_collinearity_coplanarity_refinement;

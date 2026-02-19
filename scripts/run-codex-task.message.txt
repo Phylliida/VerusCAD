@@ -1,1 +1,1 @@
-Added a Proper-case supporting-line witness contract for segment intersections in vcad-geometry and documented the remaining coplanar witness gap, and 21 Phase 5 upstream-lemma tasks remain.
+Packaged coplanar projected segment-vs-convex-polygon overlap in vcad-geometry with new tests and burndown notes, and 21 Phase 5 upstream-lemma tasks remain.
