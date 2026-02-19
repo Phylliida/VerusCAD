@@ -195,6 +195,83 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.5 (`Proof: adjacency-exemption implementation is equivalent to the allowed-contact spec`) with an index-relabeling differential-harness increment in `src/halfedge_mesh/tests.rs`:
+  - added relabeling-oriented harness helpers:
+    - `mesh_vertices_and_face_cycles_for_relabeling`;
+    - `relabel_mesh_vertices_for_testing`;
+    - `random_permutation`.
+  - extended
+    `differential_randomized_allowed_contact_topology_classifier_harness`
+    so each seeded randomized case now validates classifier/oracle parity not only on:
+    - disjoint meshes;
+    - rigidly transformed meshes;
+    - adversarial perturbed meshes;
+    but also on consistent random vertex-index relabelings of each of those three variants.
+  - outcome: stronger regression lock that the runtime allowed-contact topology classifier remains equivalent to the independent edge-index oracle under topology-preserving index isomorphisms, narrowing the remaining formal P5.5 adjacency-exemption proof gap.
+- 2026-02-19: Failed attempts in this P5.5 index-relabeling differential-harness pass: none.
+- 2026-02-19: Revalidated after the P5.5 index-relabeling differential-harness increment:
+  - `cargo test -p vcad-topology --features geometry-checks differential_randomized_allowed_contact_topology_classifier_harness`
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (58 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (71 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (286 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (323 verified, 0 errors)
+- 2026-02-19: Worked P5.5 (`Proof: shared-edge and shared-vertex contacts are never misclassified as forbidden intersections`) with a reflection-aware differential harness increment in `src/halfedge_mesh/tests.rs`:
+  - expanded deterministic shared-boundary non-misclassification fixtures to include reflected variants:
+    - `shared_edge_contacts_are_not_misclassified_as_forbidden_intersections` now includes reflected tetrahedron/cube/triangular-prism meshes;
+    - `shared_vertex_only_contacts_are_not_misclassified_as_forbidden_intersections` now includes reflected octahedron variants.
+  - strengthened these deterministic paths to also assert adjacency classifier/spec parity via
+    `assert_allowed_contact_topology_classifier_matches_edge_index_oracle`.
+  - extended `differential_randomized_shared_boundary_contact_non_misclassification_harness` so each randomized rigid case is also reflected, and both the original and reflected meshes are checked for:
+    - Phase 4 validity;
+    - allowed-contact classifier parity vs the edge-index oracle;
+    - `check_no_forbidden_face_face_intersections()` pass;
+    - shared-edge/shared-vertex non-misclassification.
+  - outcome: tighter regression lock that adjacency-exempt shared-boundary contacts remain non-forbidden under orientation-flipping transforms, with P5.5 formal proof obligations still open.
+- 2026-02-19: Failed attempts in this P5.5 reflection-aware harness pass: none.
+- 2026-02-19: Revalidated after the P5.5 reflection-aware harness increment:
+  - `cargo test -p vcad-topology --features geometry-checks shared_edge_contacts_are_not_misclassified_as_forbidden_intersections`
+  - `cargo test -p vcad-topology --features geometry-checks shared_vertex_only_contacts_are_not_misclassified_as_forbidden_intersections`
+  - `cargo test -p vcad-topology --features geometry-checks differential_randomized_shared_boundary_contact_non_misclassification_harness`
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (58 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (71 passed, 0 failed)
+- 2026-02-19: Worked P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with
+  a multiclass model/runtime-gap codification increment in `src/halfedge_mesh/tests.rs`:
+  - generalized `assert_phase4_shared_edge_spec_characterization_gap` from a noncoplanar-only
+    assertion into a failure-classed gap checker
+    (`Phase4SharedEdgeSpecGapFailure::{NonCoplanar, NonConvex, ForbiddenIntersection, InwardOrDegenerate}`),
+    while preserving the core boundary claim:
+    `(is_valid && shared-edge-local-orientation)` still implies the current aggregate model spec,
+    but does not imply runtime aggregate checker success;
+  - added reusable fixtures:
+    - `build_concave_single_face_pair_mesh`;
+    - `build_reflected_cube_outward_failure_mesh`;
+  - added deterministic regression locks for three additional geometric failure families beyond
+    noncoplanarity:
+    - `concave_fixture_keeps_phase4_and_shared_edge_orientation_but_fails_aggregate_gate`;
+    - `overlapping_fixture_keeps_phase4_and_shared_edge_orientation_but_fails_aggregate_gate`;
+    - `reflected_fixture_keeps_phase4_and_shared_edge_orientation_but_fails_aggregate_gate`;
+  - added seeded randomized rigid-transform stress coverage across all four gap families:
+    - `differential_randomized_multiclass_phase4_shared_edge_spec_gap_harness` (40 cases).
+  - outcome: the remaining P5.7 blocker is now regression-locked across coplanarity, convexity,
+    forbidden-intersection, and outward-orientation failure classes (not only a single noncoplanar
+    fixture), reducing the risk of re-attempting full equivalence against the still-weaker aggregate
+    model characterization.
+- 2026-02-19: Failed attempts in this P5.7 multiclass gap-codification pass: none.
+- 2026-02-19: Revalidated after the P5.7 multiclass gap-codification increment:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" noncoplanar_fixture_keeps_phase4_and_shared_edge_orientation_but_fails_aggregate_gate`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" concave_fixture_keeps_phase4_and_shared_edge_orientation_but_fails_aggregate_gate`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" overlapping_fixture_keeps_phase4_and_shared_edge_orientation_but_fails_aggregate_gate`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" reflected_fixture_keeps_phase4_and_shared_edge_orientation_but_fails_aggregate_gate`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" differential_randomized_multiclass_phase4_shared_edge_spec_gap_harness`
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (58 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (71 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (286 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (323 verified, 0 errors)
 - 2026-02-19: Worked P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) by
   tightening the existing non-coplanar spec/runtime gap harness in
   `src/halfedge_mesh/tests.rs`:
