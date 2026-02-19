@@ -694,6 +694,34 @@ fn collinear_overlap_dimension_kind(
     }
 }
 
+fn point_copy_runtime(p: &RuntimePoint2) -> (out: RuntimePoint2)
+    ensures
+        out@ == p@,
+{
+    let x_neg = (&p.x).neg();
+    let x = x_neg.neg();
+    let y_neg = (&p.y).neg();
+    let y = y_neg.neg();
+    let out = RuntimePoint2::new(x, y);
+    proof {
+        assert(x_neg@ == p@.x.neg_spec());
+        assert(x@ == x_neg@.neg_spec());
+        Scalar::lemma_neg_involution(p@.x);
+        assert(x@ == p@.x);
+
+        assert(y_neg@ == p@.y.neg_spec());
+        assert(y@ == y_neg@.neg_spec());
+        Scalar::lemma_neg_involution(p@.y);
+        assert(y@ == p@.y);
+
+        assert(out@ == Point2 { x: x@, y: y@ });
+        assert(out@.x == p@.x);
+        assert(out@.y == p@.y);
+        assert(out@ == p@);
+    }
+    out
+}
+
 fn endpoint_touch_point_runtime(
     a: &RuntimePoint2,
     b: &RuntimePoint2,
@@ -723,7 +751,7 @@ fn endpoint_touch_point_runtime(
             assert(c_on_cd == point_on_segment_inclusive_spec(c@, c@, d@));
             assert(point_on_both_segments_spec(c@, a@, b@, c@, d@));
         }
-        return Option::Some(c.clone());
+        return Option::Some(point_copy_runtime(c));
     }
 
     let d_on_ab = point_on_segment_inclusive_runtime(d, a, b);
@@ -735,7 +763,7 @@ fn endpoint_touch_point_runtime(
             assert(d_on_cd == point_on_segment_inclusive_spec(d@, c@, d@));
             assert(point_on_both_segments_spec(d@, a@, b@, c@, d@));
         }
-        return Option::Some(d.clone());
+        return Option::Some(point_copy_runtime(d));
     }
 
     let a_on_ab = point_on_segment_inclusive_runtime(a, a, b);
@@ -747,7 +775,7 @@ fn endpoint_touch_point_runtime(
             assert(a_on_cd == point_on_segment_inclusive_spec(a@, c@, d@));
             assert(point_on_both_segments_spec(a@, a@, b@, c@, d@));
         }
-        return Option::Some(a.clone());
+        return Option::Some(point_copy_runtime(a));
     }
 
     let b_on_ab = point_on_segment_inclusive_runtime(b, a, b);
@@ -759,7 +787,7 @@ fn endpoint_touch_point_runtime(
             assert(b_on_cd == point_on_segment_inclusive_spec(b@, c@, d@));
             assert(point_on_both_segments_spec(b@, a@, b@, c@, d@));
         }
-        return Option::Some(b.clone());
+        return Option::Some(point_copy_runtime(b));
     }
 
     proof {
@@ -806,11 +834,36 @@ fn proper_intersection_point_runtime(
     // a + t (b-a), where t = cross(c-a, d-c) / cross(b-a, d-c).
     let r = b.sub(a);
     let s = d.sub(c);
-    let den = r.cross(&s);
+    let den_raw = r.cross(&s);
+    proof {
+        assert(wf::point2_wf4_spec(a, b, c, d));
+        assert(a.witness_wf_spec());
+        assert(b.witness_wf_spec());
+        assert(c.witness_wf_spec());
+        assert(d.witness_wf_spec());
+    }
+    let rx = (&b.x).sub_wf(&a.x);
+    let ry = (&b.y).sub_wf(&a.y);
+    let sx = (&d.x).sub_wf(&c.x);
+    let sy = (&d.y).sub_wf(&c.y);
+    let den_xy = rx.mul_wf(&sy);
+    let den_yx = ry.mul_wf(&sx);
+    let den = den_xy.sub_wf(&den_yx);
     let inv_opt = den.recip();
     proof {
         assert(r@ == b@.sub_spec(a@));
         assert(s@ == d@.sub_spec(c@));
+        assert(rx@ == b@.x.sub_spec(a@.x));
+        assert(ry@ == b@.y.sub_spec(a@.y));
+        assert(sx@ == d@.x.sub_spec(c@.x));
+        assert(sy@ == d@.y.sub_spec(c@.y));
+        assert(den_xy@ == rx@.mul_spec(sy@));
+        assert(den_yx@ == ry@.mul_spec(sx@));
+        assert(den@ == den_xy@.sub_spec(den_yx@));
+        assert(r@.cross_spec(s@) == den_xy@.sub_spec(den_yx@));
+        assert(den@ == r@.cross_spec(s@));
+        assert(den_raw@ == r@.cross_spec(s@));
+        assert(den@ == den_raw@);
         assert(den@ == r@.cross_spec(s@));
         assert(den@ == b@.sub_spec(a@).cross_spec(d@.sub_spec(c@)));
         assert(inv_opt.is_none() == den@.eqv_spec(Scalar::from_int_spec(0)));
@@ -849,7 +902,7 @@ fn proper_intersection_point_runtime(
         assert(r@.cross_spec(step@).eqv_spec(t@.mul_spec(r@.cross_spec(r@))));
 
         Vec2::lemma_cross_self_zero(r@);
-        Scalar::lemma_eqv_mul_congruence_right(t@, t@, r@.cross_spec(r@), z);
+        Scalar::lemma_eqv_mul_congruence_right(t@, r@.cross_spec(r@), z);
         assert(t@.mul_spec(r@.cross_spec(r@)).eqv_spec(t@.mul_spec(z)));
         Scalar::lemma_mul_zero(t@);
         assert(t@.mul_spec(z).eqv_spec(z));
@@ -918,6 +971,16 @@ fn proper_intersection_point_runtime(
         assert(pa.eqv_spec(step@));
         Scalar::lemma_eqv_add_congruence(pa.x, step@.x, ac.x, cma@.neg_spec().x);
         Scalar::lemma_eqv_add_congruence(pa.y, step@.y, ac.y, cma@.neg_spec().y);
+        Scalar::lemma_eqv_transitive(
+            pc.x,
+            pa.x.add_spec(ac.x),
+            step@.x.add_spec(cma@.neg_spec().x),
+        );
+        Scalar::lemma_eqv_transitive(
+            pc.y,
+            pa.y.add_spec(ac.y),
+            step@.y.add_spec(cma@.neg_spec().y),
+        );
         assert(pc.x.eqv_spec(step@.x.add_spec(cma@.neg_spec().x)));
         assert(pc.y.eqv_spec(step@.y.add_spec(cma@.neg_spec().y)));
         Vec2::lemma_eqv_from_components(pc, pc_rhs);
@@ -956,7 +1019,7 @@ fn proper_intersection_point_runtime(
         );
         assert(
             t@.mul_spec(den@).neg_spec().add_spec(s@.cross_spec(cma@.neg_spec()))
-                .eqv_spec(cma_cross_s.neg_spec().add_spec(cma_cross_s)),
+                .eqv_spec(cma_cross_s.neg_spec().add_spec(cma_cross_s))
         );
         Scalar::lemma_add_inverse(cma_cross_s);
         assert(cma_cross_s.neg_spec().add_spec(cma_cross_s).eqv_spec(z));
@@ -974,7 +1037,7 @@ fn proper_intersection_point_runtime(
         );
         assert(
             s@.cross_spec(step@).add_spec(s@.cross_spec(cma@.neg_spec()))
-                .eqv_spec(t@.mul_spec(den@).neg_spec().add_spec(s@.cross_spec(cma@.neg_spec()))),
+                .eqv_spec(t@.mul_spec(den@).neg_spec().add_spec(s@.cross_spec(cma@.neg_spec())))
         );
         Scalar::lemma_eqv_transitive(
             s@.cross_spec(step@).add_spec(s@.cross_spec(cma@.neg_spec())),
@@ -1115,7 +1178,7 @@ pub fn segment_intersection_kind_2d(
                 assert(touch2 == point_on_both_segments_spec(d@, a@, b@, c@, d@));
                 assert(touch3 == point_on_both_segments_spec(a@, a@, b@, c@, d@));
                 assert(touch4 == point_on_both_segments_spec(b@, a@, b@, c@, d@));
-                assert(!(overlap_kind as int < 0));
+                assert(overlap_kind as int >= 0);
                 assert(!((overlap_kind as int == 0) && (touch1 || touch2 || touch3 || touch4)));
                 assert(segment_intersection_kind_spec(a@, b@, c@, d@) is CollinearOverlap);
                 assert(out@ is CollinearOverlap);
@@ -1220,7 +1283,7 @@ pub fn segment_intersection_point_2d(
                     point_on_both_segments_spec(c@, a@, b@, c@, d@)
                         || point_on_both_segments_spec(d@, a@, b@, c@, d@)
                         || point_on_both_segments_spec(a@, a@, b@, c@, d@)
-                        || point_on_both_segments_spec(b@, a@, b@, c@, d@),
+                        || point_on_both_segments_spec(b@, a@, b@, c@, d@)
                 );
                 assert(out.is_some());
                 match &out {

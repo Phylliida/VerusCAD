@@ -84,17 +84,31 @@ Blocks: `P5.4` global outwardness.
 ## L5: AABB / Plane Separation Soundness
 Blocks: `P5.5` intersection checker soundness (broad phase).
 
-- [ ] Prove: if two AABBs are separated on at least one axis, then the contained convex sets are disjoint.
-  - Partial (2026-02-19, AABB separation pass): added
+- [x] Prove: if two AABBs are separated on at least one axis, then the contained convex sets are disjoint.
+  - Landed (2026-02-19, AABB separation pass): added
     `point_in_aabb3_spec`, `aabb_separated_on_some_axis_spec`,
     `lemma_aabb_separation_implies_no_common_point`, and
     `lemma_aabb_separation_implies_disjoint_aabbs` in
     `crates/vcad-geometry/src/phase5_upstream_lemmas.rs`.
-  - Status: core geometric contradiction is now upstreamed (`separated AABBs`
-    have no common point). Remaining packaging gap is an explicit
-    containment-to-disjointness wrapper used directly by the broad-phase API.
+  - Landed (2026-02-19, containment-wrapper pass): added
+    `shape_contained_in_aabb3_spec` and
+    `lemma_aabb_separation_and_containment_implies_disjoint_sets` in
+    `crates/vcad-geometry/src/phase5_upstream_lemmas.rs`, packaging the
+    contradiction into a reusable containment-to-disjointness theorem
+    (`separated AABBs` + per-shape AABB containment => disjoint shapes).
   - Verification attempt note (2026-02-19, AABB separation pass):
     `cargo test -p vcad-geometry` passes in this environment.
+  - Verification attempt note (2026-02-19, containment-wrapper pass):
+    `cargo test -p vcad-geometry` passes in this environment.
+  - Verification attempt note (2026-02-19, containment-wrapper pass):
+    `cargo test -p vcad-geometry --features verus-proofs` fails here without
+    `--cfg verus_keep_ghost` due unresolved ghost-module imports from
+    `vcad-math`; the proof build still needs both the cfg and a nightly-capable
+    Verus toolchain.
+  - Verification attempt note (2026-02-19, containment-wrapper pass):
+    `RUSTFLAGS='--cfg verus_keep_ghost' cargo test -p vcad-geometry --features verus-proofs`
+    still fails on stable due Verus macro crates requiring nightly-only
+    `#![feature(proc_macro_...)]`, and `rustup` is unavailable in this environment.
 - [ ] Prove: if all vertices of face `A` are strictly on one side of face `B` plane, then `A` and `B` do not intersect.
 - [ ] Proof sketch for plane separation:
   - If all polygon vertices evaluate strictly positive under a plane equation, every convex combination is strictly positive.

@@ -1,5 +1,8 @@
+#[cfg(verus_keep_ghost)]
 use crate::runtime_point2::RuntimePoint2;
+#[cfg(verus_keep_ghost)]
 use crate::runtime_point3::RuntimePoint3;
+#[cfg(verus_keep_ghost)]
 use crate::runtime_scalar::RuntimeScalar;
 #[cfg(verus_keep_ghost)]
 use vstd::prelude::*;
@@ -15,6 +18,11 @@ pub open spec fn point2_wf3_spec(a: &RuntimePoint2, b: &RuntimePoint2, c: &Runti
 
 pub open spec fn point2_wf1_spec(a: &RuntimePoint2) -> bool {
     a.witness_wf_spec()
+}
+
+pub open spec fn point2_wf2_spec(a: &RuntimePoint2, b: &RuntimePoint2) -> bool {
+    &&& a.witness_wf_spec()
+    &&& b.witness_wf_spec()
 }
 
 pub open spec fn point2_wf4_spec(a: &RuntimePoint2, b: &RuntimePoint2, c: &RuntimePoint2, d: &RuntimePoint2) -> bool {

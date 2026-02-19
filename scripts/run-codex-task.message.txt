@@ -1,1 +1,1 @@
-Landed L5 AABB axis-separation disjointness lemmas in vcad-geometry and documented the partial broad-phase proof progress, and 24 Phase 5 upstream-lemma tasks remain.
+Landed the L5 containment-to-disjointness AABB wrapper in vcad-geometry and updated the burndown, with 23 Phase 5 upstream-lemma tasks remaining and the main blocker being unavailable nightly Verus tooling in this environment (cfg verus_keep_ghost and nightly are required, but rustup/toolchain switching is unavailable).

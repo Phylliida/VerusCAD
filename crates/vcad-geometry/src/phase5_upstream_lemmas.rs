@@ -76,6 +76,14 @@ pub open spec fn aabb_separated_on_some_axis_spec(
         || max_b.z.lt_spec(min_a.z)
 }
 
+pub open spec fn shape_contained_in_aabb3_spec(
+    shape: spec_fn(Point3) -> bool,
+    min: Point3,
+    max: Point3,
+) -> bool {
+    forall|p: Point3| shape(p) ==> point_in_aabb3_spec(p, min, max)
+}
+
 proof fn lemma_scalar_le_transitive(a: Scalar, b: Scalar, c: Scalar)
     requires
         a.le_spec(b),
@@ -96,7 +104,7 @@ proof fn lemma_scalar_le_transitive(a: Scalar, b: Scalar, c: Scalar)
         (a.num * b.denom() <= b.num * a.denom())
             && (b.num * c.denom() <= c.num * b.denom())
             && (b.denom() > 0)
-            ==> (a.num * c.denom() <= c.num * a.denom()),
+            ==> (a.num * c.denom() <= c.num * a.denom())
     ) by (nonlinear_arith);
     assert(a.num * c.denom() <= c.num * a.denom());
     assert(a.le_spec(c));
@@ -109,9 +117,14 @@ proof fn lemma_scalar_lt_incompatible_with_reverse_le(a: Scalar, b: Scalar)
     ensures
         false,
 {
-    assert(a.lt_spec(b) == (a.num * b.denom() < b.num * a.denom()));
-    assert(b.le_spec(a) == (b.num * a.denom() <= a.num * b.denom()));
-    assert(false) by (nonlinear_arith);
+    let lhs = a.num * b.denom();
+    let rhs = b.num * a.denom();
+    assert(a.lt_spec(b) == (lhs < rhs));
+    assert(b.le_spec(a) == (rhs <= lhs));
+    assert(lhs < rhs);
+    assert((rhs <= lhs) == !(lhs < rhs)) by (nonlinear_arith);
+    assert(!(rhs <= lhs));
+    assert(false);
 }
 
 pub proof fn lemma_aabb_separation_implies_no_common_point(
@@ -180,6 +193,33 @@ pub proof fn lemma_aabb_separation_implies_disjoint_aabbs(
         !(point_in_aabb3_spec(p, min_a, max_a) && point_in_aabb3_spec(p, min_b, max_b))
     by {
         if point_in_aabb3_spec(p, min_a, max_a) && point_in_aabb3_spec(p, min_b, max_b) {
+            lemma_aabb_separation_implies_no_common_point(p, min_a, max_a, min_b, max_b);
+            assert(false);
+        }
+    }
+}
+
+pub proof fn lemma_aabb_separation_and_containment_implies_disjoint_sets(
+    shape_a: spec_fn(Point3) -> bool,
+    shape_b: spec_fn(Point3) -> bool,
+    min_a: Point3,
+    max_a: Point3,
+    min_b: Point3,
+    max_b: Point3,
+)
+    requires
+        aabb_separated_on_some_axis_spec(min_a, max_a, min_b, max_b),
+        shape_contained_in_aabb3_spec(shape_a, min_a, max_a),
+        shape_contained_in_aabb3_spec(shape_b, min_b, max_b),
+    ensures
+        forall|p: Point3| !(shape_a(p) && shape_b(p)),
+{
+    assert forall|p: Point3| !(shape_a(p) && shape_b(p)) by {
+        if shape_a(p) && shape_b(p) {
+            assert(shape_contained_in_aabb3_spec(shape_a, min_a, max_a));
+            assert(shape_contained_in_aabb3_spec(shape_b, min_b, max_b));
+            assert(point_in_aabb3_spec(p, min_a, max_a));
+            assert(point_in_aabb3_spec(p, min_b, max_b));
             lemma_aabb_separation_implies_no_common_point(p, min_a, max_a, min_b, max_b);
             assert(false);
         }
