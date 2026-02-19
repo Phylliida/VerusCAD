@@ -222,9 +222,13 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
 - 2026-02-19: Failed attempts in this P5.5 relabeling-aware shared-boundary harness pass: none.
 - 2026-02-19: Revalidated after the P5.5 relabeling-aware shared-boundary harness increment:
   - `cargo test -p vcad-topology --features geometry-checks differential_randomized_shared_boundary_contact_non_misclassification_harness`
+  - `cargo test -p vcad-topology --features geometry-checks differential_randomized_face_convexity_checker_projected_orient2d_oracle_harness`
   - `cargo test -p vcad-topology` (13 passed, 0 failed)
   - `cargo test -p vcad-topology --features geometry-checks` (58 passed, 0 failed)
   - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (71 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (286 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (323 verified, 0 errors)
 - 2026-02-19: Worked P5.5 (`Proof: adjacency-exemption implementation is equivalent to the allowed-contact spec`) with an index-relabeling differential-harness increment in `src/halfedge_mesh/tests.rs`:
   - added relabeling-oriented harness helpers:
     - `mesh_vertices_and_face_cycles_for_relabeling`;
