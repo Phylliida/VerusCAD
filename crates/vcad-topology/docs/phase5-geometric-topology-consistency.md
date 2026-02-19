@@ -195,6 +195,23 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with a runtime geometry-aware/spec-bundle bidirectional characterization increment in:
+  - `src/runtime_halfedge_mesh_refinement/components_and_validity_specs.rs`.
+  - added a reverse bridge from the geometry-aware runtime aggregate spec back to the runtime seed0 coplanarity bundle:
+    - `lemma_mesh_runtime_geometric_topological_consistency_with_geometry_implies_mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle`.
+  - added an explicit bidirectional characterization lemma:
+    - `lemma_mesh_runtime_geometric_topological_consistency_with_geometry_seed0_coplanarity_bundle_characterization`.
+  - outcome:
+    - the runtime geometry-aware aggregate spec and the runtime seed0 coplanarity bundle now have direct two-way proof connectivity (not only one-way bundle-to-geometry admission);
+    - this narrows the remaining P5.7 gap to runtime-checker equivalence against the aggregate Phase 5 spec surface, with this sublayer now fully characterized.
+- 2026-02-19: Failed attempts in this P5.7 runtime geometry-aware/spec-bundle characterization pass: none.
+- 2026-02-19: Revalidated after the P5.7 runtime geometry-aware/spec-bundle characterization increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (86 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (359 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (396 verified, 0 errors)
 - 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with an inverse-branch forbidden-policy decomposition increment in:
   - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`;
   - `src/halfedge_mesh/tests.rs`.
