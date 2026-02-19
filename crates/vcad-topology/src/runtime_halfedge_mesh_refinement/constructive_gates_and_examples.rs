@@ -508,6 +508,405 @@ pub fn is_valid_constructive(
 }
 
 #[cfg(feature = "geometry-checks")]
+#[verifier::exec_allows_no_decreases_clause]
+#[allow(dead_code)]
+pub fn runtime_check_face_coplanarity_seed0_fixed_witness_bridge(m: &Mesh) -> (out: bool)
+    ensures
+        out ==> mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m),
+{
+    if !m.is_valid() {
+        return false;
+    }
+
+    let index_bounds_ok = runtime_check_index_bounds(m);
+    if !index_bounds_ok {
+        return false;
+    }
+
+    let face_cycles_ok = runtime_check_face_cycles_kernel_bridge(m);
+    if !face_cycles_ok {
+        return false;
+    }
+
+    if !m.check_face_corner_non_collinearity() {
+        return false;
+    }
+
+    let fcnt = m.faces.len();
+    let hcnt = m.half_edges.len();
+
+    proof {
+        assert(mesh_index_bounds_spec(m@));
+        assert(mesh_face_next_cycles_spec(m@));
+        lemma_mesh_runtime_geometry_bridge_holds(m);
+        assert(mesh_runtime_geometry_bridge_spec(m));
+    }
+
+    let ghost face_cycle_lens = choose|face_cycle_lens: Seq<usize>| mesh_face_next_cycles_witness_spec(
+        m@,
+        face_cycle_lens,
+    );
+    let ghost vertex_positions = mesh_runtime_vertex_positions_spec(m);
+
+    proof {
+        assert(mesh_face_next_cycles_witness_spec(m@, face_cycle_lens));
+        assert(mesh_runtime_geometry_bridge_spec(m));
+        assert(mesh_geometry_input_spec(m@, vertex_positions));
+        assert(face_cycle_lens.len() == mesh_face_count_spec(m@));
+        assert(mesh_face_count_spec(m@) == m@.face_half_edges.len() as int);
+        assert(m@.face_half_edges.len() == m.faces@.len());
+        assert(m.faces@.len() == m.faces.len());
+        assert(face_cycle_lens.len() == fcnt as int);
+    }
+
+    let mut f: usize = 0;
+    while f < fcnt
+        invariant
+            fcnt == m.faces.len(),
+            hcnt == m.half_edges.len(),
+            face_cycle_lens.len() == fcnt as int,
+            f <= fcnt,
+            mesh_index_bounds_spec(m@),
+            mesh_face_next_cycles_witness_spec(m@, face_cycle_lens),
+            mesh_runtime_geometry_bridge_spec(m),
+            forall|fp: int|
+                0 <= fp < f as int
+                    ==> #[trigger] mesh_face_coplanar_seed0_fixed_witness_spec(
+                        m@,
+                        vertex_positions,
+                        fp,
+                    ),
+    {
+        let h0 = m.faces[f].half_edge;
+        let h1 = m.half_edges[h0].next;
+        let h2 = m.half_edges[h1].next;
+
+        let a = &m.vertices[m.half_edges[h0].vertex].position;
+        let b = &m.vertices[m.half_edges[h1].vertex].position;
+        let c = &m.vertices[m.half_edges[h2].vertex].position;
+
+        let ghost fi = f as int;
+        let ghost k = face_cycle_lens[fi] as int;
+        let ghost start = m@.face_half_edges[fi];
+        let ghost p0 = mesh_face_cycle_vertex_position_or_default_at_int_spec(
+            m@,
+            vertex_positions,
+            fi,
+            0,
+        );
+        let ghost p1 = mesh_face_cycle_vertex_position_or_default_at_int_spec(
+            m@,
+            vertex_positions,
+            fi,
+            1,
+        );
+        let ghost p2 = mesh_face_cycle_vertex_position_or_default_at_int_spec(
+            m@,
+            vertex_positions,
+            fi,
+            2,
+        );
+
+        proof {
+            assert(0 <= fi < face_cycle_lens.len());
+            assert(mesh_face_cycle_witness_spec(m@, fi, k));
+            assert(3 <= k);
+            assert(k <= hcnt as int);
+            assert(start == h0 as int);
+            assert(0 <= start < mesh_half_edge_count_spec(m@));
+            assert(mesh_next_iter_spec(m@, start, 0) == start);
+            assert(mesh_next_iter_spec(m@, start, 1) == mesh_next_or_self_spec(m@, start));
+            assert(mesh_next_or_self_spec(m@, start) == m@.half_edges[start].next);
+            assert(m@.half_edges[start].next == h1 as int);
+            assert(mesh_next_iter_spec(m@, start, 1) == h1 as int);
+            assert(mesh_next_iter_spec(m@, start, 2) == mesh_next_or_self_spec(
+                m@,
+                mesh_next_iter_spec(m@, start, 1),
+            ));
+            assert(mesh_next_or_self_spec(m@, mesh_next_iter_spec(m@, start, 1))
+                == m@.half_edges[mesh_next_iter_spec(m@, start, 1)].next);
+            assert(mesh_next_iter_spec(m@, start, 2) == h2 as int);
+
+            assert(p0 == a@);
+            assert(p1 == b@);
+            assert(p2 == c@);
+        }
+
+        let mut h: usize = h0;
+        let mut steps: usize = 0;
+        while h != h0 || steps == 0
+            invariant
+                hcnt == m.half_edges.len(),
+                steps <= hcnt,
+                0 <= (steps as int) && (steps as int) <= k,
+                mesh_index_bounds_spec(m@),
+                mesh_runtime_geometry_bridge_spec(m),
+                mesh_face_cycle_witness_spec(m@, fi, k),
+                start == h0 as int,
+                h == mesh_next_iter_spec(m@, start, steps as nat) as usize,
+                p0 == a@,
+                p1 == b@,
+                p2 == c@,
+                forall|d: int|
+                    0 <= d < (steps as int)
+                        ==> #[trigger] vcad_math::orientation3::is_coplanar(
+                            p0,
+                            p1,
+                            p2,
+                            mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                                m@,
+                                vertex_positions,
+                                fi,
+                                d,
+                            ),
+                        ),
+        {
+            proof {
+                if steps == 0 {
+                    assert((steps as int) < k);
+                } else {
+                    assert(h != h0);
+                    assert((steps as int) <= k);
+                    if (steps as int) == k {
+                        assert(mesh_next_iter_spec(m@, start, k as nat) == start);
+                        assert(h as int == mesh_next_iter_spec(m@, start, steps as nat));
+                        assert(h as int == start);
+                        assert(h == h0);
+                        assert(false);
+                    }
+                    assert((steps as int) < k);
+                }
+            }
+
+            let d = &m.vertices[m.half_edges[h].vertex].position;
+            let cop = vcad_geometry::collinearity_coplanarity::coplanar(a, b, c, d);
+            if !cop {
+                return false;
+            }
+
+            proof {
+                let di = steps as int;
+                let hp = mesh_next_iter_spec(m@, start, steps as nat);
+                assert(h as int == hp);
+                assert(0 <= hp < mesh_half_edge_count_spec(m@));
+                assert(m@.half_edges[hp].vertex == m.half_edges[h].vertex as int);
+                assert(0 <= m@.half_edges[hp].vertex < mesh_vertex_count_spec(m@));
+                assert(mesh_face_cycle_vertex_index_or_default_spec(m@, fi, steps as nat)
+                    == m@.half_edges[hp].vertex);
+                assert(mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                    m@,
+                    vertex_positions,
+                    fi,
+                    di,
+                ) == vertex_positions[m@.half_edges[hp].vertex]);
+                assert(vertex_positions[m@.half_edges[hp].vertex]
+                    == m.vertices@[m@.half_edges[hp].vertex].position@);
+                assert(d@ == m.vertices@[m@.half_edges[hp].vertex].position@);
+                assert(d@
+                    == mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                        m@,
+                        vertex_positions,
+                        fi,
+                        di,
+                    ));
+                assert(cop == vcad_math::orientation3::is_coplanar(a@, b@, c@, d@));
+                assert(vcad_math::orientation3::is_coplanar(
+                    p0,
+                    p1,
+                    p2,
+                    mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                        m@,
+                        vertex_positions,
+                        fi,
+                        di,
+                    ),
+                ));
+            }
+
+            let _h_prev = h;
+            h = m.half_edges[h].next;
+            steps += 1;
+            if steps > hcnt {
+                return false;
+            }
+
+            proof {
+                let old_steps = (steps - 1) as int;
+                assert(0 <= old_steps < k);
+                assert(_h_prev as int == mesh_next_iter_spec(m@, start, old_steps as nat));
+                assert(0 <= _h_prev as int);
+                assert((_h_prev as int) < mesh_half_edge_count_spec(m@));
+                assert(
+                    mesh_next_or_self_spec(m@, _h_prev as int)
+                        == m@.half_edges[(_h_prev as int)].next
+                );
+                assert(mesh_next_iter_spec(m@, start, steps as nat)
+                    == mesh_next_or_self_spec(m@, mesh_next_iter_spec(m@, start, old_steps as nat)));
+                assert(h as int == m@.half_edges[(_h_prev as int)].next);
+                assert(h as int == mesh_next_iter_spec(m@, start, steps as nat));
+
+                assert(forall|d: int|
+                    0 <= d < (steps as int)
+                        ==> #[trigger] vcad_math::orientation3::is_coplanar(
+                            p0,
+                            p1,
+                            p2,
+                            mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                                m@,
+                                vertex_positions,
+                                fi,
+                                d,
+                            ),
+                        )) by {
+                assert forall|d: int|
+                    0 <= d < (steps as int)
+                        implies #[trigger] vcad_math::orientation3::is_coplanar(
+                            p0,
+                            p1,
+                                p2,
+                                mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                                    m@,
+                                    vertex_positions,
+                                    fi,
+                                    d,
+                                ),
+                            ) by {
+                        if d < old_steps {
+                        } else {
+                            assert(d == old_steps);
+                            assert(vcad_math::orientation3::is_coplanar(
+                                p0,
+                                p1,
+                                p2,
+                                mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                                    m@,
+                                    vertex_positions,
+                                    fi,
+                                    d,
+                                ),
+                            ));
+                        }
+                    };
+                };
+
+                assert((steps as int) <= k) by {
+                    assert(old_steps < k);
+                };
+            }
+        }
+
+        proof {
+            assert(h == h0);
+            assert(steps > 0);
+            assert(h as int == mesh_next_iter_spec(m@, start, steps as nat));
+            assert(h as int == start);
+            assert((steps as int) <= k);
+            if (steps as int) < k {
+                assert(0 <= 0 < k);
+                assert(0 <= (steps as int) < k);
+                assert(mesh_next_iter_spec(m@, start, 0) == start);
+                assert(mesh_next_iter_spec(m@, start, steps as nat) == start);
+                assert(mesh_next_iter_spec(m@, start, 0) == mesh_next_iter_spec(
+                    m@,
+                    start,
+                    steps as nat,
+                ));
+                assert(0 < (steps as int));
+                assert(false);
+            }
+            assert((steps as int) == k);
+            assert(forall|d: int|
+                0 <= d < k
+                    ==> #[trigger] vcad_math::orientation3::is_coplanar(
+                        p0,
+                        p1,
+                        p2,
+                        mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                            m@,
+                            vertex_positions,
+                            fi,
+                            d,
+                        ),
+                    )) by {
+                assert forall|d: int|
+                    0 <= d < k
+                        implies #[trigger] vcad_math::orientation3::is_coplanar(
+                            p0,
+                            p1,
+                            p2,
+                            mesh_face_cycle_vertex_position_or_default_at_int_spec(
+                                m@,
+                                vertex_positions,
+                                fi,
+                                d,
+                            ),
+                    ) by {
+                    assert(0 <= d < (steps as int));
+                };
+            };
+            assert(mesh_face_coplanar_fixed_seed_witness_spec(m@, vertex_positions, fi, k, 0));
+            assert(mesh_face_coplanar_seed0_fixed_witness_spec(m@, vertex_positions, fi)) by {
+                let kw = k;
+                assert(mesh_face_coplanar_fixed_seed_witness_spec(m@, vertex_positions, fi, kw, 0));
+            };
+            assert(forall|fp: int|
+                0 <= fp < (f + 1) as int
+                    ==> #[trigger] mesh_face_coplanar_seed0_fixed_witness_spec(
+                        m@,
+                        vertex_positions,
+                        fp,
+                    )) by {
+                assert forall|fp: int|
+                    0 <= fp < (f + 1) as int
+                        implies #[trigger] mesh_face_coplanar_seed0_fixed_witness_spec(
+                            m@,
+                            vertex_positions,
+                            fp,
+                        ) by {
+                    if fp < f as int {
+                    } else {
+                        assert(fp == fi);
+                        assert(mesh_face_coplanar_seed0_fixed_witness_spec(m@, vertex_positions, fi));
+                    }
+                };
+            };
+        }
+
+        f += 1;
+    }
+
+    proof {
+        lemma_usize_loop_exit_eq(f, fcnt);
+        assert(f == fcnt);
+        assert(mesh_runtime_geometry_bridge_spec(m));
+        assert(mesh_geometry_input_spec(m@, vertex_positions));
+        assert(face_cycle_lens.len() == fcnt as int);
+        assert(forall|fp: int|
+            0 <= fp < mesh_face_count_spec(m@)
+                ==> #[trigger] mesh_face_coplanar_seed0_fixed_witness_spec(
+                    m@,
+                    vertex_positions,
+                    fp,
+                )) by {
+            assert forall|fp: int|
+                0 <= fp < mesh_face_count_spec(m@)
+                    implies #[trigger] mesh_face_coplanar_seed0_fixed_witness_spec(
+                        m@,
+                        vertex_positions,
+                        fp,
+                    ) by {
+                assert(mesh_face_count_spec(m@) == face_cycle_lens.len());
+                assert(face_cycle_lens.len() == fcnt as int);
+                assert(0 <= fp < f as int);
+            };
+        };
+        assert(mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m));
+    }
+
+    true
+}
+
+#[cfg(feature = "geometry-checks")]
 #[allow(dead_code)]
 pub fn check_geometric_topological_consistency_constructive(
     m: &Mesh,

@@ -193,6 +193,34 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.1 runtime-soundness bridge increment in
+  `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`:
+  - added a dedicated constructive/runtime bridge:
+    - `runtime_check_face_coplanarity_seed0_fixed_witness_bridge`;
+  - the new bridge checks face coplanarity with seed-0 triples across each full face cycle and proves:
+    - `out ==> mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m)`;
+  - proof structure ties executable traversal state to model face-cycle witnesses
+    (`mesh_face_next_cycles_witness_spec`) and runtime geometry/model alignment
+    (`mesh_runtime_geometry_bridge_spec`) so each checked runtime point maps to the corresponding
+    face-cycle spec point;
+  - outcome: this closes the previously deferred “dedicated verified runtime bridge from
+    `Mesh::check_face_coplanarity()` shape to the seed-0 witness layer” gap and makes the
+    seed-0 coplanarity witness path available directly from an executable checker.
+  - this advances the unchecked P5.1 checker-correctness item by providing a machine-checked
+    runtime-to-seed0-witness soundness bridge; remaining work is still full runtime checker/spec
+    equivalence against `mesh_all_faces_coplanar_spec` (soundness + completeness).
+- 2026-02-19: Failed attempts in this P5.1 runtime-soundness bridge pass:
+  - initial implementation used chained inequalities and a trailing comma inside `assert(...)`
+    expressions in `constructive_gates_and_examples.rs`, causing parse errors
+    (`expected ','` / `expected ')'`);
+  - fixed by rewriting chained comparisons into explicit conjunctions and removing the trailing
+    comma from the assertion expression.
+- 2026-02-19: Revalidated after the P5.1 runtime-soundness bridge addition:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (258 verified, 0 errors)
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology.sh` (295 verified, 0 errors)
 - 2026-02-19: Completed a P5.1 bridge-characterization increment in
   `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
   - added face-level iff characterization lemma:
