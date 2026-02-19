@@ -1,1 +1,1 @@
-Added P5.5 table-indexed global implication/iff consolidation corollaries plus a quad-coplanarity proof-instability fix in runtime_halfedge refinement, with full vcad-topology revalidation passing; 8 Phase 5 tasks remain.
+Normalized the P5.7 runtime aggregate geometry spec to a canonical valid+oriented-seed0+shared-edge characterization and revalidated full vcad-topology proofs/tests; 8 Phase 5 tasks remain.
