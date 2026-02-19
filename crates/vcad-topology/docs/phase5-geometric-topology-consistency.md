@@ -195,6 +195,26 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
 ## Burndown Log
 - 2026-02-19: Completed a P5.1 runtime-soundness groundwork increment in
   `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
+  - added an aggregate seed-plane containment spec derived from the seed-0 face plane:
+    - `mesh_all_faces_seed0_plane_contains_vertices_spec`;
+  - added bridge lemmas from the existing seed-0 fixed coplanarity witness layer to seed-0 plane containment:
+    - `lemma_mesh_face_coplanar_seed0_fixed_witness_implies_seed0_plane_contains_vertices`;
+    - `lemma_mesh_all_faces_coplanar_seed0_fixed_witness_implies_all_faces_seed0_plane_contains_vertices`;
+  - added runtime aliases + bridge lemma for the same aggregate seed-0 plane-containment layer:
+    - `mesh_runtime_all_faces_seed0_plane_contains_vertices_spec`;
+    - `lemma_mesh_runtime_all_faces_coplanar_seed0_fixed_witness_implies_all_faces_seed0_plane_contains_vertices`;
+  - this advances the unchecked P5.1 checker-correctness item by extending the fixed-seed witness bridge chain from:
+    runtime coplanarity witness shape -> per-face seed-plane containment -> aggregate all-face seed-plane containment.
+- 2026-02-19: Failed attempts in this P5.1 seed-0 plane-containment pass: none.
+- 2026-02-19: Revalidated after the P5.1 seed-0 plane-containment additions:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (232 verified, 0 errors)
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (35 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (267 verified, 0 errors)
+- 2026-02-19: Completed a P5.1 runtime-soundness groundwork increment in
+  `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
   - added seed-0 fixed-witness face coplanarity specs:
     - `mesh_face_coplanar_seed0_fixed_witness_spec`;
     - `mesh_all_faces_coplanar_seed0_fixed_witness_spec`;

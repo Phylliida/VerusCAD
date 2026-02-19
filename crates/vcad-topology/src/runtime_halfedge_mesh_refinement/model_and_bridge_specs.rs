@@ -711,6 +711,23 @@ pub open spec fn mesh_all_faces_coplanar_seed0_fixed_witness_spec(
 }
 
 #[cfg(verus_keep_ghost)]
+pub open spec fn mesh_all_faces_seed0_plane_contains_vertices_spec(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+) -> bool {
+    &&& mesh_geometry_input_spec(m, vertex_positions)
+    &&& forall|f: int|
+        0 <= f < mesh_face_count_spec(m)
+            ==> #[trigger] face_plane_contains_vertex_spec(
+                m,
+                vertex_positions,
+                f,
+                mesh_face_seed_plane_normal_spec(m, vertex_positions, f, 0),
+                mesh_face_seed_plane_offset_relative_to_origin_spec(m, vertex_positions, f, 0),
+            )
+}
+
+#[cfg(verus_keep_ghost)]
 pub open spec fn mesh_face_cycle_position_trace_preserved_across_meshes_spec(
     m_before: MeshModel,
     vertex_positions_before: Seq<vcad_math::point3::Point3>,
@@ -1794,6 +1811,81 @@ pub proof fn lemma_mesh_all_faces_coplanar_spec_implies_all_faces_seed0_fixed_wi
 }
 
 #[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_face_coplanar_seed0_fixed_witness_implies_seed0_plane_contains_vertices(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+    f: int,
+)
+    requires
+        mesh_face_coplanar_seed0_fixed_witness_spec(m, vertex_positions, f),
+    ensures
+        face_plane_contains_vertex_spec(
+            m,
+            vertex_positions,
+            f,
+            mesh_face_seed_plane_normal_spec(m, vertex_positions, f, 0),
+            mesh_face_seed_plane_offset_relative_to_origin_spec(m, vertex_positions, f, 0),
+        ),
+{
+    let k = choose|k: int| mesh_face_coplanar_fixed_seed_witness_spec(m, vertex_positions, f, k, 0);
+    assert(mesh_face_coplanar_fixed_seed_witness_spec(m, vertex_positions, f, k, 0));
+    lemma_mesh_face_coplanar_fixed_seed_witness_implies_seed_plane_contains_vertices(
+        m,
+        vertex_positions,
+        f,
+        k,
+        0,
+    );
+    assert(face_plane_contains_vertex_spec(
+        m,
+        vertex_positions,
+        f,
+        mesh_face_seed_plane_normal_spec(m, vertex_positions, f, 0),
+        mesh_face_seed_plane_offset_relative_to_origin_spec(m, vertex_positions, f, 0),
+    )) by {
+        assert(0 <= f < mesh_face_count_spec(m));
+        let kw = k;
+        assert(mesh_face_plane_contains_vertex_witness_spec(
+            m,
+            vertex_positions,
+            f,
+            kw,
+            mesh_face_seed_plane_normal_spec(m, vertex_positions, f, 0),
+            mesh_face_seed_plane_offset_relative_to_origin_spec(m, vertex_positions, f, 0),
+        ));
+    };
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_all_faces_coplanar_seed0_fixed_witness_implies_all_faces_seed0_plane_contains_vertices(
+    m: MeshModel,
+    vertex_positions: Seq<vcad_math::point3::Point3>,
+)
+    requires
+        mesh_all_faces_coplanar_seed0_fixed_witness_spec(m, vertex_positions),
+    ensures
+        mesh_all_faces_seed0_plane_contains_vertices_spec(m, vertex_positions),
+{
+    assert(mesh_geometry_input_spec(m, vertex_positions));
+    assert forall|f: int|
+        0 <= f < mesh_face_count_spec(m) implies #[trigger] face_plane_contains_vertex_spec(
+            m,
+            vertex_positions,
+            f,
+            mesh_face_seed_plane_normal_spec(m, vertex_positions, f, 0),
+            mesh_face_seed_plane_offset_relative_to_origin_spec(m, vertex_positions, f, 0),
+        ) by {
+        assert(mesh_face_coplanar_seed0_fixed_witness_spec(m, vertex_positions, f));
+        lemma_mesh_face_coplanar_seed0_fixed_witness_implies_seed0_plane_contains_vertices(
+            m,
+            vertex_positions,
+            f,
+        );
+    };
+    assert(mesh_all_faces_seed0_plane_contains_vertices_spec(m, vertex_positions));
+}
+
+#[cfg(verus_keep_ghost)]
 pub open spec fn mesh_face_plane_contains_vertex_witness_spec(
     m: MeshModel,
     vertex_positions: Seq<vcad_math::point3::Point3>,
@@ -2054,6 +2146,11 @@ pub open spec fn mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m: &Me
 }
 
 #[cfg(verus_keep_ghost)]
+pub open spec fn mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m: &Mesh) -> bool {
+    mesh_all_faces_seed0_plane_contains_vertices_spec(m@, mesh_runtime_vertex_positions_spec(m))
+}
+
+#[cfg(verus_keep_ghost)]
 pub proof fn lemma_mesh_runtime_all_faces_coplanar_spec_implies_all_faces_seed0_fixed_witness(
     m: &Mesh,
 )
@@ -2063,6 +2160,21 @@ pub proof fn lemma_mesh_runtime_all_faces_coplanar_spec_implies_all_faces_seed0_
         mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m),
 {
     lemma_mesh_all_faces_coplanar_spec_implies_all_faces_seed0_fixed_witness(
+        m@,
+        mesh_runtime_vertex_positions_spec(m),
+    );
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_runtime_all_faces_coplanar_seed0_fixed_witness_implies_all_faces_seed0_plane_contains_vertices(
+    m: &Mesh,
+)
+    requires
+        mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m),
+    ensures
+        mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m),
+{
+    lemma_mesh_all_faces_coplanar_seed0_fixed_witness_implies_all_faces_seed0_plane_contains_vertices(
         m@,
         mesh_runtime_vertex_positions_spec(m),
     );
