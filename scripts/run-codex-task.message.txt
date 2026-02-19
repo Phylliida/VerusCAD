@@ -1,1 +1,1 @@
-Added a vcad-topology P5.1 triangle/quad runtime-vs-full-coplanarity parity bridge with new parity regression coverage, and 8 Phase 5 checklist tasks remain.
+Added Phase 5 L1 common-plane specs and aligned-normal orient3d-zero lemmas in vcad-geometry, and 25 Phase 5 upstream-lemma tasks remain.

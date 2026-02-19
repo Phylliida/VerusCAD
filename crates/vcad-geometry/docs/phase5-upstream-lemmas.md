@@ -10,8 +10,10 @@ The remaining open proof items in `vcad-topology` Phase 5 bottom out on missing 
 ## L1: Plane Membership Implies Orient3d Zero
 Blocks: `P5.1` coplanarity checker correctness for `k > 4`.
 
-- [ ] Define `points_on_common_plane_spec(a, b, c, d, normal, offset)` where all four satisfy `normal · p = offset`.
+- [x] Define `points_on_common_plane_spec(a, b, c, d, normal, offset)` where all four satisfy `normal · p = offset`.
+  - Landed in `crates/vcad-geometry/src/phase5_upstream_lemmas.rs` (2026-02-19).
 - [ ] Prove: if `normal` is nonzero and all four points lie on the plane, then `orient3d(a, b, c, d) == 0`.
+  - Partial (2026-02-19): proved `lemma_points_on_common_plane_with_aligned_normal_implies_orient3d_zero` under extra alignment precondition `normal == (b-a) x (c-a)`.
 - [ ] Proof sketch:
   - `orient3d` is `det3((b-a), (c-a), (d-a))`.
   - If all four share a plane with nonzero normal `n`, then:
@@ -20,6 +22,8 @@ Blocks: `P5.1` coplanarity checker correctness for `k > 4`.
     - `n · (d-a) = 0`
   - So the three column vectors are in a 2D subspace orthogonal to `n`, hence determinant is zero.
 - [ ] Intermediate lemma: if three vectors are all orthogonal to one nonzero vector, they are linearly dependent (equivalently `det3 == 0`).
+  - Partial (2026-02-19): proved `lemma_three_vectors_orthogonal_to_aligned_nonzero_normal_implies_det_zero` with extra precondition `normal == u x v`.
+  - Failed attempt note: did not finish the fully general `normal != 0` orthogonality-to-determinant proof (without the alignment precondition). Remaining gap is the generic 3D subspace/dimension argument or equivalent algebraic elimination.
 
 ## L2: Orient3d / Orient2d Projection Factoring
 Blocks: `P5.3` convexity checker correctness.

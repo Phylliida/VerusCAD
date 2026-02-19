@@ -1,6 +1,7 @@
 pub mod collinearity_coplanarity;
 pub mod convex_polygon;
 pub mod orientation_predicates;
+pub mod phase5_upstream_lemmas;
 pub mod segment_intersection;
 pub mod sidedness;
 
