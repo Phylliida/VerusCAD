@@ -149,6 +149,11 @@ Blocks: `P5.5` intersection checker soundness (narrow phase).
     - Update (2026-02-19, proper-totality pass): endpoint-touch witness-soundness plus
       `EndpointTouch -> is_some` and `Proper -> is_some` totality are now landed; remaining
       open piece is the `Proper`-case witness-on-both proof.
+    - Update (2026-02-19, runtime-guard pass): added runtime `debug_assert!` checks in
+      `proper_intersection_point_runtime` and added regression tests in
+      `crates/vcad-geometry/src/segment_intersection.rs` that exercise non-integer proper
+      intersections and assert returned witnesses lie on both source segments at runtime.
+      Formal ghost proof for `Proper`-case witness-on-both remains open.
   - [ ] coplanar segment-polygon overlap (dominant-axis projection + edge-crossing containment tests).
     - Audit note (2026-02-19): ingredient predicates are present, but their composed
       dominant-axis overlap witness proof is not yet packaged upstream.

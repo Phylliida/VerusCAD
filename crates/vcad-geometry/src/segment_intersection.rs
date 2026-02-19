@@ -150,7 +150,10 @@ fn proper_intersection_point_runtime(
     let cma = c.sub(a);
     let t = cma.cross(&s).mul(&inv);
     let step = r.scale(&t);
-    Some(a.add_vec(&step))
+    let p = a.add_vec(&step);
+    debug_assert!(point_on_segment_inclusive_runtime(&p, a, b));
+    debug_assert!(point_on_segment_inclusive_runtime(&p, c, d));
+    Some(p)
 }
 
 /// Classifies the intersection relation between two closed 2D segments.
@@ -1135,6 +1138,40 @@ mod tests {
 
         let p = segment_intersection_point_2d(&a, &b, &c, &d).expect("proper intersection point");
         assert_eq!(p, RuntimePoint2::from_ints(2, 2));
+    }
+
+    #[test]
+    fn segment_intersection_proper_witness_lies_on_both_segments_non_integer() {
+        let a = RuntimePoint2::from_ints(0, 0);
+        let b = RuntimePoint2::from_ints(4, 4);
+        let c = RuntimePoint2::from_ints(1, 4);
+        let d = RuntimePoint2::from_ints(5, 0);
+
+        assert_eq!(
+            segment_intersection_kind_2d(&a, &b, &c, &d),
+            SegmentIntersection2dKind::Proper
+        );
+
+        let p = segment_intersection_point_2d(&a, &b, &c, &d).expect("proper intersection point");
+        assert!(point_on_segment_inclusive_runtime(&p, &a, &b));
+        assert!(point_on_segment_inclusive_runtime(&p, &c, &d));
+    }
+
+    #[test]
+    fn segment_intersection_proper_witness_lies_on_both_segments_axis_mixed() {
+        let a = RuntimePoint2::from_ints(-3, 1);
+        let b = RuntimePoint2::from_ints(3, 1);
+        let c = RuntimePoint2::from_ints(-1, -2);
+        let d = RuntimePoint2::from_ints(2, 4);
+
+        assert_eq!(
+            segment_intersection_kind_2d(&a, &b, &c, &d),
+            SegmentIntersection2dKind::Proper
+        );
+
+        let p = segment_intersection_point_2d(&a, &b, &c, &d).expect("proper intersection point");
+        assert!(point_on_segment_inclusive_runtime(&p, &a, &b));
+        assert!(point_on_segment_inclusive_runtime(&p, &c, &d));
     }
 
     #[test]
