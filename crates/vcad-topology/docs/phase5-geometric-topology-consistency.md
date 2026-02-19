@@ -195,6 +195,36 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.3 runtime-checker-correctness differential-oracle increment in
+  `src/halfedge_mesh/tests.rs`:
+  - added deterministic projected-orientation helpers for convexity oracle comparisons:
+    - `face_projection_axis_from_reference_normal`;
+    - `project_point3_to_2d_for_face_axis`;
+  - added an independent projected-`orient2d` convexity oracle that mirrors the documented
+    checker preconditions while avoiding the runtime checker’s `orient3d_sign` implementation:
+    - `check_face_convexity_projected_orient2d_oracle`;
+  - added a differential regression test asserting parity between
+    `Mesh::check_face_convexity()` and the projected-`orient2d` oracle across representative
+    passing and failing fixtures (tetrahedron/cube/prism, overlapping disconnected tetrahedra,
+    disconnected stress mesh, concave faces, noncoplanar faces, collinear faces, zero-length-edge
+    faces):
+    - `face_convexity_checker_matches_projected_orient2d_sign_oracle`.
+  - outcome: runtime convexity-checker behavior is now regression-locked against an explicit
+    projected-`orient2d` oracle across mixed valid/invalid geometric cases, reducing regression
+    risk while the formal P5.3 soundness/completeness theorem remains open.
+- 2026-02-19: Failed attempt in this P5.3 differential-oracle pass:
+  - initial oracle revision called private methods (`check_index_bounds` and `check_face_cycles`)
+    and failed to compile (`E0624: method is private`);
+  - resolved by aligning with publicly available checker preconditions (`is_valid` +
+    face-coplanarity/non-collinearity gates) and removing private method calls from the oracle.
+- 2026-02-19: Revalidated after the P5.3 differential-oracle additions:
+  - `cargo test -p vcad-topology --features geometry-checks face_convexity_checker_matches_projected_orient2d_sign_oracle`
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (278 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (315 verified, 0 errors)
 - 2026-02-19: Completed a P5.7 aggregate-checker-equivalence staging increment in
   `src/halfedge_mesh/tests.rs`:
   - added `geometry-checks + verus-proofs` differential parity coverage between the runtime

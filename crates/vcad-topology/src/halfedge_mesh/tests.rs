@@ -13,7 +13,9 @@ use super::GeometricTopologicalConsistencyFailure;
 #[cfg(feature = "geometry-checks")]
 use vcad_geometry::collinearity_coplanarity::{collinear3d, coplanar};
 #[cfg(feature = "geometry-checks")]
-use vcad_geometry::orientation_predicates::{orient3d_sign, orient3d_value};
+use vcad_geometry::orientation_predicates::{orient2d_sign, orient3d_sign, orient3d_value};
+#[cfg(feature = "geometry-checks")]
+use vcad_math::runtime_point2::RuntimePoint2;
 use vcad_math::runtime_point3::RuntimePoint3;
 #[cfg(feature = "geometry-checks")]
 use vcad_math::runtime_scalar::RuntimeScalar;
@@ -209,6 +211,86 @@ fn check_face_coplanarity_exhaustive_face_quadruple_oracle(mesh: &Mesh) -> bool 
                         }
                     }
                 }
+            }
+        }
+    }
+    true
+}
+
+#[cfg(feature = "geometry-checks")]
+fn face_projection_axis_from_reference_normal(normal: &RuntimeVec3) -> Option<usize> {
+    if normal.x().signum_i8() != 0 {
+        Some(0)
+    } else if normal.y().signum_i8() != 0 {
+        Some(1)
+    } else if normal.z().signum_i8() != 0 {
+        Some(2)
+    } else {
+        None
+    }
+}
+
+#[cfg(feature = "geometry-checks")]
+fn project_point3_to_2d_for_face_axis(point: &RuntimePoint3, axis: usize) -> RuntimePoint2 {
+    if axis == 0 {
+        RuntimePoint2::new(point.y().clone(), point.z().clone())
+    } else if axis == 1 {
+        RuntimePoint2::new(point.x().clone(), point.z().clone())
+    } else {
+        RuntimePoint2::new(point.x().clone(), point.y().clone())
+    }
+}
+
+#[cfg(feature = "geometry-checks")]
+fn check_face_convexity_projected_orient2d_oracle(mesh: &Mesh) -> bool {
+    if !mesh.is_valid() {
+        return false;
+    }
+    if !mesh.check_face_coplanarity() || !mesh.check_face_corner_non_collinearity() {
+        return false;
+    }
+
+    for face_id in 0..mesh.faces.len() {
+        let cycle = match ordered_face_vertex_cycle_indices(mesh, face_id) {
+            Some(cycle) => cycle,
+            None => return false,
+        };
+        let k = cycle.len();
+        if k < 3 {
+            return false;
+        }
+
+        let p0 = &mesh.vertices[cycle[0]].position;
+        let p1 = &mesh.vertices[cycle[1]].position;
+        let p2 = &mesh.vertices[cycle[2]].position;
+        let e01 = p1.sub(p0);
+        let e12 = p2.sub(p1);
+        let reference_normal = e01.cross(&e12);
+        let axis = match face_projection_axis_from_reference_normal(&reference_normal) {
+            Some(axis) => axis,
+            None => return false,
+        };
+
+        let mut expected_turn_sign = 0i8;
+        for i in 0..k {
+            let prev_i = if i == 0 { k - 1 } else { i - 1 };
+            let next_i = if i + 1 < k { i + 1 } else { 0 };
+
+            let prev = &mesh.vertices[cycle[prev_i]].position;
+            let curr = &mesh.vertices[cycle[i]].position;
+            let next = &mesh.vertices[cycle[next_i]].position;
+
+            let prev_2d = project_point3_to_2d_for_face_axis(prev, axis);
+            let curr_2d = project_point3_to_2d_for_face_axis(curr, axis);
+            let next_2d = project_point3_to_2d_for_face_axis(next, axis);
+            let turn_sign = orient2d_sign(&prev_2d, &curr_2d, &next_2d);
+            if turn_sign == 0 {
+                return false;
+            }
+            if expected_turn_sign == 0 {
+                expected_turn_sign = turn_sign;
+            } else if turn_sign != expected_turn_sign {
+                return false;
             }
         }
     }
@@ -1362,6 +1444,78 @@ fn diagnostic_witness_is_real_counterexample(
             assert_eq!(
                 checker_result, oracle_result,
                 "face coplanarity checker diverged from exhaustive face-quadruple oracle"
+            );
+        }
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn face_convexity_checker_matches_projected_orient2d_sign_oracle() {
+        let noncoplanar_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(0, 1, 0),
+            RuntimePoint3::from_ints(0, 0, 1),
+        ];
+        let noncoplanar_faces = vec![vec![0, 1, 2, 3], vec![0, 3, 2, 1]];
+        let noncoplanar_mesh = Mesh::from_face_cycles(noncoplanar_vertices, &noncoplanar_faces)
+            .expect("noncoplanar face fixture should build");
+
+        let concave_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(2, 0, 0),
+            RuntimePoint3::from_ints(2, 2, 0),
+            RuntimePoint3::from_ints(1, 1, 0),
+            RuntimePoint3::from_ints(0, 2, 0),
+        ];
+        let concave_faces = vec![vec![0, 1, 2, 3, 4], vec![0, 4, 3, 2, 1]];
+        let concave_mesh = Mesh::from_face_cycles(concave_vertices, &concave_faces)
+            .expect("concave face fixture should build");
+
+        let collinear_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(2, 0, 0),
+        ];
+        let collinear_faces = vec![vec![0, 1, 2], vec![0, 2, 1]];
+        let collinear_mesh =
+            Mesh::from_face_cycles(collinear_vertices, &collinear_faces)
+                .expect("collinear face fixture should build");
+
+        let zero_length_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+        ];
+        let zero_length_faces = vec![vec![0, 1, 2], vec![0, 2, 1]];
+        let zero_length_mesh =
+            Mesh::from_face_cycles(zero_length_vertices, &zero_length_faces)
+                .expect("zero-length edge fixture should build");
+
+        let mut disjoint_origins = Vec::new();
+        for i in 0..8 {
+            disjoint_origins.push((i * 10, 0, 0));
+        }
+        let disjoint_stress = build_disconnected_translated_tetrahedra_mesh(&disjoint_origins);
+
+        let fixtures = vec![
+            Mesh::tetrahedron(),
+            Mesh::cube(),
+            Mesh::triangular_prism(),
+            build_overlapping_tetrahedra_mesh(),
+            disjoint_stress,
+            concave_mesh,
+            noncoplanar_mesh,
+            collinear_mesh,
+            zero_length_mesh,
+        ];
+
+        for mesh in fixtures {
+            let checker_result = mesh.check_face_convexity();
+            let oracle_result = check_face_convexity_projected_orient2d_oracle(&mesh);
+            assert_eq!(
+                checker_result, oracle_result,
+                "face convexity checker diverged from projected orient2d-sign oracle"
             );
         }
     }
