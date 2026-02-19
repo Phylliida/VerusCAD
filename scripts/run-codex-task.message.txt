@@ -1,1 +1,1 @@
-Deduplicated outward signed-volume component traversal between checker and diagnostic paths in vcad-topology, revalidated the full test/verification matrix, and 10 Phase 5 checklist tasks remain.
+Added randomized differential coplanarity-oracle stress coverage and documented the P5.1 proof blocker in vcad-topology, revalidated tests plus Verus verification, and 10 Phase 5 checklist tasks remain.
