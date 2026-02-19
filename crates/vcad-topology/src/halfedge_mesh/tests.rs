@@ -996,6 +996,49 @@ fn assert_allowed_contact_topology_classifier_matches_edge_index_oracle(mesh: &M
 }
 
 #[cfg(feature = "geometry-checks")]
+fn assert_face_pair_policy_classifiers_are_symmetric_under_face_argument_swap(
+    mesh: &Mesh,
+    label: &str,
+) {
+    for face_a in 0..mesh.faces.len() {
+        for face_b in (face_a + 1)..mesh.faces.len() {
+            let allowed_ab = mesh
+                .face_pair_has_allowed_contact_topology_for_testing(face_a, face_b)
+                .expect("pair classifier should produce an output for valid face ids");
+            let allowed_ba = mesh
+                .face_pair_has_allowed_contact_topology_for_testing(face_b, face_a)
+                .expect("pair classifier should produce an output for valid face ids");
+            assert_eq!(
+                allowed_ab, allowed_ba,
+                "allowed-contact topology classifier is not symmetric for pair ({face_a}, {face_b}) in {label}"
+            );
+
+            let forbidden_no_cull_ab = mesh
+                .face_pair_has_forbidden_intersection_for_testing(face_a, face_b, false)
+                .expect("pair forbidden-intersection hook should produce an output for valid face ids");
+            let forbidden_no_cull_ba = mesh
+                .face_pair_has_forbidden_intersection_for_testing(face_b, face_a, false)
+                .expect("pair forbidden-intersection hook should produce an output for valid face ids");
+            assert_eq!(
+                forbidden_no_cull_ab, forbidden_no_cull_ba,
+                "no-cull forbidden-intersection classifier is not symmetric for pair ({face_a}, {face_b}) in {label}"
+            );
+
+            let forbidden_with_cull_ab = mesh
+                .face_pair_has_forbidden_intersection_for_testing(face_a, face_b, true)
+                .expect("pair forbidden-intersection hook should produce an output for valid face ids");
+            let forbidden_with_cull_ba = mesh
+                .face_pair_has_forbidden_intersection_for_testing(face_b, face_a, true)
+                .expect("pair forbidden-intersection hook should produce an output for valid face ids");
+            assert_eq!(
+                forbidden_with_cull_ab, forbidden_with_cull_ba,
+                "broad-phase forbidden-intersection classifier is not symmetric for pair ({face_a}, {face_b}) in {label}"
+            );
+        }
+    }
+}
+
+#[cfg(feature = "geometry-checks")]
 fn assert_shared_edge_contacts_not_misclassified_as_forbidden_intersections(
     mesh: &Mesh,
     label: &str,
@@ -3250,6 +3293,10 @@ fn diagnostic_witness_is_real_counterexample(
         for mesh in fixtures {
             assert!(mesh.is_valid(), "fixture must satisfy Phase 4 validity");
             assert_allowed_contact_topology_classifier_matches_edge_index_oracle(&mesh);
+            assert_face_pair_policy_classifiers_are_symmetric_under_face_argument_swap(
+                &mesh,
+                "deterministic_fixture",
+            );
         }
     }
 

@@ -1,1 +1,1 @@
-Added relation-level P5.5 forbidden-policy corollaries plus disjoint-boundary pair-policy branch regression locks in vcad-topology; 8 Phase 5 tasks remain.
+Added P5.5 face-pair symmetry lemmas and swapped-argument classifier parity locks in vcad-topology; 8 Phase 5 tasks remain.

@@ -195,6 +195,34 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with a pair-order symmetry groundwork increment in:
+  - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`;
+  - `src/halfedge_mesh/tests.rs`.
+  - added relation-level symmetry lemmas over the face-pair topology/contact surface:
+    - `lemma_mesh_faces_share_vertex_spec_symmetric`;
+    - `lemma_mesh_faces_share_edge_spec_symmetric`;
+    - `lemma_mesh_faces_share_vertex_index_spec_symmetric`;
+    - `lemma_mesh_faces_share_edge_index_spec_symmetric`;
+    - `lemma_mesh_faces_share_exactly_one_vertex_spec_symmetric`;
+    - `lemma_mesh_faces_share_exactly_one_edge_spec_symmetric`;
+    - `lemma_mesh_faces_disjoint_boundary_spec_symmetric`;
+    - `lemma_mesh_faces_share_zero_or_one_vertices_spec_symmetric`;
+    - `lemma_mesh_non_adjacent_face_pair_forbidden_intersection_relation_spec_symmetric`.
+  - added runtime parity lock coverage for swapped face-pair argument order:
+    - helper `assert_face_pair_policy_classifiers_are_symmetric_under_face_argument_swap`;
+    - integrated into `allowed_contact_topology_classifier_matches_edge_index_oracle`.
+  - outcome:
+    - P5.5 proof surface now has explicit symmetry lemmas for core pair relations used by forbidden-policy decomposition;
+    - runtime regression coverage now locks classifier invariance under `(face_a, face_b)` vs `(face_b, face_a)` for allowed-contact topology and forbidden-intersection pair hooks.
+- 2026-02-19: Failed attempt in this P5.5 pair-order symmetry pass:
+  - initial pass added higher-order symmetry lemmas for full two-vertex and full runtime-policy relations (`mesh_faces_share_exactly_two_vertices_spec` and derived classifier/policy symmetry), but Verus hit an rlimit blow-up on the quantified two-vertex symmetry lemma;
+  - resolved by trimming those high-cost lemmas and keeping the lower-level symmetry layer that verifies quickly.
+- 2026-02-19: Revalidated after the P5.5 pair-order symmetry increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (86 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (346 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
 - 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with a disjoint-boundary policy-branch lock + relation-level corollary increment in:
   - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`;
   - `src/halfedge_mesh/tests.rs`.
