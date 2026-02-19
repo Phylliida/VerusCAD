@@ -31,6 +31,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [x] Spec: define aggregate `mesh_all_faces_coplanar_spec(m)`.
 - [x] Runtime checker: implement `check_face_coplanarity` (or equivalent) over all faces.
 - [ ] Proof: runtime checker correctness vs spec (sound + complete under documented preconditions).
+- [x] Proof groundwork: bridge full coplanarity witnesses to fixed-seed runtime-style witnesses and seed-plane containment.
 - [x] Proof: coplanarity is stable under cyclic reindexing of a face cycle.
 
 ## P5.2 Invariant: Edge Straightness (Implied by Phase 5 Intro)
@@ -182,6 +183,24 @@ Current differential/property-based harness policy (runtime behavior locked by t
 - optimized intersection checking (`check_no_forbidden_face_face_intersections`) is asserted equivalent to a no-cull brute-force oracle path (`check_no_forbidden_face_face_intersections_without_broad_phase_for_testing`) across all generated fixtures.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.1 runtime-soundness groundwork pass in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
+  - added fixed-seed coplanarity witness spec:
+    - `mesh_face_coplanar_fixed_seed_witness_spec`, which captures the runtime checker's fixed-base shape (`seed_i, seed_i+1, seed_i+2` coplanar with every face-cycle point);
+  - added bridge lemma from the existing full witness to the fixed-seed witness:
+    - `lemma_mesh_face_coplanar_witness_implies_fixed_seed_witness`;
+  - generalized the seed-plane containment bridge to accept fixed-seed witnesses directly:
+    - added `lemma_mesh_face_coplanar_fixed_seed_witness_implies_seed_plane_contains_vertices`;
+    - refactored `lemma_mesh_face_coplanar_witness_seed_plane_contains_vertices` to route through the new fixed-seed bridge;
+  - this advances the remaining unchecked P5.1 checker-correctness item by aligning proof vocabulary with the runtime algorithm's seed choice.
+- 2026-02-19: Failed attempt in this P5.1 groundwork pass:
+  - attempted to close full runtime-checker soundness immediately by deriving arbitrary quadruple coplanarity from fixed-seed coplanarity in one step;
+  - deferred because that requires an additional reusable lemma showing that all points on one non-degenerate seed plane imply `is_coplanar` for every quadruple drawn from that set.
+- 2026-02-19: Revalidated after the P5.1 fixed-seed witness groundwork:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (224 verified, 0 errors)
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology.sh` (259 verified, 0 errors)
 - 2026-02-19: Completed the remaining P5.3 legal-projection-input proof item in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
   - added `lemma_mesh_face_cycle_prev_next_indices_in_bounds`, proving cyclic `prev`/`next` corner indices remain in `[0, k)` for any valid face-cycle index;
   - added `mesh_face_projected_turn_legal_projection_inputs_witness_spec`, making the projected-turn legality contract explicit:
