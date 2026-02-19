@@ -235,7 +235,7 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
 - 2026-02-19: Revalidated after the P5.7 boundary-codification increment:
   - `cargo test -p vcad-topology` (13 passed, 0 failed)
   - `cargo test -p vcad-topology --features geometry-checks` (58 passed, 0 failed)
-  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (66 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (67 passed, 0 failed)
   - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (286 verified, 0 errors)
   - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
   - `./scripts/verify-vcad-topology.sh` (323 verified, 0 errors)
