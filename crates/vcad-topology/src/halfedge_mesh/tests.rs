@@ -783,6 +783,25 @@ fn assert_component_signed_volume_reference_invariance(
 }
 
 #[cfg(feature = "geometry-checks")]
+fn assert_outward_face_normals_checker_reference_invariance(
+    mesh: &Mesh,
+    references: &[RuntimePoint3],
+) {
+    assert!(
+        !references.is_empty(),
+        "at least one reference point is required for checker invariance checks"
+    );
+    let baseline = mesh.check_outward_face_normals();
+    for reference in references {
+        let candidate = mesh.check_outward_face_normals_relative_to_reference_for_testing(reference);
+        assert_eq!(
+            candidate, baseline,
+            "outward-face-normal checker changed under reference-point shift"
+        );
+    }
+}
+
+#[cfg(feature = "geometry-checks")]
 fn diagnostic_witness_is_real_counterexample(
     mesh: &Mesh,
     failure: &GeometricTopologicalConsistencyFailure,
@@ -1318,6 +1337,93 @@ fn diagnostic_witness_is_real_counterexample(
         );
         assert!(!intersecting_original.check_geometric_topological_consistency());
         assert!(!intersecting_transformed.check_geometric_topological_consistency());
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn outward_face_normals_checker_is_reference_origin_invariant() {
+        let references = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(11, -7, 5),
+            RuntimePoint3::from_ints(-19, 13, -4),
+        ];
+
+        let passing_meshes = vec![
+            Mesh::tetrahedron(),
+            Mesh::cube(),
+            Mesh::triangular_prism(),
+            build_disconnected_translated_tetrahedra_mesh(&[(0, 0, 0), (20, 0, 0), (-15, 7, 3)]),
+        ];
+        for mesh in &passing_meshes {
+            assert!(mesh.is_valid());
+            assert!(mesh.check_outward_face_normals());
+            assert_outward_face_normals_checker_reference_invariance(mesh, &references);
+        }
+
+        let reflected_cube = transform_mesh_positions(&Mesh::cube(), |point| {
+            let mirrored = reflect_point3_across_yz_plane(point);
+            translate_point3(&mirrored, 11, 3, -5)
+        });
+        assert!(reflected_cube.is_valid());
+        assert!(!reflected_cube.check_outward_face_normals());
+        assert_outward_face_normals_checker_reference_invariance(&reflected_cube, &references);
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn differential_randomized_outward_checker_reference_origin_invariance_harness() {
+        const CASES: usize = 40;
+        let mut rng = DeterministicRng::new(0x0D15_EA5F);
+
+        for _ in 0..CASES {
+            let component_count = rng.next_usize_inclusive(2, 7);
+            let disjoint_origins = random_well_separated_component_origins(&mut rng, component_count);
+            let disjoint_mesh = build_disconnected_translated_tetrahedra_mesh(&disjoint_origins);
+            assert!(disjoint_mesh.is_valid());
+            assert!(disjoint_mesh.check_outward_face_normals());
+
+            let references = vec![
+                RuntimePoint3::from_ints(0, 0, 0),
+                RuntimePoint3::from_ints(
+                    rng.next_i64_inclusive(-31, 31),
+                    rng.next_i64_inclusive(-31, 31),
+                    rng.next_i64_inclusive(-31, 31),
+                ),
+                RuntimePoint3::from_ints(
+                    rng.next_i64_inclusive(-31, 31),
+                    rng.next_i64_inclusive(-31, 31),
+                    rng.next_i64_inclusive(-31, 31),
+                ),
+                RuntimePoint3::from_ints(
+                    rng.next_i64_inclusive(-31, 31),
+                    rng.next_i64_inclusive(-31, 31),
+                    rng.next_i64_inclusive(-31, 31),
+                ),
+            ];
+            assert_outward_face_normals_checker_reference_invariance(&disjoint_mesh, &references);
+
+            let quarter_turns = rng.next_u64() % 4;
+            let tx = rng.next_i64_inclusive(-25, 25);
+            let ty = rng.next_i64_inclusive(-25, 25);
+            let tz = rng.next_i64_inclusive(-25, 25);
+            let rigid_disjoint = transform_mesh_positions(&disjoint_mesh, |point| {
+                rigid_rotate_z_quarter_turns_then_translate(point, quarter_turns, tx, ty, tz)
+            });
+            assert!(rigid_disjoint.is_valid());
+            assert!(rigid_disjoint.check_outward_face_normals());
+            assert_outward_face_normals_checker_reference_invariance(&rigid_disjoint, &references);
+
+            let reflected_disjoint = transform_mesh_positions(&disjoint_mesh, |point| {
+                let mirrored = reflect_point3_across_yz_plane(point);
+                translate_point3(&mirrored, tx, ty, tz)
+            });
+            assert!(reflected_disjoint.is_valid());
+            assert!(!reflected_disjoint.check_outward_face_normals());
+            assert_outward_face_normals_checker_reference_invariance(
+                &reflected_disjoint,
+                &references,
+            );
+        }
     }
 
     #[cfg(feature = "geometry-checks")]

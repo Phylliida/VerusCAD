@@ -399,8 +399,11 @@ impl Mesh {
     }
 
     #[cfg(feature = "geometry-checks")]
-    fn face_signed_volume_six_relative_to_origin(&self, face_id: usize) -> RuntimeScalar {
-        let origin = RuntimePoint3::from_ints(0, 0, 0);
+    fn face_signed_volume_six_relative_to_reference(
+        &self,
+        face_id: usize,
+        reference: &RuntimePoint3,
+    ) -> RuntimeScalar {
         let hcnt = self.half_edges.len();
 
         let h0 = self.faces[face_id].half_edge;
@@ -413,7 +416,7 @@ impl Mesh {
         while hj != h0 {
             let pi = &self.vertices[self.half_edges[hi].vertex].position;
             let pj = &self.vertices[self.half_edges[hj].vertex].position;
-            let det = orient3d_value(&origin, p0, pi, pj);
+            let det = orient3d_value(reference, p0, pi, pj);
             sum = sum.add(&det);
 
             hi = hj;
@@ -428,16 +431,16 @@ impl Mesh {
     }
 
     #[cfg(feature = "geometry-checks")]
-    /// Optional geometric extension: each connected component must have
-    /// strictly negative signed volume under face winding.
-    ///
-    /// This treats negative signed volume as the outward-orientation
-    /// convention for closed components.
-    ///
-    /// Degeneracy policy:
-    /// - zero signed-volume components are rejected;
-    /// - exact arithmetic is used throughout (no epsilon tolerance path).
-    pub fn check_outward_face_normals(&self) -> bool {
+    fn face_signed_volume_six_relative_to_origin(&self, face_id: usize) -> RuntimeScalar {
+        let origin = RuntimePoint3::from_ints(0, 0, 0);
+        self.face_signed_volume_six_relative_to_reference(face_id, &origin)
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    fn check_outward_face_normals_relative_to_reference_impl(
+        &self,
+        reference: &RuntimePoint3,
+    ) -> bool {
         if !self.is_valid() {
             return false;
         }
@@ -468,7 +471,8 @@ impl Mesh {
                 let he = &self.half_edges[h];
 
                 if seen_faces.insert(he.face) {
-                    let face_volume6 = self.face_signed_volume_six_relative_to_origin(he.face);
+                    let face_volume6 =
+                        self.face_signed_volume_six_relative_to_reference(he.face, reference);
                     signed_volume6 = signed_volume6.add(&face_volume6);
                 }
 
@@ -486,6 +490,29 @@ impl Mesh {
         }
 
         true
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    /// Optional geometric extension: each connected component must have
+    /// strictly negative signed volume under face winding.
+    ///
+    /// This treats negative signed volume as the outward-orientation
+    /// convention for closed components.
+    ///
+    /// Degeneracy policy:
+    /// - zero signed-volume components are rejected;
+    /// - exact arithmetic is used throughout (no epsilon tolerance path).
+    pub fn check_outward_face_normals(&self) -> bool {
+        let origin = RuntimePoint3::from_ints(0, 0, 0);
+        self.check_outward_face_normals_relative_to_reference_impl(&origin)
+    }
+
+    #[cfg(all(test, feature = "geometry-checks"))]
+    pub(crate) fn check_outward_face_normals_relative_to_reference_for_testing(
+        &self,
+        reference: &RuntimePoint3,
+    ) -> bool {
+        self.check_outward_face_normals_relative_to_reference_impl(reference)
     }
 
     #[cfg(feature = "geometry-checks")]

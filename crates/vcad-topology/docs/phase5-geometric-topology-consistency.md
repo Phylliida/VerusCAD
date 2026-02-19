@@ -195,6 +195,34 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.4 signed-volume-origin-independence checker-parity increment across
+  `src/halfedge_mesh/validation.rs` and `src/halfedge_mesh/tests.rs`:
+  - refactored outward-normal signed-volume accumulation to a shared reference-parameterized path:
+    - `Mesh::face_signed_volume_six_relative_to_reference`;
+    - `Mesh::check_outward_face_normals_relative_to_reference_impl`.
+  - kept production behavior unchanged (`check_outward_face_normals` still uses origin `(0,0,0)`)
+    while exposing a test-only reference-shifted checker hook:
+    - `Mesh::check_outward_face_normals_relative_to_reference_for_testing`.
+  - added reusable checker-invariance assertions and new deterministic + randomized differential
+    regressions:
+    - `assert_outward_face_normals_checker_reference_invariance`;
+    - `outward_face_normals_checker_is_reference_origin_invariant`;
+    - `differential_randomized_outward_checker_reference_origin_invariance_harness`.
+  - outcome: outward-face-normal checker results are now regression-locked as reference-origin
+    invariant across both passing meshes and orientation-flipped failing meshes, reducing drift
+    risk while the formal P5.4 origin-independence proof remains open.
+- 2026-02-19: Failed attempts in this P5.4 checker-parity/origin-invariance pass: none.
+- 2026-02-19: Revalidated after the P5.4 checker-parity/origin-invariance additions:
+  - `cargo test -p vcad-topology --features geometry-checks outward_face_normals_checker_is_reference_origin_invariant`
+  - `cargo test -p vcad-topology --features geometry-checks outward_checker_reference_origin_invariance`
+  - `cargo test -p vcad-topology --features geometry-checks outward_signed_volume_reference_origin_invariance`
+  - `cargo test -p vcad-topology --features geometry-checks outward_signed_volume_is_reference_origin_invariant_per_component`
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (278 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (315 verified, 0 errors)
 - 2026-02-19: Completed a P5.4 signed-volume-origin-independence differential-harness increment in
   `src/halfedge_mesh/tests.rs`:
   - added a reusable per-component assertion helper for reference-point invariance checks:
