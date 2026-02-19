@@ -193,6 +193,30 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.1 runtime-soundness groundwork increment in
+  `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
+  - added point-pair plane-orthogonality bridge lemma:
+    - `lemma_mesh_points_on_same_plane_relative_to_origin_imply_normal_orthogonal_delta`;
+  - added face-witness lift lemma:
+    - `lemma_mesh_face_plane_contains_vertex_witness_implies_normal_orthogonal_face_chords`;
+  - this advances the unchecked P5.1 checker-correctness item by exporting reusable algebra from
+    face-plane containment witnesses: any face-cycle chord vector between two witnessed points is
+    now proven orthogonal to the witness plane normal, which reduces future fixed-seed-to-full
+    coplanarity obligations to orientation/permutation plumbing instead of repeated scalar-plane
+    arithmetic.
+- 2026-02-19: Failed attempts in this P5.1 plane-orthogonality groundwork pass:
+  - the first proof revision attempted to conclude `x == y` directly from
+    `x + (-y) == 0` using a single `nonlinear_arith` step inside the `eqv_spec` proof block;
+    Verus failed that obligation;
+  - resolved by explicitly proving the equivalence between the equality form
+    `(x == y)` and the zero-difference form `(x + (-y) == 0)` before instantiating `eqv_spec`.
+- 2026-02-19: Revalidated after the P5.1 plane-orthogonality groundwork additions:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (250 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology.sh` (287 verified, 0 errors)
 - 2026-02-19: Completed a P5.1 seed-plane/fixed-witness reverse-bridge increment in
   `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
   - added core reverse bridge lemma:

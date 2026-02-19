@@ -1,1 +1,1 @@
-Added aggregate Phase 5 refinement specs and constructive-gate soundness bridges for geometric consistency/valid-with-geometry, updated the Phase 5 burndown log, and revalidated vcad-topology end-to-end (277 verified, 0 errors).
+Added P5.1 plane-containment orthogonality bridge lemmas, documented the burndown increment and failed proof attempts, and revalidated vcad-topology proofs/tests.
