@@ -23,6 +23,7 @@ use crate::runtime_halfedge_mesh_refinement::{
     runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_sound_complete_bridge,
     runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_oriented_full_equivalence_sound_complete_bridge,
     runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_runtime_full_spec_parity_bridge,
+    runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_runtime_full_spec_parity_from_runtime_with_geometry_bridge,
     runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_sound_bridge,
     runtime_check_face_seed0_corner_non_collinearity_bridge,
     runtime_check_face_convexity_triangle_projected_turn_complete_from_runtime_with_geometry_and_non_zero_edges_preconditions,
@@ -266,6 +267,32 @@ fn assert_face_coplanarity_seed0_triangle_or_quad_runtime_full_spec_parity_bridg
         runtime_coplanarity_ok == exhaustive_full_coplanarity_ok,
         "triangle/quad seed0 coplanarity runtime/full-spec parity bridge diverged from runtime-vs-exhaustive-full-coplanarity parity for {label}"
     );
+}
+
+#[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+fn assert_face_coplanarity_seed0_runtime_with_geometry_triangle_or_quad_runtime_full_spec_parity_bridge_parity(
+    mesh: &Mesh,
+    label: &str,
+) {
+    assert!(
+        mesh_all_faces_are_triangles_or_quads(mesh),
+        "triangle/quad runtime-with-geometry runtime/full-spec parity bridge requires triangle/quad faces in {label}"
+    );
+    let geometric_sound_bridge_ok = runtime_check_geometric_topological_consistency_sound_bridge(mesh);
+    if geometric_sound_bridge_ok {
+        let runtime_coplanarity_ok = mesh.check_face_coplanarity();
+        let exhaustive_full_coplanarity_ok =
+            check_face_coplanarity_exhaustive_face_quadruple_oracle(mesh);
+        let runtime_with_geometry_runtime_full_spec_parity_ok =
+            runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_runtime_full_spec_parity_from_runtime_with_geometry_bridge(
+                mesh,
+            );
+        assert_eq!(
+            runtime_with_geometry_runtime_full_spec_parity_ok,
+            runtime_coplanarity_ok == exhaustive_full_coplanarity_ok,
+            "triangle/quad runtime-with-geometry runtime/full-spec parity bridge diverged from runtime-vs-exhaustive-full-coplanarity parity for {label}"
+        );
+    }
 }
 
 #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
@@ -820,6 +847,10 @@ fn assert_constructive_phase5_gate_parity(mesh: &Mesh, label: &str) {
             label,
         );
         assert_face_coplanarity_seed0_runtime_with_geometry_triangle_or_quad_sound_complete_bridge_parity(
+            mesh,
+            label,
+        );
+        assert_face_coplanarity_seed0_runtime_with_geometry_triangle_or_quad_runtime_full_spec_parity_bridge_parity(
             mesh,
             label,
         );
@@ -6011,6 +6042,40 @@ fn diagnostic_witness_is_real_counterexample(
         for (label, mesh) in fixtures {
             assert!(mesh_all_faces_are_triangles_or_quads(&mesh));
             assert_face_coplanarity_seed0_runtime_with_geometry_triangle_or_quad_sound_complete_bridge_parity(
+                &mesh, label,
+            );
+        }
+    }
+
+    #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+    #[test]
+    fn face_coplanarity_seed0_runtime_with_geometry_triangle_or_quad_runtime_full_spec_parity_bridge_matches_exhaustive_full_coplanarity_parity(
+    ) {
+        let noncoplanar_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(1, 1, 1),
+            RuntimePoint3::from_ints(0, 1, 0),
+        ];
+        let noncoplanar_faces = vec![vec![0, 1, 2, 3], vec![0, 3, 2, 1]];
+        let noncoplanar_mesh = Mesh::from_face_cycles(noncoplanar_vertices, &noncoplanar_faces)
+            .expect("noncoplanar face fixture should build");
+
+        let fixtures = vec![
+            ("tetrahedron", Mesh::tetrahedron()),
+            ("cube", Mesh::cube()),
+            ("triangular_prism", Mesh::triangular_prism()),
+            ("overlapping_disconnected_tetrahedra", build_overlapping_tetrahedra_mesh()),
+            (
+                "reflected_cube_outward_failure",
+                build_reflected_cube_outward_failure_mesh(),
+            ),
+            ("noncoplanar_face", noncoplanar_mesh),
+        ];
+
+        for (label, mesh) in fixtures {
+            assert!(mesh_all_faces_are_triangles_or_quads(&mesh));
+            assert_face_coplanarity_seed0_runtime_with_geometry_triangle_or_quad_runtime_full_spec_parity_bridge_parity(
                 &mesh, label,
             );
         }

@@ -18,3 +18,4 @@ Design rule:
 Planning document:
 1. `docs/phase3-predicates.md`
 2. `docs/verification-todo.md`
+3. `docs/phase5-upstream-lemmas.md`

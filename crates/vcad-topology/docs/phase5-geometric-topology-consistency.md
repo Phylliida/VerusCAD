@@ -195,6 +195,29 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) with a runtime-with-geometry triangle/quad runtime-vs-full-coplanarity parity bridge increment in:
+  - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
+  - `src/halfedge_mesh/tests.rs`.
+  - added a new runtime-with-geometry triangle/quad coplanarity parity wrapper:
+    - `runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_runtime_full_spec_parity_from_runtime_with_geometry_bridge`;
+    - preconditions: `mesh_runtime_geometric_topological_consistency_with_geometry_spec` and triangle/quad face cycles;
+    - guarantee: direct runtime/full-spec parity packaging (`out == (m.check_face_coplanarity() == mesh_runtime_all_faces_coplanar_spec(m))`) while carrying seed0-coplanarity-bundle/validity/seed0-non-collinearity consequences.
+  - strengthened parity lock coverage:
+    - new helper `assert_face_coplanarity_seed0_runtime_with_geometry_triangle_or_quad_runtime_full_spec_parity_bridge_parity`;
+    - integrated helper into `assert_constructive_phase5_gate_parity`;
+    - new regression `face_coplanarity_seed0_runtime_with_geometry_triangle_or_quad_runtime_full_spec_parity_bridge_matches_exhaustive_full_coplanarity_parity`.
+  - outcome:
+    - the runtime-with-geometry triangle/quad coplanarity path now exports an explicit runtime/full-spec parity wrapper (not only runtime-parity/sound-complete wrappers), reducing remaining P5.1 checker/spec closure plumbing while checklist status remains unchanged.
+- 2026-02-19: Failed attempts in this P5.1 runtime-with-geometry triangle/quad runtime-vs-full-coplanarity parity pass: none.
+- 2026-02-19: Revalidated after this P5.1 runtime-with-geometry triangle/quad runtime-vs-full-coplanarity parity increment:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" face_coplanarity_seed0_runtime_with_geometry_triangle_or_quad_runtime_full_spec_parity_bridge_matches_exhaustive_full_coplanarity_parity` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" geometric_consistency_constructive_gate_matches_runtime_boolean_gate` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (64 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (101 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (388 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (425 verified, 0 errors)
 - 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) with a triangle/quad runtime-vs-full-coplanarity parity bridge increment in:
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
   - `src/halfedge_mesh/tests.rs`.

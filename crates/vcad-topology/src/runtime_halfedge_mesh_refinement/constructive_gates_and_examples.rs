@@ -1788,6 +1788,60 @@ pub fn runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_runti
 
 #[cfg(feature = "geometry-checks")]
 #[allow(dead_code)]
+pub fn runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_runtime_full_spec_parity_from_runtime_with_geometry_bridge(
+    m: &Mesh,
+) -> (out: bool)
+    requires
+        mesh_runtime_geometric_topological_consistency_with_geometry_spec(m),
+        mesh_runtime_all_faces_triangle_or_quad_cycles_spec(m),
+    ensures
+        out == (m.check_face_coplanarity() == mesh_runtime_all_faces_coplanar_spec(m)),
+        out ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m),
+        out ==> mesh_valid_spec(m@),
+        out ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m),
+{
+    proof {
+        lemma_mesh_runtime_geometric_topological_consistency_with_geometry_implies_mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle(
+            m,
+        );
+        assert(mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
+        assert(mesh_valid_spec(m@));
+        assert(mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m));
+    }
+
+    let parity_ok =
+        runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_runtime_full_spec_parity_bridge(
+            m,
+        );
+
+    proof {
+        assert(parity_ok == (m.check_face_coplanarity() == mesh_runtime_all_faces_coplanar_spec(m)));
+        assert(
+            parity_ok ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(
+                m,
+            )
+        ) by {
+            if parity_ok {
+                assert(mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
+            }
+        };
+        assert(parity_ok ==> mesh_valid_spec(m@)) by {
+            if parity_ok {
+                assert(mesh_valid_spec(m@));
+            }
+        };
+        assert(parity_ok ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m)) by {
+            if parity_ok {
+                assert(mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m));
+            }
+        };
+    }
+
+    parity_ok
+}
+
+#[cfg(feature = "geometry-checks")]
+#[allow(dead_code)]
 pub fn runtime_check_face_convexity_triangle_projected_turn_sound_bridge(
     m: &Mesh,
 ) -> (out: bool)
