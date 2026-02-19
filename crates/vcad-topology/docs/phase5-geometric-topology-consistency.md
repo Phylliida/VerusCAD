@@ -195,6 +195,33 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.5 shared-boundary non-misclassification differential-oracle
+  increment across `src/halfedge_mesh/validation.rs` and `src/halfedge_mesh/tests.rs`:
+  - added a test-only pair-level runtime hook that exposes the forbidden-intersection decision
+    for a specific face pair without changing production behavior:
+    - `Mesh::face_pair_has_forbidden_intersection_for_testing(face_a, face_b, use_broad_phase)`.
+  - added reusable edge-index-oracle helpers and pair assertions that lock checker behavior on
+    allowed shared-boundary contacts:
+    - `face_pair_shared_boundary_counts_edge_index_oracle`;
+    - `assert_shared_edge_contacts_not_misclassified_as_forbidden_intersections`;
+    - `assert_shared_vertex_only_contacts_not_misclassified_as_forbidden_intersections`.
+  - added deterministic regressions that assert allowed contacts are not misclassified:
+    - `shared_edge_contacts_are_not_misclassified_as_forbidden_intersections` (tetrahedron/cube/prism);
+    - `shared_vertex_only_contacts_are_not_misclassified_as_forbidden_intersections`
+      (octahedron + rigid transform).
+  - outcome: P5.5 shared-edge/shared-vertex non-misclassification behavior is now regression-locked
+    at face-pair granularity (including broad-phase/no-cull parity per checked pair), reducing
+    drift risk while the formal proof item remains open.
+- 2026-02-19: Failed attempts in this P5.5 shared-boundary non-misclassification pass: none.
+- 2026-02-19: Revalidated after the P5.5 shared-boundary non-misclassification additions:
+  - `cargo test -p vcad-topology --features geometry-checks shared_edge_contacts_are_not_misclassified_as_forbidden_intersections`
+  - `cargo test -p vcad-topology --features geometry-checks shared_vertex_only_contacts_are_not_misclassified_as_forbidden_intersections`
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (278 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (315 verified, 0 errors)
 - 2026-02-19: Completed a P5.4 signed-volume-origin-independence checker-parity increment across
   `src/halfedge_mesh/validation.rs` and `src/halfedge_mesh/tests.rs`:
   - refactored outward-normal signed-volume accumulation to a shared reference-parameterized path:

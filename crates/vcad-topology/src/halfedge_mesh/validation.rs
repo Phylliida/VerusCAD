@@ -1175,6 +1175,46 @@ impl Mesh {
         ))
     }
 
+    #[cfg(all(test, feature = "geometry-checks"))]
+    pub(crate) fn face_pair_has_forbidden_intersection_for_testing(
+        &self,
+        face_a: usize,
+        face_b: usize,
+        use_broad_phase: bool,
+    ) -> Option<bool> {
+        if face_a >= self.faces.len() || face_b >= self.faces.len() || face_a == face_b {
+            return None;
+        }
+        if !self.is_valid() {
+            return None;
+        }
+        if !self.check_index_bounds() || !self.check_face_cycles() {
+            return None;
+        }
+        if !self.check_no_zero_length_geometric_edges() {
+            return None;
+        }
+        if !self.check_face_coplanarity() || !self.check_face_corner_non_collinearity() {
+            return None;
+        }
+        if !self.check_face_convexity() {
+            return None;
+        }
+
+        let face_a_vertices = self.ordered_face_vertex_cycle(face_a)?;
+        let face_b_vertices = self.ordered_face_vertex_cycle(face_b)?;
+        let (face_a_normal, _) = self.compute_face_plane_prevalidated(face_a)?;
+        let (face_b_normal, _) = self.compute_face_plane_prevalidated(face_b)?;
+
+        Some(self.face_pair_has_forbidden_intersection(
+            &face_a_vertices,
+            &face_a_normal,
+            &face_b_vertices,
+            &face_b_normal,
+            use_broad_phase,
+        ))
+    }
+
     #[cfg(feature = "geometry-checks")]
     fn first_zero_length_geometric_edge_failure(
         &self,

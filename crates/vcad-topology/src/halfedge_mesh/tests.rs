@@ -231,11 +231,11 @@ fn ordered_face_boundary_vertices_and_edge_indices(
 }
 
 #[cfg(feature = "geometry-checks")]
-fn face_pair_allowed_contact_topology_edge_index_oracle(
+fn face_pair_shared_boundary_counts_edge_index_oracle(
     mesh: &Mesh,
     face_a: usize,
     face_b: usize,
-) -> Option<bool> {
+) -> Option<(usize, usize)> {
     if face_a >= mesh.faces.len() || face_b >= mesh.faces.len() || face_a == face_b {
         return None;
     }
@@ -259,10 +259,21 @@ fn face_pair_allowed_contact_topology_edge_index_oracle(
         }
     }
 
-    Some(if shared_edges.is_empty() {
-        shared_vertices.len() <= 1
+    Some((shared_vertices.len(), shared_edges.len()))
+}
+
+#[cfg(feature = "geometry-checks")]
+fn face_pair_allowed_contact_topology_edge_index_oracle(
+    mesh: &Mesh,
+    face_a: usize,
+    face_b: usize,
+) -> Option<bool> {
+    let (shared_vertices, shared_edges) =
+        face_pair_shared_boundary_counts_edge_index_oracle(mesh, face_a, face_b)?;
+    Some(if shared_edges == 0 {
+        shared_vertices <= 1
     } else {
-        shared_edges.len() == 1 && shared_vertices.len() == 2
+        shared_edges == 1 && shared_vertices == 2
     })
 }
 
@@ -283,6 +294,98 @@ fn assert_allowed_contact_topology_classifier_matches_edge_index_oracle(mesh: &M
             );
         }
     }
+}
+
+#[cfg(feature = "geometry-checks")]
+fn assert_shared_edge_contacts_not_misclassified_as_forbidden_intersections(
+    mesh: &Mesh,
+    label: &str,
+) {
+    let mut saw_shared_edge_pair = false;
+    for face_a in 0..mesh.faces.len() {
+        for face_b in (face_a + 1)..mesh.faces.len() {
+            let (shared_vertices, shared_edges) =
+                face_pair_shared_boundary_counts_edge_index_oracle(mesh, face_a, face_b)
+                    .expect("shared-boundary oracle should produce an output for valid face ids");
+            if shared_edges != 1 || shared_vertices != 2 {
+                continue;
+            }
+            saw_shared_edge_pair = true;
+
+            let topology_allowed = mesh
+                .face_pair_has_allowed_contact_topology_for_testing(face_a, face_b)
+                .expect("pair classifier should produce an output for valid face ids");
+            assert!(
+                topology_allowed,
+                "shared-edge pair ({face_a}, {face_b}) should satisfy allowed-contact topology for {label}"
+            );
+
+            let forbidden_no_cull = mesh
+                .face_pair_has_forbidden_intersection_for_testing(face_a, face_b, false)
+                .expect("pair forbidden-intersection hook should produce an output for valid face ids");
+            let forbidden_with_cull = mesh
+                .face_pair_has_forbidden_intersection_for_testing(face_a, face_b, true)
+                .expect("pair forbidden-intersection hook should produce an output for valid face ids");
+            assert_eq!(
+                forbidden_no_cull, forbidden_with_cull,
+                "broad-phase culling changed pair classification for shared-edge pair ({face_a}, {face_b}) in {label}"
+            );
+            assert!(
+                !forbidden_no_cull,
+                "shared-edge pair ({face_a}, {face_b}) was misclassified as forbidden in {label}"
+            );
+        }
+    }
+    assert!(
+        saw_shared_edge_pair,
+        "fixture {label} should include at least one shared-edge face pair"
+    );
+}
+
+#[cfg(feature = "geometry-checks")]
+fn assert_shared_vertex_only_contacts_not_misclassified_as_forbidden_intersections(
+    mesh: &Mesh,
+    label: &str,
+) {
+    let mut saw_shared_vertex_only_pair = false;
+    for face_a in 0..mesh.faces.len() {
+        for face_b in (face_a + 1)..mesh.faces.len() {
+            let (shared_vertices, shared_edges) =
+                face_pair_shared_boundary_counts_edge_index_oracle(mesh, face_a, face_b)
+                    .expect("shared-boundary oracle should produce an output for valid face ids");
+            if shared_edges != 0 || shared_vertices != 1 {
+                continue;
+            }
+            saw_shared_vertex_only_pair = true;
+
+            let topology_allowed = mesh
+                .face_pair_has_allowed_contact_topology_for_testing(face_a, face_b)
+                .expect("pair classifier should produce an output for valid face ids");
+            assert!(
+                topology_allowed,
+                "shared-vertex-only pair ({face_a}, {face_b}) should satisfy allowed-contact topology for {label}"
+            );
+
+            let forbidden_no_cull = mesh
+                .face_pair_has_forbidden_intersection_for_testing(face_a, face_b, false)
+                .expect("pair forbidden-intersection hook should produce an output for valid face ids");
+            let forbidden_with_cull = mesh
+                .face_pair_has_forbidden_intersection_for_testing(face_a, face_b, true)
+                .expect("pair forbidden-intersection hook should produce an output for valid face ids");
+            assert_eq!(
+                forbidden_no_cull, forbidden_with_cull,
+                "broad-phase culling changed pair classification for shared-vertex-only pair ({face_a}, {face_b}) in {label}"
+            );
+            assert!(
+                !forbidden_no_cull,
+                "shared-vertex-only pair ({face_a}, {face_b}) was misclassified as forbidden in {label}"
+            );
+        }
+    }
+    assert!(
+        saw_shared_vertex_only_pair,
+        "fixture {label} should include at least one shared-vertex-only face pair"
+    );
 }
 
 #[cfg(feature = "geometry-checks")]
@@ -422,6 +525,29 @@ fn build_overlapping_tetrahedra_mesh() -> Mesh {
         vec![6, 7, 4],
     ];
     Mesh::from_face_cycles(vertices, &faces).expect("overlapping tetrahedra fixture should build")
+}
+
+#[cfg(feature = "geometry-checks")]
+fn build_octahedron_mesh() -> Mesh {
+    let vertices = vec![
+        RuntimePoint3::from_ints(0, 0, 1),
+        RuntimePoint3::from_ints(0, 0, -1),
+        RuntimePoint3::from_ints(1, 0, 0),
+        RuntimePoint3::from_ints(0, 1, 0),
+        RuntimePoint3::from_ints(-1, 0, 0),
+        RuntimePoint3::from_ints(0, -1, 0),
+    ];
+    let faces = vec![
+        vec![0, 3, 2],
+        vec![0, 4, 3],
+        vec![0, 5, 4],
+        vec![0, 2, 5],
+        vec![1, 2, 3],
+        vec![1, 3, 4],
+        vec![1, 4, 5],
+        vec![1, 5, 2],
+    ];
+    Mesh::from_face_cycles(vertices, &faces).expect("octahedron fixture should build")
 }
 
 #[cfg(feature = "geometry-checks")]
@@ -1761,6 +1887,49 @@ fn diagnostic_witness_is_real_counterexample(
                 "topology should remain valid under coordinate perturbations"
             );
             assert_allowed_contact_topology_classifier_matches_edge_index_oracle(&perturbed_mesh);
+        }
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn shared_edge_contacts_are_not_misclassified_as_forbidden_intersections() {
+        let tetrahedron = Mesh::tetrahedron();
+        let cube = Mesh::cube();
+        let prism = Mesh::triangular_prism();
+
+        let fixtures = vec![
+            ("tetrahedron", tetrahedron),
+            ("cube", cube),
+            ("triangular_prism", prism),
+        ];
+
+        for (label, mesh) in fixtures {
+            assert!(mesh.is_valid(), "fixture must satisfy Phase 4 validity");
+            assert!(mesh.check_no_forbidden_face_face_intersections());
+            assert_shared_edge_contacts_not_misclassified_as_forbidden_intersections(&mesh, label);
+        }
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
+    fn shared_vertex_only_contacts_are_not_misclassified_as_forbidden_intersections() {
+        let octahedron = build_octahedron_mesh();
+        let rigid_octahedron = transform_mesh_positions(&octahedron, |point| {
+            rigid_rotate_z_90_then_translate(point, 9, -6, 4)
+        });
+
+        let fixtures = vec![
+            ("octahedron", octahedron),
+            ("rigid_octahedron", rigid_octahedron),
+        ];
+
+        for (label, mesh) in fixtures {
+            assert!(mesh.is_valid(), "fixture must satisfy Phase 4 validity");
+            assert!(mesh.check_no_forbidden_face_face_intersections());
+            assert_shared_vertex_only_contacts_not_misclassified_as_forbidden_intersections(
+                &mesh,
+                label,
+            );
         }
     }
 
