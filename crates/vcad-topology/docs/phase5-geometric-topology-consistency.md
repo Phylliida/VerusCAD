@@ -195,6 +195,30 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Completed a P5.7/P5.1 aggregate-runtime-spec staging increment across
+  `src/runtime_halfedge_mesh_refinement/components_and_validity_specs.rs` and
+  `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`:
+  - added a runtime-aware aggregate spec for the currently-proved seed-0 coplanarity bridge bundle:
+    - `mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec`.
+  - added a witness-to-runtime-bundle lemma:
+    - `lemma_geometric_topological_consistency_gate_witness_api_ok_implies_mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle`;
+    - this lemma lifts `api_ok` plus existing constructive coplanarity bridge implications into a
+      single runtime aggregate bundle (`mesh_valid_spec`, shared-edge local orientation consistency,
+      seed-0 fixed-witness coplanarity, seed-0 non-collinearity, seed-0 plane containment, and
+      oriented seed-0 planes).
+  - strengthened `check_geometric_topological_consistency_constructive` postconditions to export:
+    - `w.api_ok ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m)`.
+  - outcome: the aggregate constructive Phase-5 gate now exposes a single machine-checked
+    runtime-side proof bundle at the `api_ok` boundary, reducing proof-plumbing friction for the
+    remaining unchecked P5.1 checker-correctness and P5.7 aggregate-equivalence obligations.
+- 2026-02-19: Failed attempts in this P5.7/P5.1 aggregate-runtime-spec staging pass: none.
+- 2026-02-19: Revalidated after the P5.7/P5.1 aggregate-runtime-spec staging additions:
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (276 verified, 0 errors)
+  - `cargo test -p vcad-topology`
+  - `cargo test -p vcad-topology --features geometry-checks`
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"`
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (313 verified, 0 errors)
 - 2026-02-19: Completed a P5.1 runtime-checker-alignment increment in
   `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`:
   - refactored the per-face inner loop in

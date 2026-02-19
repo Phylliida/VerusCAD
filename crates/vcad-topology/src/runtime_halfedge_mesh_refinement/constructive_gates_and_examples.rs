@@ -1305,6 +1305,10 @@ pub fn check_geometric_topological_consistency_constructive(
                 && (w.face_coplanarity_ok ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m))
                 && (w.face_coplanarity_ok ==> mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m))
                 && (w.face_coplanarity_ok ==> mesh_runtime_all_faces_oriented_seed0_planes_spec(m))
+                && (w.api_ok
+                    ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(
+                        m,
+                    ))
                 && (w.api_ok ==> mesh_geometric_topological_consistency_spec(m@)),
             Option::None => true,
         },
@@ -1417,6 +1421,22 @@ pub fn check_geometric_topological_consistency_constructive(
             if w.face_coplanarity_ok {
                 assert(face_coplanarity_bridge_ok);
                 assert(mesh_runtime_all_faces_oriented_seed0_planes_spec(m));
+            }
+        };
+        if w.api_ok {
+            lemma_geometric_topological_consistency_gate_witness_api_ok_implies_mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle(
+                m,
+                w,
+            );
+            assert(mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
+        }
+        assert(
+            w.api_ok ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(
+                m,
+            )
+        ) by {
+            if w.api_ok {
+                assert(mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
             }
         };
         assert(w.api_ok ==> mesh_geometric_topological_consistency_spec(m@)) by {
