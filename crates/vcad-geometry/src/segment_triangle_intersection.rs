@@ -2,6 +2,8 @@ use crate::convex_polygon::point_in_convex_polygon_2d;
 use crate::sidedness::segment_plane_intersection_point_strict;
 use vcad_math::runtime_point2::RuntimePoint2;
 use vcad_math::runtime_point3::RuntimePoint3;
+#[cfg(verus_keep_ghost)]
+use vcad_math::runtime_scalar::RuntimeSign;
 use vcad_math::runtime_vec3::RuntimeVec3;
 
 #[derive(Clone, Copy)]
@@ -11,12 +13,26 @@ enum ProjectionAxis {
     DropZ,
 }
 
+#[cfg(not(verus_keep_ghost))]
 fn projection_axis_from_normal(normal: &RuntimeVec3) -> Option<ProjectionAxis> {
     if normal.x().signum_i8() != 0 {
         Some(ProjectionAxis::DropX)
     } else if normal.y().signum_i8() != 0 {
         Some(ProjectionAxis::DropY)
     } else if normal.z().signum_i8() != 0 {
+        Some(ProjectionAxis::DropZ)
+    } else {
+        None
+    }
+}
+
+#[cfg(verus_keep_ghost)]
+fn projection_axis_from_normal(normal: &RuntimeVec3) -> Option<ProjectionAxis> {
+    if normal.x().sign_witness != RuntimeSign::Zero {
+        Some(ProjectionAxis::DropX)
+    } else if normal.y().sign_witness != RuntimeSign::Zero {
+        Some(ProjectionAxis::DropY)
+    } else if normal.z().sign_witness != RuntimeSign::Zero {
         Some(ProjectionAxis::DropZ)
     } else {
         None
@@ -100,6 +116,20 @@ mod tests {
 
         let p = segment_triangle_intersection_point_strict(&s0, &s1, &a, &b, &c)
             .expect("strict segment-triangle crossing should yield a witness");
+        assert_eq!(p, RuntimePoint3::from_ints(1, 1, 0));
+        assert!(segment_triangle_intersects_strict(&s0, &s1, &a, &b, &c));
+    }
+
+    #[test]
+    fn segment_triangle_strict_crossing_inside_reversed_winding_returns_witness() {
+        let a = RuntimePoint3::from_ints(0, 0, 0);
+        let b = RuntimePoint3::from_ints(0, 4, 0);
+        let c = RuntimePoint3::from_ints(4, 0, 0);
+        let s0 = RuntimePoint3::from_ints(1, 1, 2);
+        let s1 = RuntimePoint3::from_ints(1, 1, -2);
+
+        let p = segment_triangle_intersection_point_strict(&s0, &s1, &a, &b, &c)
+            .expect("strict segment-triangle crossing should be winding-invariant");
         assert_eq!(p, RuntimePoint3::from_ints(1, 1, 0));
         assert!(segment_triangle_intersects_strict(&s0, &s1, &a, &b, &c));
     }

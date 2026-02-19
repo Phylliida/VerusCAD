@@ -215,6 +215,20 @@ Blocks: `P5.5` intersection checker soundness (narrow phase).
       - `segment_triangle_intersects_strict` boolean wrapper.
       - runtime regression tests for inside-hit, outside-hit, endpoint-on-plane
         (non-strict reject), coplanar segment reject, and degenerate-triangle reject.
+    - Update (2026-02-19, winding-regression + ghost-compat pass):
+      `crates/vcad-geometry/src/segment_triangle_intersection.rs` now also has:
+      - a reversed-winding inside-hit regression test
+        (`segment_triangle_strict_crossing_inside_reversed_winding_returns_witness`);
+      - a `verus_keep_ghost`-compatible projection-axis branch
+        (`RuntimeSign` witness-based check) so the strict wrapper compiles in
+        ghost builds without `signum_i8`.
+    - Failed attempt note (2026-02-19, ghost-contract pass, reverted):
+      attempted to land direct `verus_keep_ghost` witness/spec contracts for
+      `segment_triangle_intersection_point_strict` in
+      `crates/vcad-geometry/src/segment_triangle_intersection.rs`, but reverted
+      the proof scaffolding after it destabilized local ghost verification;
+      pending blocker remains an existing trigger-inference failure in
+      `crates/vcad-geometry/src/phase5_upstream_lemmas.rs:591`.
     - Remaining gap (post strict-wrapper runtime pass): still missing a
       `verus_keep_ghost` iff/refinement theorem tying the new runtime wrapper to
       an explicit existential geometric spec (`true <==> exists p` on segment and
@@ -226,6 +240,10 @@ Blocks: `P5.5` intersection checker soundness (narrow phase).
       environment.
     - Verification lane note (2026-02-19, strict-wrapper runtime pass): run
       `./scripts/verify-vcad-geometry.sh` for ghost-proof verification.
+    - Verification attempt note (2026-02-19, winding-regression + ghost-compat pass):
+      `./scripts/verify-vcad-geometry.sh` fails in this environment due an
+      existing trigger-inference error in
+      `crates/vcad-geometry/src/phase5_upstream_lemmas.rs:591`.
   - [ ] coplanar segment-segment intersection (2D projection + interval overlap).
     - Update (2026-02-19, proper-totality pass): endpoint-touch witness-soundness plus
       `EndpointTouch -> is_some` and `Proper -> is_some` totality are now landed; remaining
