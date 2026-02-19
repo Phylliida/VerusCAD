@@ -1,1 +1,1 @@
-Added a bidirectional P5.7 bridge between runtime geometry-aware aggregate spec and the seed0 coplanarity bundle in vcad-topology, with full revalidation; 8 Phase 5 tasks remain.
+Added P5.5 runtime-policy/non-adjacent forbidden corollary lemmas with full vcad-topology revalidation; 8 Phase 5 tasks remain.

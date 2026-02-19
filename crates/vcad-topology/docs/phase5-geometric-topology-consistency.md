@@ -195,6 +195,23 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with direct runtime-policy/non-adjacent-forbidden corollaries in:
+  - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`.
+  - added new direct proof hooks:
+    - `lemma_mesh_non_adjacent_forbidden_relation_implies_runtime_forbidden_policy`;
+    - `lemma_mesh_not_runtime_forbidden_policy_implies_not_non_adjacent_forbidden_relation`;
+    - `lemma_mesh_allowed_contact_relation_implies_runtime_forbidden_policy_iff_non_adjacent_forbidden_relation`.
+  - outcome:
+    - the P5.5 proof surface now has explicit one-step bridges in both directions between runtime forbidden-policy classification and the non-adjacent forbidden relation (including an allowed-contact iff form), reducing branch-expansion boilerplate in remaining checker soundness/completeness work.
+- 2026-02-19: Failed attempts in this P5.5 runtime-policy/non-adjacent corollary pass: none.
+- 2026-02-19: Revalidated after the P5.5 runtime-policy/non-adjacent corollary increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (86 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" face_convexity_triangle_projected_turn_sound_bridge_matches_runtime_checker` (1 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (362 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (399 verified, 0 errors)
 - 2026-02-19: Worked P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with a runtime geometry-aware/spec-bundle bidirectional characterization increment in:
   - `src/runtime_halfedge_mesh_refinement/components_and_validity_specs.rs`.
   - added a reverse bridge from the geometry-aware runtime aggregate spec back to the runtime seed0 coplanarity bundle:
