@@ -27,6 +27,7 @@ use crate::runtime_halfedge_mesh_refinement::{
     runtime_check_face_convexity_triangle_projected_turn_complete_from_runtime_with_geometry_preconditions,
     runtime_check_face_convexity_triangle_projected_turn_complete_from_phase5_runtime_bundle_sound_bridge,
     runtime_check_face_convexity_triangle_projected_turn_sound_bridge,
+    runtime_check_geometric_topological_consistency_component_runtime_consequences_sound_bridge,
     runtime_check_geometric_topological_consistency_sound_bridge,
     runtime_check_geometric_topological_consistency_triangle_or_quad_coplanarity_sound_bridge,
     runtime_check_geometric_topological_consistency_triangle_projected_turn_sound_bridge,
@@ -358,6 +359,60 @@ fn assert_geometric_consistency_triangle_or_quad_coplanarity_sound_bridge_parity
 }
 
 #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+fn assert_geometric_consistency_component_runtime_consequences_sound_bridge_parity(
+    mesh: &Mesh,
+    label: &str,
+) {
+    let runtime_geometric_ok = mesh.check_geometric_topological_consistency();
+    let component_runtime_consequences_sound_bridge_ok =
+        runtime_check_geometric_topological_consistency_component_runtime_consequences_sound_bridge(
+            mesh,
+        );
+    assert_eq!(
+        component_runtime_consequences_sound_bridge_ok, runtime_geometric_ok,
+        "aggregate component-runtime-consequences sound bridge parity failed for {label}"
+    );
+    if component_runtime_consequences_sound_bridge_ok {
+        assert!(
+            mesh.is_valid(),
+            "aggregate component-runtime-consequences sound bridge should imply phase4 validity for {label}"
+        );
+        assert!(
+            mesh.check_no_zero_length_geometric_edges(),
+            "aggregate component-runtime-consequences sound bridge should imply non-zero geometric edges for {label}"
+        );
+        assert!(
+            mesh.check_face_corner_non_collinearity(),
+            "aggregate component-runtime-consequences sound bridge should imply face-corner non-collinearity for {label}"
+        );
+        assert!(
+            mesh.check_face_coplanarity(),
+            "aggregate component-runtime-consequences sound bridge should imply face coplanarity for {label}"
+        );
+        assert!(
+            mesh.check_face_convexity(),
+            "aggregate component-runtime-consequences sound bridge should imply face convexity for {label}"
+        );
+        assert!(
+            mesh.check_face_plane_consistency(),
+            "aggregate component-runtime-consequences sound bridge should imply face-plane consistency for {label}"
+        );
+        assert!(
+            mesh.check_shared_edge_local_orientation_consistency(),
+            "aggregate component-runtime-consequences sound bridge should imply shared-edge local orientation consistency for {label}"
+        );
+        assert!(
+            mesh.check_no_forbidden_face_face_intersections(),
+            "aggregate component-runtime-consequences sound bridge should imply no forbidden face-face intersections for {label}"
+        );
+        assert!(
+            mesh.check_outward_face_normals(),
+            "aggregate component-runtime-consequences sound bridge should imply outward face normals for {label}"
+        );
+    }
+}
+
+#[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
 fn assert_face_coplanarity_seed0_phase5_runtime_bundle_completeness_bridge_parity(
     mesh: &Mesh,
     label: &str,
@@ -621,6 +676,7 @@ fn assert_constructive_phase5_gate_parity(mesh: &Mesh, label: &str) {
         geometric_sound_bridge, geometric_runtime,
         "constructive geometric sound bridge parity failed for {label}"
     );
+    assert_geometric_consistency_component_runtime_consequences_sound_bridge_parity(mesh, label);
     if geometric_sound_bridge {
         assert!(
             mesh.check_no_zero_length_geometric_edges(),
@@ -5145,6 +5201,52 @@ fn diagnostic_witness_is_real_counterexample(
             &noncoplanar_pentagon,
             "noncoplanar_high_arity_pentagon_fixture",
         );
+    }
+
+    #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+    #[test]
+    fn geometric_consistency_component_runtime_consequences_sound_bridge_matches_runtime_checker() {
+        let noncoplanar_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(1, 1, 1),
+            RuntimePoint3::from_ints(0, 1, 0),
+        ];
+        let noncoplanar_faces = vec![vec![0, 1, 2, 3], vec![0, 3, 2, 1]];
+        let noncoplanar_mesh = Mesh::from_face_cycles(noncoplanar_vertices, &noncoplanar_faces)
+            .expect("noncoplanar face fixture should build");
+
+        let collinear_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(2, 0, 0),
+        ];
+        let collinear_faces = vec![vec![0, 1, 2], vec![0, 2, 1]];
+        let collinear_mesh = Mesh::from_face_cycles(collinear_vertices, &collinear_faces)
+            .expect("collinear face fixture should build");
+
+        let fixtures = vec![
+            ("tetrahedron", Mesh::tetrahedron()),
+            ("cube", Mesh::cube()),
+            ("triangular_prism", Mesh::triangular_prism()),
+            ("overlapping_disconnected_tetrahedra", build_overlapping_tetrahedra_mesh()),
+            ("noncoplanar_face", noncoplanar_mesh),
+            ("collinear_face", collinear_mesh),
+            (
+                "reflected_cube_outward_failure",
+                build_reflected_cube_outward_failure_mesh(),
+            ),
+            (
+                "coplanar_high_arity_pentagon",
+                build_coplanar_single_pentagon_double_face_mesh(),
+            ),
+        ];
+
+        for (label, mesh) in fixtures.iter() {
+            assert_geometric_consistency_component_runtime_consequences_sound_bridge_parity(
+                mesh, label,
+            );
+        }
     }
 
     #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]

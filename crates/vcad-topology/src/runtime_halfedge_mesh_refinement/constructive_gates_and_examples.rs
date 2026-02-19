@@ -3319,6 +3319,93 @@ pub fn runtime_check_geometric_topological_consistency_sound_bridge(m: &Mesh) ->
 
 #[cfg(feature = "geometry-checks")]
 #[allow(dead_code)]
+pub fn runtime_check_geometric_topological_consistency_component_runtime_consequences_sound_bridge(
+    m: &Mesh,
+) -> (out: bool)
+    ensures
+        out ==> runtime_check_geometric_topological_consistency_sound_bridge(m),
+        out ==> mesh_geometric_topological_consistency_spec(m@),
+        out ==> m.check_geometric_topological_consistency(),
+        out ==> m.is_valid(),
+        out ==> m.check_no_zero_length_geometric_edges(),
+        out ==> m.check_face_corner_non_collinearity(),
+        out ==> m.check_face_coplanarity(),
+        out ==> m.check_face_convexity(),
+        out ==> m.check_face_plane_consistency(),
+        out ==> m.check_shared_edge_local_orientation_consistency(),
+        out ==> m.check_no_forbidden_face_face_intersections(),
+        out ==> m.check_outward_face_normals(),
+{
+    let geometric_sound_ok = runtime_check_geometric_topological_consistency_sound_bridge(m);
+    if !geometric_sound_ok {
+        return false;
+    }
+
+    let runtime_geometric_ok = m.check_geometric_topological_consistency();
+    if !runtime_geometric_ok {
+        return false;
+    }
+
+    let constructive_w = match check_geometric_topological_consistency_constructive(m) {
+        Option::Some(w) => w,
+        Option::None => return false,
+    };
+    if !constructive_w.api_ok {
+        return false;
+    }
+
+    let phase4_ok = m.is_valid();
+    let no_zero_ok = m.check_no_zero_length_geometric_edges();
+    let face_corner_non_collinearity_ok = m.check_face_corner_non_collinearity();
+    let face_coplanarity_ok = m.check_face_coplanarity();
+    let face_convexity_ok = m.check_face_convexity();
+    let face_plane_consistency_ok = m.check_face_plane_consistency();
+    let shared_edge_local_orientation_ok = m.check_shared_edge_local_orientation_consistency();
+    let no_forbidden_face_face_intersections_ok = m.check_no_forbidden_face_face_intersections();
+    let outward_face_normals_ok = m.check_outward_face_normals();
+
+    if constructive_w.phase4_valid_ok != phase4_ok
+        || constructive_w.no_zero_length_geometric_edges_ok != no_zero_ok
+        || constructive_w.face_corner_non_collinearity_ok != face_corner_non_collinearity_ok
+        || constructive_w.face_coplanarity_ok != face_coplanarity_ok
+        || constructive_w.face_convexity_ok != face_convexity_ok
+        || constructive_w.face_plane_consistency_ok != face_plane_consistency_ok
+        || constructive_w.shared_edge_local_orientation_ok != shared_edge_local_orientation_ok
+        || constructive_w.no_forbidden_face_face_intersections_ok
+            != no_forbidden_face_face_intersections_ok
+        || constructive_w.outward_face_normals_ok != outward_face_normals_ok
+    {
+        return false;
+    }
+
+    if !phase4_ok
+        || !no_zero_ok
+        || !face_corner_non_collinearity_ok
+        || !face_coplanarity_ok
+        || !face_convexity_ok
+        || !face_plane_consistency_ok
+        || !shared_edge_local_orientation_ok
+        || !no_forbidden_face_face_intersections_ok
+        || !outward_face_normals_ok
+    {
+        return false;
+    }
+
+    proof {
+        assert(geometric_topological_consistency_gate_witness_spec(constructive_w));
+        assert(geometric_topological_consistency_gate_model_link_spec(m@, constructive_w));
+        lemma_geometric_topological_consistency_gate_witness_api_ok_implies_mesh_geometric_topological_consistency(
+            m@,
+            constructive_w,
+        );
+        assert(mesh_geometric_topological_consistency_spec(m@));
+    }
+
+    true
+}
+
+#[cfg(feature = "geometry-checks")]
+#[allow(dead_code)]
 pub fn runtime_check_geometric_topological_consistency_triangle_projected_turn_sound_bridge(
     m: &Mesh,
 ) -> (out: bool)
