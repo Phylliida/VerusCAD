@@ -335,6 +335,25 @@ Blocks: `P5.5` intersection checker soundness (narrow phase).
       to collinearity with both supporting lines `[a,b]` and `[c,d]`; remaining formal gap is now
       proving closed-segment bound inclusion for both segments to recover full
       `point_on_both_segments_spec`.
+    - Update (2026-02-19, proper-parameter-signs pass): added reusable scalar/signum helpers in
+      `crates/vcad-geometry/src/segment_intersection.rs`:
+      `lemma_signum_one_implies_num_positive`,
+      `lemma_signum_minus_one_implies_num_negative`,
+      `lemma_num_positive_implies_signum_one`, and
+      `lemma_parameter_from_opposite_signed_constraints_has_open_unit_signs`.
+      This proves the key intermediate fact `t.signum() == 1` and `(1 - t).signum() == 1`
+      from opposite-signed side constraints plus the two parameter equations; this is intended
+      to feed the remaining closed-segment bound proof for `Proper` witnesses.
+    - Remaining gap (post proper-parameter-signs pass): still need to thread this parameter-sign
+      lemma into `proper_intersection_point_runtime` and discharge the coordinate min/max bounds
+      to complete `Proper -> point_on_both_segments_spec`.
+    - Verification attempt note (2026-02-19, proper-parameter-signs pass):
+      `./scripts/test-vcad-geometry-verus-proofs.sh` passes in this environment.
+    - Verification attempt note (2026-02-19, proper-parameter-signs pass):
+      `./scripts/verify-vcad-geometry.sh` passes in this environment
+      (`228 verified, 0 errors`; one existing verifier warning remains about
+      `assert forall` antecedent handling for `==>` in
+      `lemma_aabb_separation_and_containment_implies_disjoint_sets`).
   - [ ] coplanar segment-polygon overlap (dominant-axis projection + edge-crossing containment tests).
     - Audit note (2026-02-19): ingredient predicates are present, but their composed
       dominant-axis overlap witness proof is not yet packaged upstream.

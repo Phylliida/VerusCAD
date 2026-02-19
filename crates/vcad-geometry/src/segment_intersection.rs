@@ -459,6 +459,176 @@ proof fn lemma_proper_straddling_implies_nonzero_direction_cross(
     }
 }
 
+proof fn lemma_signum_one_implies_num_positive(s: Scalar)
+    requires
+        s.signum() == 1,
+    ensures
+        s.num > 0,
+{
+    if s.num > 0 {
+    } else if s.num < 0 {
+        assert(s.signum() == -1);
+        assert(false);
+    } else {
+        assert(s.num == 0);
+        assert(s.signum() == 0);
+        assert(false);
+    }
+}
+
+proof fn lemma_signum_minus_one_implies_num_negative(s: Scalar)
+    requires
+        s.signum() == -1,
+    ensures
+        s.num < 0,
+{
+    if s.num < 0 {
+    } else if s.num > 0 {
+        assert(s.signum() == 1);
+        assert(false);
+    } else {
+        assert(s.num == 0);
+        assert(s.signum() == 0);
+        assert(false);
+    }
+}
+
+proof fn lemma_num_positive_implies_signum_one(s: Scalar)
+    requires
+        s.num > 0,
+    ensures
+        s.signum() == 1,
+{
+    assert(s.signum() == 1);
+}
+
+proof fn lemma_parameter_from_opposite_signed_constraints_has_open_unit_signs(
+    t: Scalar,
+    den: Scalar,
+    s0: Scalar,
+    s1: Scalar,
+)
+    requires
+        s0.signum() != 0,
+        s1.signum() != 0,
+        s0.signum() != s1.signum(),
+        t.mul_spec(den).eqv_spec(s0),
+        Scalar::from_int_spec(1).sub_spec(t).mul_spec(den).eqv_spec(s1.neg_spec()),
+    ensures
+        t.signum() == 1,
+        Scalar::from_int_spec(1).sub_spec(t).signum() == 1,
+{
+    let one = Scalar::from_int_spec(1);
+    let one_minus_t = one.sub_spec(t);
+
+    Scalar::lemma_signum_mul(t, den);
+    Scalar::lemma_signum_mul(one_minus_t, den);
+    Scalar::lemma_eqv_signum(t.mul_spec(den), s0);
+    Scalar::lemma_eqv_signum(one_minus_t.mul_spec(den), s1.neg_spec());
+    Scalar::lemma_signum_negate(s1);
+
+    Scalar::lemma_signum_cases(s0);
+    Scalar::lemma_signum_cases(s1);
+    if s0.signum() == 1 {
+        assert(s1.signum() != 1);
+        assert(s1.signum() != 0);
+        assert(s1.signum() == -1);
+        assert(s1.neg_spec().signum() == 1);
+    } else {
+        assert(s0.signum() != 0);
+        assert(s0.signum() == -1);
+        assert(s1.signum() != -1);
+        assert(s1.signum() != 0);
+        assert(s1.signum() == 1);
+        assert(s1.neg_spec().signum() == -1);
+    }
+    assert(s1.neg_spec().signum() == s0.signum());
+
+    if den.signum() == 0 {
+        assert(t.mul_spec(den).signum() == t.signum() * den.signum());
+        assert(t.mul_spec(den).signum() == t.signum() * 0);
+        assert(t.signum() * 0 == 0);
+        assert(t.mul_spec(den).signum() == 0);
+        assert(t.mul_spec(den).signum() == s0.signum());
+        assert(s0.signum() == 0);
+        assert(false);
+    }
+    assert(den.signum() != 0);
+
+    let t_den_sign = t.signum() * den.signum();
+    let omt_den_sign = one_minus_t.signum() * den.signum();
+    assert(t.mul_spec(den).signum() == t_den_sign);
+    assert(one_minus_t.mul_spec(den).signum() == omt_den_sign);
+    assert(t.mul_spec(den).signum() == s0.signum());
+    assert(one_minus_t.mul_spec(den).signum() == s1.neg_spec().signum());
+    assert(s1.neg_spec().signum() == s0.signum());
+    assert(t_den_sign == s0.signum());
+    assert(omt_den_sign == s0.signum());
+
+    if den.signum() == 1 {
+        assert(t_den_sign == t.signum() * 1);
+        assert(omt_den_sign == one_minus_t.signum() * 1);
+        assert(t.signum() == s0.signum());
+        assert(one_minus_t.signum() == s0.signum());
+    } else {
+        assert(den.signum() == -1);
+        assert(t_den_sign == t.signum() * (-1));
+        assert(omt_den_sign == one_minus_t.signum() * (-1));
+        assert(t.signum() == -s0.signum());
+        assert(one_minus_t.signum() == -s0.signum());
+    }
+    assert(t.signum() == one_minus_t.signum());
+
+    if t.signum() == 0 {
+        assert(t.mul_spec(den).signum() == t.signum() * den.signum());
+        assert(t.mul_spec(den).signum() == 0 * den.signum());
+        assert(0 * den.signum() == 0);
+        assert(t.mul_spec(den).signum() == 0);
+        assert(t.mul_spec(den).signum() == s0.signum());
+        assert(s0.signum() == 0);
+        assert(false);
+    }
+
+    if t.signum() == -1 {
+        assert(one_minus_t.signum() == -1);
+        lemma_signum_minus_one_implies_num_negative(t);
+        lemma_signum_minus_one_implies_num_negative(one_minus_t);
+        assert(t.num < 0);
+
+        assert(one_minus_t == one.sub_spec(t));
+        assert(one_minus_t.num == one.num * t.denom() + (-t.num) * one.denom());
+        assert(one.num == 1);
+        assert(one.denom() == 1);
+        assert(one_minus_t.num == 1 * t.denom() + (-t.num) * 1);
+        assert(1 * t.denom() + (-t.num) * 1 == t.denom() - t.num) by (nonlinear_arith);
+        assert(one_minus_t.num == t.denom() - t.num);
+
+        assert(t.denom_nat() > 0);
+        assert((t.denom_nat() as int) > 0) by (nonlinear_arith);
+        assert(t.denom() == t.denom_nat() as int);
+        assert(t.denom() > 0);
+        assert((t.denom() > 0 && t.num < 0) ==> (t.denom() - t.num > 0)) by (nonlinear_arith);
+        assert(t.denom() - t.num > 0);
+        assert(one_minus_t.num > 0);
+        lemma_num_positive_implies_signum_one(one_minus_t);
+        assert(one_minus_t.signum() == 1);
+        assert(one_minus_t.signum() == -1);
+        assert(false);
+    }
+
+    Scalar::lemma_signum_cases(t);
+    if t.signum() == 1 {
+    } else if t.signum() == -1 {
+        assert(false);
+    } else {
+        assert(t.signum() == 0);
+        assert(false);
+    }
+    assert(t.signum() == 1);
+    assert(t.signum() == one_minus_t.signum());
+    assert(one_minus_t.signum() == 1);
+}
+
 fn scalar_sign(a: &RuntimeScalar, b: &RuntimeScalar) -> (out: i8)
     requires
         wf::scalar_wf2_spec(a, b),
