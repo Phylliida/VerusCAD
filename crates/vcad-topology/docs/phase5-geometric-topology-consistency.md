@@ -195,6 +195,30 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) with a triangle/quad oriented-vs-full coplanarity equivalence consequence sound+complete wrapper increment in:
+  - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
+  - `src/halfedge_mesh/tests.rs`.
+  - added a new triangle/quad coplanarity wrapper:
+    - `runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_oriented_full_equivalence_sound_complete_bridge`;
+    - contract:
+      - runtime parity: `out == m.check_face_coplanarity()`;
+      - preserves existing triangle/quad sound consequences (`out ==> mesh_runtime_all_faces_coplanar_spec(m)` and seed0 witness/plane/oriented bundles);
+      - additionally exports the oriented-seed0 vs full-coplanarity+seed0-non-collinearity equivalence under triangle/quad cycles as a direct consequence of a passing runtime checker.
+  - strengthened parity lock coverage:
+    - new helper `assert_face_coplanarity_seed0_triangle_or_quad_oriented_full_equivalence_sound_complete_bridge_parity`;
+    - integrated the helper into `assert_constructive_phase5_gate_parity`;
+    - added regression `face_coplanarity_seed0_triangle_or_quad_oriented_full_equivalence_sound_complete_bridge_matches_runtime_checker`.
+  - outcome:
+    - the triangle/quad coplanarity path now exports an explicit single-wrapper consequence that ties passing runtime coplanarity directly to the oriented-plane/full-coplanarity characterization, reducing P5.1 closure plumbing while checklist status remains unchanged.
+- 2026-02-19: Failed attempts in this P5.1 triangle/quad oriented-vs-full equivalence consequence pass: none.
+- 2026-02-19: Revalidated after this P5.1 triangle/quad oriented-vs-full equivalence consequence increment:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" face_coplanarity_seed0_triangle_or_quad_oriented_full_equivalence_sound_complete_bridge_matches_runtime_checker` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (64 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (98 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (388 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (425 verified, 0 errors)
 - 2026-02-19: Worked P5.4 (`Proof: signed-volume outwardness criterion is independent of the chosen reference origin`) with mixed-component-arity reference-invariance lock coverage in:
   - `src/halfedge_mesh/tests.rs`.
   - added mixed disconnected closed-component fixture helpers:

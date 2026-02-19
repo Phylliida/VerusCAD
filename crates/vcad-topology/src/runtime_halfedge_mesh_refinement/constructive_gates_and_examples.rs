@@ -1668,6 +1668,75 @@ pub fn runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_sound
 
 #[cfg(feature = "geometry-checks")]
 #[allow(dead_code)]
+pub fn runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_oriented_full_equivalence_sound_complete_bridge(
+    m: &Mesh,
+) -> (out: bool)
+    requires
+        mesh_runtime_all_faces_triangle_or_quad_cycles_spec(m),
+    ensures
+        out == m.check_face_coplanarity(),
+        out ==> mesh_valid_spec(m@),
+        out ==> mesh_runtime_all_faces_coplanar_spec(m),
+        out ==> mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m),
+        out ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m),
+        out ==> mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m),
+        out ==> mesh_runtime_all_faces_oriented_seed0_planes_spec(m),
+        out ==> (
+            (
+                mesh_runtime_all_faces_oriented_seed0_planes_spec(m)
+                    && mesh_runtime_all_faces_triangle_or_quad_cycles_spec(m)
+            ) == (
+                mesh_runtime_all_faces_coplanar_spec(m)
+                    && mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m)
+                    && mesh_runtime_all_faces_triangle_or_quad_cycles_spec(m)
+            )
+        ),
+{
+    let runtime_sound_complete_ok =
+        runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_sound_complete_bridge(
+            m,
+        );
+    if !runtime_sound_complete_ok {
+        return false;
+    }
+
+    proof {
+        assert(runtime_sound_complete_ok == m.check_face_coplanarity());
+        assert(runtime_sound_complete_ok ==> mesh_valid_spec(m@));
+        assert(runtime_sound_complete_ok ==> mesh_runtime_all_faces_coplanar_spec(m));
+        assert(runtime_sound_complete_ok ==> mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m));
+        assert(runtime_sound_complete_ok ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m));
+        assert(runtime_sound_complete_ok ==> mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m));
+        assert(runtime_sound_complete_ok ==> mesh_runtime_all_faces_oriented_seed0_planes_spec(m));
+        assert(runtime_sound_complete_ok);
+        assert(mesh_valid_spec(m@));
+        assert(mesh_structurally_valid_spec(m@));
+        assert(mesh_index_bounds_spec(m@));
+        assert(mesh_face_next_cycles_spec(m@));
+        assert(mesh_runtime_all_faces_coplanar_spec(m));
+        assert(mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m));
+        assert(mesh_runtime_all_faces_oriented_seed0_planes_spec(m));
+        assert(mesh_runtime_all_faces_triangle_or_quad_cycles_spec(m));
+        lemma_mesh_runtime_all_faces_oriented_seed0_planes_and_index_bounds_and_face_cycles_and_triangle_or_quad_cycles_iff_all_faces_coplanar_and_seed0_non_collinear_and_triangle_or_quad_cycles(
+            m,
+        );
+        assert(
+            (
+                mesh_runtime_all_faces_oriented_seed0_planes_spec(m)
+                    && mesh_runtime_all_faces_triangle_or_quad_cycles_spec(m)
+            ) == (
+                mesh_runtime_all_faces_coplanar_spec(m)
+                    && mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m)
+                    && mesh_runtime_all_faces_triangle_or_quad_cycles_spec(m)
+            )
+        );
+    }
+
+    runtime_sound_complete_ok
+}
+
+#[cfg(feature = "geometry-checks")]
+#[allow(dead_code)]
 pub fn runtime_check_face_convexity_triangle_projected_turn_sound_bridge(
     m: &Mesh,
 ) -> (out: bool)
