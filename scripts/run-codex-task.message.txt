@@ -1,1 +1,1 @@
-Added k>=5 pentagon coplanarity parity locks across vcad-topology exhaustive-oracle and seed0-bridge harnesses; 8 Phase 5 tasks remain.
+Added a kernel-shared-edge aggregate-spec gap lock for zero-length fixtures (constructive bridge + deterministic/randomized regressions) in vcad-topology; 8 Phase 5 tasks remain.
