@@ -1,1 +1,1 @@
-Added a triangle-specialized aggregate projected-turn sound bridge and parity coverage for P5.3/P5.7 in vcad-topology, revalidated full tests/proofs, and 8 burndown tasks remain.
+Added a triangle runtime-with-geometry convexity completeness bridge and parity coverage for P5.3 in vcad-topology, revalidated full tests/proofs, and 8 burndown tasks remain.

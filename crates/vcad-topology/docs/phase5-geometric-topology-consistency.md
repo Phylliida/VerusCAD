@@ -195,6 +195,25 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.3 (`Proof: runtime checker correctness vs convexity spec`) with a triangle projected-turn runtime-with-geometry completeness-bridge increment in:
+  - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
+  - `src/halfedge_mesh/tests.rs`.
+  - added new completeness bridge wrapper:
+    - `runtime_check_face_convexity_triangle_projected_turn_complete_from_runtime_with_geometry_preconditions`.
+  - strengthened parity harness coverage:
+    - helper `assert_face_convexity_triangle_projected_turn_runtime_with_geometry_completeness_bridge_parity`;
+    - test `face_convexity_triangle_projected_turn_runtime_with_geometry_completeness_bridge_matches_geometric_sound_bridge`;
+    - integrated into `assert_constructive_phase5_gate_parity` for triangle fixtures.
+  - outcome:
+    - runtime-with-geometry + triangle-cycle preconditions now have an explicit constructive path to projected-turn convexity witnesses in the same bridge family as existing coplanarity completeness wrappers, reducing remaining P5.3 runtime/spec-equivalence closure plumbing while keeping checklist status unchanged.
+- 2026-02-19: Failed attempts in this P5.3 triangle projected-turn runtime-with-geometry completeness-bridge pass: none.
+- 2026-02-19: Revalidated after the P5.3 triangle projected-turn runtime-with-geometry completeness-bridge increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (88 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (374 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (411 verified, 0 errors)
 - 2026-02-19: Worked P5.3 (`Proof: runtime checker correctness vs convexity spec`) and P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with a triangle-face projected-turn aggregate-bridge increment in:
   - `src/runtime_halfedge_mesh_refinement/components_and_validity_specs.rs`;
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
