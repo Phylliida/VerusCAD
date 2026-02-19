@@ -11,6 +11,7 @@ use crate::runtime_halfedge_mesh_refinement::{
     runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_and_quad_face_preconditions,
     runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_and_triangle_or_quad_face_preconditions,
     runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_and_triangle_face_preconditions,
+    runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_sound_complete_bridge,
     runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_preconditions,
     runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_phase5_runtime_bundle_sound_bridge,
     runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_complete_from_phase5_runtime_bundle_sound_bridge,
@@ -430,6 +431,25 @@ fn assert_face_coplanarity_seed0_oriented_plane_completeness_bridge_parity(
 }
 
 #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+fn assert_face_coplanarity_seed0_oriented_plane_sound_complete_bridge_parity(
+    mesh: &Mesh,
+    label: &str,
+) {
+    let runtime_coplanarity_ok = mesh.check_face_coplanarity();
+    let oriented_plane_sound_complete_ok = if runtime_coplanarity_ok {
+        runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_sound_complete_bridge(
+            mesh,
+        )
+    } else {
+        false
+    };
+    assert_eq!(
+        oriented_plane_sound_complete_ok, runtime_coplanarity_ok,
+        "seed0 coplanarity oriented-plane sound+complete bridge parity failed for {label}"
+    );
+}
+
+#[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
 fn assert_face_coplanarity_seed0_oriented_plane_triangle_completeness_bridge_parity(
     mesh: &Mesh,
     label: &str,
@@ -537,6 +557,7 @@ fn assert_constructive_phase5_gate_parity(mesh: &Mesh, label: &str) {
         );
     }
     assert_face_coplanarity_seed0_oriented_plane_completeness_bridge_parity(mesh, label);
+    assert_face_coplanarity_seed0_oriented_plane_sound_complete_bridge_parity(mesh, label);
     assert_face_coplanarity_seed0_phase5_runtime_bundle_completeness_bridge_parity(mesh, label);
     assert_face_coplanarity_seed0_runtime_with_geometry_completeness_bridge_parity(mesh, label);
 
@@ -5533,6 +5554,34 @@ fn diagnostic_witness_is_real_counterexample(
 
         for (label, mesh) in fixtures {
             assert_face_coplanarity_seed0_oriented_plane_completeness_bridge_parity(&mesh, label);
+        }
+    }
+
+    #[cfg(all(feature = "geometry-checks", feature = "verus-proofs"))]
+    #[test]
+    fn face_coplanarity_seed0_oriented_plane_sound_complete_bridge_matches_runtime_checker() {
+        let noncoplanar_vertices = vec![
+            RuntimePoint3::from_ints(0, 0, 0),
+            RuntimePoint3::from_ints(1, 0, 0),
+            RuntimePoint3::from_ints(1, 1, 1),
+            RuntimePoint3::from_ints(0, 1, 0),
+        ];
+        let noncoplanar_faces = vec![vec![0, 1, 2, 3], vec![0, 3, 2, 1]];
+        let noncoplanar_mesh = Mesh::from_face_cycles(noncoplanar_vertices, &noncoplanar_faces)
+            .expect("noncoplanar face fixture should build");
+
+        let fixtures = vec![
+            ("tetrahedron", Mesh::tetrahedron()),
+            ("cube", Mesh::cube()),
+            ("triangular_prism", Mesh::triangular_prism()),
+            ("overlapping_disconnected_tetrahedra", build_overlapping_tetrahedra_mesh()),
+            ("noncoplanar_face", noncoplanar_mesh),
+        ];
+
+        for (label, mesh) in fixtures {
+            assert_face_coplanarity_seed0_oriented_plane_sound_complete_bridge_parity(
+                &mesh, label,
+            );
         }
     }
 

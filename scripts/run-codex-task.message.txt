@@ -1,1 +1,1 @@
-Added triangle projected-turn/non-collinearity iff bridge lemmas and threaded the equivalence through aggregate geometric-consistency proof contracts with parity locks, revalidated vcad-topology, and 8 burndown tasks remain.
+Added an oriented-seed0-plane coplanarity sound+complete parity bridge and test coverage in vcad-topology, with 8 Phase 5 burndown tasks remaining.

@@ -2247,6 +2247,38 @@ pub fn runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity
 }
 
 #[cfg(feature = "geometry-checks")]
+#[allow(dead_code)]
+pub fn runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_sound_complete_bridge(
+    m: &Mesh,
+) -> (out: bool)
+    requires
+        mesh_valid_spec(m@),
+        mesh_runtime_all_faces_oriented_seed0_planes_spec(m),
+    ensures
+        out == m.check_face_coplanarity(),
+        mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m),
+        mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m),
+        mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m),
+        mesh_runtime_all_faces_oriented_seed0_planes_spec(m),
+{
+    let _complete_ok =
+        runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_preconditions(
+            m,
+        );
+    let runtime_ok = m.check_face_coplanarity();
+
+    proof {
+        assert(_complete_ok);
+        assert(mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m));
+        assert(mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m));
+        assert(mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m));
+        assert(mesh_runtime_all_faces_oriented_seed0_planes_spec(m));
+    }
+
+    runtime_ok
+}
+
+#[cfg(feature = "geometry-checks")]
 #[verifier::exec_allows_no_decreases_clause]
 #[allow(dead_code)]
 pub fn runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_and_triangle_face_preconditions(
