@@ -1,1 +1,1 @@
-Added an oriented-seed0-plane coplanarity sound+complete parity bridge and test coverage in vcad-topology, with 8 Phase 5 burndown tasks remaining.
+Strengthened Phase 5 triangle and triangle-or-quad bridge wrappers to prove exact parity with the aggregate geometric sound bridge in vcad-topology, with 8 Phase 5 burndown tasks remaining.

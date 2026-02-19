@@ -1800,6 +1800,7 @@ pub fn runtime_check_face_convexity_triangle_projected_turn_complete_from_phase5
     requires
         mesh_runtime_all_faces_triangle_cycles_spec(m),
     ensures
+        out == runtime_check_geometric_topological_consistency_sound_bridge(m),
         out ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m),
         out ==> mesh_runtime_geometric_topological_consistency_with_geometry_spec(m),
         out ==> mesh_runtime_geometric_topological_consistency_with_geometry_and_non_zero_edges_spec(m),
@@ -1819,15 +1820,13 @@ pub fn runtime_check_face_convexity_triangle_projected_turn_complete_from_phase5
         return false;
     }
 
-    let complete_ok =
+    let _complete_ok =
         runtime_check_face_convexity_triangle_projected_turn_complete_from_runtime_with_geometry_and_non_zero_edges_preconditions(
             m,
         );
-    if !complete_ok {
-        return false;
-    }
 
     proof {
+        assert(_complete_ok);
         assert(
             geometric_sound_ok
                 ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m)
@@ -1859,7 +1858,7 @@ pub fn runtime_check_face_convexity_triangle_projected_turn_complete_from_phase5
         );
     }
 
-    true
+    geometric_sound_ok
 }
 
 #[cfg(feature = "geometry-checks")]
@@ -2547,6 +2546,7 @@ pub fn runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_phase5_r
     m: &Mesh,
 ) -> (out: bool)
     ensures
+        out == runtime_check_geometric_topological_consistency_sound_bridge(m),
         out ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m),
         out ==> mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m),
         out ==> mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m),
@@ -2558,25 +2558,22 @@ pub fn runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_phase5_r
         return false;
     }
 
-    let complete_ok =
+    let _complete_ok =
         runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_phase5_runtime_bundle_preconditions(
             m,
         );
-    if !complete_ok {
-        return false;
-    }
 
     proof {
+        assert(_complete_ok);
         assert(phase5_sound_ok ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
         assert(mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
-        assert(complete_ok);
         assert(mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m));
         assert(mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m));
         assert(mesh_runtime_all_faces_seed0_plane_contains_vertices_spec(m));
         assert(mesh_runtime_all_faces_oriented_seed0_planes_spec(m));
     }
 
-    true
+    phase5_sound_ok
 }
 
 #[cfg(feature = "geometry-checks")]
@@ -2587,6 +2584,7 @@ pub fn runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_compl
     requires
         mesh_runtime_all_faces_triangle_or_quad_cycles_spec(m),
     ensures
+        out == runtime_check_geometric_topological_consistency_sound_bridge(m),
         out ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m),
         out ==> mesh_runtime_geometric_topological_consistency_with_geometry_spec(m),
         out ==> mesh_runtime_all_faces_coplanar_spec(m),
@@ -2600,15 +2598,13 @@ pub fn runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_compl
         return false;
     }
 
-    let complete_ok =
+    let _complete_ok =
         runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_runtime_with_geometry_and_triangle_or_quad_face_preconditions(
             m,
         );
-    if !complete_ok {
-        return false;
-    }
 
     proof {
+        assert(_complete_ok);
         assert(
             phase5_sound_ok
                 ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m)
@@ -2616,7 +2612,6 @@ pub fn runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_compl
         assert(phase5_sound_ok ==> mesh_runtime_geometric_topological_consistency_with_geometry_spec(m));
         assert(mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m));
         assert(mesh_runtime_geometric_topological_consistency_with_geometry_spec(m));
-        assert(complete_ok);
         assert(mesh_runtime_all_faces_coplanar_spec(m));
         assert(mesh_runtime_all_faces_coplanar_seed0_fixed_witness_spec(m));
         assert(mesh_runtime_all_faces_seed0_corner_non_collinear_spec(m));
@@ -2624,7 +2619,7 @@ pub fn runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_compl
         assert(mesh_runtime_all_faces_oriented_seed0_planes_spec(m));
     }
 
-    true
+    phase5_sound_ok
 }
 
 #[cfg(feature = "geometry-checks")]
@@ -2635,6 +2630,7 @@ pub fn runtime_check_geometric_topological_consistency_triangle_or_quad_coplanar
     requires
         mesh_runtime_all_faces_triangle_or_quad_cycles_spec(m),
     ensures
+        out == runtime_check_geometric_topological_consistency_sound_bridge(m),
         out ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m),
         out ==> mesh_runtime_geometric_topological_consistency_with_geometry_spec(m),
         out ==> mesh_runtime_all_faces_coplanar_spec(m),
@@ -2660,7 +2656,7 @@ pub fn runtime_check_geometric_topological_consistency_triangle_or_quad_coplanar
         assert(mesh_runtime_all_faces_coplanar_spec(m));
     }
 
-    true
+    geometric_sound_ok
 }
 
 #[cfg(feature = "geometry-checks")]
@@ -3168,6 +3164,7 @@ pub fn runtime_check_geometric_topological_consistency_triangle_projected_turn_s
     requires
         mesh_runtime_all_faces_triangle_cycles_spec(m),
     ensures
+        out == runtime_check_geometric_topological_consistency_sound_bridge(m),
         out ==> mesh_runtime_geometric_topological_consistency_seed0_coplanarity_bundle_spec(m),
         out ==> mesh_runtime_geometric_topological_consistency_with_geometry_spec(m),
         out ==> mesh_geometric_topological_consistency_spec(m@),
@@ -3211,7 +3208,7 @@ pub fn runtime_check_geometric_topological_consistency_triangle_projected_turn_s
         );
     }
 
-    true
+    geometric_sound_ok
 }
 
 #[cfg(feature = "geometry-checks")]

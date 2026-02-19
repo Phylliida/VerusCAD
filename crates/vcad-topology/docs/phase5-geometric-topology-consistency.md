@@ -195,6 +195,37 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.3 (`Proof: runtime checker correctness vs convexity spec`) and P5.7 (`Prove aggregate checker equivalence to aggregate Phase 5 spec`) with aggregate-sound-bridge parity contract strengthening for triangle/triangle-or-quad completion wrappers in:
+  - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`.
+  - strengthened bridge contracts now expose exact parity with the aggregate sound bridge:
+    - `runtime_check_face_convexity_triangle_projected_turn_complete_from_phase5_runtime_bundle_sound_bridge` now additionally proves:
+      - `out == runtime_check_geometric_topological_consistency_sound_bridge(m)`.
+    - `runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_phase5_runtime_bundle_sound_bridge` now additionally proves:
+      - `out == runtime_check_geometric_topological_consistency_sound_bridge(m)`.
+    - `runtime_check_face_coplanarity_seed0_fixed_witness_triangle_or_quad_complete_from_phase5_runtime_bundle_sound_bridge` now additionally proves:
+      - `out == runtime_check_geometric_topological_consistency_sound_bridge(m)`.
+    - `runtime_check_geometric_topological_consistency_triangle_or_quad_coplanarity_sound_bridge` now additionally proves:
+      - `out == runtime_check_geometric_topological_consistency_sound_bridge(m)`.
+    - `runtime_check_geometric_topological_consistency_triangle_projected_turn_sound_bridge` now additionally proves:
+      - `out == runtime_check_geometric_topological_consistency_sound_bridge(m)`.
+  - cleanup:
+    - removed three unreachable `if !complete_ok { return false; }` branches where completeness helpers already had `ensures out`, and returned the base aggregate-sound result directly.
+  - outcome:
+    - triangle and triangle/quad completion/specialization wrappers now carry explicit equality-level parity to the aggregate sound bridge (not only one-way implications), reducing P5.3/P5.7 closure boilerplate while checklist status remains unchanged.
+- 2026-02-19: Failed attempts in this P5.3/P5.7 aggregate-sound-bridge parity-contract pass:
+  - initial targeted test revalidation command attempted multiple test names in a single `cargo test` invocation and failed with Cargo CLI usage (`unexpected argument`); reran as separate single-filter invocations.
+- 2026-02-19: Revalidated after the P5.3/P5.7 aggregate-sound-bridge parity-contract strengthening:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (93 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" face_convexity_triangle_projected_turn_phase5_runtime_bundle_completeness_bridge_matches_geometric_sound_bridge` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" face_coplanarity_seed0_phase5_runtime_bundle_completeness_bridge_matches_geometric_sound_bridge` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" face_coplanarity_seed0_triangle_or_quad_phase5_runtime_bundle_completeness_bridge_matches_geometric_sound_bridge` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" geometric_consistency_triangle_projected_turn_sound_bridge_matches_runtime_checker` (1 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" geometric_consistency_triangle_or_quad_coplanarity_sound_bridge_matches_runtime_checker` (1 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (382 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (419 verified, 0 errors)
 - 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) with an oriented-seed0-plane sound+complete parity bridge increment in:
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
   - `src/halfedge_mesh/tests.rs`.
