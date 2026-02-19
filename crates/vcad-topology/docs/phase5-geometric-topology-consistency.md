@@ -195,6 +195,19 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) by scoping the remaining `k > 4` completeness gap and adding a blocker-lock regression in:
+  - `src/halfedge_mesh/tests.rs`.
+  - added regression:
+    - `seed0_fixed_witness_without_noncollinear_seed_is_insufficient_for_k_ge_5`.
+  - regression purpose:
+    - encodes a concrete 5-point counterexample where a collinear seed triple `(p0,p1,p2)` makes all seed-fixed witness checks `is_coplanar(p0,p1,p2,pd)` pass for `d in {0,1,2,3,4}`, but full all-quadruple coplanarity fails (`!is_coplanar(p0,p1,p3,p4)`).
+  - outcome:
+    - formally locks the key proof blocker: for `k >= 5`, seed-fixed witness alone is insufficient without a non-collinear seed (or equivalent oriented-plane strength), so remaining P5.1 completeness work must keep that stronger precondition explicit.
+- 2026-02-19: Failed attempt in this P5.1 `k > 4` scoping pass:
+  - first attempted to generalize triangle/quad completeness from `mesh_face_coplanar_seed0_fixed_witness_spec` alone to arbitrary face arity;
+  - blocked by the collinear-seed counterexample above, so the pass pivoted to adding the explicit regression lock instead of landing an unsound generalization.
+- 2026-02-19: Revalidated after the P5.1 `k > 4` blocker-lock regression:
+  - `cargo test -p vcad-topology --features geometry-checks seed0_fixed_witness_without_noncollinear_seed_is_insufficient_for_k_ge_5` (1 passed, 0 failed)
 - 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) with a triangle/quad soundness bridge increment in:
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`;
   - `src/halfedge_mesh/tests.rs`.

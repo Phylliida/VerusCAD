@@ -3373,6 +3373,26 @@ fn diagnostic_witness_is_real_counterexample(
 
     #[cfg(feature = "geometry-checks")]
     #[test]
+    fn seed0_fixed_witness_without_noncollinear_seed_is_insufficient_for_k_ge_5() {
+        let p0 = RuntimePoint3::from_ints(0, 0, 0);
+        let p1 = RuntimePoint3::from_ints(1, 0, 0);
+        let p2 = RuntimePoint3::from_ints(2, 0, 0);
+        let p3 = RuntimePoint3::from_ints(0, 1, 0);
+        let p4 = RuntimePoint3::from_ints(0, 0, 1);
+
+        // Seed witness (0,1,2) is vacuously true when the seed triple is collinear.
+        assert!(coplanar(&p0, &p1, &p2, &p0));
+        assert!(coplanar(&p0, &p1, &p2, &p1));
+        assert!(coplanar(&p0, &p1, &p2, &p2));
+        assert!(coplanar(&p0, &p1, &p2, &p3));
+        assert!(coplanar(&p0, &p1, &p2, &p4));
+
+        // But full all-quadruple coplanarity for five points fails.
+        assert!(!coplanar(&p0, &p1, &p3, &p4));
+    }
+
+    #[cfg(feature = "geometry-checks")]
+    #[test]
     fn differential_randomized_face_coplanarity_checker_exhaustive_quadruple_oracle_harness() {
         const CASES: usize = 40;
         let mut rng = DeterministicRng::new(0x4F21_BD68_90AE_13C7);

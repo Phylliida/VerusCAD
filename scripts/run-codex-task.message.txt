@@ -1,1 +1,1 @@
-Added a P5.1 triangle/quad coplanarity soundness bridge from the runtime checker to full face-coplanarity spec with new parity coverage, revalidated vcad-topology, and 8 Phase 5 tasks remain in vcad-topology.
+Locked the P5.1 k>4 coplanarity blocker with a collinear-seed counterexample regression and documented the failed generalization attempt in the burndown log; 8 Phase 5 tasks remain in vcad-topology.
