@@ -195,6 +195,33 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) with an oriented-seed-plane completeness bridge increment in `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`:
+  - added
+    `runtime_check_face_coplanarity_seed0_fixed_witness_complete_from_validity_and_oriented_seed0_plane_preconditions`;
+  - bridge preconditions:
+    - `mesh_valid_spec(m@)`;
+    - `mesh_runtime_all_faces_oriented_seed0_planes_spec(m)`;
+  - bridge proof path:
+    - derives runtime geometry bridge + index/face-cycle obligations from `mesh_valid_spec(m@)`;
+    - uses
+      `lemma_mesh_runtime_all_faces_oriented_seed0_planes_and_index_bounds_and_face_cycles_iff_seed0_fixed_witness_and_seed0_non_collinear`
+      to recover seed0-fixed coplanarity witnesses and seed0 non-collinearity;
+    - discharges checker completeness by reusing
+      `runtime_check_face_coplanarity_seed0_fixed_witness_complete_under_preconditions`.
+  - added parity coverage in `src/halfedge_mesh/tests.rs`:
+    - helper `assert_face_coplanarity_seed0_oriented_plane_completeness_bridge_parity`;
+    - regression `face_coplanarity_seed0_oriented_plane_completeness_bridge_matches_geometric_sound_bridge`;
+    - integrated oriented-plane completeness parity into `assert_constructive_phase5_gate_parity`.
+  - outcome: runtime coplanarity completeness is now proved from the oriented-seed-plane formulation (not only from full-coplanarity or Phase-5-bundle preconditions), reducing the remaining P5.1 equivalence gap to proving oriented-seed-plane/seed0 witnesses imply the full `mesh_runtime_all_faces_coplanar_spec` formulation.
+- 2026-02-19: Failed attempts in this P5.1 oriented-plane completeness pass: none.
+- 2026-02-19: Revalidated after the P5.1 oriented-plane completeness increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (60 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (74 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs" face_coplanarity_seed0_oriented_plane_completeness_bridge_matches_geometric_sound_bridge` (1 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (287 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (324 verified, 0 errors)
 - 2026-02-19: Completed P5.5 (`Proof: adjacency-exemption implementation is equivalent to the allowed-contact spec`) in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
   - normalized `mesh_faces_disjoint_boundary_spec(m, f1, f2)` to the equivalent no-shared-boundary formulation (`!share_vertex && !share_edge`) while preserving face-index bounds;
   - added proof theorem
