@@ -1,1 +1,1 @@
-Factored P5.5 forbidden-policy symmetry in vcad-topology into a reusable classifier-parity helper (after documenting a failed unconditional exact-two-vertex symmetry proof attempt), and 8 Phase 5 tasks remain.
+Removed the remaining exact-two-vertex symmetry precondition from the P5.5 runtime forbidden-policy/classifier symmetry bridges by proving exact-two-vertex symmetry directly, and 8 Phase 5 tasks remain.

@@ -791,6 +791,148 @@ pub proof fn lemma_mesh_faces_share_exactly_one_edge_spec_symmetric(
 }
 
 #[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_faces_share_exactly_two_vertices_spec_symmetric_under_vertex_index_symmetry(
+    m: MeshModel,
+    f1: int,
+    f2: int,
+)
+    requires
+        forall|v: int|
+            mesh_faces_share_vertex_index_spec(m, f1, f2, v)
+                == mesh_faces_share_vertex_index_spec(m, f2, f1, v),
+    ensures
+        mesh_faces_share_exactly_two_vertices_spec(m, f1, f2)
+            == mesh_faces_share_exactly_two_vertices_spec(m, f2, f1),
+{
+    assert(
+        mesh_faces_share_exactly_two_vertices_spec(m, f1, f2)
+            ==> mesh_faces_share_exactly_two_vertices_spec(m, f2, f1)
+    ) by {
+        if mesh_faces_share_exactly_two_vertices_spec(m, f1, f2) {
+            let v0 = choose|v0: int| exists|v1: int| {
+                &&& v0 != v1
+                &&& #[trigger] mesh_faces_share_vertex_index_spec(m, f1, f2, v0)
+                &&& #[trigger] mesh_faces_share_vertex_index_spec(m, f1, f2, v1)
+                &&& forall|vp: int| #[trigger] mesh_faces_share_vertex_index_spec(m, f1, f2, vp)
+                    ==> (vp == v0 || vp == v1)
+            };
+            let v1 = choose|v1: int| {
+                &&& v0 != v1
+                &&& #[trigger] mesh_faces_share_vertex_index_spec(m, f1, f2, v0)
+                &&& #[trigger] mesh_faces_share_vertex_index_spec(m, f1, f2, v1)
+                &&& forall|vp: int| #[trigger] mesh_faces_share_vertex_index_spec(m, f1, f2, vp)
+                    ==> (vp == v0 || vp == v1)
+            };
+            assert(v0 != v1);
+            assert(mesh_faces_share_vertex_index_spec(m, f1, f2, v0));
+            assert(mesh_faces_share_vertex_index_spec(m, f1, f2, v1));
+            assert(
+                mesh_faces_share_vertex_index_spec(m, f1, f2, v0)
+                    == mesh_faces_share_vertex_index_spec(m, f2, f1, v0)
+            );
+            assert(
+                mesh_faces_share_vertex_index_spec(m, f1, f2, v1)
+                    == mesh_faces_share_vertex_index_spec(m, f2, f1, v1)
+            );
+            assert(mesh_faces_share_vertex_index_spec(m, f2, f1, v0));
+            assert(mesh_faces_share_vertex_index_spec(m, f2, f1, v1));
+            assert(
+                forall|vp: int| #[trigger] mesh_faces_share_vertex_index_spec(m, f2, f1, vp)
+                    ==> (vp == v0 || vp == v1)
+            ) by {
+                assert forall|vp: int| #[trigger] mesh_faces_share_vertex_index_spec(
+                    m,
+                    f2,
+                    f1,
+                    vp,
+                ) implies (vp == v0 || vp == v1) by {
+                    assert(mesh_faces_share_vertex_index_spec(m, f2, f1, vp));
+                    assert(mesh_faces_share_vertex_index_spec(m, f1, f2, vp)
+                        == mesh_faces_share_vertex_index_spec(m, f2, f1, vp));
+                    assert(mesh_faces_share_vertex_index_spec(m, f1, f2, vp));
+                    assert(vp == v0 || vp == v1);
+                };
+            };
+            assert(mesh_faces_share_exactly_two_vertices_spec(m, f2, f1));
+        }
+    };
+    assert(
+        mesh_faces_share_exactly_two_vertices_spec(m, f2, f1)
+            ==> mesh_faces_share_exactly_two_vertices_spec(m, f1, f2)
+    ) by {
+        if mesh_faces_share_exactly_two_vertices_spec(m, f2, f1) {
+            let v0 = choose|v0: int| exists|v1: int| {
+                &&& v0 != v1
+                &&& #[trigger] mesh_faces_share_vertex_index_spec(m, f2, f1, v0)
+                &&& #[trigger] mesh_faces_share_vertex_index_spec(m, f2, f1, v1)
+                &&& forall|vp: int| #[trigger] mesh_faces_share_vertex_index_spec(m, f2, f1, vp)
+                    ==> (vp == v0 || vp == v1)
+            };
+            let v1 = choose|v1: int| {
+                &&& v0 != v1
+                &&& #[trigger] mesh_faces_share_vertex_index_spec(m, f2, f1, v0)
+                &&& #[trigger] mesh_faces_share_vertex_index_spec(m, f2, f1, v1)
+                &&& forall|vp: int| #[trigger] mesh_faces_share_vertex_index_spec(m, f2, f1, vp)
+                    ==> (vp == v0 || vp == v1)
+            };
+            assert(v0 != v1);
+            assert(mesh_faces_share_vertex_index_spec(m, f2, f1, v0));
+            assert(mesh_faces_share_vertex_index_spec(m, f2, f1, v1));
+            assert(
+                mesh_faces_share_vertex_index_spec(m, f1, f2, v0)
+                    == mesh_faces_share_vertex_index_spec(m, f2, f1, v0)
+            );
+            assert(
+                mesh_faces_share_vertex_index_spec(m, f1, f2, v1)
+                    == mesh_faces_share_vertex_index_spec(m, f2, f1, v1)
+            );
+            assert(mesh_faces_share_vertex_index_spec(m, f1, f2, v0));
+            assert(mesh_faces_share_vertex_index_spec(m, f1, f2, v1));
+            assert(
+                forall|vp: int| #[trigger] mesh_faces_share_vertex_index_spec(m, f1, f2, vp)
+                    ==> (vp == v0 || vp == v1)
+            ) by {
+                assert forall|vp: int| #[trigger] mesh_faces_share_vertex_index_spec(
+                    m,
+                    f1,
+                    f2,
+                    vp,
+                ) implies (vp == v0 || vp == v1) by {
+                    assert(mesh_faces_share_vertex_index_spec(m, f1, f2, vp));
+                    assert(mesh_faces_share_vertex_index_spec(m, f1, f2, vp)
+                        == mesh_faces_share_vertex_index_spec(m, f2, f1, vp));
+                    assert(mesh_faces_share_vertex_index_spec(m, f2, f1, vp));
+                    assert(vp == v0 || vp == v1);
+                };
+            };
+            assert(mesh_faces_share_exactly_two_vertices_spec(m, f1, f2));
+        }
+    };
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_faces_share_exactly_two_vertices_spec_symmetric(
+    m: MeshModel,
+    f1: int,
+    f2: int,
+)
+    ensures
+        mesh_faces_share_exactly_two_vertices_spec(m, f1, f2)
+            == mesh_faces_share_exactly_two_vertices_spec(m, f2, f1),
+{
+    assert(forall|v: int|
+        mesh_faces_share_vertex_index_spec(m, f1, f2, v)
+            == mesh_faces_share_vertex_index_spec(m, f2, f1, v)) by {
+        assert forall|v: int|
+            mesh_faces_share_vertex_index_spec(m, f1, f2, v)
+                == mesh_faces_share_vertex_index_spec(m, f2, f1, v) by {
+            lemma_mesh_faces_share_vertex_index_spec_symmetric(m, f1, f2, v);
+        };
+    };
+    lemma_mesh_faces_share_exactly_two_vertices_spec_symmetric_under_vertex_index_symmetry(m, f1, f2);
+}
+
+#[cfg(verus_keep_ghost)]
 pub proof fn lemma_mesh_faces_disjoint_boundary_spec_symmetric(m: MeshModel, f1: int, f2: int)
     ensures
         mesh_faces_disjoint_boundary_spec(m, f1, f2)
@@ -820,13 +962,11 @@ pub proof fn lemma_mesh_faces_allowed_contact_runtime_branch_classifier_spec_sym
     f1: int,
     f2: int,
 )
-    requires
-        mesh_faces_share_exactly_two_vertices_spec(m, f1, f2)
-            == mesh_faces_share_exactly_two_vertices_spec(m, f2, f1),
     ensures
         mesh_faces_allowed_contact_runtime_branch_classifier_spec(m, f1, f2)
             == mesh_faces_allowed_contact_runtime_branch_classifier_spec(m, f2, f1),
 {
+    lemma_mesh_faces_share_exactly_two_vertices_spec_symmetric(m, f1, f2);
     lemma_mesh_faces_share_edge_spec_symmetric(m, f1, f2);
     lemma_mesh_faces_share_zero_or_one_vertices_spec_symmetric(m, f1, f2);
     lemma_mesh_faces_share_exactly_one_edge_spec_symmetric(m, f1, f2);
@@ -1201,9 +1341,6 @@ pub proof fn lemma_mesh_face_pair_runtime_forbidden_intersection_policy_spec_sym
     f2: int,
     geometric_intersection_exists: bool,
 )
-    requires
-        mesh_faces_share_exactly_two_vertices_spec(m, f1, f2)
-            == mesh_faces_share_exactly_two_vertices_spec(m, f2, f1),
     ensures
         mesh_face_pair_runtime_forbidden_intersection_policy_spec(
             m,

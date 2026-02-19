@@ -195,6 +195,30 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with an unconditional exact-two-vertex symmetry bridge increment in:
+  - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`.
+  - added new relation-level symmetry lemmas:
+    - `lemma_mesh_faces_share_exactly_two_vertices_spec_symmetric_under_vertex_index_symmetry`;
+    - `lemma_mesh_faces_share_exactly_two_vertices_spec_symmetric`.
+  - upgraded downstream symmetry plumbing to remove external exact-two-vertex symmetry assumptions:
+    - `lemma_mesh_faces_allowed_contact_runtime_branch_classifier_spec_symmetric_under_two_vertex_symmetry` is now unconditional and derives exact-two-vertex symmetry internally;
+    - `lemma_mesh_face_pair_runtime_forbidden_intersection_policy_spec_symmetric` is now unconditional and no longer requires
+      `mesh_faces_share_exactly_two_vertices_spec(m, f1, f2) == mesh_faces_share_exactly_two_vertices_spec(m, f2, f1)`.
+  - outcome:
+    - P5.5 pair-order symmetry bridges for runtime allowed-contact classification and forbidden-policy classification now compose without the prior caller-supplied exact-two-vertex symmetry precondition;
+    - this reduces assumption plumbing at remaining soundness/completeness call sites while keeping the two open P5.5 checklist items unchanged.
+- 2026-02-19: Failed attempt in this P5.5 unconditional exact-two-vertex symmetry pass:
+  - first verifier run failed with trigger inference on the new `choose` witness for
+    `lemma_mesh_faces_share_exactly_two_vertices_spec_symmetric_under_vertex_index_symmetry`;
+  - resolved by adding explicit `#[trigger]` annotations on the witness-side
+    `mesh_faces_share_vertex_index_spec(...)` terms.
+- 2026-02-19: Revalidated after the P5.5 unconditional exact-two-vertex symmetry increment:
+  - `cargo test -p vcad-topology` (13 passed, 0 failed)
+  - `cargo test -p vcad-topology --features geometry-checks` (63 passed, 0 failed)
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (86 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (351 verified, 0 errors)
+  - `./scripts/verify-vcad-topology-fast.sh verified_checker_kernels` (37 verified, 0 errors)
+  - `./scripts/verify-vcad-topology.sh` (388 verified, 0 errors)
 - 2026-02-19: Worked P5.5 (`Proof: checker soundness (if checker passes, forbidden intersections do not exist)` and `Proof: checker completeness for convex coplanar-face assumptions used by Phase 5`) with a low-cost policy-symmetry factoring increment in:
   - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`.
   - added a new reusable policy-symmetry helper under explicit classifier parity:
