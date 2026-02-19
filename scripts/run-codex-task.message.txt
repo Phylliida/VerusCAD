@@ -1,1 +1,1 @@
-Added P5.1 seed-0 coplanarity bridge iff lemmas across model and runtime aliases, documented the progress and fixed parse-error attempt in the Phase 5 burndown, and revalidated runtime refinement proofs plus geometry-checks+verus-proofs tests.
+Added a verified P5.1 runtime bridge that proves full-face-cycle seed-0 coplanarity checks imply the aggregate seed-0 fixed witness spec, documented failed parse attempts and outcomes in the Phase 5 burndown, and revalidated vcad-topology with proofs and tests.
