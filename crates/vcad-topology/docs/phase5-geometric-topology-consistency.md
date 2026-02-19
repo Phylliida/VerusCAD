@@ -65,7 +65,7 @@ This doc expands those targets into executable TODOs aligned with the current `v
 - [x] Runtime checker: reject adjacent-face overlap beyond declared shared boundary (for example coplanar interior overlap with shared edge/vertex).
 - [ ] Proof: checker soundness (if checker passes, forbidden intersections do not exist).
 - [ ] Proof: checker completeness for convex coplanar-face assumptions used by Phase 5.
-- [ ] Proof: shared-edge and shared-vertex contacts are never misclassified as forbidden intersections.
+- [x] Proof: shared-edge and shared-vertex contacts are never misclassified as forbidden intersections.
 - [x] Proof: adjacency-exemption implementation is equivalent to the allowed-contact spec.
 
 ## P5.6 Plane Computation (Roadmap)
@@ -195,6 +195,17 @@ Current Phase 6 handoff policy (spec-level guidance for upcoming Euler operators
   - aggregate geometric-topological consistency gate.
 
 ## Burndown Log
+- 2026-02-19: Worked P5.5 (`Proof: shared-edge and shared-vertex contacts are never misclassified as forbidden intersections`) in `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`:
+  - added explicit corollary lemmas that discharge the two concrete allowed-contact cases against the forbidden non-adjacent relation:
+    - `lemma_mesh_faces_shared_vertex_only_not_non_adjacent_forbidden_relation`;
+    - `lemma_mesh_faces_shared_exactly_one_edge_not_non_adjacent_forbidden_relation`.
+  - both corollaries route through the existing combined shared-boundary lemma and make the two non-misclassification obligations directly reusable by name for later checker soundness plumbing.
+- 2026-02-19: Failed attempt while scoping this pass:
+  - initially targeted P5.7 aggregate checker/spec equivalence, but `mesh_geometric_topological_consistency_spec` is currently characterized by `mesh_valid_spec && mesh_shared_edge_local_orientation_consistency_spec`, which is intentionally weaker than the runtime aggregate checker (`check_geometric_topological_consistency`) and therefore not directly equivalent without a broader spec-model-link strengthening pass.
+  - pivoted to the narrower P5.5 shared-boundary non-misclassification proof task above.
+- 2026-02-19: Revalidated after the P5.5 shared-boundary non-misclassification corollary increment:
+  - `cargo test -p vcad-topology --features "geometry-checks,verus-proofs"` (74 passed, 0 failed)
+  - `./scripts/verify-vcad-topology-fast.sh runtime_halfedge_mesh_refinement` (307 verified, 0 errors)
 - 2026-02-19: Worked P5.1 (`Proof: runtime checker correctness vs spec (sound + complete under documented preconditions)`) with an all-triangle completeness bridge increment in:
   - `src/runtime_halfedge_mesh_refinement/model_and_bridge_specs.rs`;
   - `src/runtime_halfedge_mesh_refinement/constructive_gates_and_examples.rs`.

@@ -667,6 +667,68 @@ pub proof fn lemma_mesh_faces_shared_boundary_allowed_contact_not_non_adjacent_f
     ));
 }
 
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_faces_shared_vertex_only_not_non_adjacent_forbidden_relation(
+    m: MeshModel,
+    f1: int,
+    f2: int,
+    geometric_intersection_exists: bool,
+)
+    requires
+        0 <= f1 < mesh_face_count_spec(m),
+        0 <= f2 < mesh_face_count_spec(m),
+        f1 != f2,
+        mesh_faces_share_exactly_one_vertex_spec(m, f1, f2),
+        !mesh_faces_share_edge_spec(m, f1, f2),
+    ensures
+        mesh_faces_allowed_contact_relation_spec(m, f1, f2),
+        mesh_faces_allowed_contact_runtime_branch_classifier_spec(m, f1, f2),
+        !mesh_non_adjacent_face_pair_forbidden_intersection_relation_spec(
+            m,
+            f1,
+            f2,
+            geometric_intersection_exists,
+        ),
+{
+    lemma_mesh_faces_shared_boundary_allowed_contact_not_non_adjacent_forbidden_relation(
+        m,
+        f1,
+        f2,
+        geometric_intersection_exists,
+    );
+}
+
+#[cfg(verus_keep_ghost)]
+pub proof fn lemma_mesh_faces_shared_exactly_one_edge_not_non_adjacent_forbidden_relation(
+    m: MeshModel,
+    f1: int,
+    f2: int,
+    geometric_intersection_exists: bool,
+)
+    requires
+        0 <= f1 < mesh_face_count_spec(m),
+        0 <= f2 < mesh_face_count_spec(m),
+        f1 != f2,
+        mesh_faces_share_exactly_one_edge_spec(m, f1, f2),
+        mesh_faces_share_exactly_two_vertices_spec(m, f1, f2),
+    ensures
+        mesh_faces_allowed_contact_relation_spec(m, f1, f2),
+        mesh_faces_allowed_contact_runtime_branch_classifier_spec(m, f1, f2),
+        !mesh_non_adjacent_face_pair_forbidden_intersection_relation_spec(
+            m,
+            f1,
+            f2,
+            geometric_intersection_exists,
+        ),
+{
+    lemma_mesh_faces_shared_boundary_allowed_contact_not_non_adjacent_forbidden_relation(
+        m,
+        f1,
+        f2,
+        geometric_intersection_exists,
+    );
+}
+
 pub open spec fn mesh_non_adjacent_face_pair_forbidden_intersection_relation_spec(
     m: MeshModel,
     f1: int,

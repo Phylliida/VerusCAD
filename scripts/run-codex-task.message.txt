@@ -1,1 +1,1 @@
-Added a P5.1 triangle-only coplanarity completeness bridge from seed0 fixed witnesses to full face-coplanarity spec (with a new constructive wrapper and supporting lemmas), revalidated the full vcad-topology matrix, and 9 Phase 5 tasks remain in vcad-topology.
+Added explicit P5.5 proof corollaries that shared-vertex-only and shared-exactly-one-edge face contacts cannot be classified as forbidden non-adjacent intersections, revalidated vcad-topology proofs/tests, and 8 Phase 5 tasks remain in vcad-topology.
