@@ -1,0 +1,90 @@
+# Context
+
+Purpose: land algebraic/geometric lemmas in vcad-geometry blocking Phase 5 proofs in vcad-topology.
+Downstream tracker: crates/vcad-topology/docs/phase5-geometric-topology-consistency.md
+Test lane: ./scripts/test-vcad-geometry-verus-proofs.sh
+Ghost verify: ./scripts/verify-vcad-geometry.sh
+
+# L1: Plane Membership Implies Orient3d Zero
+
+Blocks P5.1 coplanarity checker correctness for k > 4.
+
+- [x] Define points_on_common_plane_spec(a, b, c, d, normal, offset)
+- [ ] Prove nonzero normal + all four on plane => orient3d(a,b,c,d) == 0
+  Partial: proved under alignment precondition normal == (b-a) x (c-a)
+  Gap: general normal != 0 case without alignment assumption
+- [ ] Intermediate: three vectors orthogonal to nonzero vector => det3 == 0
+  Partial: proved with alignment precondition
+  Sketch: subspace dimension argument or algebraic component elimination
+  Failed path: component-elimination (normal.x*det==0 etc) not yet clean
+
+# L2: Orient3d / Orient2d Projection Factoring
+
+Blocks P5.3 convexity checker correctness.
+
+- [x] Define witness_along_normal_spec(p0, p1, p2, witness, normal)
+- [ ] Prove orient3d(prev,curr,next,witness) = (n·n) * orient2d(prev',curr',next')
+  Sketch: cofactor expansion along witness row, decompose into in-plane + normal, factor
+- [ ] Corollary: nondegenerate face => sign(orient3d) == sign(orient2d)
+
+# L3: Determinant Trilinearity / Linearity in Origin
+
+Blocks P5.4 signed-volume origin independence.
+
+- [x] Prove det3 linearity in each argument
+- [x] Prove det3 antisymmetry under argument swap
+- [ ] Prove origin-shift invariance for closed oriented surface mesh
+  Sketch: expand by trilinearity, group as signed edge terms, cancel via edge pairing from vcad-topology
+
+# L4: Consistent Orientation + Signed-Volume Sign => Outward Normals
+
+Blocks P5.4 global outwardness.
+
+- [ ] Prove flipping all face orientations negates signed volume
+- [ ] Prove consistent local orientation => exactly two global orientation classes
+- [ ] Prove convention: negative signed-volume class = outward normals
+- [ ] Split: algebraic sign-flip in vcad-geometry, compose with topology facts in vcad-topology
+
+# L5: AABB / Plane Separation Soundness
+
+Blocks P5.5 intersection checker soundness (broad phase).
+
+- [x] Prove AABB axis-separation => contained convex sets disjoint
+- [x] Containment wrapper: separated AABBs + per-shape containment => disjoint shapes
+- [ ] Prove all face-A vertices strictly one side of face-B plane => no intersection
+  Sketch: strictly positive plane values preserved by convex combination, contradiction with 0
+- [ ] Intermediate: convex combination of strictly positive values is strictly positive
+  Landed: binary, ternary, quaternary, quinary cases
+  Gap: n-ary / general wrapper for full face-plane separation composition
+
+# L6: Segment-Face Intersection Predicate Correctness
+
+Blocks P5.5 intersection checker soundness (narrow phase).
+
+- [x] Audit downstream predicates used by vcad-topology narrow phase
+  Used: segment_plane_intersection_point_strict, segment_intersection_kind_2d, segment_intersection_point_2d, point_in_convex_polygon_2d
+- [x] Add segment_intersection_point_2d witness-soundness for endpoint-touch
+- [ ] Segment-triangle intersection iff spec
+  Landed: runtime strict wrapper with regression tests
+  Blocked: verus_keep_ghost iff theorem needs external items resolved in proof mode
+- [ ] Coplanar segment-segment Proper witness-on-both-segments proof
+  Landed: endpoint-touch soundness, Proper totality, dual support-line collinearity, parameter sign facts
+  Gap: thread parameter-sign lemma into proper_intersection_point_runtime, discharge coordinate bounds
+- [ ] Coplanar segment-polygon overlap iff spec
+  Landed: runtime wrapper, composed-spec contract, runtime refinement
+  Gap: point-witness-level iff (exists witness satisfying all geometric constraints)
+- [ ] Overall: each predicate returns true iff geometric witness exists
+
+# Landing Order
+
+- [ ] L1 first (simplest, immediate unblock for k>4 coplanarity)
+- [ ] L2 next (unblocks convexity, reuse determinant scaffolding)
+- [ ] L3 then (trilinearity / origin-shift)
+- [ ] L5 and L6 in parallel (independent tracks)
+- [ ] L4 last (compose L3 algebra with topology consistency)
+
+# Exit Criteria
+
+- [ ] Each lemma family verified with no trusted assumptions
+- [ ] Lemma signatures importable by vcad-topology Phase 5 proof modules
+- [ ] Re-attempt remaining open Phase 5 items using upstream lemma surface
